@@ -1,0 +1,34 @@
+<UserControl x:Class="TabgInstaller.Gui.Tabs.GameSettingsGrid"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:TabgInstaller.Gui.ViewModels"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:BoolToVisibilityConverter x:Key="NotBoolToVis" Inverse="True"/>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Properties}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:SettingPropertyVM}">
+                    <Grid Margin="2" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        <CheckBox Grid.Column="1"
+                                  IsChecked="{Binding BoolValue, Mode=TwoWay}"
+                                  Visibility="{Binding IsBool, Converter={StaticResource BoolToVis}}"/>
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                 Visibility="{Binding IsBool, Converter={StaticResource NotBoolToVis}}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl> 

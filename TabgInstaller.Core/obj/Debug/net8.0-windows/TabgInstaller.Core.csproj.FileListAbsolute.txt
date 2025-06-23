@@ -1,0 +1,12 @@
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\bin\Debug\net8.0-windows\TabgInstaller.Core.deps.json
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\bin\Debug\net8.0-windows\TabgInstaller.Core.dll
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\bin\Debug\net8.0-windows\TabgInstaller.Core.pdb
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.csproj.AssemblyReference.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.AssemblyInfoInputs.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.AssemblyInfo.cs
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.csproj.CoreCompileInputs.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.dll
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\refint\TabgInstaller.Core.dll
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\TabgInstaller.Core.pdb
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.Core\obj\Debug\net8.0-windows\ref\TabgInstaller.Core.dll

@@ -1,0 +1,3 @@
+C:\Users\diene\Downloads\TabgInstaller\ConfigSanitizer\bin\Release\net8.0\win-x64\publish\ConfigSanitizer.pdb
+C:\Users\diene\Downloads\TabgInstaller\ConfigSanitizer\bin\Release\net8.0\win-x64\publish\ConfigSanitizer.dll.config
+C:\Users\diene\Downloads\TabgInstaller\ConfigSanitizer\bin\Release\net8.0\win-x64\publish\ConfigSanitizer.exe

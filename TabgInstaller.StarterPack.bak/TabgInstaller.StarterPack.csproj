@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>TabgInstaller.StarterPack</AssemblyName>
+    <Description>StarterPack mod integrated into TabgInstaller - comprehensive TABG server configuration</Description>
+    <Version>2.1.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>..\TabgInstaller.AntiCheatBypass\Libs\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>..\TabgInstaller.AntiCheatBypass\Libs\BepInEx.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\TabgInstaller.AntiCheatBypass\Libs\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\TabgInstaller.AntiCheatBypass\Libs\UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project> 

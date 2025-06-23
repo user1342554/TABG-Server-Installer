@@ -1,0 +1,256 @@
+<UserControl x:Class="TabgInstaller.Gui.Tabs.StarterPackGrid"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:TabgInstaller.Gui.ViewModels"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="800">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:BoolToVisibilityConverter x:Key="NotBoolToVis" Inverse="True"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="10">
+            <TextBlock Text="StarterPack Configuration" FontSize="18" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="Configure game rules, respawning, loot drops, and more" Foreground="Gray"/>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Content="Install/Update" Width="120" Margin="0,0,5,0" Click="InstallMod_Click" 
+                        ToolTip="Install or update StarterPack mod"/>
+                <Button Content="Uninstall" Width="100" Margin="0,0,5,0" Click="UninstallMod_Click" 
+                        ToolTip="Remove StarterPack mod"/>
+                <TextBlock x:Name="StatusText" Text="Status: Not Installed" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
+        
+        <!-- Configuration Tabs -->
+        <TabControl Grid.Row="1" Margin="10">
+            <!-- Match Settings -->
+            <TabItem Header="Match">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <GroupBox Header="Win Conditions" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <RadioButton x:Name="WinDefault" Content="Default (Last Team Standing)" IsChecked="True" Margin="0,2"/>
+                                <RadioButton x:Name="WinKills" Content="First to X Kills" Margin="0,2"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,2,0,2">
+                                    <TextBlock Text="Kills to Win:" VerticalAlignment="Center" Width="80"/>
+                                    <TextBox x:Name="KillsToWin" Text="30" Width="60" IsEnabled="{Binding ElementName=WinKills, Path=IsChecked}"/>
+                                </StackPanel>
+                                <RadioButton x:Name="WinDebug" Content="Debug Mode" Margin="0,2"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Match Settings" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <CheckBox x:Name="ForceKillOffStart" Content="Force Kill All Players on Start" Margin="0,2"/>
+                                <CheckBox x:Name="DropItemsOnDeath" Content="Drop Items on Death" Margin="0,2"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Match Timeout">
+                            <Grid Margin="5">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Pre-Match Timeout:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" x:Name="PreMatchTimeout" Text="15" Margin="0,2"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Match Timeout:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="PeriMatchTimeout" Text="15" Margin="0,2"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Respawn Settings -->
+            <TabItem Header="Respawn">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <GroupBox Header="Player Settings" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <CheckBox x:Name="CanGoDown" Content="Players Can Go Down" IsChecked="True" Margin="0,2"/>
+                                <CheckBox x:Name="CanLockOut" Content="Players Can Be Locked Out" IsChecked="True" Margin="0,2"/>
+                                <CheckBox x:Name="HealOnKill" Content="Heal on Kill" Margin="0,2"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,2,0,2">
+                                    <TextBlock Text="Heal Amount:" VerticalAlignment="Center" Width="80"/>
+                                    <TextBox x:Name="HealOnKillAmount" Text="20" Width="60" IsEnabled="{Binding ElementName=HealOnKill, Path=IsChecked}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Items Given on Kill" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <TextBlock Text="Format: ItemID:Quantity,ItemID:Quantity (e.g., 0:1,9:90)" Foreground="Gray" Margin="0,0,0,5"/>
+                                <TextBox x:Name="ItemsGivenOnKill" Height="50" TextWrapping="Wrap" AcceptsReturn="True"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Respawn Loadouts">
+                            <StackPanel Margin="5">
+                                <DataGrid x:Name="LoadoutsGrid" Height="150" AutoGenerateColumns="False" CanUserAddRows="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150"/>
+                                        <DataGridTextColumn Header="Rarity" Binding="{Binding Rarity}" Width="60"/>
+                                        <DataGridTextColumn Header="Items (ID:Qty)" Binding="{Binding ItemsString}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock Text="Higher rarity = higher chance. Items format: ID:Qty,ID:Qty" Foreground="Gray" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Ring Settings -->
+            <TabItem Header="Ring">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <GroupBox Header="Ring Positions">
+                            <StackPanel Margin="5">
+                                <DataGrid x:Name="RingPositionsGrid" Height="200" AutoGenerateColumns="False" CanUserAddRows="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="120"/>
+                                        <DataGridTextColumn Header="Rarity" Binding="{Binding Rarity}" Width="60"/>
+                                        <DataGridTextColumn Header="X" Binding="{Binding X}" Width="80"/>
+                                        <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="80"/>
+                                        <DataGridTextColumn Header="Z" Binding="{Binding Z}" Width="80"/>
+                                        <DataGridTextColumn Header="Sizes" Binding="{Binding SizesString}" Width="150"/>
+                                        <DataGridTextColumn Header="Speeds" Binding="{Binding SpeedsString}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock Text="Sizes/Speeds format: value1,value2,value3" Foreground="Gray" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Lobby Settings -->
+            <TabItem Header="Lobby">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <GroupBox Header="Spawn Points" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <TextBlock Text="Valid spawn point indices (comma-separated):" Margin="0,0,0,5"/>
+                                <TextBox x:Name="ValidSpawnPoints" Text="2"/>
+                                <TextBlock Text="Common indices: 0-5 for different spawn locations, 6 for custom" Foreground="Gray" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Custom Spawn Point" Margin="0,0,0,10">
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="X:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" x:Name="CustomSpawnX" Text="0" Margin="5,0"/>
+                                <TextBlock Grid.Column="2" Text="Y:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="3" x:Name="CustomSpawnY" Text="0" Margin="5,0"/>
+                                <TextBlock Grid.Column="4" Text="Z:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="5" x:Name="CustomSpawnZ" Text="0" Margin="5,0"/>
+                            </Grid>
+                        </GroupBox>
+                        
+                        <GroupBox Header="Vote to Start">
+                            <Grid Margin="5">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Percent of Votes:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" x:Name="PercentOfVotes" Text="50" Margin="0,2"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="%" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Min Players:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="MinNumberOfPlayers" Text="2" Margin="0,2"/>
+                                
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Time to Start:" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="2" Grid.Column="1" x:Name="TimeToStart" Text="30" Margin="0,2"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Spell Drop Settings -->
+            <TabItem Header="Spell Drops">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <GroupBox Header="Spell Drop Settings">
+                            <StackPanel Margin="5">
+                                <CheckBox x:Name="SpellDropEnabled" Content="Enable Spell Drops" IsChecked="True" Margin="0,2"/>
+                                
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Min Delay:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="MinSpellDropDelay" Text="180" Margin="0,2" 
+                                             IsEnabled="{Binding ElementName=SpellDropEnabled, Path=IsChecked}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Max Delay:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="MaxSpellDropDelay" Text="420" Margin="0,2"
+                                             IsEnabled="{Binding ElementName=SpellDropEnabled, Path=IsChecked}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                    
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Start Offset:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="StartOffset" Text="30" Margin="0,2"
+                                             IsEnabled="{Binding ElementName=SpellDropEnabled, Path=IsChecked}"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+            <Button Content="Load Config" Width="100" Margin="0,0,5,0" Click="LoadConfig_Click"/>
+            <Button Content="Save Config" Width="100" Margin="0,0,5,0" Click="SaveConfig_Click"/>
+            <Button Content="Reset to Default" Width="120" Click="ResetConfig_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl> 

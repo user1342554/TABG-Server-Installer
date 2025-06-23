@@ -1,0 +1,79 @@
+//Roadwork = -191,132,-205
+//Factory/WW2 = -377,198,-546
+//Snow Castle = -378,171,-774
+//City = -670,118,-22
+//Tall Work = -431,120,59
+//Finland West = -562,119,300
+//Finland East = -445,119,333
+//Actual Castle = -696,140,538
+//Point of Impact = -62,118,583
+//Area 64 = 405,132,473
+//Western = 670,118,592
+//Pyramid = 633,124,240
+//Long Wall = 423,134,90
+//Industry = 102,117,-50
+//Chaos = -11,132,-558
+//Big Work = 339,118,-659
+//Big Power= 759,139,-671
+//Small Power = 382,128,-360
+//I recommend using the config setupfor this BUT if you really want to the format is //name:rarity%location:size,size,.etc/
+//string:int%int,int,int:int,int,etc/
+RingSettings=test:5%500,0,500:1200,300/
+
+//Default, KillsToWin, or Debug
+WinCondition=Debug
+//How many kills to win in KillsToWin mode
+KillsToWin=30
+ForceKillAtStart=True
+
+
+
+//Drop Settings
+DropItemsOnDeath=False
+ItemsGiven=1:10,6:50,131:4,132:1,
+
+//Loadouts are defined using Item IDs and quantities in sets that are divided by forward slashes(int:int,int:int/int:int....)
+//For example to give someone an AK, a red dot, and some normal ammo you'd use AK:5%152:1,38:1,6:200/etc.
+//When a player respawns they will be given a random loadout from the list of loadouts
+Loadouts=blessings:5%91:4,92:1,92:1,92:1,92:1
+
+//Will players be healed when they get a kill
+HealOnKill=False
+//What % of HP will people be healed when they get a kill
+HealOnKillAmount=20
+//Will players on a team together go down or just respawn instantly
+CanGoDown=False
+CanLockOut=False
+
+
+//0(Tall Work),1(Circle Town),2(Western),3(Containers),4(Chaos),5(Factory),
+//For example: 2 would have everyone spawn in Western. 0,2 would have everyone either spawn near Tall Work or Western,
+ValidSpawnPoints=6,
+//If you put 6 in there you will use the custom spawn point,
+//int,int,int,
+CustomSpawnPoint=460,100,-440
+
+
+//Required percent of votes to start
+PercentOfVotes=50
+//Required number of players to start
+MinNumberOfPlayers=2
+//Time after voting for the match to begin
+TimeToStart=30
+
+
+SpelldropEnabled=False
+//Min time in seconds between drops (int)
+MinSpellDropDelay=180
+//Max time in seconds between drops (int)
+MaxSpellDropDelay=420
+//Delay in seconds before first drop spawns (int)
+SpellDropOffset=60
+
+
+//I reccomend keeping these values below 40 min combined. Odd server behaviour has been noticed after that point.
+//Time in minutes that the PRE LOBBY can last for before forcing a restart
+PreMatchTimeout=15
+
+//Time in minutes that the MATCH can last for before forcing a restart
+PeriMatchTimeout=15

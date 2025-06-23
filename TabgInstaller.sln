@@ -1,0 +1,49 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.Core", "TabgInstaller.Core\TabgInstaller.Core.csproj", "{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.Gui", "TabgInstaller.Gui\TabgInstaller.Gui.csproj", "{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.AntiCheatBypass", "TabgInstaller.AntiCheatBypass\TabgInstaller.AntiCheatBypass.csproj", "{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.TestMod", "TabgInstaller.TestMod\TabgInstaller.TestMod.csproj", "{7E27CC01-1033-4E5E-801C-10D1B8CA3B84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigSanitizer", "ConfigSanitizer\ConfigSanitizer.csproj", "{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E27CC01-1033-4E5E-801C-10D1B8CA3B84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E27CC01-1033-4E5E-801C-10D1B8CA3B84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E27CC01-1033-4E5E-801C-10D1B8CA3B84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E27CC01-1033-4E5E-801C-10D1B8CA3B84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {31726910-7B7D-4C9B-850A-F03784044D0C}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,485 @@
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using TabgInstaller.Core.Model;
+using TabgInstaller.Core.Services;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+
+namespace TabgInstaller.Gui.Tabs
+{
+    public partial class StarterPackGrid : UserControl
+    {
+        private string _serverPath = "";
+        private ObservableCollection<LoadoutVM> _loadouts = new ObservableCollection<LoadoutVM>();
+        private ObservableCollection<RingVM> _ringPositions = new ObservableCollection<RingVM>();
+        
+        public StarterPackGrid()
+        {
+            InitializeComponent();
+            LoadoutsGrid.ItemsSource = _loadouts;
+            RingPositionsGrid.ItemsSource = _ringPositions;
+        }
+        
+        public void SetServerPath(string serverPath)
+        {
+            _serverPath = serverPath;
+            CheckModStatus();
+            LoadConfig();
+        }
+        
+        private void CheckModStatus()
+        {
+            if (string.IsNullOrEmpty(_serverPath)) return;
+            
+            var pluginPath = Path.Combine(_serverPath, "BepInEx", "plugins", "TabgInstaller.StarterPack.dll");
+            if (File.Exists(pluginPath))
+            {
+                StatusText.Text = "Status: Installed";
+            }
+            else
+            {
+                StatusText.Text = "Status: Not Installed";
+            }
+        }
+        
+        private void InstallMod_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_serverPath))
+            {
+                MessageBox.Show("Server path not set", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            try
+            {
+                // Copy the mod DLL from the installer's directory to the server's plugins folder
+                var sourcePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TabgInstaller.StarterPack.dll");
+                var destPath = Path.Combine(_serverPath, "BepInEx", "plugins", "TabgInstaller.StarterPack.dll");
+                
+                if (!File.Exists(sourcePath))
+                {
+                    MessageBox.Show("StarterPack mod file not found in installer directory", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                File.Copy(sourcePath, destPath, true);
+                
+                CheckModStatus();
+                MessageBox.Show("StarterPack mod installed successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to install mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void UninstallMod_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_serverPath))
+            {
+                MessageBox.Show("Server path not set", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            try
+            {
+                var pluginPath = Path.Combine(_serverPath, "BepInEx", "plugins", "TabgInstaller.StarterPack.dll");
+                if (File.Exists(pluginPath))
+                {
+                    File.Delete(pluginPath);
+                }
+                
+                CheckModStatus();
+                MessageBox.Show("StarterPack mod uninstalled successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to uninstall mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void LoadConfig_Click(object sender, RoutedEventArgs e)
+        {
+            LoadConfig();
+        }
+        
+        private void LoadConfig()
+        {
+            if (string.IsNullOrEmpty(_serverPath)) return;
+            
+            var configPath = Path.Combine(_serverPath, "BepInEx", "config", "TabgInstaller", "StarterPack.json");
+            if (!File.Exists(configPath)) return;
+            
+            try
+            {
+                var json = File.ReadAllText(configPath);
+                var config = JsonConvert.DeserializeObject<StarterPackConfig>(json);
+                if (config == null) return;
+                
+                // Match Settings
+                switch (config.MatchSettings.WinCondition)
+                {
+                    case WinCondition.Default:
+                        WinDefault.IsChecked = true;
+                        break;
+                    case WinCondition.KillsToWin:
+                        WinKills.IsChecked = true;
+                        break;
+                    case WinCondition.Debug:
+                        WinDebug.IsChecked = true;
+                        break;
+                }
+                KillsToWin.Text = config.MatchSettings.KillsToWin.ToString();
+                ForceKillOffStart.IsChecked = config.MatchSettings.ForceKillOffStart;
+                DropItemsOnDeath.IsChecked = config.DropSettings.DropItemsOnDeath;
+                
+                // Timeout Settings
+                PreMatchTimeout.Text = config.TimeoutSettings.PreMatchTimeout.ToString();
+                PeriMatchTimeout.Text = config.TimeoutSettings.PeriMatchTimeout.ToString();
+                
+                // Respawn Settings
+                CanGoDown.IsChecked = config.PlayerSettings.CanGoDown;
+                CanLockOut.IsChecked = config.PlayerSettings.CanLockOut;
+                HealOnKill.IsChecked = config.PlayerSettings.HealOnKill;
+                HealOnKillAmount.Text = config.PlayerSettings.HealOnKillAmount.ToString();
+                ItemsGivenOnKill.Text = config.DropSettings.ItemsGivenOnKill;
+                
+                // Loadouts
+                _loadouts.Clear();
+                foreach (var loadout in config.RespawnSettings.Loadouts)
+                {
+                    _loadouts.Add(new LoadoutVM(loadout));
+                }
+                
+                // Ring Settings
+                _ringPositions.Clear();
+                foreach (var ring in config.RingSettings.RingPositions)
+                {
+                    _ringPositions.Add(new RingVM(ring));
+                }
+                
+                // Lobby Settings
+                ValidSpawnPoints.Text = string.Join(",", config.LobbySettings.ValidSpawnPoints);
+                CustomSpawnX.Text = config.LobbySettings.CustomSpawnPoint.x.ToString();
+                CustomSpawnY.Text = config.LobbySettings.CustomSpawnPoint.y.ToString();
+                CustomSpawnZ.Text = config.LobbySettings.CustomSpawnPoint.z.ToString();
+                
+                // Vote Settings
+                PercentOfVotes.Text = config.VoteSettings.PercentOfVotes.ToString();
+                MinNumberOfPlayers.Text = config.VoteSettings.MinNumberOfPlayers.ToString();
+                TimeToStart.Text = config.VoteSettings.TimeToStart.ToString();
+                
+                // Spell Drop Settings
+                SpellDropEnabled.IsChecked = config.SpellDropSettings.Enabled;
+                MinSpellDropDelay.Text = config.SpellDropSettings.MinDelay.ToString();
+                MaxSpellDropDelay.Text = config.SpellDropSettings.MaxDelay.ToString();
+                StartOffset.Text = config.SpellDropSettings.StartOffset.ToString();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load config: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void SaveConfig_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_serverPath))
+            {
+                MessageBox.Show("Server path not set", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            try
+            {
+                var config = new StarterPackConfig();
+                
+                // Match Settings
+                if (WinDefault.IsChecked == true)
+                    config.MatchSettings.WinCondition = WinCondition.Default;
+                else if (WinKills.IsChecked == true)
+                    config.MatchSettings.WinCondition = WinCondition.KillsToWin;
+                else if (WinDebug.IsChecked == true)
+                    config.MatchSettings.WinCondition = WinCondition.Debug;
+                
+                config.MatchSettings.KillsToWin = int.TryParse(KillsToWin.Text, out var killsToWin) ? killsToWin : 30;
+                config.MatchSettings.ForceKillOffStart = ForceKillOffStart.IsChecked == true;
+                config.DropSettings.DropItemsOnDeath = DropItemsOnDeath.IsChecked == true;
+                
+                // Timeout Settings
+                config.TimeoutSettings.PreMatchTimeout = float.TryParse(PreMatchTimeout.Text, out var preMatch) ? preMatch : 15f;
+                config.TimeoutSettings.PeriMatchTimeout = float.TryParse(PeriMatchTimeout.Text, out var periMatch) ? periMatch : 15f;
+                
+                // Respawn Settings
+                config.PlayerSettings.CanGoDown = CanGoDown.IsChecked == true;
+                config.PlayerSettings.CanLockOut = CanLockOut.IsChecked == true;
+                config.PlayerSettings.HealOnKill = HealOnKill.IsChecked == true;
+                config.PlayerSettings.HealOnKillAmount = float.TryParse(HealOnKillAmount.Text, out var healAmount) ? healAmount : 20f;
+                config.DropSettings.ItemsGivenOnKill = ItemsGivenOnKill.Text;
+                
+                // Loadouts
+                config.RespawnSettings.Loadouts.Clear();
+                foreach (var loadoutVM in _loadouts)
+                {
+                    config.RespawnSettings.Loadouts.Add(loadoutVM.ToLoadout());
+                }
+                
+                // Ring Settings
+                config.RingSettings.RingPositions.Clear();
+                foreach (var ringVM in _ringPositions)
+                {
+                    config.RingSettings.RingPositions.Add(ringVM.ToRingContainer());
+                }
+                
+                // Lobby Settings
+                var spawnPoints = ValidSpawnPoints.Text.Split(',')
+                    .Select(s => int.TryParse(s.Trim(), out var i) ? i : 2)
+                    .ToArray();
+                config.LobbySettings.ValidSpawnPoints = spawnPoints.Length > 0 ? spawnPoints : new[] { 2 };
+                
+                config.LobbySettings.CustomSpawnPoint = new UnityEngine.Vector3(
+                    float.TryParse(CustomSpawnX.Text, out var x) ? x : 0,
+                    float.TryParse(CustomSpawnY.Text, out var y) ? y : 0,
+                    float.TryParse(CustomSpawnZ.Text, out var z) ? z : 0
+                );
+                
+                // Vote Settings
+                config.VoteSettings.PercentOfVotes = int.TryParse(PercentOfVotes.Text, out var percent) ? percent : 50;
+                config.VoteSettings.MinNumberOfPlayers = int.TryParse(MinNumberOfPlayers.Text, out var minPlayers) ? minPlayers : 2;
+                config.VoteSettings.TimeToStart = int.TryParse(TimeToStart.Text, out var timeToStart) ? timeToStart : 30;
+                
+                // Spell Drop Settings
+                config.SpellDropSettings.Enabled = SpellDropEnabled.IsChecked == true;
+                config.SpellDropSettings.MinDelay = int.TryParse(MinSpellDropDelay.Text, out var minDelay) ? minDelay : 180;
+                config.SpellDropSettings.MaxDelay = int.TryParse(MaxSpellDropDelay.Text, out var maxDelay) ? maxDelay : 420;
+                config.SpellDropSettings.StartOffset = int.TryParse(StartOffset.Text, out var startOffset) ? startOffset : 30;
+                
+                // Save to file
+                var configPath = Path.Combine(_serverPath, "BepInEx", "config", "TabgInstaller", "StarterPack.json");
+                Directory.CreateDirectory(Path.GetDirectoryName(configPath));
+                
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configPath, json);
+                
+                MessageBox.Show("Configuration saved successfully", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save config: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void ResetConfig_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Are you sure you want to reset all settings to default?", "Confirm Reset", 
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                // Reset all controls to default values
+                WinDefault.IsChecked = true;
+                KillsToWin.Text = "30";
+                ForceKillOffStart.IsChecked = false;
+                DropItemsOnDeath.IsChecked = false;
+                PreMatchTimeout.Text = "15";
+                PeriMatchTimeout.Text = "15";
+                CanGoDown.IsChecked = true;
+                CanLockOut.IsChecked = true;
+                HealOnKill.IsChecked = false;
+                HealOnKillAmount.Text = "20";
+                ItemsGivenOnKill.Text = "";
+                _loadouts.Clear();
+                _ringPositions.Clear();
+                _ringPositions.Add(new RingVM { Name = "Default", Rarity = 1, X = 0, Y = 0, Z = 0, SizesString = "4000,1300,300", SpeedsString = "6,6,0" });
+                ValidSpawnPoints.Text = "2";
+                CustomSpawnX.Text = "0";
+                CustomSpawnY.Text = "0";
+                CustomSpawnZ.Text = "0";
+                PercentOfVotes.Text = "50";
+                MinNumberOfPlayers.Text = "2";
+                TimeToStart.Text = "30";
+                SpellDropEnabled.IsChecked = true;
+                MinSpellDropDelay.Text = "180";
+                MaxSpellDropDelay.Text = "420";
+                StartOffset.Text = "30";
+            }
+        }
+    }
+    
+    // View Models for DataGrid binding
+    public class LoadoutVM : INotifyPropertyChanged
+    {
+        private string _name = "";
+        private int _rarity = 1;
+        private string _itemsString = "";
+        
+        public string Name 
+        { 
+            get => _name; 
+            set { _name = value; OnPropertyChanged(nameof(Name)); } 
+        }
+        
+        public int Rarity 
+        { 
+            get => _rarity; 
+            set { _rarity = value; OnPropertyChanged(nameof(Rarity)); } 
+        }
+        
+        public string ItemsString 
+        { 
+            get => _itemsString; 
+            set { _itemsString = value; OnPropertyChanged(nameof(ItemsString)); } 
+        }
+        
+        public LoadoutVM() { }
+        
+        public LoadoutVM(Loadout loadout)
+        {
+            Name = loadout.Name;
+            Rarity = loadout.Rarity;
+            
+            var items = new List<string>();
+            for (int i = 0; i < loadout.ItemIds.Count && i < loadout.ItemQuantities.Count; i++)
+            {
+                items.Add($"{loadout.ItemIds[i]}:{loadout.ItemQuantities[i]}");
+            }
+            ItemsString = string.Join(",", items);
+        }
+        
+        public Loadout ToLoadout()
+        {
+            var loadout = new Loadout
+            {
+                Name = Name,
+                Rarity = Rarity,
+                ItemIds = new List<int>(),
+                ItemQuantities = new List<int>()
+            };
+            
+            if (!string.IsNullOrWhiteSpace(ItemsString))
+            {
+                var items = ItemsString.Split(',');
+                foreach (var item in items)
+                {
+                    var parts = item.Split(':');
+                    if (parts.Length == 2 && 
+                        int.TryParse(parts[0].Trim(), out var id) && 
+                        int.TryParse(parts[1].Trim(), out var qty))
+                    {
+                        loadout.ItemIds.Add(id);
+                        loadout.ItemQuantities.Add(qty);
+                    }
+                }
+            }
+            
+            return loadout;
+        }
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+    
+    public class RingVM : INotifyPropertyChanged
+    {
+        private string _name = "";
+        private int _rarity = 1;
+        private float _x = 0;
+        private float _y = 0;
+        private float _z = 0;
+        private string _sizesString = "4000,1300,300";
+        private string _speedsString = "6,6,0";
+        
+        public string Name 
+        { 
+            get => _name; 
+            set { _name = value; OnPropertyChanged(nameof(Name)); } 
+        }
+        
+        public int Rarity 
+        { 
+            get => _rarity; 
+            set { _rarity = value; OnPropertyChanged(nameof(Rarity)); } 
+        }
+        
+        public float X 
+        { 
+            get => _x; 
+            set { _x = value; OnPropertyChanged(nameof(X)); } 
+        }
+        
+        public float Y 
+        { 
+            get => _y; 
+            set { _y = value; OnPropertyChanged(nameof(Y)); } 
+        }
+        
+        public float Z 
+        { 
+            get => _z; 
+            set { _z = value; OnPropertyChanged(nameof(Z)); } 
+        }
+        
+        public string SizesString 
+        { 
+            get => _sizesString; 
+            set { _sizesString = value; OnPropertyChanged(nameof(SizesString)); } 
+        }
+        
+        public string SpeedsString 
+        { 
+            get => _speedsString; 
+            set { _speedsString = value; OnPropertyChanged(nameof(SpeedsString)); } 
+        }
+        
+        public RingVM() { }
+        
+        public RingVM(RingContainer ring)
+        {
+            Name = ring.Name;
+            Rarity = ring.Rarity;
+            X = ring.Location.x;
+            Y = ring.Location.y;
+            Z = ring.Location.z;
+            SizesString = string.Join(",", ring.Sizes);
+            SpeedsString = string.Join(",", ring.Speeds);
+        }
+        
+        public RingContainer ToRingContainer()
+        {
+            var ring = new RingContainer
+            {
+                Name = Name,
+                Rarity = Rarity,
+                Location = new UnityEngine.Vector3(X, Y, Z)
+            };
+            
+            // Parse sizes
+            var sizes = SizesString.Split(',')
+                .Select(s => int.TryParse(s.Trim(), out var i) ? i : 0)
+                .ToArray();
+            ring.Sizes = sizes.Length > 0 ? sizes : new[] { 4000, 1300, 300 };
+            
+            // Parse speeds
+            var speeds = SpeedsString.Split(',')
+                .Select(s => float.TryParse(s.Trim(), out var f) ? f : 0f)
+                .ToArray();
+            ring.Speeds = speeds.Length > 0 ? speeds : new[] { 6f, 6f, 0f };
+            
+            return ring;
+        }
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+} 

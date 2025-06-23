@@ -1,0 +1,10 @@
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\bin\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.deps.json
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\bin\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.dll
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\bin\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.pdb
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.csproj.AssemblyReference.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.AssemblyInfoInputs.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.AssemblyInfo.cs
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.csproj.CoreCompileInputs.cache
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.dll
+C:\Users\diene\Downloads\TabgInstaller\TabgInstaller.AntiCheatBypass\obj\Debug\netstandard2.0\TabgInstaller.AntiCheatBypass.pdb
