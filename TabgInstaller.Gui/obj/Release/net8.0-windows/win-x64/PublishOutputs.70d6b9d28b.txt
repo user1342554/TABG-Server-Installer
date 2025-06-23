@@ -1,3 +1,0 @@
-C:\Users\diene\Downloads\TABGInstallerV1\TabgInstaller.Gui.pdb
-C:\Users\diene\Downloads\TABGInstallerV1\TabgInstaller.Core.pdb
-C:\Users\diene\Downloads\TABGInstallerV1\TabgInstaller.Gui.exe

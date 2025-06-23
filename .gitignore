@@ -1,0 +1,36 @@
+# Ignore build output and intermediate files
+bin/
+obj/
+out/
+*.exe
+*.dll
+*.pdb
+*.cache
+*.log
+*.vs/
+.vscode/
+*.user
+*.suo
+*.tmp
+*.bak
+# Ignore OS files
+.DS_Store
+Thumbs.db
+# Ignore NuGet packages
+*.nupkg
+# Ignore user-specific files
+*.userprefs
+# Ignore publish folders
+publish/
+# Allow necessary libraries in Libs/
+!*/Libs/*.dll
+# Allow markdown, config, and scripts
+!*.md
+!*.ps1
+!*.bat
+!*.config
+!*.cs
+!*.csproj
+!*.xaml
+!*.json
+!*.sln 
