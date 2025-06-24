@@ -411,6 +411,11 @@ namespace TabgInstaller.Core
         private static bool ShouldKeepItem(string relPath, HashSet<string> whitelist)
         {
             relPath = relPath.Replace('\\', '/');
+
+            // Always preserve user-created Presets directory and its contents
+            if (relPath.Equals("Presets", StringComparison.OrdinalIgnoreCase) || relPath.StartsWith("Presets/", StringComparison.OrdinalIgnoreCase))
+                return true;
+
             foreach (var rule in whitelist)
             {
                 var r = rule.Replace('\\', '/');
