@@ -40,11 +40,11 @@
 The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
 
 ### Supported Providers
-- **OpenAI** (GPT-4, o3, ...)
-- **Anthropic** (Claude 4, ...)
-- **Google** (Gemini)
-- **xAI** (Grok)
-- **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.)
+- **OpenAI** 
+- **Anthropic** 
+- **Google** 
+- **xAI** 
+- **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.) (these are free but realy bad)
 
 ## Project Structure
 
