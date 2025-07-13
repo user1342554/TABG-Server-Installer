@@ -17,21 +17,10 @@
 
 </div>
 
-*An advanced installer, mod‑loader, and AI-powered configuration assistant for **Totally Accurate Battlegrounds** dedicated servers.*
+*An installer, mod‑loader, and AI-powered configuration assistant for **Totally Accurate Battlegrounds** dedicated servers.*
 
 ---
 
-## ✨ Key Features
-
-- **🤖 AI Configuration Assistant** - Natural language server configuration with support for OpenAI, Anthropic, Google, xAI, or free local AI via Ollama
-- **🔧 One-Click Installation** - Automatically sets up BepInEx, StarterPack, and optional mods
-- **📊 Advanced Configuration UI** - Visual editors for all server settings with live validation
-- **🎮 Weapon Spawn Control** - Fine-tune spawn rates for every weapon, item, and blessing
-- **💾 Preset Management** - Save and load configuration presets for different game modes
-- **🛡️ Anti-Cheat Bypass** - Built-in EAC/EOS bypass for dedicated servers
-- **📦 Mod Support** - Easy plugin installation with CitrusLib integration
-
----
 
 ## 🚀 Quick Start
 
@@ -45,18 +34,8 @@
 6. Configure your server using the visual editors
 7. Start your server from the console window
 
-### Option 2: With AI Assistant
 
-1. Run the bootstrap script first:
-   ```powershell
-   .\bootstrap.ps1
-   ```
-2. Follow the standard installation steps above
-3. Click **AI Chat** in the configuration window to use natural language commands
-
----
-
-## 🤖 AI Configuration Assistant
+## AI Configuration Assistant
 
 The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
 
@@ -67,48 +46,7 @@ The installer includes an AI assistant that understands TABG configuration synta
 - **xAI** (Grok)
 - **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.)
 
-### Example Commands
-- "Set the server name to 'Epic TABG Server' and max players to 100"
-- "Enable team mode with 4-player squads"
-- "Configure a sniper-only game mode"
-- "Disable all blessings and increase legendary weapon spawns"
-
-[Full AI documentation →](AI_CHAT_README.md)
-
----
-
-## 🎯 Weapon Spawn Configuration
-
-Fine-tune the spawn rates of all weapons, items, and blessings with the integrated spawn config mod.
-
-### Features
-- Individual weapon multipliers (0.0 - 10.0)
-- Category-based multipliers (e.g., all SMGs, all Snipers)
-- Global spawn rate control
-- Quick presets: Weapons Only, Melee Madness, Sniper Paradise, etc.
-- Visual GUI for easy configuration
-
-[Weapon Config documentation →](TabgInstaller.WeaponSpawnConfig/README.md)
-
----
-
-## 🛠️ Advanced Features
-
-### Server Configuration
-- **Dynamic Settings Editor** - All game_settings.txt parameters with descriptions
-- **Validation** - Real-time validation using TABG's official word list
-- **Hot Reload** - Apply changes without restarting
-- **Backup/Restore** - Automatic configuration backups
-
-### Mod Management
-- **CitrusLib Integration** - Essential modding framework
-- **Plugin Browser** - Easy installation of community mods
-- **Version Management** - Automatic updates for installed mods
-- **Compatibility Checking** - Ensures mod compatibility
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 | Project                             | Type            | Description                                                              |
 | ----------------------------------- | --------------- | ------------------------------------------------------------------------ |
@@ -162,26 +100,8 @@ flowchart TD
     U --> V[Server Running!]
 ```
 
----
 
-## 💻 Command Line Usage
 
-For automated deployments or CI/CD pipelines:
-
-```powershell
-dotnet TabgInstaller.Core.dll \
-  --steamDir "D:\SteamLibrary" \
-  --serverDir "D:\SteamLibrary\steamapps\common\TotallyAccurateBattlegroundsDedicatedServer" \
-  --serverName "My TABG Server" \
-  --serverPassword "secret123" \
-  --serverDescription "Epic battles await!" \
-  --citrusTag v3.2.0 \
-  --installCommunityServer true \
-  --skipAntiCheatBypass false \
-  --installWeaponConfig true
-```
-
----
 
 ## 🔧 Requirements
 
@@ -190,26 +110,6 @@ dotnet TabgInstaller.Core.dll \
 - Steam with TABG Dedicated Server installed
 - (Optional) API key for AI features or ~4GB disk space for local AI
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please check out our [contributing guidelines](CONTRIBUTING.md) and feel free to submit pull requests.
-
-### Development Setup
-1. Clone the repository
-2. Open `TabgInstaller.sln` in Visual Studio 2022
-3. Restore NuGet packages
-4. Build the solution
-
----
-
-## 📚 Documentation
-
-- [AI Chat Feature Guide](AI_CHAT_README.md)
-- [Weapon Configuration Guide](TabgInstaller.WeaponSpawnConfig/README.md)
-- [StarterPack Configuration](docs/starter-pack.md)
-- [Troubleshooting](docs/troubleshooting.md)
 
 ---
 
@@ -218,7 +118,7 @@ Contributions are welcome! Please check out our [contributing guidelines](CONTRI
 - **Landfall Games** - For creating TABG
 - **BepInEx Team** - For the modding framework
 - **CyrusTheLesser** - For CitrusLib
-- **ContagiouslyStupid** - For the original StarterPack
+- **ContagiouslyStupid** - For the StarterPack
 - All contributors and the TABG modding community
 
 ---
