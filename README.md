@@ -26,12 +26,12 @@
 
 ### Option 1: Standard Installation
 
-1. Download the latest **`TabgInstaller.Gui.zip`** from the [releases page](../../releases)
+1. Download the latest **`TabgInstaller.zip`** from the [releases page](../../releases)
 2. Extract and run **`TabgInstaller.exe`**
 3. The installer will auto-detect your Steam library or you can browse manually
 4. Enter your server details and select optional plugins
 5. Click **Install** and wait for the process to complete
-6. Configure your server using the visual editors
+6. Configure your server using the visual editors or with the Ai 
 7. Start your server from the console window
 
 
@@ -40,8 +40,8 @@
 The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
 
 ### Supported Providers
-- **OpenAI** (GPT-4, o3)
-- **Anthropic** (Claude 4)
+- **OpenAI** (GPT-4, o3, ...)
+- **Anthropic** (Claude 4, ...)
 - **Google** (Gemini)
 - **xAI** (Grok)
 - **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.)
@@ -119,9 +119,7 @@ flowchart TD
 - **BepInEx Team** - For the modding framework
 - **CyrusTheLesser** - For CitrusLib
 - **ContagiouslyStupid** - For the StarterPack
-- All contributors and the TABG modding community
 
----
 
 ## 📄 License
 
