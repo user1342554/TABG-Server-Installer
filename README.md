@@ -20,21 +20,6 @@
 *An installer, mod‑loader, and AI-powered configuration assistant for **Totally Accurate Battlegrounds** dedicated servers.*
 
 ---
-
-
-## 🚀 Quick Start
-
-### Option 1: Standard Installation
-
-1. Download the latest **`TabgInstaller.zip`** from the [releases page](../../releases)
-2. Extract and run **`TabgInstaller.exe`**
-3. The installer will auto-detect your Steam library or you can browse manually
-4. Enter your server details and select optional plugins
-5. Click **Install** and wait for the process to complete
-6. Configure your server using the visual editors or with the Ai 
-7. Start your server from the console window
-
-
 ## AI Configuration Assistant
 
 The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
@@ -45,19 +30,6 @@ The installer includes an AI assistant that understands TABG configuration synta
 - **Google** 
 - **xAI** 
 - **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.) (these are free but realy bad)
-
-## Project Structure
-
-| Project                             | Type            | Description                                                              |
-| ----------------------------------- | --------------- | ------------------------------------------------------------------------ |
-| **TabgInstaller.Core**              | Library         | Core installation logic, GitHub API, configuration management            |
-| **TabgInstaller.Gui**               | WPF App         | Main installer UI with tabs for settings, presets, and AI chat          |
-| **TabgInstaller.AntiCheatBypass**   | BepInEx Plugin  | Harmony patches to bypass EAC/EOS for dedicated servers                 |
-| **TabgInstaller.WeaponSpawnConfig** | BepInEx Plugin  | Runtime weapon spawn rate configuration                                  |
-| **TabgInstaller.StarterPack**       | BepInEx Plugin  | Essential server modifications (respawning, lobbies, etc.)              |
-| **TabgInstaller.TestMod**           | BepInEx Plugin  | Example mod for developers                                               |
-| **ConfigSanitizer**                 | Console App     | Fixes malformed JSON in configuration files                             |
-
 ---
 
 ## 📊 Installation Flow
