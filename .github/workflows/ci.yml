@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore TABG-Server-Installer-/TabgInstaller.sln
+
+    - name: Build
+      run: dotnet build TABG-Server-Installer-/TabgInstaller.sln --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test TABG-Server-Installer-/TabgInstaller.sln --no-build --verbosity normal
+
+    - name: Run API smoke tests (if keys available)
+      if: ${{ env.OPENAI_KEY != '' || env.ANTHROPIC_KEY != '' }}
+      env:
+        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_KEY }}
+      run: |
+        Write-Host "Running API smoke tests..."
+        # Add actual test commands here when tests are implemented
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: tabg-installer-build
+        path: |
+          TABG-Server-Installer-/TabgInstaller.Gui/bin/Release/net8.0-windows/
+          TABG-Server-Installer-/models.json
+          Knowledge/ 

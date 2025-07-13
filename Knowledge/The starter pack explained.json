@@ -1,0 +1,68 @@
+{
+    "template_lines": [
+      "RingSettings=",
+      "WinCondition=Default",
+      "KillsToWin=0",
+      "ForceKillAtStart=True",
+      "DropItemsOnDeath=True",
+      "ItemsGiven=1:1,2:2,3:3,4:4,6:5,7:6,8:7,9:8,11:9,12:10,131:11,132:12,",
+      "Loadouts=",
+      "HealOnKill=True",
+      "HealOnKillAmount=20",
+      "CanGoDown=True",
+      "CanLockOut=True",
+      "ValidSpawnPoints=0,1,2,3,4,5,",
+      "CustomSpawnPoint=",
+      "PercentOfVotes=50",
+      "SpelldropEnabled=True",
+      "MinSpellDropDelay=180",
+      "MaxSpellDropDelay=420",
+      "SpellDropOffset=30",
+      "PreMatchTimeout=15",
+      "PeriMatchTimeout=15"
+    ],
+  
+    "settings": {
+      "RingSettings":        { "line_format": "RingSettings=",        "type": "string",  "description": "string:int%int,int,int:int,int.../" },
+  
+      "WinCondition":        { "line_format": "WinCondition=Default", "type": "string",  "allowed": ["Default","KillsToWin","Debug"] },
+      "KillsToWin":          { "line_format": "KillsToWin=0",         "type": "integer" },
+      "ForceKillAtStart":    { "line_format": "ForceKillAtStart=True","type": "boolean","default": true },
+  
+      "DropItemsOnDeath":    { "line_format": "DropItemsOnDeath=True","type": "boolean","default": true },
+      "ItemsGiven":          { "line_format": "ItemsGiven=",
+                               "type": "string",
+                               "syntax": "comma-separated itemID:amount pairs, trailing comma allowed" },
+  
+      "Loadouts":            { "line_format": "Loadouts=",
+                               "type": "string",
+                               "syntax": "name:percent% itemID:qty,itemID:qty/…/",
+                               "description": "Each slash-separated set is one loadout. Percent = chance to roll that set." },
+  
+      "HealOnKill":          { "line_format": "HealOnKill=True",      "type": "boolean","default": true },
+      "HealOnKillAmount":    { "line_format": "HealOnKillAmount=20",  "type": "integer","range":[0,100] },
+  
+      "CanGoDown":           { "line_format": "CanGoDown=True",       "type": "boolean","default": true },
+      "CanLockOut":          { "line_format": "CanLockOut=True",      "type": "boolean","default": true },
+  
+      "ValidSpawnPoints":    { "line_format": "ValidSpawnPoints=",
+                               "type": "intArray",
+                               "range": [0,6],
+                               "syntax": "comma-separated ints, optional trailing comma" },
+  
+      "CustomSpawnPoint":    { "line_format": "CustomSpawnPoint=",    "type": "vector3", "syntax": "x,y,z or blank" },
+  
+      "PercentOfVotes":      { "line_format": "PercentOfVotes=50",    "type": "integer","range":[0,100] },
+      "MinNumberOfPlayers":  { "line_format": "MinNumberOfPlayers=2", "type": "integer" },
+      "TimeToStart":         { "line_format": "TimeToStart=30",       "type": "integer","units":"seconds" },
+  
+      "SpelldropEnabled":    { "line_format": "SpelldropEnabled=True","type": "boolean","default": true },
+      "MinSpellDropDelay":   { "line_format": "MinSpellDropDelay=180","type": "integer","units":"seconds" },
+      "MaxSpellDropDelay":   { "line_format": "MaxSpellDropDelay=420","type": "integer","units":"seconds" },
+      "SpellDropOffset":     { "line_format": "SpellDropOffset=30",   "type": "integer","units":"seconds" },
+  
+      "PreMatchTimeout":     { "line_format": "PreMatchTimeout=15",   "type": "integer","units":"minutes" },
+      "PeriMatchTimeout":    { "line_format": "PeriMatchTimeout=15",  "type": "integer","units":"minutes" }
+    }
+  }
+  

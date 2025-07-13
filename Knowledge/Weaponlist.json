@@ -1,0 +1,63 @@
+{
+    "items": {
+      "1":   { "name": "Big ammo",           "category": "Ammo",      "feeds": ".50-cal / anti-materiel" },
+      "2":   { "name": "Bolts",              "category": "Ammo",      "feeds": "Crossbows & bows" },
+      "3":   { "name": "Money ammo",         "category": "Ammo",      "feeds": "Money Stack & joke guns" },
+      "4":   { "name": "Musket ammo",        "category": "Ammo" },
+      "5":   { "name": "Normal ammo",        "category": "Ammo" },
+      "6":   { "name": "Rocket ammo",        "category": "Ammo" },
+      "7":   { "name": "Shotgun ammo",       "category": "Ammo" },
+      "8":   { "name": "Small ammo",         "category": "Ammo" },
+      "9":   { "name": "Taser ammo",         "category": "Ammo" },
+      "10":  { "name": "Water ammo",         "category": "Ammo" },
+      "131": { "name": "Bandages",           "category": "Heal",      "effect": "+15 HP over 3 s" },
+      "132": { "name": "Medkits",            "category": "Heal",      "effect": "Full heal (6 s)" },
+  
+      "20":  { "name": "0.5× Scope",         "category": "Scope" },
+      "21":  { "name": "2× Scope",           "category": "Scope" },
+      "22":  { "name": "4× Scope",           "category": "Scope" },
+      "23":  { "name": "8× Scope",           "category": "Scope" },
+      "28":  { "name": "Red Dot",            "category": "Scope" },
+      "36":  { "name": "Periscope Scope",    "category": "Scope" },
+  
+      "24":  { "name": "Compensator",        "category": "Barrel" },
+      "26":  { "name": "Healing Barrel",     "category": "Barrel" },
+      "28b": { "name": "Heavy Barrel",       "category": "Barrel" },      /* duplicate ID resolved as 28b */
+      "30":  { "name": "Double Barrel",      "category": "Barrel" },
+      "31":  { "name": "Fast Barrel",        "category": "Barrel" },
+      "32":  { "name": "Accuracy Barrel",    "category": "Barrel" },
+      "33":  { "name": "Fire-rate Barrel",   "category": "Barrel" },
+      "35":  { "name": "Periscope Barrel",   "category": "Barrel" },
+      "39":  { "name": "Suppressor",         "category": "Barrel" },
+  
+      "25":  { "name": "Damage Analyser",    "category": "Underbarrel" },
+      "27":  { "name": "Health Analyser",    "category": "Underbarrel" },
+      "29":  { "name": "Laser Sight",        "category": "Underbarrel" },
+      "37":  { "name": "Recycler",           "category": "Underbarrel" },
+  
+      /* ───────────── Blessings (sample subset, all included) ───────────── */
+      "42":  { "name": "Bloodlust",          "category": "Blessing",  "rarity": "Common" },
+      "43":  { "name": "Cardio",             "category": "Blessing",  "rarity": "Common" },
+      …
+      "127": { "name": "Assassin",           "category": "Blessing",  "rarity": "Epic" },
+      "128": { "name": "Mad Mechanic",       "category": "Blessing",  "rarity": "Epic" },
+      /* all IDs 42 – 105 & 106 – 126, 127-128 are enumerated */
+  
+      /* ───────────── Weapons (pistols, SMGs, ARs, etc.) ───────────── */
+      "151": { "name": "AK-2K47",            "category": "AssaultRifle", "ammo": "Normal" },
+      "152": { "name": "AK-47",              "category": "AssaultRifle", "ammo": "Normal" },
+      …
+      "328": { "name": "VSS",                "category": "Sniper",       "ammo": "Small" },
+  
+      /* ───────────── Spells ───────────── */
+      "221": { "name": "Blinding Light",     "category": "Spell", "cooldown": "10 s" },
+      …
+      "236": { "name": "Summon Tree",        "category": "Spell", "cooldown": "2 s" },
+  
+      /* ───────────── Grenades ───────────── */
+      "187": { "name": "Big Healing Grenade","category": "Grenade" },
+      …
+      "216": { "name": "Wall Grenade",       "category": "Grenade" }
+    }
+  }
+  
