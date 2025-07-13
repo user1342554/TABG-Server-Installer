@@ -1,0 +1,82 @@
+﻿<Page x:Class="StarterPackSetup.RespawnConfig"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:StarterPackSetup"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="RespawnConfig">
+
+    <Grid>
+        <StackPanel Margin="10">
+            <Button Content="Back To Menu" Grid.Column="0" Margin="0,10,10,10" VerticalAlignment="Top" HorizontalAlignment="Left" Width="120" Click="BtnBack_Click"/>
+
+            <CheckBox Name="checkBox2" Content="While on a team, will you go into the downed state?" Margin="0 10 0 10"/>
+
+            <CheckBox Name="checkBox3" Content="When you are locked out will you stay dead?" Margin="0 10 0 10"/>
+
+            <CheckBox Name="checkBox4" Content ="Will you be force killed at the start of the game?" Margin="0 10 0 10"/>
+
+            <!--<CheckBox Name ="BufferCheckBox" Content="Should there be an attempt to create a buffer area for respawning near other players?" Margin="0 10 0 10"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBox Name="BufferSizeTextBox" Width="64" HorizontalAlignment="Left" IsEnabled="False"/>
+                <TextBlock Text="How large should the area be?" Margin="10,0,0,0"/>
+            </StackPanel>-->
+
+            <CheckBox Name="ItemDropCheckbox" Content ="Will your items drop when you die?" Margin="0,10,0,0"/>
+            <TextBlock Text="What items are given on kill?" Margin="10,10,0,0"/>
+            <StackPanel Name="ItemGivenBody" Orientation="Horizontal" HorizontalAlignment="Left">
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Big" Margin="5,5,5,10"/>
+                    <TextBox Name="BigTextbox"  Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Bolts" Margin="5,5,5,10"/>
+                    <TextBox Name="BoltTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Money" Margin="5,5,5,10"/>
+                    <TextBox Name="MoneyTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Musket" Margin="5,5,5,10"/>
+                    <TextBox Name="MusketTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Normal" Margin="5,5,5,10"/>
+                    <TextBox Name="NormalTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Rocket" Margin="5,5,5,10"/>
+                    <TextBox Name="RocketTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Shotgun" Margin="5,5,5,10"/>
+                    <TextBox Name="ShotgunTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Small" Margin="5,5,5,10"/>
+                    <TextBox Name="SmallTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Taser" Margin="5,5,5,10"/>
+                    <TextBox Name="TaserTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Water" Margin="5,5,5,10"/>
+                    <TextBox Name="WaterTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="50,5,5,10">
+                    <TextBlock Text="Bandages" Margin="5,5,5,10"/>
+                    <TextBox Name="BandageTextbox" Width="30"/>
+                </StackPanel>
+                <StackPanel Margin="5,5,5,10">
+                    <TextBlock Text="Medkits" Margin="5,5,5,10"/>
+                    <TextBox Name="MedkitTextbox" Width="30"/>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+        <Button Name="SaveBtn" VerticalAlignment="Bottom" HorizontalAlignment="Center" Content="Save Changes" Margin="10,10,10,10" Width="90" Click="SaveBtn_Click"/>
+    </Grid>
+</Page>

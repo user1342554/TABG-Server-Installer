@@ -1,0 +1,386 @@
+﻿<Page x:Class="StarterPackSetup.LoadoutConfig"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:StarterPackSetup"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="LoadoutConfig">
+
+    <Grid Background="Black">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <!-- Categories and Items TreeView -->
+        <ScrollViewer Grid.Column="0" Margin="0,0,0,40" >
+            <TreeView x:Name="categoriesTreeView">
+                <TreeViewItem Header="Ammo">
+                    <TreeViewItem Header="Big Ammo" Tag="1"/>
+                    <TreeViewItem Header="Bolts" Tag="2"/>
+                    <TreeViewItem Header="Money Ammo" Tag="3"/>
+                    <TreeViewItem Header="Musket Ammo" Tag="4"/>
+                    <TreeViewItem Header="Normal Ammo" Tag="6"/>
+                    <TreeViewItem Header="Rocket Ammo" Tag="7"/>
+                    <TreeViewItem Header="Shotgun Ammo" Tag="8"/>
+                    <TreeViewItem Header="Small Ammo" Tag="9"/>
+                    <TreeViewItem Header="Taser Ammo" Tag="11"/>
+                    <TreeViewItem Header="Water Ammo" Tag="12"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Healing">
+                    <TreeViewItem Header="Bandage" Tag="131"/>
+                    <TreeViewItem Header="Medkit" Tag="132"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Attachments">
+                    <TreeViewItem Header="Scopes">
+                        <TreeViewItem Header="Red Dot" Tag="38"/>
+                        <TreeViewItem Header="0.5x Scope" Tag="20"/>
+                        <TreeViewItem Header="2x Scope" Tag="21"/>
+                        <TreeViewItem Header="4x Scope" Tag="22"/>
+                        <TreeViewItem Header="8x Scope" Tag="23"/>
+                        <TreeViewItem Header="Periscope" Tag="36"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Barrels">
+                        <TreeViewItem Header="Compensator" Tag="24"/>
+                        <TreeViewItem Header="Suppressor" Tag="39"/>
+                        <TreeViewItem Header="Suppressor 2" Tag="40"/>
+                        <TreeViewItem Header="Healing Barrel" Tag="26"/>
+                        <TreeViewItem Header="Double Barrel" Tag="30"/>
+                        <TreeViewItem Header="Fast Barrel" Tag="31"/>
+                        <TreeViewItem Header="Accuracy Barrel" Tag="32"/>
+                        <TreeViewItem Header="Fire Rate Barrel" Tag="33"/>
+                        <TreeViewItem Header="Periscope Barrel" Tag="35"/>
+                        <TreeViewItem Header="Heavy Barrel" Tag="28"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Underbarrel">
+                        <TreeViewItem Header="Damage Analyser" Tag="25"/>
+                        <TreeViewItem Header="Health Analyser" Tag="27"/>
+                        <TreeViewItem Header="Laser Sight" Tag="29"/>
+                        <TreeViewItem Header="Recycler" Tag="37"/>
+                    </TreeViewItem>
+                </TreeViewItem>
+                <TreeViewItem Header="Blessings">
+                    <TreeViewItem Header="Common">
+                        <TreeViewItem Header="Common Bloodlust" Tag="42"/>
+                        <TreeViewItem Header="Common Cardio" Tag="43"/>
+                        <TreeViewItem Header="Common Dash" Tag="44"/>
+                        <TreeViewItem Header="Common Health" Tag="45"/>
+                        <TreeViewItem Header="Common Hunt" Tag="56"/>
+                        <TreeViewItem Header="Common Ice" Tag="46"/>
+                        <TreeViewItem Header="Common Jump" Tag="47"/>
+                        <TreeViewItem Header="Common Poison" Tag="48"/>
+                        <TreeViewItem Header="Common Recycling" Tag="49"/>
+                        <TreeViewItem Header="Common Regeneration" Tag="50"/>
+                        <TreeViewItem Header="Common Relax" Tag="51"/>
+                        <TreeViewItem Header="Common Shield" Tag="52"/>
+                        <TreeViewItem Header="Common Speed" Tag="53"/>
+                        <TreeViewItem Header="Common Spray" Tag="54"/>
+                        <TreeViewItem Header="Common Storm" Tag="55"/>
+                        <TreeViewItem Header="Common Vampire" Tag="57"/>
+                        <TreeViewItem Header="Common Weapon Mastery" Tag="58"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Rare">
+                        <TreeViewItem Header="Rare Airstrike" Tag="106"/>
+                        <TreeViewItem Header="Rare Bloodlust" Tag="107"/>
+                        <TreeViewItem Header="Rare Cardio" Tag="108"/>
+                        <TreeViewItem Header="Rare Dash" Tag="109"/>
+                        <TreeViewItem Header="Rare Health" Tag="110"/>
+                        <TreeViewItem Header="Rare Hunt" Tag="124"/>
+                        <TreeViewItem Header="Rare Ice" Tag="111"/>
+                        <TreeViewItem Header="Rare Insight" Tag="112"/>
+                        <TreeViewItem Header="Rare Jump" Tag="113"/>
+                        <TreeViewItem Header="Rare Lit Beats" Tag="114"/>
+                        <TreeViewItem Header="Rare Poison" Tag="115"/>
+                        <TreeViewItem Header="Rare Pull" Tag="116"/>
+                        <TreeViewItem Header="Rare Recycling" Tag="117"/>
+                        <TreeViewItem Header="Rare Regeneration" Tag="118"/>
+                        <TreeViewItem Header="Rare Relax" Tag="119"/>
+                        <TreeViewItem Header="Rare Shield" Tag="120"/>
+                        <TreeViewItem Header="Rare Speed" Tag="121"/>
+                        <TreeViewItem Header="Rare Spray" Tag="122"/>
+                        <TreeViewItem Header="Rare Storm" Tag="123"/>
+                        <TreeViewItem Header="Rare Vampire" Tag="125"/>
+                        <TreeViewItem Header="Rare Weapon Mastery" Tag="126"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Epic">
+                        <TreeViewItem Header="Epic Battlecry" Tag="59"/>
+                        <TreeViewItem Header="Epic Bloodlust" Tag="60"/>
+                        <TreeViewItem Header="Epic Cardio" Tag="61"/>
+                        <TreeViewItem Header="Epic Charge" Tag="62"/>
+                        <TreeViewItem Header="Epic Dash" Tag="63"/>
+                        <TreeViewItem Header="Epic Healing Words" Tag="64"/>
+                        <TreeViewItem Header="Epic Health" Tag="65"/>
+                        <TreeViewItem Header="Epic Hunt" Tag="79"/>
+                        <TreeViewItem Header="Epic Ice" Tag="66"/>
+                        <TreeViewItem Header="Epic Jump" Tag="67"/>
+                        <TreeViewItem Header="Epic Lit Beats" Tag="68"/>
+                        <TreeViewItem Header="Epic Poison" Tag="69"/>
+                        <TreeViewItem Header="Epic Recycling" Tag="70"/>
+                        <TreeViewItem Header="Epic Regeneration" Tag="71"/>
+                        <TreeViewItem Header="Epic Relax" Tag="72"/>
+                        <TreeViewItem Header="Epic Shield" Tag="73"/>
+                        <TreeViewItem Header="Epic Small" Tag="74"/>
+                        <TreeViewItem Header="Epic Speed" Tag="75"/>
+                        <TreeViewItem Header="Epic Spray" Tag="76"/>
+                        <TreeViewItem Header="Epic Stormcall" Tag="77"/>
+                        <TreeViewItem Header="Epic Storm" Tag="78"/>
+                        <TreeViewItem Header="Epic Vampire" Tag="80"/>
+                        <TreeViewItem Header="Epic Weapon Mastery" Tag="81"/>
+                        <TreeViewItem Header="Epic Words of Justice" Tag="82"/>
+                        <TreeViewItem Header="Assassin" Tag="127"/>
+                        <TreeViewItem Header="Mad Mechanic" Tag="128"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Legendary">
+                        <TreeViewItem Header="Legendary Battlecry" Tag="83"/>
+                        <TreeViewItem Header="Legendary Bloodlust" Tag="84"/>
+                        <TreeViewItem Header="Legendary Cardio" Tag="85"/>
+                        <TreeViewItem Header="Legendary Charge" Tag="86"/>
+                        <TreeViewItem Header="Legendary Dash" Tag="87"/>
+                        <TreeViewItem Header="Legendary Healing Words" Tag="88"/>
+                        <TreeViewItem Header="Legendary Health" Tag="89"/>
+                        <TreeViewItem Header="Legendary Hunt" Tag="102"/>
+                        <TreeViewItem Header="Legendary Ice" Tag="90"/>
+                        <TreeViewItem Header="Legendary Jump" Tag="91"/>
+                        <TreeViewItem Header="Legendary Lit Beats" Tag="92"/>
+                        <TreeViewItem Header="Legendary Poison" Tag="93"/>
+                        <TreeViewItem Header="Legendary Recycling" Tag="94"/>
+                        <TreeViewItem Header="Legendary Regen" Tag="95"/>
+                        <TreeViewItem Header="Legendary Relax" Tag="96"/>
+                        <TreeViewItem Header="Legendary Shield" Tag="97"/>
+                        <TreeViewItem Header="Legendary Speed" Tag="98"/>
+                        <TreeViewItem Header="Legendary Spray" Tag="99"/>
+                        <TreeViewItem Header="Legendary Stormcall" Tag="100"/>
+                        <TreeViewItem Header="Legendary Storm" Tag="101"/>
+                        <TreeViewItem Header="Legendary Vampire" Tag="103"/>
+                        <TreeViewItem Header="Legendary Weapon Mastery" Tag="104"/>
+                        <TreeViewItem Header="Legendary Words Of Justice" Tag="105"/>
+                    </TreeViewItem>
+                </TreeViewItem>
+                <TreeViewItem Header="Pistols">
+                    <TreeViewItem Header="Beretta" Tag="264"/>
+                    <TreeViewItem Header="Crossbow Pistol" Tag="265"/>
+                    <TreeViewItem Header="Desert Eagle" Tag="266"/>
+                    <TreeViewItem Header="Flintlock" Tag="267"/>
+                    <TreeViewItem Header="Taser Flintlock" Tag="268"/>
+                    <TreeViewItem Header="Auto Revolver" Tag="269"/>
+                    <TreeViewItem Header="Wind Up Pistol" Tag="270"/>
+                    <TreeViewItem Header="Glock" Tag="271"/>
+                    <TreeViewItem Header="Glue Gun" Tag="272"/>
+                    <TreeViewItem Header="Hand Gun" Tag="273"/>
+                    <TreeViewItem Header="Hand Cannon" Tag="274"/>
+                    <TreeViewItem Header="Liberating M1911" Tag="275"/>
+                    <TreeViewItem Header="Luger" Tag="276"/>
+                    <TreeViewItem Header="M1911" Tag="277"/>
+                    <TreeViewItem Header="Real Gun" Tag="278"/>
+                    <TreeViewItem Header="Revolver" Tag="280"/>
+                    <TreeViewItem Header="Holy Revolver" Tag="281"/>
+                    <TreeViewItem Header="Reverse Revolver" Tag="282"/>
+                    <TreeViewItem Header="Hardballer" Tag="283"/>
+                    <TreeViewItem Header="Taser" Tag="284"/>
+                </TreeViewItem>
+                <TreeViewItem Header="SMGs">
+                    <TreeViewItem Header="AKS" Tag="302"/>
+                    <TreeViewItem Header="Money Mac" Tag="304"/>
+                    <TreeViewItem Header="Glockinator" Tag="305"/>
+                    <TreeViewItem Header="Liberating Thompson" Tag="306"/>
+                    <TreeViewItem Header="Thompson" Tag="307"/>
+                    <TreeViewItem Header="Mac 10" Tag="308"/>
+                    <TreeViewItem Header="MP40" Tag="309"/>
+                    <TreeViewItem Header="MP5" Tag="310"/>
+                    <TreeViewItem Header="P90" Tag="311"/>
+                    <TreeViewItem Header="PPSH" Tag="312"/>
+                    <TreeViewItem Header="Tec 9" Tag="313"/>
+                    <TreeViewItem Header="UMP" Tag="314"/>
+                    <TreeViewItem Header="Vector" Tag="315"/>
+                    <TreeViewItem Header="Z4" Tag="316"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Assault Rifles">
+                    <TreeViewItem Header="AK2K" Tag="151"/>
+                    <TreeViewItem Header="AK47" Tag="152"/>
+                    <TreeViewItem Header="AUG" Tag="153"/>
+                    <TreeViewItem Header="Beam AR" Tag="154"/>
+                    <TreeViewItem Header="Burstgun" Tag="155"/>
+                    <TreeViewItem Header="Cursed Famas" Tag="157"/>
+                    <TreeViewItem Header="Famas" Tag="156"/>
+                    <TreeViewItem Header="H1" Tag="158"/>
+                    <TreeViewItem Header="Liberating M16" Tag="159"/>
+                    <TreeViewItem Header="M16" Tag="160"/>
+                    <TreeViewItem Header="MP44" Tag="161"/>
+                    <TreeViewItem Header="ScarH" Tag="162"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Special Weapons">
+                    <TreeViewItem Header="Auto Crossbow" Tag="163"/>
+                    <TreeViewItem Header="Balloon Crossbow" Tag="164"/>
+                    <TreeViewItem Header="Crossbow" Tag="169"/>
+                    <TreeViewItem Header="Taser Crossbow" Tag="170"/>
+                    <TreeViewItem Header="Firework Crossbow" Tag="171"/>
+                    <TreeViewItem Header="Gaussbow" Tag="172"/>
+                    <TreeViewItem Header="The Promise" Tag="184"/>
+                    <TreeViewItem Header="Grappling Hook" Tag="173"/>
+                    <TreeViewItem Header="Harpoon" Tag="174"/>
+                    <TreeViewItem Header="Boss Weapon Full Auto" Tag="165"/>
+                    <TreeViewItem Header="Boss Weapon Grenade Launcher" Tag="166"/>
+                    <TreeViewItem Header="Money Stack" Tag="180"/>
+                    <TreeViewItem Header="Water Gun" Tag="185"/>
+                    <TreeViewItem Header="Really Big Deagle" Tag="279"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Snipers">
+                    <TreeViewItem Header="Beam DMR" Tag="285"/>
+                    <TreeViewItem Header="FAL" Tag="286"/>
+                    <TreeViewItem Header="Garand" Tag="287"/>
+                    <TreeViewItem Header="Liberating Garand" Tag="288"/>
+                    <TreeViewItem Header="M14" Tag="289"/>
+                    <TreeViewItem Header="S7" Tag="290"/>
+                    <TreeViewItem Header="Winchester" Tag="291"/>
+                    <TreeViewItem Header="AWPS" Tag="303"/>
+                    <TreeViewItem Header="AWP" Tag="317"/>
+                    <TreeViewItem Header="Taser AWP" Tag="318"/>
+                    <TreeViewItem Header="Barret" Tag="319"/>
+                    <TreeViewItem Header="Beam Sniper" Tag="320"/>
+                    <TreeViewItem Header="Kar98" Tag="321"/>
+                    <TreeViewItem Header="Liberating Barret" Tag="322"/>
+                    <TreeViewItem Header="Musket" Tag="323"/>
+                    <TreeViewItem Header="Taser Musket" Tag="324"/>
+                    <TreeViewItem Header="Really Big Barret" Tag="325"/>
+                    <TreeViewItem Header="Sniper Shotgun" Tag="326"/>
+                    <TreeViewItem Header="Two Shot" Tag="327"/>
+                    <TreeViewItem Header="VSS" Tag="328"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Shotguns">
+                    <TreeViewItem Header="AA12" Tag="292"/>
+                    <TreeViewItem Header="Blunderbuss" Tag="293"/>
+                    <TreeViewItem Header="Sawed Off Shotgun" Tag="294"/>
+                    <TreeViewItem Header="Flying Blunderbuss" Tag="295"/>
+                    <TreeViewItem Header="Liberating AA12" Tag="296"/>
+                    <TreeViewItem Header="Mossberg" Tag="297"/>
+                    <TreeViewItem Header="Mossberg 5000" Tag="298"/>
+                    <TreeViewItem Header="Taser Mossberg" Tag="299"/>
+                    <TreeViewItem Header="Rainmaker" Tag="300"/>
+                    <TreeViewItem Header="Arnold" Tag="301"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Heavy">
+                    <TreeViewItem Header="Leaf Blower" Tag="175"/>
+                    <TreeViewItem Header="Liberating Minigun" Tag="176"/>
+                    <TreeViewItem Header="Megagun" Tag="177"/>
+                    <TreeViewItem Header="Minigun" Tag="178"/>
+                    <TreeViewItem Header="Taser Minigun" Tag="183"/>
+                    <TreeViewItem Header="Missile Launcher" Tag="179"/>
+                    <TreeViewItem Header="Smoke Rocket Launcher" Tag="181"/>
+                    <TreeViewItem Header="Rocket Launcher" Tag="182"/>
+                    <TreeViewItem Header="MGL" Tag="203"/>
+                    <TreeViewItem Header="Browning M2" Tag="217"/>
+                    <TreeViewItem Header="BAR" Tag="218"/>
+                    <TreeViewItem Header="M8" Tag="219"/>
+                    <TreeViewItem Header="MG-42" Tag="220"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Melee">
+                    <TreeViewItem Header="Ballistic Shield" Tag="238"/>
+                    <TreeViewItem Header="Triple Ballistic Shield" Tag="239"/>
+                    <TreeViewItem Header="Taser Ballistic Shield" Tag="240"/>
+                    <TreeViewItem Header="Black Katana" Tag="241"/>
+                    <TreeViewItem Header="Baton" Tag="242"/>
+                    <TreeViewItem Header="Boxing Glove" Tag="243"/>
+                    <TreeViewItem Header="Cleaver" Tag="244"/>
+                    <TreeViewItem Header="Crowbar" Tag="245"/>
+                    <TreeViewItem Header="Crusader Sword" Tag="246"/>
+                    <TreeViewItem Header="Taser Crusader Sword" Tag="247"/>
+                    <TreeViewItem Header="Fish" Tag="248"/>
+                    <TreeViewItem Header="Taser Fish" Tag="249"/>
+                    <TreeViewItem Header="Holy Sword" Tag="250"/>
+                    <TreeViewItem Header="Inflatable Hammer" Tag="251"/>
+                    <TreeViewItem Header="Jarl Axe" Tag="252"/>
+                    <TreeViewItem Header="Taser Jarl Axe" Tag="253"/>
+                    <TreeViewItem Header="Katana" Tag="254"/>
+                    <TreeViewItem Header="Knife" Tag="255"/>
+                    <TreeViewItem Header="Rapier" Tag="256"/>
+                    <TreeViewItem Header="Riot Shield" Tag="257"/>
+                    <TreeViewItem Header="Sabre" Tag="258"/>
+                    <TreeViewItem Header="Pan" Tag="259"/>
+                    <TreeViewItem Header="Medieval Shield" Tag="260"/>
+                    <TreeViewItem Header="Shovel" Tag="261"/>
+                    <TreeViewItem Header="Viking Axe" Tag="262"/>
+                    <TreeViewItem Header="Weights" Tag="263"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Spells">
+                    <TreeViewItem Header="Blinding Light" Tag="221"/>
+                    <TreeViewItem Header="Gravity Field" Tag="222"/>
+                    <TreeViewItem Header="Gust" Tag="223"/>
+                    <TreeViewItem Header="Healing Aura" Tag="224"/>
+                    <TreeViewItem Header="Speed Aura" Tag="225"/>
+                    <TreeViewItem Header="Summon Rock" Tag="226"/>
+                    <TreeViewItem Header="Teleport" Tag="227"/>
+                    <TreeViewItem Header="Track" Tag="228"/>
+                    <TreeViewItem Header="Fireball" Tag="229"/>
+                    <TreeViewItem Header="Ice Bolt" Tag="230"/>
+                    <TreeViewItem Header="Magic Missile" Tag="231"/>
+                    <TreeViewItem Header="Mirage" Tag="232"/>
+                    <TreeViewItem Header="Orb Of Sight" Tag="233"/>
+                    <TreeViewItem Header="Reveal" Tag="234"/>
+                    <TreeViewItem Header="Shockwave" Tag="235"/>
+                    <TreeViewItem Header="Summon Tree" Tag="236"/>
+                </TreeViewItem>
+                <TreeViewItem Header="Grenades">
+                    <TreeViewItem Header="Big Healing Grenade" Tag="187"/>
+                    <TreeViewItem Header="Black Hole Grenade" Tag="188"/>
+                    <TreeViewItem Header="Bombardment Grenade" Tag="189"/>
+                    <TreeViewItem Header="Bouncy Grenade" Tag="190"/>
+                    <TreeViewItem Header="Cage Grenade" Tag="191"/>
+                    <TreeViewItem Header="Taser Cage Grenade" Tag="192"/>
+                    <TreeViewItem Header="Cluster Grenade" Tag="193"/>
+                    <TreeViewItem Header="Cluster Dummy Grenade" Tag="194"/>
+                    <TreeViewItem Header="Dummy Grenade" Tag="195"/>
+                    <TreeViewItem Header="Fire Grenade" Tag="196"/>
+                    <TreeViewItem Header="Grenade" Tag="197"/>
+                    <TreeViewItem Header="Healing Grenade" Tag="198"/>
+                    <TreeViewItem Header="Implosion Grenade" Tag="199"/>
+                    <TreeViewItem Header="Knockback Grenade" Tag="200"/>
+                    <TreeViewItem Header="Big Knockback Grenade" Tag="201"/>
+                    <TreeViewItem Header="Launchpad Grenade" Tag="202"/>
+                    <TreeViewItem Header="Orbital Taser Grenade" Tag="204"/>
+                    <TreeViewItem Header="Orbital Strike Grenade" Tag="205"/>
+                    <TreeViewItem Header="Poof Grenade" Tag="206"/>
+                    <TreeViewItem Header="Shield Grenade" Tag="207"/>
+                    <TreeViewItem Header="Smoke Grenade" Tag="208"/>
+                    <TreeViewItem Header="Snow Storm Grenade" Tag="209"/>
+                    <TreeViewItem Header="Splinter Grenade" Tag="210"/>
+                    <TreeViewItem Header="Taser Splinter Grenade" Tag="211"/>
+                    <TreeViewItem Header="Flash Grenade" Tag="212"/>
+                    <TreeViewItem Header="Time Slow Grenade" Tag="213"/>
+                    <TreeViewItem Header="Dynamite" Tag="214"/>
+                    <TreeViewItem Header="Volley Grenade" Tag="215"/>
+                    <TreeViewItem Header="Wall Grenade" Tag="216"/>
+                </TreeViewItem>
+            </TreeView>
+        </ScrollViewer>
+
+        <!-- Loadout List -->
+        <ScrollViewer Grid.Column="1" >
+            <ListBox x:Name="loadoutListBox" SelectionMode="Single" Margin="0,0,0,140">
+                <!-- Loadout items will be displayed here -->
+            </ListBox>
+        </ScrollViewer>
+
+        <!--Name and Rarity-->
+        <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Left">
+            <Label Content="Name:" Foreground="White" Height="26" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="0,0,0,110" Width="45"/>
+            <TextBox Name="LoadoutNameTextBox" Text="" Height="26" Width="180" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" Margin="10,0,0,110"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Left">
+            <Label Content="Rarity:" Foreground="White" Height="26" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="0,0,0,70" Width="45"/>
+            <TextBox Name="LoadoutRarityTextBox" Height="26" Width="50" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" Margin="10,0,0,70" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Input Quantity -->
+        <Label Content="Quantity:" VerticalAlignment="Bottom" Foreground="White" Height="25" HorizontalContentAlignment="Center" VerticalContentAlignment="Bottom" Margin="0,10,5,10" HorizontalAlignment="Left"/>
+        <TextBox x:Name="quantityTextBox" Grid.Column="0" Margin="60,10,10,12" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="100"/>
+
+        <!-- Add Button -->
+        <Button Content="Add to Loadout" Grid.Column="0" Margin="10,10,30,10" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="120" Click="AddToLoadout_Click"/>
+        <Button Content="Save Loadout" Grid.Column="1" Margin="10,10,10,10" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="120" Click="SaveLoadout_Click"/>
+        <Button Content="Remove" Grid.Column="1" Margin="10,10,10,40" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="120" Click="RemoveLoadout_Click"/>
+        <Button Content="Back To Menu" Grid.Column="0" Margin="10,10,30,10" VerticalAlignment="Top" HorizontalAlignment="Right" Width="120" Click="BtnBack_Click"/>
+        
+        <Button Content="Manage Loadouts" Grid.Column="0" Margin="10,10,30,10" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="120" Click="ManageLoadouts_Click"/>
+    </Grid>
+</Page>
