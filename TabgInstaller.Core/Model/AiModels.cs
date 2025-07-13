@@ -123,7 +123,7 @@ namespace TabgInstaller.Core.Model
         [JsonProperty("messages")]
         public List<ChatMessage> Messages { get; set; } = new();
         
-        [JsonProperty("tools")]
+        [JsonProperty("tools", NullValueHandling = NullValueHandling.Ignore)]
         public List<object>? Tools { get; set; }
         
         [JsonProperty("max_tokens")]

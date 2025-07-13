@@ -5,10 +5,10 @@
       "apiEndpoint": "https://api.openai.com/v1/chat/completions",
       "authType": "Bearer",
       "models": [
-        { "id": "o3-2024-12-17", "displayName": "o3 (Latest)" },
-        { "id": "gpt-4-turbo-preview", "displayName": "GPT-4.1 Turbo" },
-        { "id": "gpt-4o", "displayName": "GPT-4o" },
-        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini" }
+        { "id": "o3-2024-12-17", "displayName": "o3 (Latest)", "supportsFunctionCalling": true },
+        { "id": "gpt-4-turbo-preview", "displayName": "GPT-4.1 Turbo", "supportsFunctionCalling": true },
+        { "id": "gpt-4o", "displayName": "GPT-4o", "supportsFunctionCalling": true },
+        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini", "supportsFunctionCalling": true }
       ]
     },
     {
@@ -16,12 +16,12 @@
       "apiEndpoint": "https://api.anthropic.com/v1/messages",
       "authType": "x-api-key",
       "models": [
-        { "id": "claude-opus-4-20250514", "displayName": "Claude 4 Opus" },
-        { "id": "claude-sonnet-4-20250514", "displayName": "Claude 4 Sonnet" },
-        { "id": "claude-3-5-sonnet-20241022", "displayName": "Claude 3.5 Sonnet" },
-        { "id": "claude-3-5-sonnet-20240620", "displayName": "Claude 3.5 Sonnet (June 2024)" },
-        { "id": "claude-3-opus-20240229", "displayName": "Claude 3 Opus" },
-        { "id": "claude-3-haiku-20240307", "displayName": "Claude 3 Haiku" }
+        { "id": "claude-opus-4-20250514", "displayName": "Claude 4 Opus", "supportsFunctionCalling": true },
+        { "id": "claude-sonnet-4-20250514", "displayName": "Claude 4 Sonnet", "supportsFunctionCalling": true },
+        { "id": "claude-3-5-sonnet-20241022", "displayName": "Claude 3.5 Sonnet", "supportsFunctionCalling": true },
+        { "id": "claude-3-5-sonnet-20240620", "displayName": "Claude 3.5 Sonnet (June 2024)", "supportsFunctionCalling": true },
+        { "id": "claude-3-opus-20240229", "displayName": "Claude 3 Opus", "supportsFunctionCalling": true },
+        { "id": "claude-3-haiku-20240307", "displayName": "Claude 3 Haiku", "supportsFunctionCalling": true }
       ]
     },
     {
@@ -29,8 +29,8 @@
       "apiEndpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "authType": "api-key-query",
       "models": [
-        { "id": "gemini-2.0-flash-exp", "displayName": "Gemini 2.5 Flash" },
-        { "id": "gemini-1.5-pro", "displayName": "Gemini 1.5 Pro" }
+        { "id": "gemini-2.0-flash-exp", "displayName": "Gemini 2.5 Flash", "supportsFunctionCalling": true },
+        { "id": "gemini-1.5-pro", "displayName": "Gemini 1.5 Pro", "supportsFunctionCalling": true }
       ]
     },
     {
@@ -38,8 +38,8 @@
       "apiEndpoint": "https://api.x.ai/v1/chat/completions",
       "authType": "Bearer",
       "models": [
-        { "id": "grok-4-heavy", "displayName": "Grok 4 Heavy" },
-        { "id": "grok-3", "displayName": "Grok 3" }
+        { "id": "grok-4-heavy", "displayName": "Grok 4 Heavy", "supportsFunctionCalling": true },
+        { "id": "grok-3", "displayName": "Grok 3", "supportsFunctionCalling": true }
       ]
     },
     {
