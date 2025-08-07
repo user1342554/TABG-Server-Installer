@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TabgInstaller.Gui.Tabs"
         mc:Ignorable="d"
-        Title="TABG Server Configuration" Height="600" Width="900" MinHeight="500" MinWidth="700">
+        Title="TABG Server Configuration" Height="600" Width="900" MinHeight="500" MinWidth="700"
+        Background="{StaticResource BrushBg}" WindowStyle="None" WindowState="Maximized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -32,9 +33,9 @@
             </Button>
         </StackPanel>
 
-        <TabControl Grid.Row="1">
+        <TabControl Grid.Row="1" Background="#0a0f1c">
             <TabItem Header="Server Settings">
-                <Grid>
+                <Grid Background="#0a0f1c">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -51,13 +52,13 @@
                         </StackPanel>
                         <TextBlock Grid.Column="1" Name="StatusTextBlock" Margin="10,8,10,0" 
                                    HorizontalAlignment="Right" VerticalAlignment="Center" 
-                                   Foreground="Green" FontStyle="Italic"/>
+                                    Foreground="#00FFC6" FontStyle="Italic"/>
                     </Grid>
                 </Grid>
             </TabItem>
 
             <TabItem Header="Plugins">
-                    <StackPanel Margin="10">
+                    <StackPanel Margin="10" Background="#0a0f1c">
                     <TextBlock Text="Installed plugins (BepInEx/plugins):"/>
                     <ListView x:Name="LstPlugins" Height="280" SelectionMode="Single">
                         <ListView.ItemTemplate>
@@ -92,7 +93,7 @@
             </TabItem>
             -->
             <TabItem Header="Console">
-                <Grid Margin="5">
+                <Grid Margin="5" Background="#0a0f1c">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>

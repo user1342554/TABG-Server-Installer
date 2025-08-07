@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -10,12 +11,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.IO;
 using Newtonsoft.Json;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Core.Services.AI;
+using TabgInstaller.Gui.Converters;
 using TabgInstaller.Gui.Dialogs;
-using System.Diagnostics;
+using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 
 namespace TabgInstaller.Gui
 {
@@ -24,47 +27,25 @@ namespace TabgInstaller.Gui
         private ISecureKeyStore _keyStore = null!;
         private IProviderModelService _providerService = null!;
         private IUnifiedBackend _unifiedBackend = null!;
+        private ILocalModelManager _localModelManager = null!;
         private PromptBuilder _promptBuilder = null!;
         private IToolExecutor _toolExecutor = null!;
-        private IOllamaBootstrapper _ollamaBootstrapper = null!;
         private readonly string _serverPath;
+        private Process? _localInferenceProcess;
 
-        private ObservableCollection<ChatMessageViewModel> _messages = new();
+        private ObservableCollection<ModernChatMessageViewModel> _messages = new();
         private List<ChatMessage> _chatHistory = new();
         private CancellationTokenSource? _currentRequestCts;
+        private ObservableCollection<ModelDownloadViewModel> _modelViewModels = new();
+        private CancellationTokenSource? _downloadCts;
+        private CancellationTokenSource? _validationCts;
 
-        private List<ProviderConfig> _providers = new();
-        private List<ModelInfo> _models = new();
-        private ProviderConfig? _selectedProvider;
-        private ModelInfo? _selectedModel;
-        private bool _isReinstallingOllama = false;
+        private AiSetupDialog.SetupMode _currentMode = AiSetupDialog.SetupMode.None;
+        private string? _currentProvider;
+        private string? _currentModel;
+        private bool _isLocalMode;
 
-        public ObservableCollection<ChatMessageViewModel> Messages => _messages;
-        public List<ProviderConfig> Providers
-        {
-            get => _providers;
-            set { _providers = value; OnPropertyChanged(); }
-        }
-
-        public List<ModelInfo> Models
-        {
-            get => _models;
-            set { _models = value; OnPropertyChanged(); }
-        }
-
-        public ProviderConfig? SelectedProvider
-        {
-            get => _selectedProvider;
-            set { _selectedProvider = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsOllamaSelected)); }
-        }
-
-        public ModelInfo? SelectedModel
-        {
-            get => _selectedModel;
-            set { _selectedModel = value; OnPropertyChanged(); }
-        }
-
-        public bool IsOllamaSelected => SelectedProvider?.Name == "Ollama";
+        public ObservableCollection<ModernChatMessageViewModel> Messages => _messages;
 
         public AiChatWindow(string serverPath)
         {
@@ -73,10 +54,8 @@ namespace TabgInstaller.Gui
             _serverPath = serverPath ?? throw new ArgumentNullException(nameof(serverPath));
             
             // Initialize collections first
-            _messages = new ObservableCollection<ChatMessageViewModel>();
+            _messages = new ObservableCollection<ModernChatMessageViewModel>();
             _chatHistory = new List<ChatMessage>();
-            _providers = new List<ProviderConfig>();
-            _models = new List<ModelInfo>();
             
             DataContext = this;
             
@@ -92,9 +71,9 @@ namespace TabgInstaller.Gui
                 _keyStore = new SecureKeyStore();
                 _providerService = new ProviderModelService();
                 _unifiedBackend = new UnifiedBackend(_keyStore, _providerService);
+                _localModelManager = new LocalModelManager();
                 _promptBuilder = new PromptBuilder();
-                _toolExecutor = new ToolExecutor(_serverPath, async () => await ReloadOllama());
-                _ollamaBootstrapper = new OllamaBootstrapper();
+                _toolExecutor = new ToolExecutor(_serverPath);
                 
                 // Set up UI
                 ChatMessages.ItemsSource = Messages;
@@ -110,63 +89,50 @@ namespace TabgInstaller.Gui
             }
         }
 
-        private async Task ReloadOllama()
-        {
-            // Delete and reinstall Ollama model
-            if (_ollamaBootstrapper != null)
-            {
-                await _ollamaBootstrapper.RemoveModelAsync("deepseek-r1:8b");
-                await _ollamaBootstrapper.InstallModelAsync("deepseek-r1:8b");
-            }
-        }
+
 
         private async Task InitializeAsync()
         {
-            if (_providerService == null)
-                throw new InvalidOperationException("ProviderService is null");
+            // New: inline setup overlay rather than separate dialog
+            await ShowInlineSetupAsync();
 
-            Providers = _providerService.GetProviders();
-            
-            if (Providers == null || Providers.Count == 0)
-                throw new InvalidOperationException("No providers found");
-
-            // Check if user has any API keys or should use Ollama
-            var hasApiKey = false;
-            string? configuredProvider = null;
-
-            foreach (var provider in Providers.Where(p => p != null && p.Name != "Ollama"))
+            if (_currentMode == AiSetupDialog.SetupMode.Local)
             {
-                if (provider.Name != null && _keyStore.HasKey(provider.Name))
-                {
-                    hasApiKey = true;
-                    configuredProvider = provider.Name;
-                    break;
-                }
-            }
-
-            if (!hasApiKey)
-            {
-                // Show API key dialog
-                var dialog = new ApiKeyDialog(_keyStore, _unifiedBackend, _ollamaBootstrapper);
-                dialog.Owner = this;
+                ModelNameText.Text = _currentModel ?? "Local Model";
+                ModeText.Text = "Local";
+                ModeText.Foreground = new SolidColorBrush(Color.FromRgb(0, 255, 198));
+                StatusText.Text = "Starting local server...";
                 
-                if (dialog.ShowDialog() == true && dialog.ConfigurationSaved)
+                // Start local inference server
+                try
                 {
-                    configuredProvider = dialog.SelectedProvider;
+                    _localInferenceProcess = await _localModelManager.StartLocalInferenceServerAsync(_currentModel ?? "gpt-oss-20b");
+                    if (_localInferenceProcess != null)
+                    {
+                        StatusText.Text = "Connected to local AI";
+                        StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                    }
+                    else
+                    {
+                        throw new Exception("Failed to start local inference server");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    // User cancelled, close window
+                    MessageBox.Show($"Failed to start local AI server: {ex.Message}\n\nPlease ensure the model is properly installed.",
+                        "Local AI Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     Close();
                     return;
                 }
             }
-
-            // Select the configured provider
-            SelectedProvider = Providers.FirstOrDefault(p => p.Name == configuredProvider);
-            if (SelectedProvider != null)
+            else
             {
-                UpdateModelsForProvider();
+                _currentModel ??= "gpt-5"; // Default to GPT-5 if available
+                ModelNameText.Text = _currentModel;
+                ModeText.Text = "Online";
+                ModeText.Foreground = new SolidColorBrush(Color.FromRgb(255, 184, 107));
+                StatusText.Text = $"Connected to {_currentProvider}";
+                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(0, 255, 198));
             }
 
             // Add system prompt
@@ -174,369 +140,406 @@ namespace TabgInstaller.Gui
             _chatHistory.Add(ChatMessage.System(systemPrompt));
 
             // Add welcome message
-            AddMessage("Assistant", "Hello! I'm your TABG server configuration assistant. I can help you configure game settings, manage plugins, and set up your server. What would you like to do?", true);
+            AddMessage("Assistant", "🎮 Welcome to TABG AI Assistant!\n\nI'm here to help you configure your server, manage plugins, and optimize your game settings. What would you like to do today?", MessageRole.Assistant);
         }
 
-        private void UpdateModelsForProvider()
+        private void ClearChat_Click(object sender, RoutedEventArgs e)
         {
-            if (SelectedProvider != null)
-            {
-                Models = _providerService.GetModelsForProvider(SelectedProvider.Name);
-                
-                // Debug: Show how many models were loaded
-                AddMessage("System", $"Loaded {Models.Count} models for {SelectedProvider.Name}", false);
-                foreach (var model in Models)
-                {
-                    AddMessage("System", $"  - {model.DisplayName} ({model.Id})", false);
-                }
-                
-                SelectedModel = Models.FirstOrDefault();
-            }
-        }
-
-        private void ProviderComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            UpdateModelsForProvider();
-        }
-
-        private void ChangeApiKey_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new ApiKeyDialog(_keyStore, _unifiedBackend, _ollamaBootstrapper);
-            dialog.Owner = this;
+            var result = MessageBox.Show("Are you sure you want to clear the chat history?", 
+                "Clear Chat", MessageBoxButton.YesNo, MessageBoxImage.Question);
             
-            if (dialog.ShowDialog() == true && dialog.ConfigurationSaved)
-            {
-                // Refresh providers after API key change
-                SelectedProvider = Providers.FirstOrDefault(p => p.Name == dialog.SelectedProvider);
-                UpdateModelsForProvider();
-            }
-        }
-
-        private void ManageModels_Click(object sender, RoutedEventArgs e)
-        {
-            // Populate context menu with available models
-            ModelsContextMenu.Items.Clear();
-            
-            foreach (var model in Models)
-            {
-                var modelMenu = new MenuItem { Header = model.DisplayName };
-                
-                var downloadItem = new MenuItem 
-                { 
-                    Header = "Download/Update",
-                    Tag = model.Id
-                };
-                downloadItem.Click += async (s, args) => await DownloadModel(model.Id);
-                
-                var reinstallItem = new MenuItem 
-                { 
-                    Header = "Reinstall (Delete & Download)",
-                    Tag = model.Id
-                };
-                reinstallItem.Click += async (s, args) => await ReinstallModel(model.Id);
-                
-                var deleteItem = new MenuItem 
-                { 
-                    Header = "Delete",
-                    Tag = model.Id
-                };
-                deleteItem.Click += async (s, args) => await DeleteModel(model.Id);
-                
-                modelMenu.Items.Add(downloadItem);
-                modelMenu.Items.Add(reinstallItem);
-                modelMenu.Items.Add(deleteItem);
-                
-                ModelsContextMenu.Items.Add(modelMenu);
-            }
-            
-            // Open the context menu
-            ModelsContextMenu.IsOpen = true;
-        }
-        
-        private async Task DownloadModel(string modelId)
-        {
-            AddMessage("System", $"Downloading model {modelId}...", false);
-            
-            var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "ollama",
-                Arguments = $"pull {modelId}",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            });
-            
-            if (process != null)
-            {
-                var progressTask = Task.Run(async () =>
-                {
-                    string? line;
-                    while ((line = await process.StandardOutput.ReadLineAsync()) != null)
-                    {
-                        if (!string.IsNullOrEmpty(line))
-                        {
-                            // Remove ANSI escape codes
-                            line = System.Text.RegularExpressions.Regex.Replace(line, @"\x1B\[[^@-~]*[@-~]", "");
-                            line = System.Text.RegularExpressions.Regex.Replace(line, @"\[\?[0-9]+[hl]", "");
-                            line = System.Text.RegularExpressions.Regex.Replace(line, @"\[K", "");
-                            line = line.Trim();
-                            
-                            if (!string.IsNullOrEmpty(line))
-                            {
-                                await Dispatcher.InvokeAsync(() => AddMessage("System", line, false));
-                            }
-                        }
-                    }
-                });
-                
-                await process.WaitForExitAsync();
-                await progressTask;
-                
-                if (process.ExitCode == 0)
-                {
-                    AddMessage("System", $"Model {modelId} downloaded successfully!", false);
-                }
-                else
-                {
-                    AddMessage("System", $"Failed to download model {modelId}", false);
-                }
-            }
-        }
-        
-        private async Task DeleteModel(string modelId)
-        {
-            var result = MessageBox.Show($"Are you sure you want to delete model {modelId}?", 
-                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                
             if (result == MessageBoxResult.Yes)
             {
-                AddMessage("System", $"Deleting model {modelId}...", false);
+                _messages.Clear();
+                _chatHistory.Clear();
                 
-                var process = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "ollama",
-                    Arguments = $"rm {modelId}",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                });
+                // Re-add system prompt
+                var systemPrompt = _promptBuilder.BuildSystemPrompt(_serverPath);
+                _chatHistory.Add(ChatMessage.System(systemPrompt));
                 
-                if (process != null)
-                {
-                    await process.WaitForExitAsync();
-                    
-                    if (process.ExitCode == 0)
-                    {
-                        AddMessage("System", $"Model {modelId} deleted successfully!", false);
-                    }
-                    else
-                    {
-                        AddMessage("System", $"Failed to delete model {modelId}", false);
-                    }
-                }
+                AddMessage("System", "Chat cleared. Starting fresh!", MessageRole.System);
             }
         }
-        
-        private async Task ReinstallModel(string modelId)
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            await DeleteModel(modelId);
-            await Task.Delay(1000); // Brief delay between operations
-            await DownloadModel(modelId);
+            _ = ShowInlineSetupAsync();
         }
-        
-        private async void ReinstallOllama_Click(object sender, RoutedEventArgs e)
+
+        private async Task RestartWithNewSettings()
         {
-            // Prevent multiple simultaneous reinstalls
-            if (_isReinstallingOllama)
+            // Stop current inference if local
+            if (_localInferenceProcess != null)
             {
-                MessageBox.Show("A reinstall is already in progress. Please wait.", "Reinstall In Progress", 
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                await _localModelManager.StopLocalInferenceServerAsync();
+                _localInferenceProcess = null;
             }
 
-            var result = MessageBox.Show(
-                "This will delete and reinstall the Ollama AI model (deepseek-r1:8b).\n\n" +
-                "This process may take several minutes.\n\n" +
-                "Continue?",
-                "Reinstall Ollama Model",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            _isLocalMode = _currentMode == AiSetupDialog.SetupMode.Local;
 
-            if (result == MessageBoxResult.Yes)
+            if (_isLocalMode)
             {
-                _isReinstallingOllama = true;
+                ModelNameText.Text = _currentModel ?? "Local Model";
+                ModeText.Text = "Local";
+                ModeText.Foreground = new SolidColorBrush(Color.FromRgb(0, 255, 198));
                 
                 try
                 {
-                    // Disable the button while processing
-                    var button = sender as Button;
-                    if (button != null)
-                        button.IsEnabled = false;
-
-                    var modelName = SelectedModel?.Id ?? "llama3.2:latest";
-                    
-                    // First, check if Ollama is running
-                    AddMessage("System", "Checking if Ollama is running...", false);
-                    
-                    var checkProcess = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "ollama",
-                        Arguments = "list",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    });
-                    
-                    if (checkProcess == null)
-                    {
-                        throw new Exception("Ollama command not found. Please ensure Ollama is installed.");
-                    }
-                    
-                    await checkProcess.WaitForExitAsync();
-                    
-                    if (checkProcess.ExitCode != 0)
-                    {
-                        // Try to start Ollama
-                        AddMessage("System", "Starting Ollama service...", false);
-                        var startProcess = Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "ollama",
-                            Arguments = "serve",
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        });
-                        
-                        // Wait a bit for it to start
-                        await Task.Delay(3000);
-                    }
-                    
-                    // Step 1: Delete the model (if it exists)
-                    AddMessage("System", $"Checking if model {modelName} exists...", false);
-                    
-                    var deleteProcess = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "ollama",
-                        Arguments = $"rm {modelName}",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    });
-                    
-                    if (deleteProcess != null)
-                    {
-                        var deleteOutput = await deleteProcess.StandardOutput.ReadToEndAsync();
-                        var deleteError = await deleteProcess.StandardError.ReadToEndAsync();
-                        await deleteProcess.WaitForExitAsync();
-                        
-                        if (!string.IsNullOrEmpty(deleteError) && !deleteError.Contains("not found"))
-                        {
-                            AddMessage("System", $"Delete warning: {deleteError}", false);
-                        }
-                        else
-                        {
-                            AddMessage("System", "Model deleted successfully.", false);
-                        }
-                    }
-                    
-                    // Wait a moment to ensure deletion is processed
-                    await Task.Delay(1000);
-                    
-                    // Step 2: Pull the model fresh
-                    AddMessage("System", $"Downloading model {modelName}... This will take several minutes.", false);
-                    AddMessage("System", "Progress updates will appear below:", false);
-                    
-                    var pullProcess = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "ollama",
-                        Arguments = $"pull {modelName}",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    });
-                    
-                    if (pullProcess != null)
-                    {
-                        var progressTask = Task.Run(async () =>
-                        {
-                            string? line;
-                            while ((line = await pullProcess.StandardOutput.ReadLineAsync()) != null)
-                            {
-                                if (!string.IsNullOrEmpty(line))
-                                {
-                                    // Remove ANSI escape codes
-                                    line = System.Text.RegularExpressions.Regex.Replace(line, @"\x1B\[[^@-~]*[@-~]", "");
-                                    line = System.Text.RegularExpressions.Regex.Replace(line, @"\[\?[0-9]+[hl]", "");
-                                    line = System.Text.RegularExpressions.Regex.Replace(line, @"\[K", "");
-                                    line = line.Trim();
-                                    
-                                    if (!string.IsNullOrEmpty(line))
-                                    {
-                                        await Dispatcher.InvokeAsync(() => AddMessage("System", line, false));
-                                    }
-                                }
-                            }
-                        });
-                        
-                        var errorTask = Task.Run(async () =>
-                        {
-                            string? errorLine;
-                            while ((errorLine = await pullProcess.StandardError.ReadLineAsync()) != null)
-                            {
-                                if (!string.IsNullOrEmpty(errorLine))
-                                {
-                                    // Remove ANSI escape codes
-                                    errorLine = System.Text.RegularExpressions.Regex.Replace(errorLine, @"\x1B\[[^@-~]*[@-~]", "");
-                                    errorLine = System.Text.RegularExpressions.Regex.Replace(errorLine, @"\[\?[0-9]+[hl]", "");
-                                    errorLine = System.Text.RegularExpressions.Regex.Replace(errorLine, @"\[K", "");
-                                    errorLine = errorLine.Trim();
-                                    
-                                    if (!string.IsNullOrEmpty(errorLine))
-                                    {
-                                        await Dispatcher.InvokeAsync(() => AddMessage("System", $"Error: {errorLine}", false));
-                                    }
-                                }
-                            }
-                        });
-                        
-                        await pullProcess.WaitForExitAsync();
-                        await Task.WhenAll(progressTask, errorTask);
-                        
-                        if (pullProcess.ExitCode == 0)
-                        {
-                            AddMessage("System", "Model reinstalled successfully!", false);
-                        }
-                        else
-                        {
-                            var error = await pullProcess.StandardError.ReadToEndAsync();
-                            throw new Exception($"Failed to download model. Error: {error}");
-                        }
-                    }
+                    _localInferenceProcess = await _localModelManager.StartLocalInferenceServerAsync(_currentModel ?? "gpt-oss-20b");
+                    StatusText.Text = "Connected to local AI";
                 }
                 catch (Exception ex)
                 {
-                    AddMessage("System", $"Error: {ex.Message}", false);
-                    MessageBox.Show(
-                        $"Failed to reinstall Ollama model:\n{ex.Message}",
-                        "Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    MessageBox.Show($"Failed to restart local AI: {ex.Message}", "Error", 
+                        MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                finally
+            }
+            else
+            {
+                ModelNameText.Text = _currentModel ?? "gpt-5";
+                ModeText.Text = "Online";
+                ModeText.Foreground = new SolidColorBrush(Color.FromRgb(255, 184, 107));
+                StatusText.Text = $"Connected to {_currentProvider}";
+            }
+        }
+
+        // Inline Setup
+        private async Task ShowInlineSetupAsync()
+        {
+            // Show overlay and default to selection
+            SetupOverlay.Visibility = Visibility.Visible;
+
+            // Initialize simple defaults
+            _currentMode = AiSetupDialog.SetupMode.None;
+
+            // Wait for user interaction via event-driven handlers; in absence of explicit user click,
+            // attempt auto-mode selection: prefer local if any installed, else online.
+            try
+            {
+                // Initialize directory field and available models
+                ModelDirectoryTextBox.Text = _localModelManager.GetModelsDirectory();
+                await UpdateSpaceInfo();
+                await LoadAvailableModels();
+
+                var models = await _localModelManager.GetAvailableModelsAsync();
+                var installed = models.FirstOrDefault(m => m.IsInstalled);
+                if (installed != null)
                 {
-                    // Re-enable the button
-                    var button = sender as Button;
-                    if (button != null)
-                        button.IsEnabled = true;
-                    
-                    _isReinstallingOllama = false;
+                    _currentMode = AiSetupDialog.SetupMode.Local;
+                    _currentModel = installed.ModelId;
+                }
+                else
+                {
+                    _currentMode = AiSetupDialog.SetupMode.Online;
+                    _currentProvider = "OpenAI";
+                    _currentModel = "gpt-5";
+                }
+            }
+            catch
+            {
+                _currentMode = AiSetupDialog.SetupMode.Online;
+                _currentProvider = "OpenAI";
+                _currentModel = "gpt-5";
+            }
+
+            // Hide overlay once decision is made
+            SetupOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private async void UseInstalledModel_Click(object sender, RoutedEventArgs e)
+        {
+            var models = await _localModelManager.GetAvailableModelsAsync();
+            var installed = models.FirstOrDefault(m => m.IsInstalled);
+            if (installed != null)
+            {
+                _currentMode = AiSetupDialog.SetupMode.Local;
+                _currentModel = installed.ModelId;
+                await RestartWithNewSettings();
+            }
+            else
+            {
+                MessageBox.Show("No local models found. Please download one.");
+            }
+            SetupOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void CancelSetup_Click(object sender, RoutedEventArgs e)
+        {
+            SetupOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        // Inline setup event handlers and helpers (ported from dialog)
+        private async Task LoadAvailableModels()
+        {
+            var models = await _localModelManager.GetAvailableModelsAsync();
+            _modelViewModels.Clear();
+            foreach (var model in models)
+            {
+                _modelViewModels.Add(new ModelDownloadViewModel
+                {
+                    ModelId = model.ModelId,
+                    DisplayName = model.DisplayName,
+                    FileSize = model.TotalSize,
+                    IsInstalled = model.IsInstalled,
+                    IsSelected = false
+                });
+            }
+            ModelsList.ItemsSource = _modelViewModels;
+        }
+
+        private async Task UpdateSpaceInfo()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    var path = ModelDirectoryTextBox.Text;
+                    if (string.IsNullOrEmpty(path)) return;
+                    var drive = Path.GetPathRoot(path);
+                    if (string.IsNullOrEmpty(drive)) return;
+                    var driveInfo = new DriveInfo(drive);
+                    var availableGB = driveInfo.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0);
+                    Dispatcher.Invoke(() =>
+                    {
+                        SpaceInfoText.Text = $"Available space: {availableGB:F1} GB";
+                        SpaceInfoText.Foreground = availableGB > 250 ? Brushes.Green : availableGB > 50 ? Brushes.Orange : Brushes.Red;
+                    });
+                }
+                catch
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        SpaceInfoText.Text = "Unable to determine available space";
+                        SpaceInfoText.Foreground = Brushes.Gray;
+                    });
+                }
+            });
+        }
+
+        private void LocalOption_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectionPanel.Visibility = Visibility.Collapsed;
+            LocalDownloadPanel.Visibility = Visibility.Visible;
+            OnlineSetupPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void OnlineOption_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectionPanel.Visibility = Visibility.Collapsed;
+            LocalDownloadPanel.Visibility = Visibility.Collapsed;
+            OnlineSetupPanel.Visibility = Visibility.Visible;
+            // default provider selection to first (OpenAI)
+            if (ProviderComboBox != null && ProviderComboBox.Items.Count > 0)
+            {
+                ProviderComboBox.SelectedIndex = 0;
+            }
+        }
+
+        private void BrowseDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Select directory to store AI models",
+                ShowNewFolderButton = true,
+                SelectedPath = ModelDirectoryTextBox.Text
+            };
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ModelDirectoryTextBox.Text = dialog.SelectedPath;
+                _localModelManager.SetModelsDirectory(dialog.SelectedPath);
+                _ = UpdateSpaceInfo();
+            }
+        }
+
+        private async void StartDownload_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedModels = _modelViewModels.Where(m => m.IsSelected && !m.IsInstalled).ToList();
+            if (!selectedModels.Any())
+            {
+                MessageBox.Show("Please select at least one model to download.", "No Models Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            DownloadButton.IsEnabled = false;
+            _downloadCts = new CancellationTokenSource();
+            try
+            {
+                foreach (var modelVm in selectedModels)
+                {
+                    modelVm.IsDownloading = true;
+                    var progress = new Progress<(string message, double percentage)>(update =>
+                    {
+                        modelVm.DownloadProgress = update.percentage;
+                        modelVm.ProgressText = update.message;
+                    });
+                    await _localModelManager.DownloadModelAsync(
+                        modelVm.ModelId,
+                        ModelDirectoryTextBox.Text,
+                        progress,
+                        _downloadCts.Token);
+                    modelVm.IsInstalled = true;
+                    modelVm.IsDownloading = false;
+                }
+                _currentMode = AiSetupDialog.SetupMode.Local;
+                _currentModel = selectedModels.First().ModelId;
+                MessageBox.Show("Models downloaded successfully!", "Download Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                SetupOverlay.Visibility = Visibility.Collapsed;
+                await RestartWithNewSettings();
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Download cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error downloading models: {ex.Message}", "Download Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DownloadButton.IsEnabled = true;
+                foreach (var modelVm in selectedModels) modelVm.IsDownloading = false;
+            }
+        }
+
+        private void Back_Click(object sender, RoutedEventArgs e)
+        {
+            _downloadCts?.Cancel();
+            _validationCts?.Cancel();
+            SelectionPanel.Visibility = Visibility.Visible;
+            LocalDownloadPanel.Visibility = Visibility.Collapsed;
+            OnlineSetupPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void ProviderComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!IsLoaded || ProviderComboBox == null || ApiKeyBox == null || HelpText == null || SaveApiKeyButton == null) return;
+            if (ProviderComboBox.SelectedItem is ComboBoxItem item)
+            {
+                var provider = item.Tag?.ToString() ?? "";
+                var existingKey = _keyStore.GetKey(provider);
+                if (!string.IsNullOrEmpty(existingKey))
+                {
+                    ApiKeyBox.Password = existingKey;
+                }
+                switch (provider)
+                {
+                    case "OpenAI":
+                        HelpText.Text = "Get your API key from platform.openai.com";
+                        break;
+                    case "Anthropic":
+                        HelpText.Text = "Get your API key from console.anthropic.com";
+                        break;
+                    case "Google":
+                        HelpText.Text = "Get your API key from makersuite.google.com";
+                        break;
+                    case "xAI":
+                        HelpText.Text = "Get your API key from x.ai/api";
+                        break;
+                }
+                SaveApiKeyButton.IsEnabled = !string.IsNullOrEmpty(ApiKeyBox.Password);
+            }
+        }
+
+        private async void ApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded || SaveApiKeyButton == null || ValidationMessage == null || ApiKeyBox == null || ProviderComboBox == null) return;
+            SaveApiKeyButton.IsEnabled = false;
+            ValidationMessage.Visibility = Visibility.Collapsed;
+            if (string.IsNullOrEmpty(ApiKeyBox.Password)) return;
+            _validationCts?.Cancel();
+            _validationCts = new CancellationTokenSource();
+            try
+            {
+                await Task.Delay(500, _validationCts.Token);
+                if (ProviderComboBox.SelectedItem is ComboBoxItem item)
+                {
+                    var provider = item.Tag?.ToString() ?? "";
+                    ValidationMessage.Text = "Validating API key...";
+                    ValidationMessage.Foreground = Brushes.Gray;
+                    ValidationMessage.Visibility = Visibility.Visible;
+                    var isValid = await _unifiedBackend.ValidateApiKeyAsync(provider, ApiKeyBox.Password, _validationCts.Token);
+                    if (isValid)
+                    {
+                        ValidationMessage.Text = "✓ API key is valid!";
+                        ValidationMessage.Foreground = Brushes.Green;
+                        SaveApiKeyButton.IsEnabled = true;
+                    }
+                    else
+                    {
+                        ValidationMessage.Text = "✗ Invalid API key";
+                        ValidationMessage.Foreground = Brushes.Red;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                ValidationMessage.Text = $"Error validating key: {ex.Message}";
+                ValidationMessage.Foreground = Brushes.Red;
+                ValidationMessage.Visibility = Visibility.Visible;
+            }
+        }
+
+        private async void SaveApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            if (ProviderComboBox.SelectedItem is ComboBoxItem item)
+            {
+                var provider = item.Tag?.ToString() ?? "";
+                _currentProvider = provider;
+                if (!string.IsNullOrEmpty(ApiKeyBox.Password))
+                {
+                    _keyStore.SaveKey(provider, ApiKeyBox.Password);
+                    _currentMode = AiSetupDialog.SetupMode.Online;
+                    _currentModel = "gpt-5";
+                    SetupOverlay.Visibility = Visibility.Collapsed;
+                    await RestartWithNewSettings();
                 }
             }
         }
+
+        private void CopyMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string content)
+            {
+                Clipboard.SetText(content);
+                
+                // Show brief notification
+                var originalContent = btn.Content;
+                btn.Content = "✓";
+                Task.Delay(1000).ContinueWith(_ => 
+                {
+                    Dispatcher.Invoke(() => btn.Content = originalContent);
+                });
+            }
+        }
+
+        private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                try { DragMove(); } catch { }
+            }
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void ChatScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            // Auto-scroll to bottom when new messages are added
+            if (e.ExtentHeightChange > 0)
+            {
+                ChatScrollViewer.ScrollToEnd();
+            }
+        }
+
+
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
@@ -558,20 +561,14 @@ namespace TabgInstaller.Gui
             if (string.IsNullOrEmpty(message))
                 return;
 
-            if (SelectedProvider == null || SelectedModel == null)
-            {
-                MessageBox.Show("Please select a provider and model.", "Configuration Required", 
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             // Add user message
-            AddMessage("User", message, false);
+            AddMessage("You", message, MessageRole.User);
             _chatHistory.Add(ChatMessage.User(message));
 
-            // Clear input
+            // Clear input and show typing indicator
             UserInput.Clear();
             SendButton.IsEnabled = false;
+            TypingIndicator.Visibility = Visibility.Visible;
 
             // Cancel any ongoing request
             _currentRequestCts?.Cancel();
@@ -582,39 +579,51 @@ namespace TabgInstaller.Gui
                 // Get available functions
                 var functions = _toolExecutor.GetAvailableFunctions();
 
-                // Send to AI
-                var result = await _unifiedBackend.SendAsync(
-                    SelectedProvider.Name,
-                    SelectedModel.Id,
+                ToolCallResult result;
+                
+                if (_isLocalMode)
+                {
+                    // Use local AI backend
+                    var localBackend = new LocalAIBackend();
+                    result = await localBackend.SendAsync(
+                        _chatHistory.ToArray(),
+                        functions,
+                        _currentModel ?? "gpt-oss-20b",
+                        _currentRequestCts.Token);
+                }
+                else
+                {
+                    // Use online AI backend
+                    result = await _unifiedBackend.SendAsync(
+                        _currentProvider ?? "OpenAI",
+                        _currentModel ?? "gpt-oss-120b",
                     _chatHistory.ToArray(),
                     functions,
                     _currentRequestCts.Token);
+                }
 
                 if (!result.Success)
                 {
-                    AddMessage("Error", result.ErrorMessage ?? "Unknown error", true);
+                    AddMessage("Error", result.ErrorMessage ?? "Unknown error", MessageRole.Error);
                     return;
                 }
 
                 // Add assistant response
                 if (!string.IsNullOrEmpty(result.AssistantMessage))
                 {
-                    AddMessage("Assistant", result.AssistantMessage, true);
+                    AddMessage("Assistant", result.AssistantMessage, MessageRole.Assistant);
                     _chatHistory.Add(ChatMessage.Assistant(result.AssistantMessage));
                 }
 
                 // Process tool calls
                 if (result.ToolCalls.Any())
                 {
-                    var toolCallsJson = JsonConvert.SerializeObject(result.ToolCalls, Formatting.Indented);
-                    RawToolCallsTextBox.Text = toolCallsJson;
-
                     foreach (var toolCall in result.ToolCalls)
                     {
                         var toolResult = _toolExecutor.ExecuteToolCall(toolCall, _serverPath);
-                        AddMessage("Tool Result", $"[{toolCall.Function.Name}] {toolResult}", true);
+                        AddMessage("System", $"Executed {toolCall.Function.Name}: {toolResult}", MessageRole.System);
                         
-                        // Add tool result to chat history as assistant message (Anthropic doesn't support "tool" role)
+                        // Add tool result to chat history
                         _chatHistory.Add(new ChatMessage 
                         { 
                             Role = "assistant",
@@ -625,36 +634,29 @@ namespace TabgInstaller.Gui
             }
             catch (OperationCanceledException)
             {
-                AddMessage("System", "Request cancelled", true);
+                AddMessage("System", "Request cancelled", MessageRole.System);
             }
             catch (Exception ex)
             {
-                AddMessage("Error", $"Exception: {ex.Message}", true);
+                AddMessage("Error", $"Exception: {ex.Message}", MessageRole.Error);
             }
             finally
             {
+                TypingIndicator.Visibility = Visibility.Collapsed;
                 SendButton.IsEnabled = true;
             }
         }
 
-        private void AddMessage(string role, string content, bool isAssistant)
+        private void AddMessage(string role, string content, MessageRole messageRole)
         {
             Dispatcher.Invoke(() =>
             {
-                var message = new ChatMessageViewModel
+                var message = new ModernChatMessageViewModel
                 {
                     Role = role,
                     Content = content,
-                    Background = isAssistant ? new SolidColorBrush(Color.FromRgb(240, 240, 240)) 
-                                            : new SolidColorBrush(Color.FromRgb(220, 240, 255)),
-                    RoleColor = role switch
-                    {
-                        "User" => Brushes.Blue,
-                        "Assistant" => Brushes.Green,
-                        "Error" => Brushes.Red,
-                        "Tool Result" => Brushes.Purple,
-                        _ => Brushes.Black
-                    }
+                    MessageRole = messageRole,
+                    Timestamp = DateTime.Now.ToString("HH:mm")
                 };
 
                 Messages.Add(message);
@@ -670,13 +672,72 @@ namespace TabgInstaller.Gui
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        protected override void OnClosed(EventArgs e)
+        {
+            // Clean up local inference server if running
+            if (_localInferenceProcess != null)
+            {
+                _ = _localModelManager.StopLocalInferenceServerAsync();
+                _localInferenceProcess = null;
+            }
+            
+            base.OnClosed(e);
+        }
     }
 
-    public class ChatMessageViewModel
+    public enum MessageRole
+    {
+        User,
+        Assistant,
+        System,
+        Error
+    }
+
+    public class ModernChatMessageViewModel
     {
         public string Role { get; set; } = "";
         public string Content { get; set; } = "";
-        public Brush Background { get; set; } = Brushes.White;
-        public Brush RoleColor { get; set; } = Brushes.Black;
+        public MessageRole MessageRole { get; set; }
+        public string Timestamp { get; set; } = "";
+        
+        public string AvatarText => MessageRole switch
+        {
+            MessageRole.Assistant => "AI",
+            MessageRole.User => "U",
+            MessageRole.System => "S",
+            _ => "?"
+        };
+        
+        public bool ShowAvatar => MessageRole == MessageRole.Assistant;
+        public bool ShowCopyButton => MessageRole != MessageRole.System;
+        
+        public int BubbleColumn => MessageRole == MessageRole.User ? 2 : 1;
+        
+        public Style BubbleStyle
+        {
+            get
+            {
+                var window = Application.Current.MainWindow;
+                if (window == null) return null;
+                
+                return MessageRole switch
+                {
+                    MessageRole.User => window.FindResource("UserBubble") as Style,
+                    MessageRole.Assistant => window.FindResource("AssistantBubble") as Style,
+                    MessageRole.System => window.FindResource("SystemBubble") as Style,
+                    MessageRole.Error => window.FindResource("SystemBubble") as Style,
+                    _ => null
+                };
+            }
+        }
+        
+        public Brush RoleColor => MessageRole switch
+        {
+            MessageRole.User => new SolidColorBrush(Color.FromRgb(74, 144, 226)),
+            MessageRole.Assistant => new SolidColorBrush(Color.FromRgb(76, 175, 80)),
+            MessageRole.System => new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+            MessageRole.Error => new SolidColorBrush(Color.FromRgb(244, 67, 54)),
+            _ => Brushes.White
+        };
     }
 } 

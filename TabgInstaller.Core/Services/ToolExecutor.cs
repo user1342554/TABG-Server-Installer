@@ -19,13 +19,11 @@ namespace TabgInstaller.Core.Services
     {
         private readonly string _serverDirectory;
         private readonly ConfigPatcher _configPatcher;
-        private readonly Func<Task> _reloadOllamaFunc;
 
-        public ToolExecutor(string serverDirectory, Func<Task> reloadOllamaFunc = null)
+        public ToolExecutor(string serverDirectory)
         {
             _serverDirectory = serverDirectory;
             _configPatcher = new ConfigPatcher();
-            _reloadOllamaFunc = reloadOllamaFunc;
         }
 
         public string ExecuteToolCall(ToolCall toolCall, string serverPath)

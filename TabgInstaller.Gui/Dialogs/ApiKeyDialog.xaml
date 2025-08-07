@@ -20,27 +20,25 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15">
-            Select your AI provider and enter your API key. If you don't have an API key, 
-            we'll install Ollama for free local AI.
+            Select your AI provider and enter your API key to use the GPT-OSS models.
         </TextBlock>
 
         <Label Grid.Row="1" Content="Provider:" Margin="0,0,0,5"/>
         <ComboBox Grid.Row="2" Name="ProviderComboBox" Margin="0,0,0,10"
                   SelectionChanged="ProviderComboBox_SelectionChanged">
-            <ComboBoxItem Content="OpenAI" Tag="OpenAI"/>
+            <ComboBoxItem Content="OpenAI" Tag="OpenAI" IsSelected="True"/>
             <ComboBoxItem Content="Anthropic (Claude)" Tag="Anthropic"/>
             <ComboBoxItem Content="Google (Gemini)" Tag="Google"/>
             <ComboBoxItem Content="xAI (Grok)" Tag="xAI"/>
-            <ComboBoxItem Content="Local (Ollama)" Tag="Ollama" IsSelected="True"/>
         </ComboBox>
 
-        <Label Grid.Row="3" Content="API Key:" Name="ApiKeyLabel" Margin="0,0,0,5" Visibility="Collapsed"/>
+        <Label Grid.Row="3" Content="API Key:" Name="ApiKeyLabel" Margin="0,0,0,5" Visibility="Visible"/>
         <PasswordBox Grid.Row="4" Name="ApiKeyBox" Margin="0,0,0,10" 
-                     PasswordChanged="ApiKeyBox_PasswordChanged" Visibility="Collapsed"/>
+                     PasswordChanged="ApiKeyBox_PasswordChanged" Visibility="Visible"/>
 
         <TextBlock Grid.Row="5" Name="HelpText" TextWrapping="Wrap" Margin="0,0,0,10"
                    Visibility="Visible">
-            <Run>No API key required for local AI. Click Save to install Ollama.</Run>
+            <Run>Get your API key from platform.openai.com</Run>
         </TextBlock>
 
         <TextBlock Grid.Row="6" Name="ValidationMessage" TextWrapping="Wrap" 

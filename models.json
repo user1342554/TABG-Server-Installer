@@ -5,6 +5,9 @@
       "apiEndpoint": "https://api.openai.com/v1/chat/completions",
       "authType": "Bearer",
       "models": [
+        { "id": "gpt-5", "displayName": "GPT-5", "supportsFunctionCalling": true },
+        { "id": "gpt-oss-120b", "displayName": "GPT-OSS 120B", "supportsFunctionCalling": true },
+        { "id": "gpt-oss-20b", "displayName": "GPT-OSS 20B", "supportsFunctionCalling": true },
         { "id": "o3-2024-12-17", "displayName": "o3 (Latest)", "supportsFunctionCalling": true },
         { "id": "gpt-4-turbo-preview", "displayName": "GPT-4.1 Turbo", "supportsFunctionCalling": true },
         { "id": "gpt-4o", "displayName": "GPT-4o", "supportsFunctionCalling": true },
@@ -40,55 +43,6 @@
       "models": [
         { "id": "grok-4-heavy", "displayName": "Grok 4 Heavy", "supportsFunctionCalling": true },
         { "id": "grok-3", "displayName": "Grok 3", "supportsFunctionCalling": true }
-      ]
-    },
-    {
-      "name": "Ollama",
-      "apiEndpoint": "http://localhost:11434/v1/chat/completions",
-      "authType": "none",
-      "models": [
-        {
-          "id": "Tr3cks/deepseek-r1-tool-calling:8b",
-          "displayName": "DeepSeek-R1 8B with Tools (Best for TABG)",
-          "contextWindow": 32768,
-          "supportsFunctionCalling": true
-        },
-        {
-          "id": "llama3.2:latest",
-          "displayName": "Llama 3.2 Latest (Recommended)",
-          "contextWindow": 128000,
-          "supportsFunctionCalling": false
-        },
-        {
-          "id": "mistral:latest",
-          "displayName": "Mistral 7B (Fast & Light)",
-          "contextWindow": 32768,
-          "supportsFunctionCalling": false
-        },
-        {
-          "id": "gemma2:9b",
-          "displayName": "Gemma 2 9B (Google)",
-          "contextWindow": 8192,
-          "supportsFunctionCalling": false
-        },
-        {
-          "id": "qwen2.5:14b",
-          "displayName": "Qwen 2.5 14B (Powerful)",
-          "contextWindow": 32768,
-          "supportsFunctionCalling": false
-        },
-        {
-          "id": "phi3:medium",
-          "displayName": "Phi-3 Medium (Microsoft)",
-          "contextWindow": 128000,
-          "supportsFunctionCalling": false
-        },
-        {
-          "id": "deepseek-coder-v2:16b",
-          "displayName": "DeepSeek Coder V2 16B (For Code)",
-          "contextWindow": 16384,
-          "supportsFunctionCalling": false
-        }
       ]
     }
   ]

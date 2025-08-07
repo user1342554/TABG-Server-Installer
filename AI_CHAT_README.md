@@ -6,11 +6,13 @@ The TABG Server Installer now includes an AI-powered configuration assistant tha
 
 ## Features
 
-- **Multi-Provider Support**: Works with OpenAI (GPT-4, o3), Anthropic (Claude 4), Google (Gemini), xAI (Grok), or local AI via Ollama
-- **Secure Key Storage**: API keys are encrypted using Windows DPAPI
-- **Automatic Local AI Setup**: If you don't have an API key, the installer automatically sets up Ollama with DeepSeek-R1 8B (with tool calling support) for free local AI
-- **Configuration Assistance**: The AI understands TABG configuration syntax and can modify game_settings.txt and datapack.txt
-- **Tool Calling**: The AI can directly modify your server configuration files
+- Multi-provider support with model selection per provider (OpenAI, Anthropic, Google, xAI, Local via Ollama)
+- Secure key storage using Windows DPAPI
+- Automatic local AI setup via Ollama if desired
+- Configuration assistance that can modify `game_settings.txt` and other files
+- Tool calling support
+- Simple chat history stored under `%AppData%/TABGInstaller/Chats`
+- Edit and reload individual messages
 
 ## Getting Started
 
@@ -22,27 +24,13 @@ The TABG Server Installer now includes an AI-powered configuration assistant tha
    - Google: https://makersuite.google.com
    - xAI: https://x.ai/api
 
-2. Run the bootstrap script:
-   ```powershell
-   .\bootstrap.ps1
-   ```
-
-3. Click the "AI Chat" button in the Configuration window
-
-4. Select your provider and enter your API key when prompted
+2. Launch the app and open the AI Chat tab. The setup overlay is shown first
+3. Select provider and model, then enter your API key and click Connect
 
 ### Option 2: Using Local AI (Free, No API Key Required)
 
-1. Run the bootstrap script:
-   ```powershell
-   .\bootstrap.ps1
-   ```
-
-2. Click the "AI Chat" button in the Configuration window
-
-3. Select "Local (Ollama)" as the provider
-
-4. The installer will automatically:
+1. Open the AI Chat tab. Choose Local AI in setup
+2. The installer will automatically:
    - Download and install Ollama
    - Pull the DeepSeek-R1 8B with tools model (or choose from other models like Qwen 2.5, Llama 3.2, etc.)
    - Start the local AI server

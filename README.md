@@ -24,12 +24,20 @@
 
 The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
 
+### What changed recently
+- One-window app with three tabs: Installer, Config, AI Chat
+- AI setup is prompted first. You can choose Local or Online providers
+- Choose any provider/model from `models.json` (OpenAI, Anthropic, Google, xAI, etc.)
+- Chat history with sync (AppData/TABGInstaller/Chats). Switch or create new chats from the header
+- Messages can be edited and reloaded; copy button was removed
+- “Online” indicator removed; plain status text shows Ready/Setup/Busy
+
 ### Supported Providers
-- **OpenAI** 
-- **Anthropic** 
-- **Google** 
-- **xAI** 
-- **Local AI** (Free via Ollama with DeepSeek-R1, Qwen 2.5, Llama 3.2, etc.) (these are free but realy bad)
+- OpenAI (e.g. gpt-5, gpt-4o)
+- Anthropic
+- Google
+- xAI
+- Local AI (Ollama)
 ---
 
 ## 📊 Installation Flow

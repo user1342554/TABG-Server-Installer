@@ -67,7 +67,6 @@ namespace TabgInstaller.Core.Services.AI
                 "anthropic" => new AnthropicBackend(apiKey),
                 "google" => new GeminiBackend(apiKey),
                 "xai" => new GrokBackend(apiKey),
-                "ollama" => new OllamaBackend(),
                 _ => null
             };
 
@@ -79,9 +78,10 @@ namespace TabgInstaller.Core.Services.AI
 
         private IModelBackend? CreateBackend(string provider)
         {
-            if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            // Check for local AI first
+            if (provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
             {
-                return new OllamaBackend();
+                return new LocalAIBackend();
             }
 
             var apiKey = _keyStore.GetKey(provider);

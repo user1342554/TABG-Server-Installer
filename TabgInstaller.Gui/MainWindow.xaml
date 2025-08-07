@@ -1,138 +1,20 @@
 <Window x:Class="TabgInstaller.Gui.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TABG Server Installer"
-        Height="560" Width="900" MinHeight="560" MinWidth="900"
-        Background="White"
-        FontFamily="Consolas">
-
-    <Window.Resources>
-        <Style TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style x:Key="Header" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,15,0,5"/>
-        </Style>
-        <Style x:Key="Subtle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="Gray"/>
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="BorderBrush" Value="LightGray"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-        </Style>
-        <Style TargetType="Button" x:Key="BrowseButton">
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,4"/>
-            <Setter Property="MinWidth" Value="80"/>
-        </Style>
-        <Style TargetType="Button" x:Key="InstallButton">
-            <Setter Property="Background" Value="#F0F0F0"/>
-            <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,12"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        </Style>
-    </Window.Resources>
-
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
-
-        <!-- LEFT PANEL - CONFIGURATION -->
-        <Border Grid.Column="0" Padding="30,20">
-            <DockPanel>
-                <!-- INSTALL BUTTON AT BOTTOM -->
-                <Button x:Name="BtnInstall" DockPanel.Dock="Bottom" Margin="0,20,0,0" Content="INSTALL" Style="{StaticResource InstallButton}" Click="BtnInstall_Click"/>
-
-                <!-- MAIN CONTROLS -->
-                <StackPanel DockPanel.Dock="Top">
-                    <TextBlock Text="TABG SERVER INSTALLER" FontSize="20" FontWeight="Bold"/>
-
-                    <!-- SERVER FOLDER -->
-                    <TextBlock Style="{StaticResource Header}" Text="CHOOSE SERVER FOLDER"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="PathBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Button x:Name="BrowseButton" Content="BROWSE" Grid.Column="1" Style="{StaticResource BrowseButton}" Click="Browse_Click"/>
-                    </Grid>
-
-                    <!-- SERVER CONFIG -->
-                    <TextBlock Style="{StaticResource Header}" Margin="0,25,0,5" Text="SERVER CONFIG"/>
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="SERVER NAME" Margin="0,8,20,8"/>
-                        <ComboBox  Grid.Row="0" Grid.Column="1" x:Name="TxtServerName" IsEditable="True" Margin="0,8,0,8"/>
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="SET PASSWORD" Margin="0,8,20,8"/>
-                        <ComboBox  Grid.Row="1" Grid.Column="1" x:Name="TxtServerPassword" IsEditable="True" Margin="0,8,0,8"/>
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="PUBLIC SERVER" Margin="0,8,20,8"/>
-                        <CheckBox  Grid.Row="2" Grid.Column="1" x:Name="ChkPublicServer" VerticalAlignment="Center"/>
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="DESCRIPTION" Margin="0,8,20,8"/>
-                        <ComboBox  Grid.Row="3" Grid.Column="1" x:Name="TxtServerDescription" IsEditable="True" Margin="0,8,0,8"/>
-                    </Grid>
-
-                    <!-- PLUGINS -->
-                    <TextBlock Style="{StaticResource Header}" Margin="0,25,0,5" Text="PLUGINS"/>
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-
-
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="CITRUSLIB TAG" Margin="0,8,20,8"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtCitrusTag" Text="v0.7" Margin="0,8,20,8"/>
-                        <CheckBox Grid.Row="0" Grid.Column="2" x:Name="ChkSkipCitruslib" Content="SKIP" VerticalAlignment="Center"/>
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="COMMUNITY SERVER" Margin="0,8,20,8"/>
-                        <CheckBox Grid.Row="1" Grid.Column="1" x:Name="ChkInstallCommunityServer" Content="Install TABGCommunityServer" VerticalAlignment="Center" Margin="0,8,20,8"/>
-                        
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="ANTICHEAT REMOVER" Margin="0,8,20,8"/>
-                        <CheckBox Grid.Row="2" Grid.Column="1" x:Name="ChkInstallAntiCheatRemover" Content="Install AntiCheatBootErrorRemover" VerticalAlignment="Center" Margin="0,8,20,8" IsChecked="True"/>
-                    </Grid>
-
-                </StackPanel>
-            </DockPanel>
-            </Border>
-
-        <!-- RIGHT PANEL - LOGS -->
-        <Border Grid.Column="1" Padding="0,20,30,20" BorderBrush="Gainsboro" BorderThickness="1,0,0,0">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="Logs:" FontSize="20" FontWeight="Bold" Margin="20,0,0,10"/>
-                <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderThickness="0" Padding="20,0,0,0"/>
-    </DockPanel>
-        </Border>
-    </Grid>
+        xmlns:tabs="clr-namespace:TabgInstaller.Gui.Tabs"
+        Title="TABG Manager" Height="800" Width="1200">
+    
+    <TabControl>
+        <TabItem Header="Installer">
+            <tabs:InstallerPanel x:Name="InstallerTab"/>
+        </TabItem>
+        
+        <TabItem Header="Config">
+            <tabs:ConfigPanel x:Name="ConfigTab"/>
+        </TabItem>
+        
+        <TabItem Header="AI Chat">
+            <tabs:AiChatPanel x:Name="AiChatTab"/>
+        </TabItem>
+    </TabControl>
 </Window>

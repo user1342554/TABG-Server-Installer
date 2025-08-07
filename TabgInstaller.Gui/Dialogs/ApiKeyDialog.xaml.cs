@@ -12,18 +12,16 @@ namespace TabgInstaller.Gui.Dialogs
     {
         private readonly ISecureKeyStore _keyStore;
         private readonly IUnifiedBackend _unifiedBackend;
-        private readonly IOllamaBootstrapper _ollamaBootstrapper;
         private CancellationTokenSource? _validationCts;
 
         public string? SelectedProvider { get; private set; }
         public bool ConfigurationSaved { get; private set; }
 
-        public ApiKeyDialog(ISecureKeyStore keyStore, IUnifiedBackend unifiedBackend, IOllamaBootstrapper ollamaBootstrapper)
+        public ApiKeyDialog(ISecureKeyStore keyStore, IUnifiedBackend unifiedBackend)
         {
             InitializeComponent();
             _keyStore = keyStore;
             _unifiedBackend = unifiedBackend;
-            _ollamaBootstrapper = ollamaBootstrapper;
             
             // Handle initial selection after window is loaded
             Loaded += (s, e) =>
@@ -55,46 +53,34 @@ namespace TabgInstaller.Gui.Dialogs
                 SaveButton == null || ValidationMessage == null) 
                 return;
                 
-            if (provider == "Ollama")
+            ApiKeyLabel.Visibility = Visibility.Visible;
+            ApiKeyBox.Visibility = Visibility.Visible;
+            HelpText.Visibility = Visibility.Visible;
+            
+            // Load existing key if available
+            var existingKey = _keyStore.GetKey(provider);
+            if (!string.IsNullOrEmpty(existingKey))
             {
-                ApiKeyLabel.Visibility = Visibility.Collapsed;
-                ApiKeyBox.Visibility = Visibility.Collapsed;
-                HelpText.Visibility = Visibility.Visible;
-                HelpText.Text = "No API key required for local AI. Click Save to install Ollama.";
-                SaveButton.IsEnabled = true;
-                ValidationMessage.Visibility = Visibility.Collapsed;
+                ApiKeyBox.Password = existingKey;
             }
-            else
+
+            switch (provider)
             {
-                ApiKeyLabel.Visibility = Visibility.Visible;
-                ApiKeyBox.Visibility = Visibility.Visible;
-                HelpText.Visibility = Visibility.Visible;
-                
-                // Load existing key if available
-                var existingKey = _keyStore.GetKey(provider);
-                if (!string.IsNullOrEmpty(existingKey))
-                {
-                    ApiKeyBox.Password = existingKey;
-                }
-
-                switch (provider)
-                {
-                    case "OpenAI":
-                        HelpText.Text = "Get your API key from platform.openai.com";
-                        break;
-                    case "Anthropic":
-                        HelpText.Text = "Get your API key from console.anthropic.com";
-                        break;
-                    case "Google":
-                        HelpText.Text = "Get your API key from makersuite.google.com";
-                        break;
-                    case "xAI":
-                        HelpText.Text = "Get your API key from x.ai/api";
-                        break;
-                }
-
-                SaveButton.IsEnabled = !string.IsNullOrEmpty(ApiKeyBox.Password);
+                case "OpenAI":
+                    HelpText.Text = "Get your API key from platform.openai.com";
+                    break;
+                case "Anthropic":
+                    HelpText.Text = "Get your API key from console.anthropic.com";
+                    break;
+                case "Google":
+                    HelpText.Text = "Get your API key from makersuite.google.com";
+                    break;
+                case "xAI":
+                    HelpText.Text = "Get your API key from x.ai/api";
+                    break;
             }
+
+            SaveButton.IsEnabled = !string.IsNullOrEmpty(ApiKeyBox.Password);
         }
 
         private async void ApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
@@ -154,87 +140,14 @@ namespace TabgInstaller.Gui.Dialogs
                 var provider = item.Tag?.ToString() ?? "";
                 SelectedProvider = provider;
 
-                if (provider == "Ollama")
+                // Save API key
+                if (!string.IsNullOrEmpty(ApiKeyBox.Password))
                 {
-                    // Handle Ollama installation
-                    var progressDialog = new ProgressDialog();
-                    progressDialog.Owner = this;
-                    
-                    var progress = new Progress<string>(msg => 
-                    {
-                        Dispatcher.Invoke(() => progressDialog.UpdateMessage(msg));
-                    });
-
-                    var installTask = Task.Run(async () =>
-                    {
-                        if (!await _ollamaBootstrapper.EnsureOllamaInstalledAsync(progress))
-                        {
-                            throw new Exception("Failed to install Ollama");
-                        }
-
-                        await _ollamaBootstrapper.StartOllamaServerAsync();
-                        
-                        if (!await _ollamaBootstrapper.EnsureModelInstalledAsync("llama3.2:latest", progress))
-                        {
-                            throw new Exception("Failed to install model");
-                        }
-                    });
-
-                    try
-                    {
-                        progressDialog.ShowDialog();
-                        await installTask;
-                        ConfigurationSaved = true;
-                        DialogResult = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error setting up Ollama: {ex.Message}", "Error", 
-                            MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                else
-                {
-                    // Save API key
-                    if (!string.IsNullOrEmpty(ApiKeyBox.Password))
-                    {
-                        _keyStore.SaveKey(provider, ApiKeyBox.Password);
-                        ConfigurationSaved = true;
-                        DialogResult = true;
-                    }
+                    _keyStore.SaveKey(provider, ApiKeyBox.Password);
+                    ConfigurationSaved = true;
+                    DialogResult = true;
                 }
             }
-        }
-    }
-
-    // Simple progress dialog
-    public partial class ProgressDialog : Window
-    {
-        private TextBlock _messageBlock;
-
-        public ProgressDialog()
-        {
-            Title = "Setting up AI";
-            Width = 400;
-            Height = 150;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            ResizeMode = ResizeMode.NoResize;
-
-            var grid = new Grid { Margin = new Thickness(20) };
-            _messageBlock = new TextBlock 
-            { 
-                Text = "Initializing...",
-                TextWrapping = TextWrapping.Wrap,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            grid.Children.Add(_messageBlock);
-            Content = grid;
-        }
-
-        public void UpdateMessage(string message)
-        {
-            _messageBlock.Text = message;
         }
     }
 } 
