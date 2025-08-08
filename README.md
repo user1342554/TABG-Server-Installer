@@ -60,12 +60,11 @@ flowchart TD
     
     L -->|CitrusLib| M1[Download CitrusLib]
     L -->|Weapon Config| M2[Install Weapon Config Mod]
-    L -->|Anti-Cheat Bypass| M3[Install EAC/EOS Bypass]
     L -->|None| N
     
     M1 --> N
     M2 --> N
-    M3 --> N[Configure StarterPack]
+    N[Configure StarterPack]
     
     N --> O[Generate game_settings.txt]
     O --> P[Open Configuration Window]

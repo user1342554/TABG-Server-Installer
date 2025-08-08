@@ -65,7 +65,6 @@ namespace TabgInstaller.Gui.Tabs
             string citrusTag = TxtCitrusTag.Text.Trim();
             bool skipCitrus = ChkSkipCitruslib.IsChecked == true;
             bool installCommunityServer = ChkInstallCommunityServer.IsChecked == true;
-            bool installAntiCheatRemover = ChkInstallAntiCheatRemover.IsChecked == true;
 
             string serverDir = PathBox.Text.Trim();
 
@@ -152,7 +151,6 @@ namespace TabgInstaller.Gui.Tabs
                     skipStarterPack: false,
                     skipCitruslib: skipCitrus,
                     installCommunityServer: installCommunityServer,
-                    installAntiCheatRemover: installAntiCheatRemover,
                     ct: cts.Token
                 );
 
@@ -177,13 +175,17 @@ namespace TabgInstaller.Gui.Tabs
 
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
                         
-                        // Switch to Config tab
-                        var mainWindow = Window.GetWindow(this) as MainWindow;
-                        if (mainWindow != null)
+                        // Enable Config and AI Chat tabs only after successful install
+                        if (Window.GetWindow(this) is MainWindow mainWindow)
                         {
                             mainWindow.ConfigTab.Initialize(serverDir);
-                            var tabControl = mainWindow.Content as TabControl;
-                            if (tabControl != null) tabControl.SelectedIndex = 1; // Switch to Config tab
+                            mainWindow.AiChatTab.ServerPath = serverDir;
+                            if (mainWindow.FindName("ConfigTabItem") is TabItem cfg)
+                                cfg.IsEnabled = true;
+                            if (mainWindow.FindName("AiChatTabItem") is TabItem chat)
+                                chat.IsEnabled = true;
+                            if (mainWindow.FindName("MainTabs") is TabControl tabs)
+                                tabs.SelectedItem = cfg; // switch to Config
                         }
                         
                         MessageBox.Show("Installation completed successfully! Switching to Config tab...", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -232,7 +234,6 @@ namespace TabgInstaller.Gui.Tabs
             ChkSkipCitruslib.IsEnabled = isEnabled;
             ChkPublicServer.IsEnabled = isEnabled;
             ChkInstallCommunityServer.IsEnabled = isEnabled;
-            ChkInstallAntiCheatRemover.IsEnabled = isEnabled;
         }
     }
 }

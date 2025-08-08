@@ -20,13 +20,7 @@
             <TextBlock Name="ModelNameText" Text="—" VerticalAlignment="Center" Margin="5,0"/>
             <Label Content="Mode:" Margin="20,0,0,0"/>
             <TextBlock Name="ModeText" Text="—" VerticalAlignment="Center" Margin="5,0"/>
-
-            <Label Content="Chat:" Margin="20,0,0,0"/>
-            <ComboBox Name="HistoryComboBox" Width="220" SelectionChanged="HistoryComboBox_SelectionChanged"/>
-            <Button Content="New" Margin="5,0,0,0" Click="NewChat_Click"/>
-
-            <Button Content="Clear Chat" Margin="20,0,5,0" Click="ClearChat_Click"/>
-            <Button Content="Settings" Click="Settings_Click"/>
+            <Button Content="Settings" Margin="20,0,0,0" Click="Settings_Click"/>
         </StackPanel>
 
         <!-- Chat Messages -->
@@ -39,11 +33,7 @@
                                 <TextBlock Text="{Binding Role}" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="Gray"/>
-                                    <Button Content="Edit" Visibility="{Binding ShowEditButton, Converter={StaticResource BoolToVisibilityConverter}}"
-                                            Tag="{Binding}" Click="EditMessage_Click" Margin="10,0,0,0" Padding="5,2"/>
-                                    <Button Content="Reload" Visibility="{Binding ShowReloadButton, Converter={StaticResource BoolToVisibilityConverter}}"
-                                            Tag="{Binding}" Click="ReloadMessage_Click" Margin="10,0,0,0" Padding="5,2"/>
+                                <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="Gray"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

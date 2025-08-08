@@ -59,15 +59,16 @@ namespace TabgInstaller.Gui.Tabs
             ChatMessages.ItemsSource = _messages;
 
             await ShowInlineSetupAsync();
-            RefreshHistoryList();
-            InitializeConversation();
+            // ensure chat starts with only a system prompt
+            _messages.Clear();
+            _chatHistory.Clear();
+            _chatHistory.Add(ChatMessage.System(_promptBuilder.BuildSystemPrompt(ServerPath)));
         }
 
         private void InitializeConversation()
         {
             var systemPrompt = _promptBuilder.BuildSystemPrompt(ServerPath);
             _chatHistory.Add(ChatMessage.System(systemPrompt));
-            AddMessage("Assistant", "Welcome to TABG AI Assistant!", MessageRole.Assistant);
         }
 
         private async Task ShowInlineSetupAsync()
@@ -145,7 +146,6 @@ namespace TabgInstaller.Gui.Tabs
             _messages.Clear();
             _chatHistory.Clear();
             _chatHistory.Add(ChatMessage.System(_promptBuilder.BuildSystemPrompt(ServerPath)));
-            AddMessage("System", "Chat cleared.", MessageRole.System);
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)
@@ -154,6 +154,9 @@ namespace TabgInstaller.Gui.Tabs
             LocalDownloadPanel.Visibility = Visibility.Collapsed;
             OnlineSetupPanel.Visibility = Visibility.Collapsed;
             SetupOverlay.Visibility = Visibility.Visible;
+            // Make sure model directory textbox reflects persisted dir (handles external drive)
+            ModelDirectoryTextBox.Text = _localModelManager.GetModelsDirectory();
+            _ = UpdateSpaceInfo();
         }
 
         private void ChatScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -213,17 +216,16 @@ namespace TabgInstaller.Gui.Tabs
                 }
                 if (!string.IsNullOrEmpty(result.AssistantMessage))
                 {
-                    AddMessage("Assistant", result.AssistantMessage, MessageRole.Assistant);
-                    _chatHistory.Add(ChatMessage.Assistant(result.AssistantMessage));
-                    SaveChatHistory(_currentChatName);
+                    // Simulate streaming typing
+                    await StreamAssistantAsync(result.AssistantMessage, _currentRequestCts.Token);
                 }
                 if (result.ToolCalls.Any())
                 {
                     foreach (var toolCall in result.ToolCalls)
                     {
+                        AddMessage("System", $"Tool call: {toolCall.Function.Name}({toolCall.Function.Arguments})", MessageRole.System);
                         var toolResult = _toolExecutor.ExecuteToolCall(toolCall, ServerPath);
-                        AddMessage("System", $"Executed {toolCall.Function.Name}: {toolResult}", MessageRole.System);
-                        _chatHistory.Add(ChatMessage.Assistant($"Tool execution result: {toolResult}"));
+                        AddMessage("System", $"Tool result: {toolResult}", MessageRole.System);
                     }
                 }
             }
@@ -242,38 +244,29 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
-        private void EditMessage_Click(object sender, RoutedEventArgs e)
+        private async Task StreamAssistantAsync(string fullText, CancellationToken ct)
         {
-            if (sender is Button btn && btn.Tag is ModernChatMessageViewModel vm)
+            var builder = new System.Text.StringBuilder();
+            var messageVm = new ModernChatMessageViewModel
             {
-                if (vm.MessageRole == MessageRole.System || vm.MessageRole == MessageRole.Error) return;
-                var input = Interaction.InputBox("Edit message:", "Edit", vm.Content);
-                if (!string.IsNullOrWhiteSpace(input) && input != vm.Content)
-                {
-                    vm.Content = input;
-                    if (vm.MessageRole == MessageRole.User)
-                    {
-                        var idx = _chatHistory.FindLastIndex(m => m.Role == "user");
-                        if (idx >= 0) _chatHistory[idx] = ChatMessage.User(input);
-                        SaveChatHistory(_currentChatName);
-                    }
-                }
+                Role = "Assistant",
+                Content = string.Empty,
+                MessageRole = MessageRole.Assistant,
+                Timestamp = DateTime.Now.ToString("HH:mm")
+            };
+            Dispatcher.Invoke(() => _messages.Add(messageVm));
+            foreach (var ch in fullText)
+            {
+                ct.ThrowIfCancellationRequested();
+                builder.Append(ch);
+                var current = builder.ToString();
+                Dispatcher.Invoke(() => messageVm.Content = current);
+                await Task.Delay(10, ct);
             }
+            _chatHistory.Add(ChatMessage.Assistant(fullText));
         }
 
-        private async void ReloadMessage_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is ModernChatMessageViewModel vm)
-            {
-                if (vm.MessageRole == MessageRole.System) return;
-                var lastUser = _chatHistory.LastOrDefault(m => m.Role == "user");
-                if (lastUser != null)
-                {
-                    UserInput.Text = lastUser.Content;
-                    await SendMessage();
-                }
-            }
-        }
+        // Removed Edit/Reload and chat history persistence per request
 
         private async void UseInstalledModel_Click(object sender, RoutedEventArgs e)
         {
@@ -445,76 +438,7 @@ namespace TabgInstaller.Gui.Tabs
             });
         }
 
-        private void HistoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (HistoryComboBox?.SelectedItem is ComboBoxItem item)
-            {
-                var name = item.Tag?.ToString() ?? "default";
-                _currentChatName = name;
-                LoadChatHistory(name);
-            }
-        }
-
-        private void NewChat_Click(object sender, RoutedEventArgs e)
-        {
-            _currentChatName = DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss");
-            _messages.Clear();
-            _chatHistory.Clear();
-            InitializeConversation();
-            SaveChatHistory(_currentChatName);
-            RefreshHistoryList();
-        }
-
-        private string GetChatsRoot()
-        {
-            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TABGInstaller", "Chats");
-            Directory.CreateDirectory(root);
-            return root;
-        }
-
-        private void SaveChatHistory(string chatName)
-        {
-            try
-            {
-                var path = Path.Combine(GetChatsRoot(), chatName + ".json");
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_chatHistory);
-                File.WriteAllText(path, json);
-            }
-            catch { }
-        }
-
-        private void LoadChatHistory(string chatName)
-        {
-            try
-            {
-                var path = Path.Combine(GetChatsRoot(), chatName + ".json");
-                if (!File.Exists(path)) { _messages.Clear(); InitializeConversation(); return; }
-                var json = File.ReadAllText(path);
-                var msgs = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ChatMessage>>(json) ?? new();
-                _chatHistory = msgs;
-                _messages.Clear();
-                foreach (var m in msgs)
-                {
-                    var role = m.Role switch { "user" => MessageRole.User, "assistant" => MessageRole.Assistant, "system" => MessageRole.System, _ => MessageRole.System };
-                    AddMessage(char.ToUpper(m.Role[0]) + m.Role.Substring(1), m.Content, role);
-                }
-            }
-            catch { }
-        }
-
-        private void RefreshHistoryList()
-        {
-            try
-            {
-                HistoryComboBox.Items.Clear();
-                foreach (var file in Directory.GetFiles(GetChatsRoot(), "*.json").OrderByDescending(f => f))
-                {
-                    var name = Path.GetFileNameWithoutExtension(file);
-                    HistoryComboBox.Items.Add(new ComboBoxItem { Content = name, Tag = name });
-                }
-            }
-            catch { }
-        }
+        // Chat history removed
     }
 }
 

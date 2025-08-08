@@ -165,7 +165,6 @@ namespace TabgInstaller.Core
         bool   skipStarterPack,
         bool   skipCitruslib,
         bool   installCommunityServer = false,
-        bool   installAntiCheatRemover = true,
         CancellationToken ct = default
     )
     {

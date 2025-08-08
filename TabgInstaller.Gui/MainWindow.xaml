@@ -4,16 +4,16 @@
         xmlns:tabs="clr-namespace:TabgInstaller.Gui.Tabs"
         Title="TABG Manager" Height="800" Width="1200">
     
-    <TabControl>
+    <TabControl x:Name="MainTabs">
         <TabItem Header="Installer">
             <tabs:InstallerPanel x:Name="InstallerTab"/>
         </TabItem>
         
-        <TabItem Header="Config">
+        <TabItem Header="Config" x:Name="ConfigTabItem" IsEnabled="False">
             <tabs:ConfigPanel x:Name="ConfigTab"/>
         </TabItem>
         
-        <TabItem Header="AI Chat">
+        <TabItem Header="AI Chat" x:Name="AiChatTabItem" IsEnabled="False">
             <tabs:AiChatPanel x:Name="AiChatTab"/>
         </TabItem>
     </TabControl>

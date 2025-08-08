@@ -139,8 +139,7 @@ namespace TabgInstaller.Gui
             var systemPrompt = _promptBuilder.BuildSystemPrompt(_serverPath);
             _chatHistory.Add(ChatMessage.System(systemPrompt));
 
-            // Add welcome message
-            AddMessage("Assistant", "🎮 Welcome to TABG AI Assistant!\n\nI'm here to help you configure your server, manage plugins, and optimize your game settings. What would you like to do today?", MessageRole.Assistant);
+            // Welcome message removed (legacy window unused in single-window UI)
         }
 
         private void ClearChat_Click(object sender, RoutedEventArgs e)

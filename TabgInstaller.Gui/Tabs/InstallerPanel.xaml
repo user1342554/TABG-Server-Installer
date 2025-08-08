@@ -64,7 +64,6 @@
                     <CheckBox x:Name="ChkSkipCitruslib" Content="Skip" Grid.Column="2" Margin="5"/>
                 </Grid>
                 <CheckBox x:Name="ChkInstallCommunityServer" Content="Install TABGCommunityServer" Margin="5"/>
-                <CheckBox x:Name="ChkInstallAntiCheatRemover" Content="Install AntiCheatBootErrorRemover" IsChecked="True" Margin="5"/>
             </StackPanel>
         </GroupBox>
 

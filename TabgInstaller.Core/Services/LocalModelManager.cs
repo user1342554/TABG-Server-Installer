@@ -114,23 +114,24 @@ namespace TabgInstaller.Core.Services
                 ["gpt-oss-20b"] = new LocalModelInfo
                 {
                     ModelId = "gpt-oss-20b",
-                    DisplayName = "GPT-OSS 20B (13.8 GB)",
+                    DisplayName = "GPT-OSS 20B (10.3 GiB)",
                     HuggingFaceRepo = "openai/gpt-oss-20b",
                     OllamaModelName = "gpt-oss:20b",
-                    TotalSize = 14_807_859_200L, // ~13.8 GB
+                    // 4.79 + 4.80 + 0.02 + small files ≈ 9.6 GiB; include overhead ~10.3 GiB
+                    TotalSize = 11_058_841_600L,
                     Shards = new List<ModelShard>
                     {
                         new ModelShard
                         {
                             FileName = "model-00000-of-00002.safetensors",
-                            FileSize = 5_142_068_224L, // ~4.79 GB
+                            FileSize = 5_142_068_224L,
                             Sha256 = "16d0f997dcfc4462089d536bffe51b4bcea2f872f5c430be09ef8ed392312427",
                             DownloadUrl = "https://huggingface.co/openai/gpt-oss-20b/resolve/main/model-00000-of-00002.safetensors"
                         },
                         new ModelShard
                         {
                             FileName = "model-00001-of-00002.safetensors",
-                            FileSize = 5_153_960_960L, // ~4.80 GB
+                            FileSize = 5_153_960_960L,
                             DownloadUrl = "https://huggingface.co/openai/gpt-oss-20b/resolve/main/model-00001-of-00002.safetensors"
                         },
                         new ModelShard
@@ -162,10 +163,11 @@ namespace TabgInstaller.Core.Services
                 ["gpt-oss-120b"] = new LocalModelInfo
                 {
                     ModelId = "gpt-oss-120b",
-                    DisplayName = "GPT-OSS 120B (65.3 GB)",
+                    DisplayName = "GPT-OSS 120B (69.5 GiB)",
                     HuggingFaceRepo = "openai/gpt-oss-120b",
                     OllamaModelName = "gpt-oss:120b",
-                    TotalSize = 70_100_000_000L, // ~65.3 GB
+                    // 14 shards × ~4.63 GiB ≈ 64.8 GiB + tokenizer/config overhead ≈ 69.5 GiB
+                    TotalSize = 74_632_499_200L,
                     Shards = new List<ModelShard>
                     {
                         // Add all 15 shards for the 120B model
