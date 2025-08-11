@@ -13,8 +13,6 @@
             <tabs:ConfigPanel x:Name="ConfigTab"/>
         </TabItem>
         
-        <TabItem Header="AI Chat" x:Name="AiChatTabItem" IsEnabled="False">
-            <tabs:AiChatPanel x:Name="AiChatTab"/>
-        </TabItem>
+        <!-- AI Chat removed -->
     </TabControl>
 </Window>

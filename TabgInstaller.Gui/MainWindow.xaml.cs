@@ -8,8 +8,7 @@ namespace TabgInstaller.Gui
         public MainWindow()
         {
             InitializeComponent();
-            AiChatTab.ServerPath = Environment.CurrentDirectory;
-            // Ensure Config/AI tabs start disabled (XAML sets IsEnabled=false already)
+            // Ensure Config tab starts disabled (XAML sets IsEnabled=false already)
         }
     }
 }

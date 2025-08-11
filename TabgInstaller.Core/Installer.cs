@@ -388,6 +388,13 @@ namespace TabgInstaller.Core
             {
                 try
                 {
+                    // Never delete the Presets root directory
+                    var rel = Path.GetRelativePath(serverDir, path).Replace('\\','/');
+                    if (rel.Equals("Presets", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _log.Report("  → Skipped deleting Presets directory");
+                        continue;
+                    }
                     Directory.Delete(path, true); 
                     _log.Report($"  → Deleted directory: {Path.GetRelativePath(serverDir, path)}");
                 }

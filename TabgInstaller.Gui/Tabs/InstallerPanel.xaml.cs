@@ -175,17 +175,14 @@ namespace TabgInstaller.Gui.Tabs
 
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
                         
-                        // Enable Config and AI Chat tabs only after successful install
+                        // Enable Config tab only after successful install
                         if (Window.GetWindow(this) is MainWindow mainWindow)
                         {
                             mainWindow.ConfigTab.Initialize(serverDir);
-                            mainWindow.AiChatTab.ServerPath = serverDir;
-                            if (mainWindow.FindName("ConfigTabItem") is TabItem cfg)
-                                cfg.IsEnabled = true;
-                            if (mainWindow.FindName("AiChatTabItem") is TabItem chat)
-                                chat.IsEnabled = true;
+                            if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
+                                cfgItem.IsEnabled = true;
                             if (mainWindow.FindName("MainTabs") is TabControl tabs)
-                                tabs.SelectedItem = cfg; // switch to Config
+                                tabs.SelectedIndex = 1; // switch to Config tab by index
                         }
                         
                         MessageBox.Show("Installation completed successfully! Switching to Config tab...", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -220,6 +217,25 @@ namespace TabgInstaller.Gui.Tabs
             {
                 SetUiEnabled(true);
                 cts.Dispose();
+            }
+        }
+
+        private void BtnContinue_Click(object sender, RoutedEventArgs e)
+        {
+            string serverDir = PathBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(serverDir) || !Directory.Exists(serverDir))
+            {
+                MessageBox.Show("Please select a valid TABG server folder.", "Folder Not Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (Window.GetWindow(this) is MainWindow mainWindow)
+            {
+                mainWindow.ConfigTab.Initialize(serverDir);
+                if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
+                    cfgItem.IsEnabled = true;
+                if (mainWindow.FindName("MainTabs") is TabControl tabs)
+                    tabs.SelectedIndex = 1; // switch to Config tab
             }
         }
 

@@ -5,10 +5,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:TabgInstaller.Gui.ViewModels"
              xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters"
+             xmlns:converters="clr-namespace:TabgInstaller.Gui.Converters"
              mc:Ignorable="d">
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <conv:BoolToVisibilityConverter x:Key="NotBoolToVis" Inverse="True"/>
+        <converters:SettingToTooltipConverter x:Key="SettingToTooltip" />
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <ItemsControl ItemsSource="{Binding Properties}">
@@ -19,7 +21,8 @@
                             <ColumnDefinition Width="220"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" 
+                                   ToolTip="{Binding Name, Converter={StaticResource SettingToTooltip}}"/>
                         <CheckBox Grid.Column="1"
                                   IsChecked="{Binding BoolValue, Mode=TwoWay}"
                                   Visibility="{Binding IsBool, Converter={StaticResource BoolToVis}}"/>

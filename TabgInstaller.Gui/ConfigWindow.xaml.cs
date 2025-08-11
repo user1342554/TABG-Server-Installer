@@ -161,20 +161,7 @@ namespace TabgInstaller.Gui
             StartButton_Click(sender, e);
         }
 
-        private void AiChat_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var aiChatWindow = new AiChatWindow(_serverDir);
-                aiChatWindow.Owner = this;
-                aiChatWindow.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error opening AI Chat: {ex.Message}\n\nDetails: {ex.StackTrace}", 
-                    "AI Chat Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        
 
 
         private void ClearConsole_Click(object sender, RoutedEventArgs e)

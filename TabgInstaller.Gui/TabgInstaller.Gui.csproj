@@ -20,9 +20,12 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
   </ItemGroup>
 
-  <!-- Copy models.json to output directory -->
+  <!-- Copy Knowledge folder to output directory (read-only content) -->
   <ItemGroup>
-    <None Include="..\models.json" CopyToOutputDirectory="Always" />
+    <None Include="..\Knowledge\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Knowledge\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
 
 </Project>

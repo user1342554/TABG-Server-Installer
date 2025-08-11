@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace TabgInstaller.Core.Services
 {
@@ -13,9 +14,29 @@ namespace TabgInstaller.Core.Services
         {
             // Get the executable's directory and go up to find Knowledge folder
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.Parent?.FullName 
-                ?? baseDir;
-            _knowledgePath = Path.Combine(projectRoot, "Knowledge");
+            var baseInfo = new DirectoryInfo(baseDir);
+            var candidates = new List<string>
+            {
+                Path.Combine(baseInfo.FullName, "Knowledge")
+            };
+            if (baseInfo.Parent != null)
+                candidates.Add(Path.Combine(baseInfo.Parent.FullName, "Knowledge"));
+            if (baseInfo.Parent?.Parent != null)
+                candidates.Add(Path.Combine(baseInfo.Parent.Parent.FullName, "Knowledge"));
+            candidates.Add(Path.Combine(AppContext.BaseDirectory, "Knowledge"));
+
+            foreach (var c in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(c) && Directory.Exists(c))
+                {
+                    _knowledgePath = c;
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(_knowledgePath))
+            {
+                _knowledgePath = Path.Combine(baseDir, "Knowledge");
+            }
         }
 
         public string BuildSystemPrompt(string serverDirectory)
@@ -46,7 +67,7 @@ namespace TabgInstaller.Core.Services
             prompt.AppendLine("    \"Sniper:100% 328:1,131:5,132:2/\" - VSS rifle with bandages and medkits");
             prompt.AppendLine("    \"Overpowered:50% 152:1,131:10,132:5/Healer:50% 187:3,132:10/\" - 50% chance for each");
             prompt.AppendLine("    \"Full Blessing:100% 42:1,43:1,44:1/\" - Multiple blessing items");
-            prompt.AppendLine("- manage_ollama_model: Delete and reinstall the local AI model");
+            // Local AI removed; no local model management functions
             prompt.AppendLine();
 
             // Load and include Knowledge files - explicitly validate all three files

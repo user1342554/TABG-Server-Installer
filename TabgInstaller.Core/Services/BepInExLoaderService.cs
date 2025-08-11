@@ -36,26 +36,17 @@ namespace TabgInstaller.Core.Services
                     return;
                 }
 
-                // Create a simple batch file that the user can optionally use
+                // Remove legacy batch file if present
                 var optionalBatchPath = Path.Combine(serverPath, "START_SERVER_WITH_MODS.bat");
-                var batchContent = @"@echo off
-echo ========================================
-echo Starting TABG Server with BepInEx Mods
-echo ========================================
-echo.
-cd /d ""%~dp0""
-set DOORSTOP_ENABLE=TRUE
-set DOORSTOP_INVOKE_DLL_PATH=BepInEx\core\BepInEx.Preloader.dll
-set DOORSTOP_CORLIB_OVERRIDE_PATH=unstripped_corlib
-set DOORSTOP_REDIRECT_OUTPUT_LOG=false
-echo Environment variables set for BepInEx
-echo Starting TABG.exe...
-echo.
-TABG.exe %*
-pause
-";
-                await File.WriteAllTextAsync(optionalBatchPath, batchContent);
-                _log.Report("  → Created optional START_SERVER_WITH_MODS.bat");
+                try
+                {
+                    if (File.Exists(optionalBatchPath))
+                    {
+                        File.Delete(optionalBatchPath);
+                        _log.Report("  → Removed legacy START_SERVER_WITH_MODS.bat");
+                    }
+                }
+                catch { }
 
                 // Create a PowerShell script that sets environment variables persistently
                 var psScriptPath = Path.Combine(serverPath, "Configure_BepInEx_Environment.ps1");

@@ -17,28 +17,14 @@
 
 </div>
 
-*An installer, mod‑loader, and AI-powered configuration assistant for **Totally Accurate Battlegrounds** dedicated servers.*
+*An installer and mod‑loader for **Totally Accurate Battlegrounds** dedicated servers.*
 
 ---
-## AI Configuration Assistant
+## Notes
 
-The installer includes an AI assistant that understands TABG configuration syntax and can modify your server settings through conversation.
-
-### What changed recently
-- One-window app with three tabs: Installer, Config, AI Chat
-- AI setup is prompted first. You can choose Local or Online providers
-- Choose any provider/model from `models.json` (OpenAI, Anthropic, Google, xAI, etc.)
-- Chat history with sync (AppData/TABGInstaller/Chats). Switch or create new chats from the header
-- Messages can be edited and reloaded; copy button was removed
-- “Online” indicator removed; plain status text shows Ready/Setup/Busy
-
-### Supported Providers
-- OpenAI (e.g. gpt-5, gpt-4o)
-- Anthropic
-- Google
-- xAI
-- Local AI (Ollama)
----
+- The installer preserves your `Presets/` folder on cleanup.
+- You can click “Continue without install” to open the Config tab for an existing server without reinstalling.
+- The legacy `START_SERVER_WITH_MODS.bat` launcher is removed.
 
 ## 📊 Installation Flow
 
@@ -68,14 +54,7 @@ flowchart TD
     
     N --> O[Generate game_settings.txt]
     O --> P[Open Configuration Window]
-    P --> Q{Use AI Assistant?}
-    
-    Q -->|Yes| R[Setup AI Provider]
-    R --> S[Configure via Chat]
-    Q -->|No| T[Manual Configuration]
-    
-    S --> U[Start Server]
-    T --> U
+    P --> U[Start Server]
     U --> V[Server Running!]
 ```
 
@@ -87,7 +66,7 @@ flowchart TD
 - Windows 10/11 (64-bit)
 - .NET Framework 4.7.2 or higher
 - Steam with TABG Dedicated Server installed
-- (Optional) API key for AI features or ~4GB disk space for local AI
+
 
 
 ---
