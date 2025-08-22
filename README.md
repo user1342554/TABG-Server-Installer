@@ -19,7 +19,9 @@
 
 ---
 
-## 📊 Installation Flow
+
+
+## Installation Flow
 
 ```mermaid
 flowchart TD
