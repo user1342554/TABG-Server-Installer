@@ -1,0 +1,116 @@
+{
+    "template_lines": [
+      "ServerName=",
+      "ServerDescription=",
+      "Port=7777",
+      "MaxPlayers=",
+      "Relay=true",
+      "AutoTeam=false",
+      "Password=",
+      "CarSpawnRate=",
+      "UseTimedForceStart=",
+      "ForceStartTime=200.0",
+      "MinPlayersToForceStart=2",
+      "PlayersToStart=2",
+      "Countdown=20.0",
+      "AllowRespawnMinigame=true",
+      "TeamMode=SQUAD",
+      "GameMode=BattleRoyale",
+      "AntiCheat=false"
+    ],
+  
+    "settings": {
+      "ServerName": {
+        "line_format": "ServerName=",
+        "type": "string",
+        "default": ""
+      },
+      "ServerDescription": {
+        "line_format": "ServerDescription=",
+        "type": "string",
+        "default": ""
+      },
+      "Port": {
+        "line_format": "Port=7777",
+        "type": "integer",
+        "editable": false,
+        "default": 7777
+      },
+      "MaxPlayers": {
+        "line_format": "MaxPlayers=",
+        "type": "integer",
+        "range": [1, 253],
+        "default": 253
+      },
+      "Relay": {
+        "line_format": "Relay=true",
+        "type": "boolean",
+        "default": true
+      },
+      "AutoTeam": {
+        "line_format": "AutoTeam=false",
+        "type": "boolean",
+        "default": false
+      },
+      "Password": {
+        "line_format": "Password=",
+        "type": "string",
+        "default": ""
+      },
+      "CarSpawnRate": {
+        "line_format": "CarSpawnRate=",
+        "type": "float",
+        "range": [0.0, 1.0],
+        "default": 1.0
+      },
+      "UseTimedForceStart": {
+        "line_format": "UseTimedForceStart=",
+        "type": "boolean",
+        "default": false
+      },
+      "ForceStartTime": {
+        "line_format": "ForceStartTime=200.0",
+        "type": "float",
+        "default": 200.0
+      },
+      "MinPlayersToForceStart": {
+        "line_format": "MinPlayersToForceStart=2",
+        "type": "integer",
+        "default": 2
+      },
+      "PlayersToStart": {
+        "line_format": "PlayersToStart=2",
+        "type": "integer",
+        "default": 2
+      },
+      "Countdown": {
+        "line_format": "Countdown=20.0",
+        "type": "float",
+        "default": 20.0
+      },
+      "AllowRespawnMinigame": {
+        "line_format": "AllowRespawnMinigame=true",
+        "type": "boolean",
+        "default": true
+      },
+      "TeamMode": {
+        "line_format": "TeamMode=SQUAD",
+        "type": "string",
+        "allowed": ["SQUAD", "DUO", "SOLO"],
+        "default": "SQUAD"
+      },
+      "GameMode": {
+        "line_format": "GameMode=BattleRoyale",
+        "type": "string",
+        "editable": false,
+        "default": "BattleRoyale"
+      },
+      "AntiCheat": {
+        "line_format": "AntiCheat=false",
+        "type": "boolean",
+        "editable": false,
+        "default": false
+      }
+    }
+  }
+  

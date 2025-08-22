@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+// using TabgInstaller.Gui.Windows; // removed
 
 namespace TabgInstaller.Gui
 {
@@ -10,5 +11,7 @@ namespace TabgInstaller.Gui
             InitializeComponent();
             // Ensure Config tab starts disabled (XAML sets IsEnabled=false already)
         }
+
+        // Removed Loadout Creator
     }
 }

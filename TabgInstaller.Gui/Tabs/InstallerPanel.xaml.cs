@@ -68,6 +68,21 @@ namespace TabgInstaller.Gui.Tabs
 
             string serverDir = PathBox.Text.Trim();
 
+            // Show warning about wiping old server folder and offer backup
+            var result = MessageBox.Show(
+                "WARNING: Installation will modify server files!\n\n" +
+                "A backup will be created in the 'backup' folder before installation.\n" +
+                "Do you want to continue?",
+                "Installation Warning",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(serverDir))
             {
                 MessageBox.Show(
@@ -136,6 +151,27 @@ namespace TabgInstaller.Gui.Tabs
 
             try
             {
+                // Create backup before installation
+                var backupService = new TabgInstaller.Core.Services.BackupService(progress);
+                if (Directory.Exists(serverDir) && Directory.GetFileSystemEntries(serverDir).Length > 0)
+                {
+                    ((IProgress<string>)progress).Report("Creating backup...");
+                    bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
+                    if (!backupSuccess)
+                    {
+                        var continueAnyway = MessageBox.Show(
+                            "Failed to create backup!\n\nDo you want to continue with installation anyway?",
+                            "Backup Failed",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning
+                        );
+                        if (continueAnyway != MessageBoxResult.Yes)
+                        {
+                            return;
+                        }
+                    }
+                }
+
                 var installer = new TabgInstaller.Core.Installer(
                     gameDir: serverDir,
                     log: progress
@@ -158,29 +194,22 @@ namespace TabgInstaller.Gui.Tabs
                 {
                     if (exitCode == 0)
                     {
-                        try
-                        {
-                            string winMedia = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", "notify.wav");
-                            if (File.Exists(winMedia))
-                            {
-                                var player = new SoundPlayer(winMedia);
-                                player.Play();
-                            }
-                            else
-                            {
-                                SystemSounds.Asterisk.Play();
-                            }
-                        }
-                        catch { }
-
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
                         
-                        // Enable Config tab only after successful install
+                        // Enable Config, AI Chat, and Backups tabs after successful install
                         if (Window.GetWindow(this) is MainWindow mainWindow)
                         {
                             mainWindow.ConfigTab.Initialize(serverDir);
                             if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                                 cfgItem.IsEnabled = true;
+                            if (mainWindow.FindName("AiChatTab") is TabItem aiItem)
+                                aiItem.IsEnabled = true;
+                            if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
+                            {
+                                backupsItem.IsEnabled = true;
+                                if (backupsItem.Content is BackupsPanel backupsPanel)
+                                    backupsPanel.Initialize(serverDir);
+                            }
                             if (mainWindow.FindName("MainTabs") is TabControl tabs)
                                 tabs.SelectedIndex = 1; // switch to Config tab by index
                         }
@@ -234,6 +263,14 @@ namespace TabgInstaller.Gui.Tabs
                 mainWindow.ConfigTab.Initialize(serverDir);
                 if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                     cfgItem.IsEnabled = true;
+                if (mainWindow.FindName("AiChatTab") is TabItem aiItem)
+                    aiItem.IsEnabled = true;
+                if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
+                {
+                    backupsItem.IsEnabled = true;
+                    if (backupsItem.Content is BackupsPanel backupsPanel)
+                        backupsPanel.Initialize(serverDir);
+                }
                 if (mainWindow.FindName("MainTabs") is TabControl tabs)
                     tabs.SelectedIndex = 1; // switch to Config tab
             }

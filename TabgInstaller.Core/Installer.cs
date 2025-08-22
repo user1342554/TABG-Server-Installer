@@ -931,7 +931,7 @@ namespace TabgInstaller.Core
                 "TABG.exe", "TABG_Data", "UnityPlayer.dll", "UnityCrashHandler64.exe",
                 "steam_appid.txt", "doorstop_config.ini", "libdoorstop.so", "run_bepinex.cmd", "run_bepinex.sh",
                 "MonoBleedingEdge", "TheStarterPack.json", "game_settings.txt",
-                "winhttp.dll"
+                "winhttp.dll", "backup"
             };
         if (fileExisted)
         {
@@ -962,6 +962,7 @@ namespace TabgInstaller.Core
             ensureEntry("MonoBleedingEdge", "MonoBleedingEdge");
             ensureEntry("TheStarterPack.json", "TheStarterPack.json");
             ensureEntry("game_settings.txt", "game_settings.txt");
+            ensureEntry("backup", "backup folder");
 
             ensureEntry("winhttp.dll", "winhttp.dll");
 

@@ -36,6 +36,9 @@ namespace TabgInstaller.Gui.Tabs
             _serverDir = serverDir;
             _pluginsDir = Path.Combine(_serverDir, "BepInEx", "plugins");
             
+            // Set global server path for other components to use
+            GlobalServerPath.Set(serverDir);
+            
             var gsPath = Path.Combine(serverDir, "game_settings.txt");
             if (File.Exists(gsPath))
             {

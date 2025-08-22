@@ -4,15 +4,23 @@
         xmlns:tabs="clr-namespace:TabgInstaller.Gui.Tabs"
         Title="TABG Manager" Height="800" Width="1200">
     
-    <TabControl x:Name="MainTabs">
-        <TabItem Header="Installer">
-            <tabs:InstallerPanel x:Name="InstallerTab"/>
-        </TabItem>
-        
-        <TabItem Header="Config" x:Name="ConfigTabItem" IsEnabled="False">
-            <tabs:ConfigPanel x:Name="ConfigTab"/>
-        </TabItem>
-        
-        <!-- AI Chat removed -->
-    </TabControl>
+    <Grid>
+        <!-- Tab Control -->
+        <TabControl x:Name="MainTabs">
+            <TabItem Header="Installer">
+                <tabs:InstallerPanel x:Name="InstallerTab"/>
+            </TabItem>
+            
+            <TabItem Header="Config" x:Name="ConfigTabItem" IsEnabled="False">
+                <tabs:ConfigPanel x:Name="ConfigTab"/>
+            </TabItem>
+            
+            <TabItem Header="AI Chat" x:Name="AiChatTab" IsEnabled="False">
+                <tabs:AiChatPanel/>
+            </TabItem>
+            <TabItem Header="Backups" x:Name="BackupsTab" IsEnabled="False">
+                <tabs:BackupsPanel/>
+            </TabItem>
+        </TabControl>
+    </Grid>
 </Window>
