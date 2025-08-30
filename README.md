@@ -50,24 +50,24 @@ flowchart TD
 
     subgraph Installer core
         M --> N[Kill running TABG processes]
-        N --> O[Ensure VanillaFiles whitelist (preserve Presets, backup)]
+        N --> O[Ensure VanillaFiles whitelist - preserve Presets and backup]
         O --> P[Write game_settings.txt defaults]
         P --> Q[Hard reset files not in whitelist]
         Q --> R[Install BepInEx 5.4.22]
         R --> S[Enable doorstop_config.ini]
-        S --> T[Copy winhttp.dll; duplicate to version.dll]
+        S --> T[Copy winhttp.dll and version.dll]
         T --> U{Unity 2021.3+?}
         U -->|Yes| U1[Install automatic BepInEx loader]
         U -->|No| V
         U1 --> V
-        V --> W[Download StarterPack.dll -> plugins]
-        W --> W1[Run TABG.exe headless until Heartbeat/timeout]
-        W1 --> W2[Download StarterPackSetup.exe -> server root]
+        V --> W[Download StarterPack.dll to plugins]
+        W --> W1[Run TABG.exe headless until heartbeat or timeout]
+        W1 --> W2[Download StarterPackSetup.exe to server root]
         W2 --> W3[Launch setup and wait for exit]
         W3 --> W4[Sanitize TheStarterPack.txt]
     end
 
-    W4 --> Y1[Enable Config/AI/Backups tabs; switch to Config]
+    W4 --> Y1[Enable Config/AI/Backups tabs and switch to Config]
     Y1 --> Z[Installation complete]
 ```
 
