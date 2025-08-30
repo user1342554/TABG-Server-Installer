@@ -171,32 +171,16 @@ namespace TabgInstaller.Gui.Tabs
                     );
                 }
 
-                // Use streaming for real-time response
+                // Non-streaming response
                 AppendToLog("[ai] ");
-                var currentPos = ChatLog.Text.Length;
-                
-                var response = await provider.SendStreamAsync(apiKey, model, messages, token =>
-                {
-                    // Update UI on main thread
-                    Dispatcher.Invoke(() =>
-                    {
-                        AppendToLog(token);
-                    });
-                });
-                
-                // Show reasoning if available (thinking models)
-                if (response.HasReasoning)
-                {
-                    AppendToLog("\n\n💭 AI Reasoning:\n");
-                    AppendToLog($"```\n{response.Reasoning}\n```\n");
-                }
-                
+                var reply = await provider.SendAsync(apiKey, model, messages);
+                AppendToLog(reply);
                 AppendToLog("\n\n");
 
                 // Process tool calls from the response
                 try
                 {
-                    HandleToolCalls(response.Content);
+                    HandleToolCalls(reply);
                 }
                 catch (Exception toolEx)
                 {
@@ -303,10 +287,15 @@ namespace TabgInstaller.Gui.Tabs
             var toolJsons = new List<string>();
 
             // Pattern 1: single-line TOOL_CALL {...}
-            var lineRegex = new Regex(@"^\s*TOOL_CALL\s+(\{[\s\S]*?\})\s*$", RegexOptions.Multiline);
+            var lineRegex = new Regex(@"^\s*TOOL_CALL\s+([\s\S]*?)$", RegexOptions.Multiline);
             foreach (Match m in lineRegex.Matches(assistantReply))
             {
-                toolJsons.Add(m.Groups[1].Value);
+                var afterToken = m.Groups[1].Value;
+                var json = TryExtractJsonObject(afterToken);
+                if (!string.IsNullOrWhiteSpace(json))
+                {
+                    toolJsons.Add(json!);
+                }
             }
 
             // Pattern 2: code fence ```tool {json} ``` or ```json with TOOL_CALL
@@ -319,18 +308,20 @@ namespace TabgInstaller.Gui.Tabs
                     var idx = block.IndexOf('{');
                     if (idx >= 0)
                     {
-                        var json = block.Substring(idx).Trim();
-                        toolJsons.Add(json);
+                        var json = TryExtractJsonObject(block.Substring(idx));
+                        if (!string.IsNullOrWhiteSpace(json))
+                        {
+                            toolJsons.Add(json!);
+                        }
                     }
                 }
-                else if (block.StartsWith("{"))
+                else
                 {
-                    try
+                    var json = TryExtractJsonObject(block);
+                    if (!string.IsNullOrWhiteSpace(json))
                     {
-                        using var _ = JsonDocument.Parse(block);
-                        toolJsons.Add(block);
+                        toolJsons.Add(json!);
                     }
-                    catch { }
                 }
             }
 
@@ -338,6 +329,71 @@ namespace TabgInstaller.Gui.Tabs
             {
                 ShowToolCallSummary(json);
                 ExecuteToolCall(json);
+            }
+        }
+
+        private string? TryExtractJsonObject(string text)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(text)) return null;
+                var start = text.IndexOf('{');
+                if (start < 0) return null;
+
+                var inString = false;
+                var escape = false;
+                var depth = 0;
+                for (int i = start; i < text.Length; i++)
+                {
+                    var c = text[i];
+                    if (escape)
+                    {
+                        escape = false;
+                        continue;
+                    }
+                    if (inString)
+                    {
+                        if (c == '\\')
+                        {
+                            escape = true;
+                        }
+                        else if (c == '"')
+                        {
+                            inString = false;
+                        }
+                        continue;
+                    }
+
+                    if (c == '"')
+                    {
+                        inString = true;
+                        continue;
+                    }
+                    if (c == '{')
+                    {
+                        depth++;
+                    }
+                    else if (c == '}')
+                    {
+                        depth--;
+                        if (depth == 0)
+                        {
+                            return text.Substring(start, i - start + 1);
+                        }
+                    }
+                }
+
+                // Fallback: trim to last closing brace if any
+                var last = text.LastIndexOf('}');
+                if (last > start)
+                {
+                    return text.Substring(start, last - start + 1);
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -502,12 +558,12 @@ namespace TabgInstaller.Gui.Tabs
             {
                 // Try multiple possible paths for the Knowledge folder
                 var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var possiblePaths = new[]
-                {
-                    Path.Combine(baseDir, "Knowledge", "Weaponlist.json"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "Knowledge", "Weaponlist.json"),
-                    Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", "Knowledge", "Weaponlist.json")
-                };
+                               var possiblePaths = new[]
+               {
+                   Path.Combine(baseDir, "Knowledge", "Weaponlist.json"),
+                   Path.Combine(Directory.GetCurrentDirectory(), "Knowledge", "Weaponlist.json"),
+                   Path.Combine(AppContext.BaseDirectory, "Knowledge", "Weaponlist.json")
+               };
                 
                 string? weaponFile = null;
                 foreach (var path in possiblePaths)
