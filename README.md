@@ -17,6 +17,12 @@
 
 </div>
 
+### Disclaimer 
+
+> **Important:**
+> This installer downloads, installs, and configures the **StarterPack** created by **ContagiouslyStupid**. I did not write or maintain the StarterPack code. https://github.com/ContagiouslyStupid/TABGStarterPack 
+
+
 
 
 
@@ -70,57 +76,100 @@ flowchart TD
 
 
 ```
-
-
-
+---
 
 ## Requirements
 
-- **Windows 10/11** (64-bit)
-- **.NET 8.0 Desktop Runtime** (only if using the framework-dependent build in `publish/`)
-- **Steam** with TABG Dedicated Server installed
-- **(Optional)** API key or access token for AI features (OpenAI, Anthropic, xAI, Google Vertex)
+### Essentials (required)
+
+* Windows 10/11, 64-bit
+* Steam with **TABG Dedicated Server** installed
+
+### Runtime options (choose one)
+
+* **Self-contained build** — no .NET installation required
+* **Framework-dependent build** — install **.NET 8.0 Desktop Runtime**
+  *(applies only if you use the framework-dependent build in `publish/`)*
+
+### Optional (for AI features)
+
+* API key or access token for any of: OpenAI, Anthropic, xAI, Google Vertex
 
 ---
 
+## Credits
 
-
-## 🙏 Credits
-
-- **Landfall Games** - For creating TABG
-- **BepInEx Team** - For the modding framework
-- **CyrusTheLesser** - For CitrusLib
-- **ContagiouslyStupid** - For the StarterPack
-
-
-## 📄 License
-
-Released under the **MIT License** – see [LICENSE](LICENSE) for the full text.
+* **ContagiouslyStupid** — StarterPack )
+* **Landfall Games** — Totally Accurate Battlegrounds (TABG)
+* **BepInEx Team** — modding framework
+* **CyrusTheLesser** — CitrusLib
 
 ---
-
 
 ## Key Storage and Knowledge Files
 
-- Keys are stored per provider at `%LOCALAPPDATA%\TABGInstaller\keys`, encrypted via Windows DPAPI (Current User)
-- The AI uses the `Knowledge` folder next to `TabgInstaller.Gui.exe` (`Game settings explanation.json`, `The starter pack explained.json`, `Weaponlist.json`)
+### Key storage
 
-## 🧰 Tool Calling (advanced)
+* Location:
 
-The assistant can request config edits by emitting a line starting with `TOOL_CALL` followed by JSON:
+  ```
+  %LOCALAPPDATA%\TABGInstaller\keys
+  ```
+* Per-provider key files
+* Encrypted with **Windows DPAPI (Current User)**
 
-```json
+### Knowledge files
+
+* Directory: `Knowledge` (next to `TabgInstaller.Gui.exe`)
+* Used by the assistant:
+
+  * `Game settings explanation.json`
+  * `The starter pack explained.json`
+  * `Weaponlist.json`
+
+---
+
+## Tool Calling (advanced)
+
+The assistant can request config edits by outputting a single line that begins with `TOOL_CALL` followed by JSON.
+
+**Format**
+
+```text
 TOOL_CALL {"tool":"edit_tabg_config","target":"game_settings|starter_pack","ops":[{"type":"set","key":"KeyName","value":"NewValue"}]}
 ```
 
-- `game_settings` -> `game_settings.txt`
-- `starter_pack` -> `TheStarterPack.txt`
-- Keys use `Key=Value` format; unknown keys are appended
+**Targets**
 
-Example:
+* `game_settings` → edits `game_settings.txt`
+* `starter_pack` → edits `TheStarterPack.txt`
 
-```json
+**Conventions**
+
+* Keys follow `Key=Value`
+* Unknown keys are appended if not present
+
+**Examples**
+
+Set maximum players:
+
+```text
 TOOL_CALL {"tool":"edit_tabg_config","target":"game_settings","ops":[{"type":"set","key":"MaxPlayers","value":"70"}]}
 ```
 
+Set server name in StarterPack:
+
+```text
+TOOL_CALL {"tool":"edit_tabg_config","target":"starter_pack","ops":[{"type":"set","key":"ServerName","value":"My Cool Server"}]}
+```
+
+---
+
+## License
+
+Released under the **MIT License** — see [`LICENSE`](./LICENSE).
+
+---
+
+If you want any features added just send me a DM on Discord: anonymer__hase_22156
 
