@@ -28,4 +28,11 @@
     </None>
   </ItemGroup>
 
+  <!-- Include logo as Resource for WPF pack URI -->
+  <ItemGroup>
+    <Resource Include="..\logo\tabg-mod-manager-icon-256.png">
+      <Link>Assets\tabg-mod-manager-icon-256.png</Link>
+    </Resource>
+  </ItemGroup>
+
 </Project>
