@@ -23,9 +23,9 @@ namespace StarterPack
 
         public static string givenItems;
 
-        //Ring Manager
-        public static List<RingContainer> ringPositions;
-        public static RingContainer chosenRing;
+        //Ring Manager - DISABLED to use vanilla rings (kept for compilation)
+        public static List<RingContainer> ringPositions = null;
+        public static RingContainer chosenRing = null;
 
         //Respawning Players
         //Loadouts
@@ -90,7 +90,7 @@ namespace StarterPack
                     "//",
                     "//name:rarity%location:size,size.../",
                     "//string:int%int,int,int:int,int.../",
-                    "RingSettings=",
+                    "// RingSettings= (DISABLED - using vanilla rings)",
                     "",
                     "",
                     "//Default,KillsToWin,or Debug (wont end unless timer expires)",
@@ -171,7 +171,8 @@ namespace StarterPack
                 Config.dropItemsOnDeath = false;
                 Config.givenItems = null;
 
-                Config.ringPositions = new List<RingContainer>() { new RingContainer("name",5,new int[] {4000,1300,300},new float[] { 6f,6f,0f} , new Vector3(0,0,0)) };
+                // Ring functionality completely disabled
+                // Config.ringPositions = new List<RingContainer>();
 
                 Config.loadouts = new List<Loadout>();
                 Config.HealOnKill = false;
@@ -200,14 +201,23 @@ namespace StarterPack
 
                 foreach (string text in array)
                 {
-                    bool flag2 = text.Contains('=');
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        continue;
+                    }
+                    var trimmed = text.Trim();
+                    if (trimmed.StartsWith("//"))
+                    {
+                        continue;
+                    }
+                    bool flag2 = trimmed.Contains('=');
                     if (flag2)
                     {
-                        string[] array3 = text.Split(new char[]
+                        string[] array3 = trimmed.Split(new char[]
                         {
                             '='
                         });
-                        string a = array3[0];
+                        string a = array3[0].Trim();
                         if(a == "WinCondition")
                         {
                             Config.winCondition = (WinCondition)Enum.Parse(typeof(WinCondition), array3[1]);
@@ -221,10 +231,11 @@ namespace StarterPack
                             Config.forceKillOffStart = bool.Parse(array3[1]);
                         }
 
-                        if (a == "RingSettings")
-                        {
-                            Config.ringPositions = Config.GetRings(array3[1]);
-                        }
+                        // DISABLED - Ring functionality removed
+                        // if (a == "RingSettings")
+                        // {
+                        //     Config.ringPositions = Config.GetRings(array3[1]);
+                        // }
 
                         if(a == "DropItemsOnDeath")
                         {
@@ -317,7 +328,8 @@ namespace StarterPack
                         }
                     }
                 }
-                Config.chosenRing = Config.ChooseRing();
+                // Ring functionality completely disabled - using vanilla rings
+                // Config.chosenRing = Config.ChooseRing();
             }
         }
 
@@ -374,33 +386,8 @@ namespace StarterPack
 
         public static List<RingContainer> GetRings(string input)
         {
-            if (input == null) { return null; }
-            //name:rarity%location:size,size/
-            //newRing.Name("name").Location(x,y,z).Sizes(size,size,size etc.).Speeds(6,6,0)
-            List<RingContainer> toReturn = new List<RingContainer>();
-
-            string[] sets = input.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string set in sets)
-            {
-                string[] nameraritySplit = set.Split('%');
-
-                string[] arraynr = nameraritySplit[0].Split(':');
-                string name = arraynr[0];
-                int rare = int.Parse(arraynr[1]);
-
-                string[] ints = nameraritySplit[1].Split(':');
-                Vector3 loc = Config.GetVector3(ints[0]);
-
-                int[] sizes = Config.GetIntArray(ints[1]);
-                sizes = new int[] {4000}.Concat(sizes).ToArray();
-
-                RingContainer l = new RingContainer(name, rare, sizes, new float[] {0} , loc);
-
-                toReturn.Add(l);
-            }
-
-            return toReturn;
+            // Ring functionality completely disabled - always return null
+            return null;
         }
 
         private static List<Loadout> GetLoadouts(string input)
@@ -464,23 +451,8 @@ namespace StarterPack
 
         public static RingContainer ChooseRing()
         {
-            int totalWeight = ringPositions.Sum(l => l.rarity);
-            int randomNumber = new System.Random().Next(1, totalWeight + 1);
-
-            foreach (var ring in ringPositions)
-            {
-                if (randomNumber <= ring.rarity)
-                {
-                    return ring;
-                }
-                else
-                {
-                    randomNumber -= ring.rarity;
-                }
-            }
-
-            // This should never happen if the total weight is calculated correctly
-            throw new InvalidOperationException("No ring selected");
+            // Ring functionality completely disabled - always return null for vanilla behavior
+            return null;
         }
     }
     public enum WinCondition

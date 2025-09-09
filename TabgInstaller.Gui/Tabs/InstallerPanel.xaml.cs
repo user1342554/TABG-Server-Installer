@@ -177,6 +177,9 @@ namespace TabgInstaller.Gui.Tabs
                     log: progress
                 );
 
+                // Read the Starter Pack checkbox value - if unchecked, we skip installation
+                bool skipStarterPack = !(ChkInstallStarterPack.IsChecked ?? true);
+
                 int exitCode = await installer.RunAsync(
                     serverDir: serverDir,
                     serverName: serverName,
@@ -184,7 +187,7 @@ namespace TabgInstaller.Gui.Tabs
                     serverDescription: serverDesc,
                     starterPackTag: "",
                     citrusLibTag: citrusTag,
-                    skipStarterPack: false,
+                    skipStarterPack: skipStarterPack,
                     skipCitruslib: skipCitrus,
                     installCommunityServer: installCommunityServer,
                     ct: cts.Token

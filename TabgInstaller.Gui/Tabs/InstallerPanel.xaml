@@ -63,6 +63,7 @@
                     <TextBox x:Name="TxtCitrusTag" Text="v0.7" Grid.Column="1" Margin="5"/>
                     <CheckBox x:Name="ChkSkipCitruslib" Content="Skip" Grid.Column="2" Margin="5"/>
                 </Grid>
+                <CheckBox x:Name="ChkInstallStarterPack" Content="Install Starter Pack" Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="ChkInstallCommunityServer" Content="Install TABGCommunityServer" Margin="5"/>
             </StackPanel>
         </GroupBox>

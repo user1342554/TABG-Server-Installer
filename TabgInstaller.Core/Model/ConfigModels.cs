@@ -36,27 +36,32 @@ namespace TabgInstaller.Core.Model
         public string ServerDescription { get; set; } = "enormous";
         public string ServerBrowserIP { get; set; } = string.Empty;
         public string Password { get; set; } = "enormous";
+        public string TeamMode { get; set; } = "SQUAD";
+        public string GameMode { get; set; } = "BattleRoyale";
         // ints
         public int Port { get; set; } = 7777;
         public int MaxPlayers { get; set; } = 70;
-        public int GroupsToStart { get; set; } = 0;
-        public int MinPlayersToForceStart { get; set; } = 1;
-        public int PlayersToStart { get; set; } = 1;
-        public int KillsToWin { get; set; } = 0;
-        public int RoundsToWin { get; set; } = 0;
-        public int NumberOfLivesPerTeam { get; set; } = 0;
-        public int MaxNumberOfTeamsAuto { get; set; } = 0;
+        public int GroupsToStart { get; set; } = 10;
+        public int MinPlayersToForceStart { get; set; } = 2;
+        public int PlayersToStart { get; set; } = 2;
+        public int KillsToWin { get; set; } = 20;
+        public int RoundsToWin { get; set; } = 3;
+        public string NumberOfLivesPerTeam { get; set; } = "inf";
+        public int MaxNumberOfTeamsAuto { get; set; } = 2;
         public int SpawnBots { get; set; } = 0;
+        public int UseSouls { get; set; } = 0;
         // ushorts treated as int for simplicity
-        public int BombTime { get; set; } = 0;
-        public int RoundTime { get; set; } = 0;
+        public int BombTime { get; set; } = 30;
+        public int RoundTime { get; set; } = 90;
         // floats
-        public float CarSpawnRate { get; set; } = 1f;
-        public float ForceStartTime { get; set; } = 200f;
-        public float Countdown { get; set; } = 20f;
-        public float BaseRingTime { get; set; } = 60f;
-        public float TimeBeforeFirstRing { get; set; } = 0f;
-        public float StripLootByPercentage { get; set; } = 0f;
+        public float CarSpawnRate { get; set; } = 1.0f;
+        public float ForceStartTime { get; set; } = 200.0f;
+        public float Countdown { get; set; } = 20.0f;
+        public float BaseRingTime { get; set; } = 200.0f;
+        public float TimeBeforeFirstRing { get; set; } = 70.0f;
+        public float StripLootByPercentage { get; set; } = 0.1f;
+        public float WeaponDissapearTime { get; set; } = 10.0f;
+        public float BombDefuseTime { get; set; } = 5.0f;
         // float arrays (store as string csv in file, we parse manually)
         public string RingSizes { get; set; } = "4240.0,500.0,400.0,200.0,100.0,50.0";
         public string RingSpeeds { get; set; } = "120,120,150,180,240,300";
@@ -67,19 +72,16 @@ namespace TabgInstaller.Core.Model
         public bool UseTimedForceStart { get; set; } = true;
         public bool AntiCheat { get; set; } = false;
         public bool LAN { get; set; } = false;
-        public bool AllowSpectating { get; set; } = false;
-        public bool SpawnBotsBool { get; set; } = false; // maybe not used
-        public bool UsePlayFabStats { get; set; } = false;
-        public bool DebugDeathmatch { get; set; } = false;
+        public bool AllowSpectating { get; set; } = true;
         public bool NoRing { get; set; } = false;
-        public bool UseSouls { get; set; } = false;
-        public bool UseKicks { get; set; } = false;
+        public bool UseKicks { get; set; } = true;
+        public bool DEBUG_DEATHMATCH { get; set; } = false;
+        // Broken/disabled settings
+        public bool UsePlayFabStats { get; set; } = false;
+        public bool AllowRejoins { get; set; } = false;
         public bool AntiCheatDebugLogging { get; set; } = false;
         public bool AntiCheatEventLogging { get; set; } = false;
-        public bool AllowRejoins { get; set; } = false;
-        // enums stored as string
-        public string TeamMode { get; set; } = "SQUAD";
-        public string GameMode { get; set; } = "BattleRoyale";
+        // enums stored as string (already defined above)
     }
 
     public record ExtraSettingsConfig

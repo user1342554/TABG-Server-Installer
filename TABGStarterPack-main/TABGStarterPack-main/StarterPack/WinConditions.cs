@@ -47,7 +47,8 @@ namespace StarterPack
                     {
                         LandLog.Log("Checking Game State: Teams Alive: " + m_GameRoom.CurrentGameStats.GetAliveTeams().ToString(), null);
                     }
-                    return false;
+                    // Do not skip the game's original CheckGameState; allow it to run as well
+                    return true;
                 }
             }
             return true;

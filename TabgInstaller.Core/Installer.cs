@@ -176,59 +176,130 @@ namespace TabgInstaller.Core
             KillRunningServers(_log);
             EnsureVanillaWhitelist(serverDir, _log);
 
-            // 1) Write game_settings.txt with the new, full template
-            _log.Report("• Writing game_settings.txt with detailed configuration...");
-            var settingsServerName = newConfigManager.SanitizeServerNameForGameSettings(serverName); // Use the sanitized name for the value
+            // 1) Write game_settings.txt with ALL available settings
+            _log.Report("• Writing game_settings.txt with comprehensive configuration...");
+            var settingsServerName = newConfigManager.SanitizeServerNameForGameSettings(serverName); 
             var settingsPath = Path.Combine(serverDir, "game_settings.txt");
             try
             {
-                using (var w = new StreamWriter(settingsPath, false, Encoding.UTF8)) // Ensure UTF8 encoding
+                using (var w = new StreamWriter(settingsPath, false, Encoding.UTF8))
                 {
                     w.WriteLine("// Allowed word list for name / description: https://github.com/landfallgames/tabg-word-list");
+                    w.WriteLine("// =============== BASIC SERVER SETTINGS ===============");
                     w.WriteLine("// Name of the server");
-                    w.WriteLine($"ServerName={settingsServerName}"); // Use sanitized name here
+                    w.WriteLine($"ServerName={settingsServerName}");
                     w.WriteLine("// Server Description");
-                    w.WriteLine($"ServerDescription={serverDescription}"); // Use direct validated input
-                    w.WriteLine("//Port To Use");
+                    w.WriteLine($"ServerDescription={serverDescription}");
+                    w.WriteLine("// Sets the port that the server is hosted on. Only required when hosting without relay");
                     w.WriteLine("Port=7777");
-                    w.WriteLine("// max players on server. Max being 253");
+                    w.WriteLine("// Your IP address. Used when hosting without Relay");
+                    w.WriteLine("ServerBrowserIP=");
+                    w.WriteLine("// Server password (leave empty for no password)");
+                    w.WriteLine($"Password={serverPassword}");
+                    w.WriteLine("// Max players on server. Max being 253");
                     w.WriteLine("MaxPlayers=70");
-                    w.WriteLine("//Use Relay");
+                    w.WriteLine();
+                    
+                    w.WriteLine("// =============== NETWORK SETTINGS ===============");
+                    w.WriteLine("// Whether to use Relay when hosting. If disabled, you need port forwarding");
                     w.WriteLine("Relay=true");
-                    w.WriteLine("// server wide auto teaming");
+                    w.WriteLine("// Server wide auto teaming");
                     w.WriteLine("AutoTeam=false");
-                    w.WriteLine("//Password");
-                    w.WriteLine($"Password={serverPassword}"); // Use direct validated input
-                    w.WriteLine("// 0.0 - 1.0 percentage of cars to spawn. 0 being 0% and 1 being 100%.");
-                    w.WriteLine("CarSpawnRate=1.0");
+                    w.WriteLine("// Whether to allow spectating (untested - may break respawn)");
+                    w.WriteLine("AllowSpectating=true");
                     w.WriteLine();
-                    w.WriteLine("// Will start match with fewer then PlayersToStart if waited longer then ForceStartTime");
+                    
+                    w.WriteLine("// =============== GAME MODE SETTINGS ===============");
+                    w.WriteLine("// Game mode: BattleRoyale, Brawl, Test, Bomb, Deception");
+                    w.WriteLine("GameMode=BattleRoyale");
+                    w.WriteLine("// Team mode: SQUAD, DUO, SOLO");
+                    w.WriteLine("TeamMode=SQUAD");
+                    w.WriteLine("// Enable or disable the respawn minigame");
+                    w.WriteLine("AllowRespawnMinigame=true");
+                    w.WriteLine("// Number of lives per team (use 'inf' for infinite)");
+                    w.WriteLine("NumberOfLivesPerTeam=inf");
+                    w.WriteLine("// Max number of teams when AutoTeam is enabled");
+                    w.WriteLine("MaxNumberOfTeamsAuto=2");
+                    w.WriteLine();
+                    
+                    w.WriteLine("// =============== MATCH TIMING ===============");
+                    w.WriteLine("// Will start match with fewer players if waited longer than ForceStartTime");
                     w.WriteLine("UseTimedForceStart=true");
-                    w.WriteLine();
-                    w.WriteLine("// Seconds until force start the countdown");
+                    w.WriteLine("// Seconds until force start activates");
                     w.WriteLine("ForceStartTime=200.0");
-                    w.WriteLine();
                     w.WriteLine("// Players needed to start the force start timer");
                     w.WriteLine("MinPlayersToForceStart=2");
-                    w.WriteLine();
-                    w.WriteLine("// Players to start countdown");
+                    w.WriteLine("// Players required to start countdown");
                     w.WriteLine("PlayersToStart=2");
-                    w.WriteLine();
-                    w.WriteLine("// Seconds it takes to start the game after Players have joined or force start triggered");
+                    w.WriteLine("// Seconds for countdown after players join or force start");
                     w.WriteLine("Countdown=20.0");
                     w.WriteLine();
-                    w.WriteLine("// enable or disable the respawn minigame.");
-                    w.WriteLine("AllowRespawnMinigame=true");
+                    
+                    w.WriteLine("// =============== RING SETTINGS ===============");
+                    w.WriteLine("// Disables the ring in Battle Royale");
+                    w.WriteLine("NoRing=false");
+                    w.WriteLine("// Time before first ring appears after game starts");
+                    w.WriteLine("TimeBeforeFirstRing=70.0");
+                    w.WriteLine("// Base time for ring to travel to its location");
+                    w.WriteLine("BaseRingTime=200.0");
+                    w.WriteLine("// Ring sizes: comma-separated float values");
+                    w.WriteLine("RingSizes=4240.0,3450.0,1710.0,830.0,360.0,140.0");
+                    w.WriteLine("// Ring speeds: divide BaseRingTime by these values");
+                    w.WriteLine("RingSpeeds=25.0,3.0,1.5,1.5,2,2");
                     w.WriteLine();
-                    w.WriteLine("// SQUAD, DUO or SOLO");
-                    w.WriteLine("TeamMode=SQUAD");
+                    
+                    w.WriteLine("// =============== LOOT & SPAWNING ===============");
+                    w.WriteLine("// Car spawn rate: 0.0-1.0 (0=no cars, 1=all cars)");
+                    w.WriteLine("CarSpawnRate=1.0");
+                    w.WriteLine("// Percentage of loot to keep: 0.0-1.0 (0.1=10% of vanilla loot)");
+                    w.WriteLine("StripLootByPercentage=0.1");
                     w.WriteLine();
-                    w.WriteLine("// Ehm..  Have fun");
-                    w.WriteLine("GameMode=BattleRoyale");
-                    w.WriteLine("//Leave This To False");
+                    
+                    w.WriteLine("// =============== GAMEMODE SPECIFIC ===============");
+                    w.WriteLine("// BRAWL: Minimum groups before starting countdown");
+                    w.WriteLine("GroupsToStart=10");
+                    w.WriteLine("// BRAWL: Amount of kills required to win");
+                    w.WriteLine("KillsToWin=20");
+                    w.WriteLine("// BRAWL: Time before dropped weapon despawns");
+                    w.WriteLine("WeaponDissapearTime=10.0");
+                    w.WriteLine();
+                    w.WriteLine("// BOMB: Time before bomb explodes");
+                    w.WriteLine("BombTime=30.0");
+                    w.WriteLine("// BOMB: Round duration");
+                    w.WriteLine("RoundTime=90");
+                    w.WriteLine("// BOMB: Time to defuse bomb");
+                    w.WriteLine("BombDefuseTime=5.0");
+                    w.WriteLine("// BOMB: Rounds needed to win");
+                    w.WriteLine("RoundsToWin=3");
+                    w.WriteLine();
+                    
+                    w.WriteLine("// =============== EXPERIMENTAL/DEBUG ===============");
+                    w.WriteLine("// When set to 0, players spawn a soul item when they die");
+                    w.WriteLine("UseSouls=0");
+                    w.WriteLine("// Whether to allow server to kick players");
+                    w.WriteLine("UseKicks=true");
+                    w.WriteLine("// Spawn bots (non-functional)");
+                    w.WriteLine("SpawnBots=0");
+                    w.WriteLine("// Enable deathmatch mode (experimental)");
+                    w.WriteLine("DEBUG_DEATHMATCH=false");
+                    w.WriteLine();
+                    
+                    w.WriteLine("// =============== DISABLED/BROKEN SETTINGS ===============");
+                    w.WriteLine("// These settings don't work or break gameplay - leave as default");
+                    w.WriteLine("// Whether to use PlayFab stats (broken)");
+                    w.WriteLine("UsePlayFabStats=false");
+                    w.WriteLine("// Allow players to rejoin (doesn't work)");
+                    w.WriteLine("AllowRejoins=false");
+                    w.WriteLine("// Enable EAC (breaks gameplay)");
                     w.WriteLine("AntiCheat=false");
+                    w.WriteLine("// Log EAC events");
+                    w.WriteLine("AntiCheatEventLogging=false");
+                    w.WriteLine("// EAC debug logging");
+                    w.WriteLine("AntiCheatDebugLogging=false");
+                    w.WriteLine("// LAN mode (unused)");
+                    w.WriteLine("LAN=false");
                 }
-                _log.Report($"  → Wrote detailed game_settings.txt to: {settingsPath}");
+                _log.Report($"  → Wrote comprehensive game_settings.txt to: {settingsPath}");
             }
             catch (Exception ex)
             {
@@ -247,58 +318,85 @@ namespace TabgInstaller.Core
             string actualStarterPackTag = starterPackTag;
             string actualCitrusLibTag = citrusLibTag;
 
-            if (!skipStarterPack)
-            {
-                _log.Report("• Starting StarterPack installation...");
+        if (!skipStarterPack)
+        {
+            _log.Report("• Starting StarterPack installation (using local files)...");
 
-                var latestStarterPackRelease = await _githubService.GetLatestReleaseAsync(StarterPackOwner, StarterPackRepo);
-                if (latestStarterPackRelease == null)
+            // Get the installer's directory and navigate to solution root
+            var installerDir = AppDomain.CurrentDomain.BaseDirectory;
+            _log.Report($"  → Installer directory: {installerDir}");
+            
+            // Navigate from bin\Release\net8.0-windows up to solution root
+            // Use Path.GetFullPath with relative navigation for a more robust approach
+            var solutionRoot = Path.GetFullPath(Path.Combine(installerDir, "..", "..", "..", ".."));
+            _log.Report($"  → Solution root: {solutionRoot}");
+            
+            var localStarterPackDir = Path.Combine(solutionRoot, "TABGStarterPack-main", "TABGStarterPack-main");
+            _log.Report($"  → Looking for StarterPack in: {localStarterPackDir}");
+
+                // Paths to local files - use our built DLL instead of the original
+                var localDllPath = Path.Combine(localStarterPackDir, "StarterPack", "bin", "Release", "net46", "StarterPack.dll");
+                var localSetupPath = Path.Combine(localStarterPackDir, "StarterPackSetup", "bin", "Debug", "StarterPackSetup.exe");
+
+                // Check if local files exist
+                if (!File.Exists(localDllPath))
                 {
-                    throw new InvalidOperationException("Could not fetch the latest release for TABGStarterPack.");
+                    throw new InvalidOperationException($"Local StarterPack DLL not found at: {localDllPath}");
                 }
-                _log.Report($"  → Found latest StarterPack release: {latestStarterPackRelease.TagName}");
+                if (!File.Exists(localSetupPath))
+                {
+                    throw new InvalidOperationException($"Local StarterPackSetup.exe not found at: {localSetupPath}");
+                }
 
-                var tempDir = Path.Combine(Path.GetTempPath(), "TabgInstallerDownloads");
-                Directory.CreateDirectory(tempDir);
+                _log.Report($"  → Found local StarterPack files");
 
-                // Download StarterPack.dll
-                var dllAsset = latestStarterPackRelease.Assets.FirstOrDefault(a => a.Name.Equals(StarterPackDllAssetName, StringComparison.OrdinalIgnoreCase));
-                if (dllAsset == null) throw new InvalidOperationException($"{StarterPackDllAssetName} not found in latest release.");
-                _log.Report($"  → Downloading {StarterPackDllAssetName}...");
-                var dllDownloaded = await _githubService.DownloadAssetAsync(StarterPackOwner, StarterPackRepo, latestStarterPackRelease.TagName, StarterPackDllAssetName, tempDir, dllAsset.BrowserDownloadUrl);
-                if (!dllDownloaded) throw new InvalidOperationException("Failed to download StarterPack.dll");
-                File.Copy(Path.Combine(tempDir, StarterPackDllAssetName), Path.Combine(_pluginsDir, StarterPackDllAssetName), true);
-                _log.Report($"  → Copied {StarterPackDllAssetName} to plugins folder.");
+                // Copy StarterPack.dll to plugins folder (rename from StarterPack_Fixed.dll to StarterPack.dll)
+                var targetDllPath = Path.Combine(_pluginsDir, StarterPackDllAssetName);
+                File.Copy(localDllPath, targetDllPath, true);
+                _log.Report($"  → Copied {StarterPackDllAssetName} to plugins folder from local source.");
 
                 // Run server once to generate config
                 _log.Report("• Running server once to generate StarterPack config...");
                 await RunServerUntilHeartbeatAsync(serverDir, true);
                 _log.Report("  → Server ran once and was terminated.");
 
-                // Download StarterPackSetup.exe
-                var setupAsset = latestStarterPackRelease.Assets.FirstOrDefault(a => a.Name.Equals(StarterPackSetupAssetName, StringComparison.OrdinalIgnoreCase));
-                if (setupAsset == null) throw new InvalidOperationException($"{StarterPackSetupAssetName} not found in latest release.");
-                _log.Report($"  → Downloading {StarterPackSetupAssetName}...");
-                var setupExeDownloaded = await _githubService.DownloadAssetAsync(StarterPackOwner, StarterPackRepo, latestStarterPackRelease.TagName, StarterPackSetupAssetName, serverDir, setupAsset.BrowserDownloadUrl);
-                if (!setupExeDownloaded) throw new InvalidOperationException("Failed to download StarterPackSetup.exe");
-                _log.Report($"  → Copied {StarterPackSetupAssetName} to server root.");
+                // Copy StarterPackSetup.exe to server root
+                var targetSetupPath = Path.Combine(serverDir, StarterPackSetupAssetName);
+                File.Copy(localSetupPath, targetSetupPath, true);
+                _log.Report($"  → Copied {StarterPackSetupAssetName} to server root from local source.");
 
-                _log.Report("• Launching StarterPackSetup.exe for user configuration...");
-                _log.Report("  IMPORTANT: Make your changes in the setup window, save, and then close it to continue.");
-                
+            _log.Report("• Launching StarterPackSetup.exe for user configuration...");
+            _log.Report("  IMPORTANT: Make your changes in the setup window, save, and then close it to continue.");
+
+            try
+            {
                 var setupProcess = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = Path.Combine(serverDir, StarterPackSetupAssetName),
                         WorkingDirectory = serverDir,
-                        UseShellExecute = true // Launch interactively for the user
+                        UseShellExecute = true, // Launch interactively for the user
+                        Verb = "runas" // Request administrator privileges
                     }
                 };
                 setupProcess.Start();
                 await setupProcess.WaitForExitAsync(ct);
-
                 _log.Report("  → StarterPackSetup.exe was closed.");
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                // User cancelled UAC prompt
+                _log.Report("  ⚠️ StarterPackSetup.exe launch was cancelled (UAC prompt declined or blocked by security software).");
+                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
+                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
+            }
+            catch (Exception ex)
+            {
+                _log.Report($"  ⚠️ Failed to launch StarterPackSetup.exe: {ex.Message}");
+                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
+                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
+            }
 
                 // Sanitize TheStarterPack.txt to ensure StarterPack can parse numeric fields correctly
                 try

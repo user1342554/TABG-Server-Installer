@@ -16,15 +16,15 @@ namespace StarterPack
             Logger.LogInfo("Plugin com.starterpack.tabg.contagious is loaded!");
 
             Harmony harmony = new Harmony("com.starterpack.tabg.contagious");
-            //Config
+            //Config: Ensure config is loaded, but it will not force rings unless RingSettings provided
             harmony.Patch(AccessTools.Method(typeof(ServerClient), "Init", null, null),
                new HarmonyMethod(AccessTools.Method(typeof(Config), "Setup", null, null)), null,
                null, null, null);
 
-            //Ring Manager
-            harmony.Patch(AccessTools.Method(typeof(TheRing), "GetNewRingPosition", null, null),
-                new HarmonyMethod(AccessTools.Method(typeof(RingManager), "GetNewRingPosition", null, null)), null,
-                null, null, null);
+            //Ring Manager - DISABLED to use vanilla ring behavior
+            // harmony.Patch(AccessTools.Method(typeof(TheRing), "GetNewRingPosition", null, null),
+            //     new HarmonyMethod(AccessTools.Method(typeof(RingManager), "GetNewRingPosition", null, null)), null,
+            //     null, null, null);
 
             //Respawning Players
             harmony.Patch(AccessTools.Method(typeof(PlayerDeadDeadBehaviourCommand), "Run", null, null),
@@ -33,9 +33,10 @@ namespace StarterPack
             harmony.Patch(AccessTools.Method(typeof(BattleRoyaleGameMode), "HandlePlayerDead", null, null),
                 new HarmonyMethod(AccessTools.Method(typeof(RespawningPlayers), "HandlePlayerDead", null, null)), null,
                 null, null, null);
-            harmony.Patch(AccessTools.Method(typeof(PlayerRingDeathCommand), "Run", null, null),
-                new HarmonyMethod(AccessTools.Method(typeof(RespawningPlayers), "RingDeathRun", null, null)), null,
-                null, null, null);
+            // DISABLED - Ring death handling removed to prevent ring interference
+            // harmony.Patch(AccessTools.Method(typeof(PlayerRingDeathCommand), "Run", null, null),
+            //     new HarmonyMethod(AccessTools.Method(typeof(RespawningPlayers), "RingDeathRun", null, null)), null,
+            //     null, null, null);
 
             //Auto Launching
             harmony.Patch(AccessTools.Method(typeof(AutoDropAllPlayersCommand), "Run", null, null),
