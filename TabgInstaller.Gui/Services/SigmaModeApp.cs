@@ -113,8 +113,8 @@ namespace TabgInstaller.Gui.Services
                 {
                     await Task.Delay(500, _cancellationTokenSource.Token);
                     var wallpaperService = new WallpaperService(_logger);
-                    // Prefer a specific file if it exists in app base directory
-                    var preferred = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "gorilla-4547188_1280.jpg");
+                    // Prefer a specific file if it exists in app base directory (moved to assets)
+                    var preferred = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "gorilla-4547188_1280.jpg");
                     if (System.IO.File.Exists(preferred))
                     {
                         await wallpaperService.SetWallpaperFromFileAsync(preferred);

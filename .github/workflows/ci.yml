@@ -11,21 +11,21 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore TABG-Server-Installer-/TabgInstaller.sln
+      run: dotnet restore TabgInstaller.sln
 
     - name: Build
-      run: dotnet build TABG-Server-Installer-/TabgInstaller.sln --configuration Release --no-restore
+      run: dotnet build TabgInstaller.sln --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test TABG-Server-Installer-/TabgInstaller.sln --no-build --verbosity normal
+      run: dotnet test TabgInstaller.sln --no-build --verbosity normal
 
     - name: Run API smoke tests (if keys available)
       if: ${{ env.OPENAI_KEY != '' || env.ANTHROPIC_KEY != '' }}
@@ -37,10 +37,10 @@ jobs:
         # Add actual test commands here when tests are implemented
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: tabg-installer-build
         path: |
-          TABG-Server-Installer-/TabgInstaller.Gui/bin/Release/net8.0-windows/
-          TABG-Server-Installer-/models.json
+          TabgInstaller.Gui/bin/Release/net8.0-windows/
+          models.json
           Knowledge/ 
