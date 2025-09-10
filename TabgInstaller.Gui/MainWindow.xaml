@@ -22,6 +22,9 @@
             <TabItem Header="Backups" x:Name="BackupsTab" IsEnabled="False">
                 <tabs:BackupsPanel/>
             </TabItem>
+            <TabItem Header="Super Secret Settings" x:Name="SuperSecretTab" IsEnabled="False">
+                <tabs:SuperSecretSettingsPanel/>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

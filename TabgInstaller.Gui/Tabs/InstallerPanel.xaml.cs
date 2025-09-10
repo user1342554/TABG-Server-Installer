@@ -213,6 +213,10 @@ namespace TabgInstaller.Gui.Tabs
                                 if (backupsItem.Content is BackupsPanel backupsPanel)
                                     backupsPanel.Initialize(serverDir);
                             }
+                            if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
+                            {
+                                secretTab.IsEnabled = true;
+                            }
                             if (mainWindow.FindName("MainTabs") is TabControl tabs)
                                 tabs.SelectedIndex = 1; // switch to Config tab by index
                         }
@@ -273,6 +277,10 @@ namespace TabgInstaller.Gui.Tabs
                     backupsItem.IsEnabled = true;
                     if (backupsItem.Content is BackupsPanel backupsPanel)
                         backupsPanel.Initialize(serverDir);
+                }
+                if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
+                {
+                    secretTab.IsEnabled = true;
                 }
                 if (mainWindow.FindName("MainTabs") is TabControl tabs)
                     tabs.SelectedIndex = 1; // switch to Config tab

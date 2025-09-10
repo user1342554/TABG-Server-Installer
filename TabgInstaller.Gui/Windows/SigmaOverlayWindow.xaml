@@ -1,0 +1,43 @@
+<Window x:Class="TabgInstaller.Gui.Windows.SigmaOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Black"
+        AllowsTransparency="False"
+        IsHitTestVisible="False">
+    
+    <Grid>
+        <!-- Welcome Text - Only shown on primary monitor -->
+        <StackPanel x:Name="WelcomePanel" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
+            
+            <TextBlock x:Name="WelcomeText" 
+                       Text="Welcome, User"
+                       Foreground="White"
+                       FontSize="48"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
+            
+            <StackPanel Orientation="Horizontal" 
+                        HorizontalAlignment="Center">
+                <TextBlock Text="Loading in progress"
+                           Foreground="White"
+                           FontSize="24"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="LoadingDots"
+                           Text="..."
+                           Foreground="White"
+                           FontSize="24"
+                           Margin="5,0,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

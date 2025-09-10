@@ -26,6 +26,17 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Knowledge\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
+    <None Include="sigma-config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\gorilla-4547188_1280.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>gorilla-4547188_1280.jpg</Link>
+    </None>
+    <None Include="..\Walk in the cold (Slowed).mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Walk in the cold (Slowed).mp3</Link>
+    </None>
   </ItemGroup>
 
   <!-- Include logo as Resource for WPF pack URI -->

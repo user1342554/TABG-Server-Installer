@@ -1,0 +1,10 @@
+{
+  "musicPath": "Walk in the cold (Slowed).mp3",
+  "timeoutSeconds": 180,
+  "fadeOutDurationMs": 300,
+  "steamAppId": 823130,
+  "enableFanControl": true,
+  "musicVolume": 0.8,
+  "tabgProcessName": "TABG",
+  "tabgWindowTitle": ""
+}
