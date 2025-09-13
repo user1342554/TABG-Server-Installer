@@ -20,7 +20,7 @@
 ### Disclaimer 
 
 > **Important:**
-> This installer downloads, installs, and configures the **StarterPack** created by **ContagiouslyStupid**. I did not write or maintain the StarterPack code. https://github.com/ContagiouslyStupid/TABGStarterPack
+> This installer downloads and instals configures the **StarterPack** created by **ContagiouslyStupid**. I did not write or maintain the StarterPack code. https://github.com/ContagiouslyStupid/TABGStarterPack
 
 >also at the moment the ai chat is buggy and might not work right
 
