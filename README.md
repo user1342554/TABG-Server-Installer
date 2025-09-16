@@ -21,13 +21,13 @@
 
 >at the moment the ai chat is buggy and might not work right
 
----
+
 
 ## License
 
 Released under the **MIT License** — see [`LICENSE`](./LICENSE).
 
----
+
 
 If you want any features added just send me a DM on Discord: anonymer__hase_22156
 
