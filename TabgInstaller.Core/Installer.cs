@@ -338,7 +338,47 @@ namespace TabgInstaller.Core
                 var localDllPath = Path.Combine(localStarterPackDir, "StarterPack", "bin", "Release", "net46", "StarterPack.dll");
                 var localSetupPath = Path.Combine(localStarterPackDir, "StarterPackSetup", "bin", "Debug", "StarterPackSetup.exe");
 
-                // Check if local files exist
+                // Auto-build StarterPack projects if DLLs are missing
+                if (!File.Exists(localDllPath) || !File.Exists(localSetupPath))
+                {
+                    _log.Report("  → Pre-built binaries not found, building StarterPack projects...");
+
+                    // Ensure TABG game DLLs are available for the StarterPack build
+                    var tabgDataTarget = Path.Combine(solutionRoot, "TABG_Data", "Managed");
+                    var tabgDataSource = Path.Combine(serverDir, "TABG_Data", "Managed");
+                    if (!Directory.Exists(tabgDataTarget) && Directory.Exists(tabgDataSource))
+                    {
+                        Directory.CreateDirectory(tabgDataTarget);
+                        foreach (var dllName in new[] { "Assembly-CSharp.dll", "Assembly-CSharp-firstpass.dll", "Sirenix.Serialization.dll" })
+                        {
+                            var src = Path.Combine(tabgDataSource, dllName);
+                            var dst = Path.Combine(tabgDataTarget, dllName);
+                            if (File.Exists(src))
+                                File.Copy(src, dst, true);
+                        }
+                        _log.Report("  → Copied required TABG game DLLs for build");
+                    }
+
+                    // Build StarterPack DLL (Release)
+                    if (!File.Exists(localDllPath))
+                    {
+                        var starterPackProj = Path.Combine(localStarterPackDir, "StarterPack", "StarterPack.csproj");
+                        _log.Report("  → Building StarterPack.dll...");
+                        await BuildProjectAsync(starterPackProj, "Release", ct);
+                        _log.Report("  → StarterPack.dll built successfully");
+                    }
+
+                    // Build StarterPackSetup (Debug) - requires VS MSBuild for .NET Framework 4.8 WPF
+                    if (!File.Exists(localSetupPath))
+                    {
+                        var setupProj = Path.Combine(localStarterPackDir, "StarterPackSetup", "StarterPackSetup.csproj");
+                        _log.Report("  → Building StarterPackSetup.exe...");
+                        await BuildProjectAsync(setupProj, "Debug", ct);
+                        _log.Report("  → StarterPackSetup.exe built successfully");
+                    }
+                }
+
+                // Check if local files exist after build attempt
                 if (!File.Exists(localDllPath))
                 {
                     throw new InvalidOperationException($"Local StarterPack DLL not found at: {localDllPath}");
@@ -1787,6 +1827,96 @@ namespace TabgInstaller.Core
             // You can implement this method based on your specific requirements.
             // For example, you can check if the BepInEx core files exist and if the server can load BepInEx.
             return true; // Placeholder return, actual implementation needed
+        }
+
+        /// <summary>
+        /// Builds a .NET project using dotnet build or VS MSBuild (for .NET Framework projects).
+        /// </summary>
+        private async Task BuildProjectAsync(string projectPath, string configuration, CancellationToken ct)
+        {
+            // Try dotnet build first
+            var dotnetBuild = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    Arguments = $"build \"{projectPath}\" -c {configuration}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            dotnetBuild.Start();
+            var stdout = await dotnetBuild.StandardOutput.ReadToEndAsync();
+            var stderr = await dotnetBuild.StandardError.ReadToEndAsync();
+            await dotnetBuild.WaitForExitAsync(ct);
+
+            if (dotnetBuild.ExitCode == 0)
+                return;
+
+            // dotnet build failed — try VS MSBuild (needed for .NET Framework WPF projects)
+            var vswherePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Microsoft Visual Studio", "Installer", "vswhere.exe");
+            if (!File.Exists(vswherePath))
+            {
+                vswherePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    "Microsoft Visual Studio", "Installer", "vswhere.exe");
+            }
+
+            if (File.Exists(vswherePath))
+            {
+                var vswhere = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = vswherePath,
+                        Arguments = "-latest -property installationPath",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                vswhere.Start();
+                var vsPath = (await vswhere.StandardOutput.ReadToEndAsync()).Trim();
+                await vswhere.WaitForExitAsync(ct);
+
+                if (!string.IsNullOrEmpty(vsPath))
+                {
+                    var msbuildPath = Path.Combine(vsPath, "MSBuild", "Current", "Bin", "MSBuild.exe");
+                    if (File.Exists(msbuildPath))
+                    {
+                        var msbuild = new Process
+                        {
+                            StartInfo = new ProcessStartInfo
+                            {
+                                FileName = msbuildPath,
+                                Arguments = $"\"{projectPath}\" -p:Configuration={configuration} -restore",
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        msbuild.Start();
+                        await msbuild.StandardOutput.ReadToEndAsync();
+                        var msbuildErr = await msbuild.StandardError.ReadToEndAsync();
+                        await msbuild.WaitForExitAsync(ct);
+
+                        if (msbuild.ExitCode == 0)
+                            return;
+
+                        throw new InvalidOperationException(
+                            $"MSBuild failed for {Path.GetFileName(projectPath)} (exit code {msbuild.ExitCode}): {msbuildErr}");
+                    }
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"Failed to build {Path.GetFileName(projectPath)}. dotnet build failed and Visual Studio MSBuild was not found. " +
+                "Please install Visual Studio with .NET Framework 4.8 targeting pack or pre-build the StarterPack projects manually.");
         }
 
         private async Task RunServerUntilHeartbeatAsync(string serverDir, bool allowCrash = false)
