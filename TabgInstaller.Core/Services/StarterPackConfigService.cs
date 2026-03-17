@@ -68,6 +68,10 @@ namespace TabgInstaller.Core.Services
             var path = GetPath(serverDir);
             var lines = new List<string>
             {
+                "//name:rarity%location:size,size.../",
+                "//string:int%int,int,int:int,int.../",
+                $"RingSettings={s.RingSettings}",
+                "",
                 "//Default,KillsToWin,or Debug (wont end unless timer expires)",
                 $"WinCondition={s.WinCondition}",
                 "//How many kills to win in KillsToWin mode",

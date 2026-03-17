@@ -216,7 +216,9 @@ AntiCheat=false";
                 "Tazers and Cleaver:10%244:1,284:1,11:50,53:1,57:1,47:1/" +
                 "AA12:10%292:1,8:255,278:1,6:121,115:1,53:1/";
 
-            var sp = $@"WinCondition=KillsToWin
+            var sp = $@"RingSettings=Big Work:100%344,0,-656:244/
+
+WinCondition=KillsToWin
 KillsToWin=20
 ForceKillAtStart=true
 DropItemsOnDeath=false
@@ -372,7 +374,9 @@ AntiCheat=false";
                 "Fish:100%248:1/" +
                 "Money:100%180:1/";
 
-            var sp = $@"WinCondition=KillsToWin
+            var sp = $@"RingSettings=Castle:100%-706,0,544:307/
+
+WinCondition=KillsToWin
 KillsToWin=35
 ForceKillAtStart=true
 DropItemsOnDeath=false
@@ -491,7 +495,9 @@ AntiCheat=false";
 
             var loadouts = "KeepInventory/Ammo and Medkits:100%1:50,2:80,4:50,6:255,6:245,8:100,9:255,9:245,11:10,132:3/";
 
-            var sp = $@"WinCondition=KillsToWin
+            var sp = $@"RingSettings=POI:100%-78,0,566:370/
+
+WinCondition=KillsToWin
 KillsToWin=25
 ForceKillAtStart=false
 DropItemsOnDeath=false
