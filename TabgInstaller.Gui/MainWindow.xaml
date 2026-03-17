@@ -16,10 +16,7 @@
                 <tabs:ConfigPanel x:Name="ConfigTab"/>
             </TabItem>
             
-            <TabItem Header="AI Chat" x:Name="AiChatTab" IsEnabled="False">
-                <tabs:AiChatPanel/>
-            </TabItem>
-            <TabItem Header="Backups" x:Name="BackupsTab" IsEnabled="False">
+<TabItem Header="Backups" x:Name="BackupsTab" IsEnabled="False">
                 <tabs:BackupsPanel/>
             </TabItem>
             <TabItem Header="Super Secret Settings" x:Name="SuperSecretTab" IsEnabled="False">

@@ -5,32 +5,64 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
     <Grid Margin="10">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Preset list -->
-        <StackPanel Grid.Column="0">
-            <TextBlock Text="Presets:" FontWeight="Bold"/>
-            <ListBox x:Name="LstPresets" Height="280" Margin="0,4,0,0"/>
-            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                <Button Content="Load" Width="60" Click="LoadPreset_Click"/>
-                <Button Content="Delete" Width="60" Margin="6,0,0,0" Click="DeletePreset_Click"/>
+        <!-- Built-in Server Templates -->
+        <GroupBox Grid.Row="0" Header="Server Templates" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <ListBox x:Name="LstTemplates" Height="120" SelectionChanged="LstTemplates_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                    <TextBlock x:Name="TxtTemplateDesc" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtTemplateNotes" TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"/>
+                    <Button Content="Apply Template to Server" Width="200" HorizontalAlignment="Left" Click="ApplyTemplate_Click"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!-- User Presets -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Preset list -->
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Saved Presets:" FontWeight="Bold"/>
+                <ListBox x:Name="LstPresets" Height="200" Margin="0,4,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="Load" Width="60" Click="LoadPreset_Click"/>
+                    <Button Content="Delete" Width="60" Margin="6,0,0,0" Click="DeletePreset_Click"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
 
-        <!-- Files selection and save -->
-        <StackPanel Grid.Column="1" Margin="10,0,0,0">
-            <TextBlock Text="Files to include when saving:" FontWeight="Bold"/>
-            <ItemsControl x:Name="FilesList" Margin="0,4,0,0">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Display}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="Save current as new preset…" Width="220" Margin="0,10,0,0" Click="SavePreset_Click"/>
-        </StackPanel>
+            <!-- Files selection and save -->
+            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                <TextBlock Text="Files to include when saving:" FontWeight="Bold"/>
+                <ItemsControl x:Name="FilesList" Margin="0,4,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Display}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="Save current as new preset..." Width="220" Margin="0,10,0,0" Click="SavePreset_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
-</UserControl> 
+</UserControl>

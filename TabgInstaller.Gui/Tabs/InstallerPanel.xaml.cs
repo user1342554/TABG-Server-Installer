@@ -205,8 +205,6 @@ namespace TabgInstaller.Gui.Tabs
                             mainWindow.ConfigTab.Initialize(serverDir);
                             if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                                 cfgItem.IsEnabled = true;
-                            if (mainWindow.FindName("AiChatTab") is TabItem aiItem)
-                                aiItem.IsEnabled = true;
                             if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
                             {
                                 backupsItem.IsEnabled = true;
@@ -270,8 +268,6 @@ namespace TabgInstaller.Gui.Tabs
                 mainWindow.ConfigTab.Initialize(serverDir);
                 if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                     cfgItem.IsEnabled = true;
-                if (mainWindow.FindName("AiChatTab") is TabItem aiItem)
-                    aiItem.IsEnabled = true;
                 if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
                 {
                     backupsItem.IsEnabled = true;

@@ -33,6 +33,22 @@
                 </Grid>
             </TabItem>
 
+            <TabItem Header="Match Settings">
+                <local:MatchSettingsPanel x:Name="MatchSettingsControl"/>
+            </TabItem>
+
+            <TabItem Header="Ring &amp; Spawns">
+                <local:RingSpawnsPanel x:Name="RingSpawnsControl"/>
+            </TabItem>
+
+            <TabItem Header="Loadouts">
+                <local:LoadoutEditorPanel x:Name="LoadoutEditorControl"/>
+            </TabItem>
+
+            <TabItem Header="Mod Settings">
+                <local:ModSettingsPanel x:Name="ModSettingsControl"/>
+            </TabItem>
+
             <TabItem Header="Plugins">
                 <StackPanel Margin="5">
                     <Label Content="Installed plugins (BepInEx/plugins):"/>
@@ -56,6 +72,25 @@
 
             <TabItem Header="Presets">
                 <local:PresetsGrid x:Name="PresetsGridControl"/>
+            </TabItem>
+
+            <TabItem Header="Reference">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <Button Content="Commands" Width="90" Margin="2" Click="RefCommands_Click"/>
+                        <Button Content="Item IDs" Width="90" Margin="2" Click="RefItems_Click"/>
+                        <Button Content="Loadouts" Width="90" Margin="2" Click="RefLoadouts_Click"/>
+                        <Button Content="Spawn Locations" Width="110" Margin="2" Click="RefSpawns_Click"/>
+                        <Button Content="Match Settings Guide" Width="130" Margin="2" Click="RefMatchSettings_Click"/>
+                    </StackPanel>
+                    <TextBox x:Name="ReferenceTextBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
+                             Margin="5" AcceptsReturn="True"/>
+                </Grid>
             </TabItem>
 
             <TabItem Header="Console">

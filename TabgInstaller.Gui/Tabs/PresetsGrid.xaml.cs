@@ -17,6 +17,7 @@ namespace TabgInstaller.Gui.Tabs
         public PresetsGrid()
         {
             InitializeComponent();
+            LstTemplates.ItemsSource = BuiltInPresets.All;
         }
 
         // Simple POCO for binding file checkboxes
@@ -54,6 +55,64 @@ namespace TabgInstaller.Gui.Tabs
             }
             FilesList.ItemsSource = _fileEntries;
         }
+
+        // ── Built-in Templates ──
+
+        private void LstTemplates_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstTemplates.SelectedItem is BuiltInPresets.BuiltInPreset preset)
+            {
+                TxtTemplateDesc.Text = preset.Description;
+                TxtTemplateNotes.Text = string.IsNullOrWhiteSpace(preset.Notes) ? "" : $"Notes: {preset.Notes}";
+            }
+            else
+            {
+                TxtTemplateDesc.Text = "";
+                TxtTemplateNotes.Text = "";
+            }
+        }
+
+        private void ApplyTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_serverDir))
+            {
+                MessageBox.Show("No server directory set. Please install/select a server first.");
+                return;
+            }
+
+            if (LstTemplates.SelectedItem is not BuiltInPresets.BuiltInPreset preset)
+            {
+                MessageBox.Show("Please select a template to apply.");
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Apply template '{preset.Name}'?\n\n" +
+                "This will overwrite:\n" +
+                string.Join("\n", preset.Files.Keys.Select(k => $"  - {k}")) +
+                "\n\nContinue?",
+                "Apply Server Template",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                BuiltInPresets.Deploy(preset, _serverDir);
+                MessageBox.Show(
+                    $"Template '{preset.Name}' applied successfully.\n\nReload the Config tab to see the new settings.",
+                    "Template Applied",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to apply template: {ex.Message}");
+            }
+        }
+
+        // ── User Presets ──
 
         private void SavePreset_Click(object sender, RoutedEventArgs e)
         {
@@ -126,4 +185,4 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
     }
-} 
+}
