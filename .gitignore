@@ -27,6 +27,9 @@ publish/
 # Allow built mods dlls
 !mods/
 !mods/*.dll
+# Allow bundled plugin DLLs
+!TabgInstaller.Gui/plugins/
+!TabgInstaller.Gui/plugins/*.dll
 # Allow markdown, config, and scripts
 !*.md
 !*.ps1

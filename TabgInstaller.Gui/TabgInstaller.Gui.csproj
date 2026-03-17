@@ -35,6 +35,14 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy bundled plugin DLLs to output directory -->
+  <ItemGroup>
+    <None Include="plugins\**\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
   <!-- Include logo as Resource for WPF pack URI -->
   <ItemGroup>
     <Resource Include="..\logo\tabg-mod-manager-icon-256.png">

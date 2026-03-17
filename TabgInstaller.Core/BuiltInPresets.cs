@@ -10,7 +10,12 @@ namespace TabgInstaller.Core
     /// </summary>
     public static class BuiltInPresets
     {
-        public record BuiltInPreset(string Name, string Description, string Notes, Dictionary<string, string> Files);
+        public record BuiltInPreset(string Name, string Description, string Notes, Dictionary<string, string> Files, string[] RequiredPlugins);
+
+        /// <summary>Common plugins needed by DM/GG/Scavenge modes.</summary>
+        private static readonly string[] GameModePlugins = { "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll", "FreddoTABGCommission.dll" };
+        /// <summary>Plugins for standard BR mode.</summary>
+        private static readonly string[] BattleRoyalePlugins = { "Citruslib.dll", "MatchAndPreMatchTimeout.dll", "ServerLogger.dll", "VoteToStart.dll" };
 
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
@@ -20,15 +25,67 @@ namespace TabgInstaller.Core
             ScavengePointOfImpact()
         };
 
-        /// <summary>Deploy a built-in preset by writing all its files into the server directory.</summary>
+        /// <summary>Deploy a built-in preset by writing all its files and copying required plugins.</summary>
         public static void Deploy(BuiltInPreset preset, string serverDir)
         {
+            // Write text config files
             foreach (var (relativePath, content) in preset.Files)
             {
                 var dst = Path.Combine(serverDir, relativePath);
                 Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
                 File.WriteAllText(dst, content);
             }
+
+            // Copy required plugin DLLs
+            if (preset.RequiredPlugins.Length > 0)
+            {
+                var pluginsDir = Path.Combine(serverDir, "BepInEx", "plugins");
+                Directory.CreateDirectory(pluginsDir);
+
+                var bundledDir = FindBundledPluginsDir();
+                if (bundledDir != null)
+                {
+                    foreach (var dll in preset.RequiredPlugins)
+                    {
+                        var src = Path.Combine(bundledDir, dll);
+                        var dst = Path.Combine(pluginsDir, dll);
+                        if (File.Exists(src))
+                            File.Copy(src, dst, overwrite: true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Searches for bundled plugin DLLs directory in known locations.</summary>
+        public static string? FindBundledPluginsDir()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var candidates = new List<string>
+            {
+                Path.Combine(baseDir, "plugins"),
+                Path.Combine(baseDir, "Assets", "bundled", "plugins"),
+                Path.Combine(baseDir, "..", "plugins"),
+                Path.Combine(baseDir, "..", "..", "plugins"),
+                Path.Combine(baseDir, "..", "..", "..", "plugins"),
+            };
+
+            // Also search up from base dir for a mods or plugins folder
+            var dir = new DirectoryInfo(baseDir);
+            while (dir?.Parent != null)
+            {
+                var modsDir = Path.Combine(dir.FullName, "mods");
+                if (Directory.Exists(modsDir)) candidates.Add(modsDir);
+                var plugDir = Path.Combine(dir.FullName, "plugins");
+                if (Directory.Exists(plugDir)) candidates.Add(plugDir);
+                dir = dir.Parent;
+            }
+
+            foreach (var c in candidates)
+            {
+                if (Directory.Exists(c) && Directory.GetFiles(c, "*.dll").Length > 0)
+                    return c;
+            }
+            return null;
         }
 
         private static readonly string SharedExtraSettings = @"[
@@ -92,7 +149,7 @@ AntiCheat=false";
                 "Battle Royale - More Loot",
                 "Classic BR with enhanced loot, 40 players, solo. Force start at 5 players. No StarterPack mods.",
                 "This mode uses standard BR with custom loot tables. Does NOT use StarterPack, CustomSpawnpoints, or FreddoTABGCommission plugins.",
-                files);
+                files, BattleRoyalePlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -181,9 +238,14 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=20";
 
-            var commission = @"[General]
+            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
+## Plugin GUID: FreddoTABGCommission
+
+[Bans]
 
 BanList =
+
+[Curses]
 
 LoadoutCurses = 14,14,17,1/1,0,14/17,13/6/12/13/4,9/6
 
@@ -191,7 +253,7 @@ LoadoutCurses = 14,14,17,1/1,0,14/17,13/6/12/13/4,9/6
 
 Enabled = true
 
-Chance = 1.0
+Chance = 1
 
 ID = 198
 
@@ -203,20 +265,29 @@ Chance = 0.2
 
 ID = 186
 
-[Advanced]
+[Networking]
 
 StreamingDistance = -1
 
-Lives = 256";
+[Player]
 
-            var fixes = @"[General]
+Lives = 256
+";
 
-EnableLootDrops = false";
+            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
+## Plugin GUID: FreddoFixStarterPack
 
-            var spawns = @"[General]
+[Fixes]
 
-## Match spawn points as 2D coordinates (x,z) separated by semicolons
-Spawnpoints = 363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,-709;342,-687;278,-674;284,-626;322,-654";
+EnableLootDrops = false
+";
+
+            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
+## Plugin GUID: FreddoCustomSpawnpoints
+
+[Spawn]
+
+Spawnpoints =363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,-709;342,-687;278,-674;284,-626;322,-654";
 
             var files = new Dictionary<string, string>
             {
@@ -232,7 +303,7 @@ Spawnpoints = 363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288
                 "Deathmatch - Big Work",
                 "FFA Deathmatch at Big Work. 20 players, 20 kills to win, 35 loadouts with curses. Healing grenade on kill, 50% heal. Infinite lives.",
                 "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
-                files);
+                files, GameModePlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -323,9 +394,14 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=30";
 
-            var commission = @"[General]
+            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
+## Plugin GUID: FreddoTABGCommission
+
+[Bans]
 
 BanList =
+
+[Curses]
 
 LoadoutCurses =
 
@@ -333,7 +409,7 @@ LoadoutCurses =
 
 Enabled = false
 
-Chance = 1.0
+Chance = 0.2
 
 ID = 198
 
@@ -343,22 +419,31 @@ Enabled = false
 
 Chance = 0.2
 
-ID = 186
+ID = 198
 
-[Advanced]
+[Networking]
 
 StreamingDistance = -1
 
-Lives = 256";
+[Player]
 
-            var fixes = @"[General]
+Lives = 256
+";
 
-EnableLootDrops = false";
+            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
+## Plugin GUID: FreddoFixStarterPack
 
-            var spawns = @"[General]
+[Fixes]
 
-## Match spawn points as 2D coordinates (x,z) separated by semicolons
-Spawnpoints = -702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-691,523;-667,532;-671,550;-656,527;-688,568";
+EnableLootDrops = false
+";
+
+            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
+## Plugin GUID: FreddoCustomSpawnpoints
+
+[Spawn]
+
+Spawnpoints =-702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-691,523;-667,532;-671,550;-656,527;-688,568";
 
             var files = new Dictionary<string, string>
             {
@@ -374,7 +459,7 @@ Spawnpoints = -702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-69
                 "Gun Game - Castle",
                 "Progressive Gun Game at Castle. 20 players, 35 kills. Weapon advances on each kill. 20% heal on kill. Infinite lives.",
                 "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
-                files);
+                files, GameModePlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -428,9 +513,14 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=30";
 
-            var commission = @"[General]
+            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
+## Plugin GUID: FreddoTABGCommission
+
+[Bans]
 
 BanList =
+
+[Curses]
 
 LoadoutCurses =
 
@@ -438,7 +528,7 @@ LoadoutCurses =
 
 Enabled = false
 
-Chance = 1.0
+Chance = 0.2
 
 ID = 198
 
@@ -448,22 +538,31 @@ Enabled = false
 
 Chance = 0.2
 
-ID = 186
+ID = 198
 
-[Advanced]
+[Networking]
 
 StreamingDistance = -1
 
-Lives = 256";
+[Player]
 
-            var fixes = @"[General]
+Lives = 256
+";
 
-EnableLootDrops = true";
+            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
+## Plugin GUID: FreddoFixStarterPack
 
-            var spawns = @"[General]
+[Fixes]
 
-## Match spawn points as 2D coordinates (x,z) separated by semicolons
-Spawnpoints = -41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,559;-125,541;-71,519;-50,559;27,554";
+EnableLootDrops = true
+";
+
+            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
+## Plugin GUID: FreddoCustomSpawnpoints
+
+[Spawn]
+
+Spawnpoints =-41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,559;-125,541;-71,519;-50,559;27,554";
 
             var files = new Dictionary<string, string>
             {
@@ -479,7 +578,7 @@ Spawnpoints = -41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92
                 "Scavenge - Point Of Impact",
                 "KeepInventory scavenge at Point Of Impact. 20 players, 25 kills. Items persist through death. Loot drops enabled. 50% heal on kill. Infinite lives.",
                 "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
-                files);
+                files, GameModePlugins);
         }
     }
 }

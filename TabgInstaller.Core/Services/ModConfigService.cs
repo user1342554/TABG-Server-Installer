@@ -24,9 +24,13 @@ namespace TabgInstaller.Core.Services
             if (!File.Exists(path)) return s;
 
             var dict = ParseCfg(path);
+            // Keys stored both as "section.key" and bare "key" by ParseCfg
             if (dict.TryGetValue("BanList", out var bl)) s.BanList = bl;
             if (dict.TryGetValue("LoadoutCurses", out var lc)) s.LoadoutCurses = lc;
+
+            // GrenadesOnDeath sections use dotted section names in the cfg file itself
             if (dict.TryGetValue("GrenadesOnDeath.Attacker.Enabled", out var gae)) s.GrenadeAttackerEnabled = ParseBool(gae);
+            else if (dict.TryGetValue("Enabled", out gae)) s.GrenadeAttackerEnabled = ParseBool(gae); // fallback
             if (dict.TryGetValue("GrenadesOnDeath.Attacker.Chance", out var gac) && float.TryParse(gac, NumberStyles.Float, CultureInfo.InvariantCulture, out var gacV)) s.GrenadeAttackerChance = gacV;
             if (dict.TryGetValue("GrenadesOnDeath.Attacker.ID", out var gai) && int.TryParse(gai, out var gaiV)) s.GrenadeAttackerId = gaiV;
             if (dict.TryGetValue("GrenadesOnDeath.Corpse.Enabled", out var gce)) s.GrenadeCorpseEnabled = ParseBool(gce);
@@ -45,33 +49,71 @@ namespace TabgInstaller.Core.Services
 
             var lines = new List<string>
             {
-                "[General]",
+                "## Settings file was created by plugin Freddo TABG Commission v1.0.0",
+                "## Plugin GUID: FreddoTABGCommission",
                 "",
+                "[Bans]",
+                "",
+                "## A list of Epic IDs to ban, separated with semicolons.",
+                "# Setting type: String",
+                "# Default value: ",
                 $"BanList = {s.BanList}",
                 "",
+                "[Curses]",
+                "",
+                "## A list of curse IDs to inflict the player using a loadout at that index (e.g. loadout 1 = group 1), Ex: 0,1/1,2/2,3",
+                "# Setting type: String",
+                "# Default value: ",
                 $"LoadoutCurses = {s.LoadoutCurses}",
                 "",
                 "[GrenadesOnDeath.Attacker]",
                 "",
+                "## Drops a grenade if a player kills another player, chance can be configured.",
+                "# Setting type: Boolean",
+                "# Default value: false",
                 $"Enabled = {s.GrenadeAttackerEnabled.ToString().ToLower()}",
                 "",
+                "## The chance a grenade drops on kill.",
+                "# Setting type: Single",
+                "# Default value: 0.2",
                 $"Chance = {s.GrenadeAttackerChance.ToString(CultureInfo.InvariantCulture)}",
                 "",
+                "## The ID of the grenade to throw (can be any throwable).",
+                "# Setting type: Int32",
+                "# Default value: 198",
                 $"ID = {s.GrenadeAttackerId}",
                 "",
                 "[GrenadesOnDeath.Corpse]",
                 "",
+                "## Drops a grenade on a corpse if a player kills another player, chance can be configured.",
+                "# Setting type: Boolean",
+                "# Default value: false",
                 $"Enabled = {s.GrenadeCorpseEnabled.ToString().ToLower()}",
                 "",
+                "## The chance a grenade drops on kill.",
+                "# Setting type: Single",
+                "# Default value: 0.2",
                 $"Chance = {s.GrenadeCorpseChance.ToString(CultureInfo.InvariantCulture)}",
                 "",
+                "## The ID of the grenade to throw (can be any throwable).",
+                "# Setting type: Int32",
+                "# Default value: 198",
                 $"ID = {s.GrenadeCorpseId}",
                 "",
-                "[Advanced]",
+                "[Networking]",
                 "",
+                "## The distance (in metres) that packets can be sent to nearby players without being cut off. (-1 means normal TABG, -2 means all players)",
+                "# Setting type: Int32",
+                "# Default value: -1",
                 $"StreamingDistance = {s.StreamingDistance.ToString(CultureInfo.InvariantCulture)}",
                 "",
-                $"Lives = {s.Lives}"
+                "[Player]",
+                "",
+                "## The number of lives that the player has before being kicked from the game (256 means infinite).",
+                "# Setting type: Int32",
+                "# Default value: 256",
+                $"Lives = {s.Lives}",
+                ""
             };
 
             File.WriteAllLines(path, lines);
@@ -89,7 +131,9 @@ namespace TabgInstaller.Core.Services
             if (!File.Exists(path)) return s;
 
             var dict = ParseCfg(path);
+            // Key stored as bare "EnableLootDrops" or "Fixes.EnableLootDrops"
             if (dict.TryGetValue("EnableLootDrops", out var eld)) s.EnableLootDrops = ParseBool(eld);
+            else if (dict.TryGetValue("Fixes.EnableLootDrops", out eld)) s.EnableLootDrops = ParseBool(eld);
             return s;
         }
 
@@ -100,9 +144,16 @@ namespace TabgInstaller.Core.Services
 
             var lines = new List<string>
             {
-                "[General]",
+                "## Settings file was created by plugin FreddoFixStarterPack v1.0.0",
+                "## Plugin GUID: FreddoFixStarterPack",
                 "",
-                $"EnableLootDrops = {s.EnableLootDrops.ToString().ToLower()}"
+                "[Fixes]",
+                "",
+                "## Enable loot drops for items since StarterPack broke it",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"EnableLootDrops = {s.EnableLootDrops.ToString().ToLower()}",
+                ""
             };
 
             File.WriteAllLines(path, lines);
@@ -131,10 +182,16 @@ namespace TabgInstaller.Core.Services
 
             var lines = new List<string>
             {
-                "[General]",
+                "## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0",
+                "## Plugin GUID: FreddoCustomSpawnpoints",
                 "",
-                "## Match spawn points as 2D coordinates (x,z) separated by semicolons",
-                $"Spawnpoints = {spawnPoints}"
+                "[Spawn]",
+                "",
+                "## The spawnpoints you want to spawn. Leave empty to use the default system. Spawns are in this format: x,y;x,y;x,y...",
+                "# Setting type: String",
+                "# Default value: 0,0;100,100",
+                $"Spawnpoints = {spawnPoints}",
+                ""
             };
 
             File.WriteAllLines(path, lines);
