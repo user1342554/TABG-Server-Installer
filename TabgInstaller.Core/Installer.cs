@@ -338,7 +338,27 @@ namespace TabgInstaller.Core
                 var localDllPath = Path.Combine(localStarterPackDir, "StarterPack", "bin", "Release", "net46", "StarterPack.dll");
                 var localSetupPath = Path.Combine(localStarterPackDir, "StarterPackSetup", "bin", "Debug", "StarterPackSetup.exe");
 
-                // Auto-build StarterPack projects if DLLs are missing
+                // Fallback: look for bundled files next to the installer exe (release builds)
+                if (!File.Exists(localDllPath))
+                {
+                    var bundledDll = Path.Combine(installerDir, "plugins", "StarterPack.dll");
+                    if (File.Exists(bundledDll))
+                    {
+                        localDllPath = bundledDll;
+                        _log.Report("  → Using bundled StarterPack.dll");
+                    }
+                }
+                if (!File.Exists(localSetupPath))
+                {
+                    var bundledSetup = Path.Combine(installerDir, "StarterPackSetup.exe");
+                    if (File.Exists(bundledSetup))
+                    {
+                        localSetupPath = bundledSetup;
+                        _log.Report("  → Using bundled StarterPackSetup.exe");
+                    }
+                }
+
+                // Auto-build StarterPack projects if DLLs are still missing (dev environment)
                 if (!File.Exists(localDllPath) || !File.Exists(localSetupPath))
                 {
                     _log.Report("  → Pre-built binaries not found, building StarterPack projects...");
