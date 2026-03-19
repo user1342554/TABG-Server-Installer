@@ -19,7 +19,7 @@
 
 ### Disclaimer 
 
->at the moment the ai chat is buggy and might not work right
+Für Fortnite 
 
 
 
