@@ -56,7 +56,8 @@ namespace TabgInstaller.Gui.Tabs
             RingSpawnsControl.Initialize(_serverDir);
             LoadoutEditorControl.Initialize(_serverDir);
             ModSettingsControl.Initialize(_serverDir);
-            
+            AdminPanelControl.Initialize(_serverDir);
+
             // Initialize server process service
             _procSvc = new ServerProcessService(_serverDir);
             _procSvc.OutputReceived += line => Dispatcher.Invoke(() =>

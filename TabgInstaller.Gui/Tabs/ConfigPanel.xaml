@@ -49,6 +49,10 @@
                 <local:ModSettingsPanel x:Name="ModSettingsControl"/>
             </TabItem>
 
+            <TabItem Header="Admins">
+                <local:AdminPanel x:Name="AdminPanelControl"/>
+            </TabItem>
+
             <TabItem Header="Plugins">
                 <StackPanel Margin="5">
                     <Label Content="Installed plugins (BepInEx/plugins):"/>
