@@ -27,6 +27,19 @@ namespace TabgInstaller.Gui.Tabs
                 PathBox.Text = detectedPath;
             }
 
+            // Populate template selector
+            CmbTemplate.Items.Add("Custom (manual config)");
+            try
+            {
+                foreach (var preset in BuiltInPresets.All)
+                    CmbTemplate.Items.Add(preset.Name);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load presets: {ex}");
+            }
+            CmbTemplate.SelectedIndex = 0;
+
             try
             {
                 Installer.EnsureWordListLoadedAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
@@ -52,6 +65,32 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
+        private void CmbTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Guard: controls may not be initialized yet
+            if (TxtTemplateDesc == null || TxtServerName == null) return;
+
+            if (CmbTemplate.SelectedIndex <= 0)
+            {
+                // Custom mode — enable manual fields
+                TxtTemplateDesc.Text = "";
+                SetServerConfigEnabled(true);
+                return;
+            }
+
+            var preset = BuiltInPresets.All[CmbTemplate.SelectedIndex - 1];
+            TxtTemplateDesc.Text = preset.Description;
+            SetServerConfigEnabled(false);
+        }
+
+        private void SetServerConfigEnabled(bool enabled)
+        {
+            TxtServerName.IsEnabled = enabled;
+            TxtServerPassword.IsEnabled = enabled;
+            TxtServerDescription.IsEnabled = enabled;
+            ChkPublicServer.IsEnabled = enabled;
+        }
+
         private void Browse_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Please paste the path to your server directory into the text box manually.", "Manual Path Entry");
@@ -59,9 +98,24 @@ namespace TabgInstaller.Gui.Tabs
 
         private async void BtnInstall_Click(object sender, RoutedEventArgs e)
         {
-            string serverName = TxtServerName.Text.Trim();
-            string serverPassword = TxtServerPassword.Text.Trim();
-            string serverDesc = TxtServerDescription.Text.Trim();
+            bool isPreset = CmbTemplate.SelectedIndex > 0;
+            BuiltInPresets.BuiltInPreset? selectedPreset = null;
+            if (isPreset)
+            {
+                try
+                {
+                    selectedPreset = BuiltInPresets.All[CmbTemplate.SelectedIndex - 1];
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to load template:\n{ex.Message}", "Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            string serverName = isPreset ? "deathmatch" : TxtServerName.Text.Trim();
+            string serverPassword = isPreset ? "" : TxtServerPassword.Text.Trim();
+            string serverDesc = isPreset ? "deathmatch" : TxtServerDescription.Text.Trim();
             string citrusTag = TxtCitrusTag.Text.Trim();
             bool skipCitrus = ChkSkipCitruslib.IsChecked == true;
             bool installCommunityServer = ChkInstallCommunityServer.IsChecked == true;
@@ -70,9 +124,9 @@ namespace TabgInstaller.Gui.Tabs
 
             // Show warning about wiping old server folder and offer backup
             var result = MessageBox.Show(
-                "WARNING: Installation will modify server files!\n\n" +
-                "A backup will be created in the 'backup' folder before installation.\n" +
-                "Do you want to continue?",
+                isPreset
+                    ? $"Installing template '{selectedPreset!.Name}'.\n\nThis will modify server files. A backup will be created first.\nContinue?"
+                    : "WARNING: Installation will modify server files!\n\nA backup will be created in the 'backup' folder before installation.\nDo you want to continue?",
                 "Installation Warning",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning
@@ -104,35 +158,38 @@ namespace TabgInstaller.Gui.Tabs
                 return;
             }
 
-            if (serverName.Length == 0 ||
-                serverDesc.Length == 0 ||
-                (citrusTag.Length == 0 && !skipCitrus))
+            if (!isPreset)
             {
-                MessageBox.Show(
-                    "Please fill in Server Name/Description. Release tags are only required if not skipping the plugin.",
-                    "Invalid Input",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning
-                );
-                return;
-            }
+                if (serverName.Length == 0 ||
+                    serverDesc.Length == 0 ||
+                    (citrusTag.Length == 0 && !skipCitrus))
+                {
+                    MessageBox.Show(
+                        "Please fill in Server Name/Description. Release tags are only required if not skipping the plugin.",
+                        "Invalid Input",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+                    return;
+                }
 
-            try
-            {
-                Installer.ValidateOneWord("Server Name", serverName);
-                if (!string.IsNullOrEmpty(serverPassword))
-                    Installer.ValidateOneWord("Server Password", serverPassword);
-                Installer.ValidateOneWord("Server Description", serverDesc);
-            }
-            catch (InvalidOperationException ex)
-            {
-                MessageBox.Show(ex.Message, "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error validating input: {ex.Message}", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                try
+                {
+                    Installer.ValidateOneWord("Server Name", serverName);
+                    if (!string.IsNullOrEmpty(serverPassword))
+                        Installer.ValidateOneWord("Server Password", serverPassword);
+                    Installer.ValidateOneWord("Server Description", serverDesc);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    MessageBox.Show(ex.Message, "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error validating input: {ex.Message}", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
 
             SetUiEnabled(false);
@@ -140,7 +197,7 @@ namespace TabgInstaller.Gui.Tabs
 
             var progress = new Progress<string>(line =>
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke(() =>
                 {
                     TxtLog.AppendText(line + Environment.NewLine);
                     LogScrollViewer.ScrollToEnd();
@@ -151,52 +208,55 @@ namespace TabgInstaller.Gui.Tabs
 
             try
             {
-                // Create backup before installation
-                var backupService = new TabgInstaller.Core.Services.BackupService(progress);
-                if (Directory.Exists(serverDir) && Directory.GetFileSystemEntries(serverDir).Length > 0)
-                {
-                    ((IProgress<string>)progress).Report("Creating backup...");
-                    bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
-                    if (!backupSuccess)
-                    {
-                        var continueAnyway = MessageBox.Show(
-                            "Failed to create backup!\n\nDo you want to continue with installation anyway?",
-                            "Backup Failed",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning
-                        );
-                        if (continueAnyway != MessageBoxResult.Yes)
-                        {
-                            return;
-                        }
-                    }
-                }
-
-                var installer = new TabgInstaller.Core.Installer(
-                    gameDir: serverDir,
-                    log: progress
-                );
-
-                // Read the Starter Pack checkbox value - if unchecked, we skip installation
+                // Read UI values before going to background thread
                 bool skipStarterPack = !(ChkInstallStarterPack.IsChecked ?? true);
 
-                int exitCode = await installer.RunAsync(
-                    serverDir: serverDir,
-                    serverName: serverName,
-                    serverPassword: serverPassword,
-                    serverDescription: serverDesc,
-                    starterPackTag: "",
-                    citrusLibTag: citrusTag,
-                    skipStarterPack: skipStarterPack,
-                    skipCitruslib: skipCitrus,
-                    installCommunityServer: installCommunityServer,
-                    ct: cts.Token
-                );
+                // Run backup + install on a background thread so the UI stays responsive
+                int exitCode = await Task.Run(async () =>
+                {
+                    // Create backup before installation
+                    var backupService = new TabgInstaller.Core.Services.BackupService(progress);
+                    if (Directory.Exists(serverDir) && Directory.GetFileSystemEntries(serverDir).Length > 0)
+                    {
+                        ((IProgress<string>)progress).Report("Creating backup...");
+                        bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
+                        if (!backupSuccess)
+                        {
+                            ((IProgress<string>)progress).Report("⚠️ Backup failed — continuing anyway.");
+                        }
+                    }
+
+                    var installer = new TabgInstaller.Core.Installer(
+                        gameDir: serverDir,
+                        log: progress
+                    );
+
+                    return await installer.RunAsync(
+                        serverDir: serverDir,
+                        serverName: serverName,
+                        serverPassword: serverPassword,
+                        serverDescription: serverDesc,
+                        starterPackTag: "",
+                        citrusLibTag: citrusTag,
+                        skipStarterPack: skipStarterPack,
+                        skipCitruslib: skipCitrus,
+                        installCommunityServer: installCommunityServer,
+                        ct: cts.Token
+                    );
+                });
 
                 if (!cts.IsCancellationRequested)
                 {
                     if (exitCode == 0)
                     {
+                        // Deploy template configs if one was selected
+                        if (selectedPreset != null)
+                        {
+                            ((IProgress<string>)progress).Report($"• Deploying template '{selectedPreset.Name}'...");
+                            await Task.Run(() => BuiltInPresets.Deploy(selectedPreset, serverDir));
+                            ((IProgress<string>)progress).Report($"  → Template '{selectedPreset.Name}' deployed — all configs written.");
+                        }
+
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
                         
                         // Enable Config, AI Chat, and Backups tabs after successful install
@@ -287,13 +347,22 @@ namespace TabgInstaller.Gui.Tabs
         {
             BtnInstall.IsEnabled = isEnabled;
             PathBox.IsEnabled = isEnabled;
-            TxtServerName.IsEnabled = isEnabled;
-            TxtServerPassword.IsEnabled = isEnabled;
-            TxtServerDescription.IsEnabled = isEnabled;
+            CmbTemplate.IsEnabled = isEnabled;
             TxtCitrusTag.IsEnabled = isEnabled;
             ChkSkipCitruslib.IsEnabled = isEnabled;
-            ChkPublicServer.IsEnabled = isEnabled;
             ChkInstallCommunityServer.IsEnabled = isEnabled;
+            if (isEnabled && CmbTemplate.SelectedIndex > 0)
+            {
+                // Template selected — keep server config fields disabled
+                SetServerConfigEnabled(false);
+            }
+            else
+            {
+                TxtServerName.IsEnabled = isEnabled;
+                TxtServerPassword.IsEnabled = isEnabled;
+                TxtServerDescription.IsEnabled = isEnabled;
+                ChkPublicServer.IsEnabled = isEnabled;
+            }
         }
     }
 }

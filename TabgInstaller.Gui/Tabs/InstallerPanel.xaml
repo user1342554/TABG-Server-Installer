@@ -6,6 +6,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -22,8 +23,16 @@
             </Grid>
         </GroupBox>
 
+        <!-- Template -->
+        <GroupBox Grid.Row="1" Header="Server Template" Margin="0,0,0,10">
+            <StackPanel>
+                <ComboBox x:Name="CmbTemplate" Margin="5" SelectionChanged="CmbTemplate_SelectionChanged"/>
+                <TextBlock x:Name="TxtTemplateDesc" Margin="5,0,5,5" TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray"/>
+            </StackPanel>
+        </GroupBox>
+
         <!-- Server Config -->
-        <GroupBox Grid.Row="1" Header="Server Configuration" Margin="0,0,0,10">
+        <GroupBox Grid.Row="2" Header="Server Configuration" Margin="0,0,0,10">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -51,7 +60,7 @@
         </GroupBox>
 
         <!-- Plugins -->
-        <GroupBox Grid.Row="2" Header="Plugins" Margin="0,0,0,10">
+        <GroupBox Grid.Row="3" Header="Plugins" Margin="0,0,0,10">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -69,14 +78,14 @@
         </GroupBox>
 
         <!-- Log -->
-        <GroupBox Grid.Row="3" Header="Installation Log">
+        <GroupBox Grid.Row="4" Header="Installation Log">
             <ScrollViewer x:Name="LogScrollViewer">
                 <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
             </ScrollViewer>
         </GroupBox>
 
         <!-- Actions -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnInstall" Content="INSTALL" Height="40" Width="140" Click="BtnInstall_Click"/>
             <Button x:Name="BtnContinue" Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0" Click="BtnContinue_Click"/>
         </StackPanel>

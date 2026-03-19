@@ -489,25 +489,14 @@ namespace TabgInstaller.Core
             {
                 string relPath = Path.GetRelativePath(serverDir, path);
                 
-                // --- BEGIN DIAGNOSTIC ---
-                if (Path.GetFileName(path).Equals("winhttp.dll", StringComparison.OrdinalIgnoreCase) && !ShouldKeepItem(relPath, keepRules))
-                {
-                    _log.Report("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    _log.Report("[CRITICAL WARNING] winhttp.dll IS ABOUT TO BE DELETED! WHITELIST IS WRONG!");
-                    _log.Report($"Whitelist contains {keepRules.Count} items. They are:");
-                    foreach(var rule in keepRules) { _log.Report($"  - {rule}"); }
-                    _log.Report("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                }
-                // --- END DIAGNOSTIC ---
 
                 if (Path.GetFileName(path).Equals("VanillaFiles.txt", StringComparison.OrdinalIgnoreCase) || ShouldKeepItem(relPath, keepRules))
                 {
-                    _log.Report($"    Keeping: {relPath}");
+                    // kept
                 }
                 else
                 {
                     pathsToDelete.Add(path);
-                    _log.Report($"    Marked for deletion: {relPath}");
                 }
             }
             foreach (var path in pathsToDelete.Where(p => File.Exists(p)).OrderByDescending(p => p.Length))
@@ -515,7 +504,6 @@ namespace TabgInstaller.Core
                 try
                 {
                     File.Delete(path);
-                    _log.Report($"  → Deleted file: {Path.GetRelativePath(serverDir, path)}");
                 }
                 catch (Exception ex)
                 {
@@ -533,14 +521,15 @@ namespace TabgInstaller.Core
                         _log.Report("  → Skipped deleting Presets directory");
                         continue;
                     }
-                    Directory.Delete(path, true); 
-                    _log.Report($"  → Deleted directory: {Path.GetRelativePath(serverDir, path)}");
+                    Directory.Delete(path, true);
                 }
                 catch (Exception ex)
                 {
                     _log.Report($"[WARN] Could not delete directory {Path.GetRelativePath(serverDir, path)}: {ex.Message}");
                 }
             }
+
+        _log.Report($"  → Hard reset complete: removed {pathsToDelete.Count} non-vanilla entries.");
 
         if (!Directory.Exists(Path.Combine(serverDir, "TABG_Data")))
             {
