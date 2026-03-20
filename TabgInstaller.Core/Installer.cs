@@ -425,8 +425,7 @@ namespace TabgInstaller.Core
                 File.Copy(localSetupPath, targetSetupPath, true);
                 _log.Report($"  → Copied {StarterPackSetupAssetName} to server root from local source.");
 
-            _log.Report("• Launching StarterPackSetup.exe for user configuration...");
-            _log.Report("  IMPORTANT: Make your changes in the setup window, save, and then close it to continue.");
+            _log.Report("• Launching StarterPackSetup.exe to generate default configuration...");
 
             try
             {
@@ -436,13 +435,18 @@ namespace TabgInstaller.Core
                     {
                         FileName = Path.Combine(serverDir, StarterPackSetupAssetName),
                         WorkingDirectory = serverDir,
-                        UseShellExecute = true, // Launch interactively for the user
-                        Verb = "runas" // Request administrator privileges
+                        UseShellExecute = true,
+                        Verb = "runas"
                     }
                 };
                 setupProcess.Start();
-                await setupProcess.WaitForExitAsync(ct);
-                _log.Report("  → StarterPackSetup.exe was closed.");
+                // Give it a moment to initialize, then close it automatically
+                await Task.Delay(2000, ct);
+                if (!setupProcess.HasExited)
+                {
+                    setupProcess.Kill();
+                }
+                _log.Report("  → StarterPackSetup.exe launched and closed automatically.");
             }
             catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
