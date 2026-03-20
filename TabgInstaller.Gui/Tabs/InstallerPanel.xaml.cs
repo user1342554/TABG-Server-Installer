@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Media;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -26,69 +25,6 @@ namespace TabgInstaller.Gui.Tabs
             {
                 PathBox.Text = detectedPath;
             }
-
-            // Populate template selector
-            CmbTemplate.Items.Add("Custom (manual config)");
-            try
-            {
-                foreach (var preset in BuiltInPresets.All)
-                    CmbTemplate.Items.Add(preset.Name);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to load presets: {ex}");
-            }
-            CmbTemplate.SelectedIndex = 0;
-
-            try
-            {
-                Installer.EnsureWordListLoadedAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Error loading word list:\n{ex.Message}",
-                    "Initialization Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
-                return;
-            }
-
-            // Populate auto-complete sources
-            if (Installer.AllowedWords.Count > 0)
-            {
-                var words = Installer.AllowedWords.ToList();
-                TxtServerName.ItemsSource = words;
-                TxtServerPassword.ItemsSource = words;
-                TxtServerDescription.ItemsSource = words;
-            }
-        }
-
-        private void CmbTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // Guard: controls may not be initialized yet
-            if (TxtTemplateDesc == null || TxtServerName == null) return;
-
-            if (CmbTemplate.SelectedIndex <= 0)
-            {
-                // Custom mode — enable manual fields
-                TxtTemplateDesc.Text = "";
-                SetServerConfigEnabled(true);
-                return;
-            }
-
-            var preset = BuiltInPresets.All[CmbTemplate.SelectedIndex - 1];
-            TxtTemplateDesc.Text = preset.Description;
-            SetServerConfigEnabled(false);
-        }
-
-        private void SetServerConfigEnabled(bool enabled)
-        {
-            TxtServerName.IsEnabled = enabled;
-            TxtServerPassword.IsEnabled = enabled;
-            TxtServerDescription.IsEnabled = enabled;
-            ChkPublicServer.IsEnabled = enabled;
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)
@@ -96,100 +32,78 @@ namespace TabgInstaller.Gui.Tabs
             MessageBox.Show("Please paste the path to your server directory into the text box manually.", "Manual Path Entry");
         }
 
+        // ── Plugin selection helpers ──
+
+        private CheckBox[] GetAllPluginCheckBoxes() => new[]
+        {
+            ChkCitruslib, ChkInstallStarterPack, ChkStarterPackFixes,
+            ChkCustomSpawnpoints, ChkFreddoCommission, ChkMatchTimeout,
+            ChkServerLogger, ChkVoteToStart, ChkInstallCommunityServer
+        };
+
+        private void SelectAllPlugins_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var cb in GetAllPluginCheckBoxes())
+                cb.IsChecked = true;
+        }
+
+        private void SelectNonePlugins_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var cb in GetAllPluginCheckBoxes())
+                cb.IsChecked = false;
+        }
+
+        private void SelectSigmaPlugins_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var cb in GetAllPluginCheckBoxes())
+                cb.IsChecked = false;
+
+            ChkCitruslib.IsChecked = true;
+            ChkInstallStarterPack.IsChecked = true;
+            ChkStarterPackFixes.IsChecked = true;
+            ChkCustomSpawnpoints.IsChecked = true;
+            ChkFreddoCommission.IsChecked = true;
+        }
+
         private async void BtnInstall_Click(object sender, RoutedEventArgs e)
         {
-            bool isPreset = CmbTemplate.SelectedIndex > 0;
-            BuiltInPresets.BuiltInPreset? selectedPreset = null;
-            if (isPreset)
-            {
-                try
-                {
-                    selectedPreset = BuiltInPresets.All[CmbTemplate.SelectedIndex - 1];
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to load template:\n{ex.Message}", "Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
+            // Use "enormous" as default for name/password/description.
+            // User can change these later in the Config tab.
+            const string serverName = "enormous";
+            const string serverPassword = "enormous";
+            const string serverDesc = "enormous";
 
-            string serverName = isPreset ? "deathmatch" : TxtServerName.Text.Trim();
-            string serverPassword = isPreset ? "" : TxtServerPassword.Text.Trim();
-            string serverDesc = isPreset ? "deathmatch" : TxtServerDescription.Text.Trim();
             string citrusTag = TxtCitrusTag.Text.Trim();
-            bool skipCitrus = ChkSkipCitruslib.IsChecked == true;
+            bool skipCitrus = !(ChkCitruslib.IsChecked == true);
             bool installCommunityServer = ChkInstallCommunityServer.IsChecked == true;
 
             string serverDir = PathBox.Text.Trim();
 
-            // Show warning about wiping old server folder and offer backup
             var result = MessageBox.Show(
-                isPreset
-                    ? $"Installing template '{selectedPreset!.Name}'.\n\nThis will modify server files. A backup will be created first.\nContinue?"
-                    : "WARNING: Installation will modify server files!\n\nA backup will be created in the 'backup' folder before installation.\nDo you want to continue?",
+                "WARNING: Installation will modify server files!\n\nA backup will be created in the 'backup' folder before installation.\nDo you want to continue?",
                 "Installation Warning",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning
             );
 
             if (result != MessageBoxResult.Yes)
-            {
                 return;
-            }
 
             if (string.IsNullOrWhiteSpace(serverDir))
             {
-                MessageBox.Show(
-                    "Please select a valid TABG server folder.",
-                    "Folder Not Selected",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning
-                );
+                MessageBox.Show("Please select a valid TABG server folder.", "Folder Not Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (!Directory.Exists(serverDir))
             {
-                MessageBox.Show(
-                    $"The path '{serverDir}' does not exist.\nPlease select a valid TABG server folder.",
-                    "Folder Not Found",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                MessageBox.Show($"The path '{serverDir}' does not exist.\nPlease select a valid TABG server folder.", "Folder Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (!isPreset)
+            if (citrusTag.Length == 0 && !skipCitrus)
             {
-                if (serverName.Length == 0 ||
-                    serverDesc.Length == 0 ||
-                    (citrusTag.Length == 0 && !skipCitrus))
-                {
-                    MessageBox.Show(
-                        "Please fill in Server Name/Description. Release tags are only required if not skipping the plugin.",
-                        "Invalid Input",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
-                    );
-                    return;
-                }
-
-                try
-                {
-                    Installer.ValidateOneWord("Server Name", serverName);
-                    if (!string.IsNullOrEmpty(serverPassword))
-                        Installer.ValidateOneWord("Server Password", serverPassword);
-                    Installer.ValidateOneWord("Server Description", serverDesc);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    MessageBox.Show(ex.Message, "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error validating input: {ex.Message}", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+                MessageBox.Show("CitrusLib tag is required if not skipping the plugin.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             SetUiEnabled(false);
@@ -208,28 +122,28 @@ namespace TabgInstaller.Gui.Tabs
 
             try
             {
-                // Read UI values before going to background thread
                 bool skipStarterPack = !(ChkInstallStarterPack.IsChecked ?? true);
 
-                // Run backup + install on a background thread so the UI stays responsive
+                var selectedBundledPlugins = new List<string>();
+                if (ChkStarterPackFixes.IsChecked == true) selectedBundledPlugins.Add("StarterPackFixes.dll");
+                if (ChkCustomSpawnpoints.IsChecked == true) selectedBundledPlugins.Add("CustomSpawnpoints.dll");
+                if (ChkFreddoCommission.IsChecked == true) selectedBundledPlugins.Add("FreddoTABGCommission.dll");
+                if (ChkMatchTimeout.IsChecked == true) selectedBundledPlugins.Add("MatchAndPreMatchTimeout.dll");
+                if (ChkServerLogger.IsChecked == true) selectedBundledPlugins.Add("ServerLogger.dll");
+                if (ChkVoteToStart.IsChecked == true) selectedBundledPlugins.Add("VoteToStart.dll");
+
                 int exitCode = await Task.Run(async () =>
                 {
-                    // Create backup before installation
                     var backupService = new TabgInstaller.Core.Services.BackupService(progress);
                     if (Directory.Exists(serverDir) && Directory.GetFileSystemEntries(serverDir).Length > 0)
                     {
                         ((IProgress<string>)progress).Report("Creating backup...");
                         bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
                         if (!backupSuccess)
-                        {
                             ((IProgress<string>)progress).Report("⚠️ Backup failed — continuing anyway.");
-                        }
                     }
 
-                    var installer = new TabgInstaller.Core.Installer(
-                        gameDir: serverDir,
-                        log: progress
-                    );
+                    var installer = new TabgInstaller.Core.Installer(gameDir: serverDir, log: progress);
 
                     return await installer.RunAsync(
                         serverDir: serverDir,
@@ -241,6 +155,7 @@ namespace TabgInstaller.Gui.Tabs
                         skipStarterPack: skipStarterPack,
                         skipCitruslib: skipCitrus,
                         installCommunityServer: installCommunityServer,
+                        bundledPlugins: selectedBundledPlugins,
                         ct: cts.Token
                     );
                 });
@@ -249,17 +164,8 @@ namespace TabgInstaller.Gui.Tabs
                 {
                     if (exitCode == 0)
                     {
-                        // Deploy template configs if one was selected
-                        if (selectedPreset != null)
-                        {
-                            ((IProgress<string>)progress).Report($"• Deploying template '{selectedPreset.Name}'...");
-                            await Task.Run(() => BuiltInPresets.Deploy(selectedPreset, serverDir));
-                            ((IProgress<string>)progress).Report($"  → Template '{selectedPreset.Name}' deployed — all configs written.");
-                        }
-
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
-                        
-                        // Enable Config, AI Chat, and Backups tabs after successful install
+
                         if (Window.GetWindow(this) is MainWindow mainWindow)
                         {
                             mainWindow.ConfigTab.Initialize(serverDir);
@@ -272,23 +178,16 @@ namespace TabgInstaller.Gui.Tabs
                                     backupsPanel.Initialize(serverDir);
                             }
                             if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
-                            {
                                 secretTab.IsEnabled = true;
-                            }
                             if (mainWindow.FindName("MainTabs") is TabControl tabs)
-                                tabs.SelectedIndex = 1; // switch to Config tab by index
+                                tabs.SelectedIndex = 1;
                         }
-                        
-                        MessageBox.Show("Installation completed successfully! Switching to Config tab...", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        MessageBox.Show("Installation completed successfully! Switching to Config tab.\n\nChange Server Name, Password and Description in Server Settings.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox.Show(
-                            $"Installation ended with code {exitCode}. See log output.",
-                            "Installation Failed",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error
-                        );
+                        MessageBox.Show($"Installation ended with code {exitCode}. See log output.", "Installation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -300,12 +199,7 @@ namespace TabgInstaller.Gui.Tabs
             catch (Exception ex)
             {
                 progress.LogException("Unknown error during installation", ex);
-                MessageBox.Show(
-                    $"Unknown error during installation:\n{ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                MessageBox.Show($"Unknown error during installation:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -335,11 +229,9 @@ namespace TabgInstaller.Gui.Tabs
                         backupsPanel.Initialize(serverDir);
                 }
                 if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
-                {
                     secretTab.IsEnabled = true;
-                }
                 if (mainWindow.FindName("MainTabs") is TabControl tabs)
-                    tabs.SelectedIndex = 1; // switch to Config tab
+                    tabs.SelectedIndex = 1;
             }
         }
 
@@ -347,22 +239,9 @@ namespace TabgInstaller.Gui.Tabs
         {
             BtnInstall.IsEnabled = isEnabled;
             PathBox.IsEnabled = isEnabled;
-            CmbTemplate.IsEnabled = isEnabled;
             TxtCitrusTag.IsEnabled = isEnabled;
-            ChkSkipCitruslib.IsEnabled = isEnabled;
-            ChkInstallCommunityServer.IsEnabled = isEnabled;
-            if (isEnabled && CmbTemplate.SelectedIndex > 0)
-            {
-                // Template selected — keep server config fields disabled
-                SetServerConfigEnabled(false);
-            }
-            else
-            {
-                TxtServerName.IsEnabled = isEnabled;
-                TxtServerPassword.IsEnabled = isEnabled;
-                TxtServerDescription.IsEnabled = isEnabled;
-                ChkPublicServer.IsEnabled = isEnabled;
-            }
+            foreach (var cb in GetAllPluginCheckBoxes())
+                cb.IsEnabled = isEnabled;
         }
     }
 }

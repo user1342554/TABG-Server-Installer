@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
+using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -220,8 +222,9 @@ namespace TabgInstaller.Gui.ViewModels
             {
                 return Name switch
                 {
+                    "ServerName" or "ServerDescription" or "Password" => "ComboBox",
                     "GameMode" => "ComboBox",
-                    "TeamMode" => "ComboBox", 
+                    "TeamMode" => "ComboBox",
                     "CarSpawnRate" or "StripLootByPercentage" => "Slider",
                     "MaxPlayers" or "Port" or "ForceStartTime" or "Countdown" or "BaseRingTime" or 
                     "TimeBeforeFirstRing" or "WeaponDissapearTime" or "BombDefuseTime" or
@@ -239,11 +242,23 @@ namespace TabgInstaller.Gui.ViewModels
             {
                 return Name switch
                 {
+                    "ServerName" or "ServerDescription" or "Password" => GetWordList(),
                     "GameMode" => new[] { "BattleRoyale", "Bomb", "Brawl", "Test", "Deception" },
                     "TeamMode" => new[] { "SQUAD", "DUO", "SOLO" },
                     _ => null
                 };
             }
+        }
+
+        private static object? GetWordList()
+        {
+            try
+            {
+                if (Installer.AllowedWords.Count > 0)
+                    return Installer.AllowedWords.ToList();
+            }
+            catch { }
+            return null;
         }
 
         public double SliderMinimum

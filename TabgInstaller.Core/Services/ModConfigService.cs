@@ -27,6 +27,7 @@ namespace TabgInstaller.Core.Services
             // Keys stored both as "section.key" and bare "key" by ParseCfg
             if (dict.TryGetValue("BanList", out var bl)) s.BanList = bl;
             if (dict.TryGetValue("LoadoutCurses", out var lc)) s.LoadoutCurses = lc;
+            if (dict.TryGetValue("LoadoutBlessings", out var lb)) s.LoadoutBlessings = lb;
 
             // GrenadesOnDeath sections use dotted section names in the cfg file itself
             if (dict.TryGetValue("GrenadesOnDeath.Attacker.Enabled", out var gae)) s.GrenadeAttackerEnabled = ParseBool(gae);
@@ -65,6 +66,13 @@ namespace TabgInstaller.Core.Services
                 "# Setting type: String",
                 "# Default value: ",
                 $"LoadoutCurses = {s.LoadoutCurses}",
+                "",
+                "[Blessings]",
+                "",
+                "## A list of blessing item IDs per loadout (e.g. loadout 1 = group 1). Blessings are items added to the loadout. Ex: 53,42/45,47/50",
+                "# Setting type: String",
+                "# Default value: ",
+                $"LoadoutBlessings = {s.LoadoutBlessings}",
                 "",
                 "[GrenadesOnDeath.Attacker]",
                 "",

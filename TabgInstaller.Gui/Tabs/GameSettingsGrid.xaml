@@ -24,13 +24,6 @@
         
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- Game Mode Warning -->
-                <Border Background="Orange" Padding="10" Margin="5" 
-                        Visibility="{Binding ShowGameModeWarning, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="{Binding GameModeWarningText}" 
-                               Foreground="White" FontWeight="Bold" TextWrapping="Wrap"/>
-                </Border>
-
                 <ItemsControl ItemsSource="{Binding Properties}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:SettingPropertyVM}">

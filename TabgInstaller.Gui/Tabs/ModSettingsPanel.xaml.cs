@@ -110,7 +110,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             try
             {
-                // Read existing commission to preserve LoadoutCurses
+                // Read existing commission to preserve LoadoutCurses and LoadoutBlessings
                 var commission = ModConfigService.ReadCommission(_serverDir);
 
                 // StarterPack Fixes

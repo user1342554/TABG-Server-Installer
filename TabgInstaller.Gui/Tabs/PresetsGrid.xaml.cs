@@ -100,8 +100,15 @@ namespace TabgInstaller.Gui.Tabs
             try
             {
                 BuiltInPresets.Deploy(preset, _serverDir);
+
+                // Reload all config panels to reflect the new template settings
+                if (Window.GetWindow(this) is MainWindow mainWindow)
+                {
+                    mainWindow.ConfigTab.Initialize(_serverDir);
+                }
+
                 MessageBox.Show(
-                    $"Template '{preset.Name}' applied successfully.\n\nReload the Config tab to see the new settings.",
+                    $"Template '{preset.Name}' applied successfully.\n\nAll settings have been reloaded.",
                     "Template Applied",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -155,6 +162,13 @@ namespace TabgInstaller.Gui.Tabs
             try
             {
                 PresetManager.LoadPreset(_serverDir, presetName);
+
+                // Reload all config panels to reflect the loaded preset
+                if (Window.GetWindow(this) is MainWindow mainWindow)
+                {
+                    mainWindow.ConfigTab.Initialize(_serverDir);
+                }
+
                 MessageBox.Show($"Preset '{presetName}' loaded.", "Loaded", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)

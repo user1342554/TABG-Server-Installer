@@ -5,6 +5,7 @@ namespace TabgInstaller.Core.Model
     {
         public string BanList { get; set; } = "";
         public string LoadoutCurses { get; set; } = "";
+        public string LoadoutBlessings { get; set; } = "";
 
         // Grenades on death - attacker gets
         public bool GrenadeAttackerEnabled { get; set; } = false;

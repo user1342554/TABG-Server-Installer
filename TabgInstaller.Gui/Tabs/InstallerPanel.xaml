@@ -5,8 +5,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -23,69 +21,53 @@
             </Grid>
         </GroupBox>
 
-        <!-- Template -->
-        <GroupBox Grid.Row="1" Header="Server Template" Margin="0,0,0,10">
-            <StackPanel>
-                <ComboBox x:Name="CmbTemplate" Margin="5" SelectionChanged="CmbTemplate_SelectionChanged"/>
-                <TextBlock x:Name="TxtTemplateDesc" Margin="5,0,5,5" TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray"/>
-            </StackPanel>
-        </GroupBox>
-
-        <!-- Server Config -->
-        <GroupBox Grid.Row="2" Header="Server Configuration" Margin="0,0,0,10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <Label Grid.Row="0" Grid.Column="0" Content="Server Name:"/>
-                <ComboBox Grid.Row="0" Grid.Column="1" x:Name="TxtServerName" IsEditable="True" Margin="5"/>
-
-                <Label Grid.Row="1" Grid.Column="0" Content="Password:"/>
-                <ComboBox Grid.Row="1" Grid.Column="1" x:Name="TxtServerPassword" IsEditable="True" Margin="5"/>
-
-                <Label Grid.Row="2" Grid.Column="0" Content="Public:"/>
-                <CheckBox Grid.Row="2" Grid.Column="1" x:Name="ChkPublicServer" VerticalAlignment="Center" Margin="5"/>
-
-                <Label Grid.Row="3" Grid.Column="0" Content="Description:"/>
-                <ComboBox Grid.Row="3" Grid.Column="1" x:Name="TxtServerDescription" IsEditable="True" Margin="5"/>
-            </Grid>
-        </GroupBox>
-
         <!-- Plugins -->
-        <GroupBox Grid.Row="3" Header="Plugins" Margin="0,0,0,10">
+        <GroupBox Grid.Row="1" Header="Plugins" Margin="0,0,0,10">
             <StackPanel>
-                <Grid>
+                <CheckBox x:Name="ChkCitruslib" Content="Citruslib — Core server library (admin, permissions, commands)"
+                          Margin="5,3" IsChecked="True"/>
+                <Grid Margin="20,0,5,2">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Label Content="CitrusLib Tag:" Grid.Column="0"/>
-                    <TextBox x:Name="TxtCitrusTag" Text="v0.7" Grid.Column="1" Margin="5"/>
-                    <CheckBox x:Name="ChkSkipCitruslib" Content="Skip" Grid.Column="2" Margin="5"/>
+                    <Label Content="Tag:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TxtCitrusTag" Text="v0.7" Grid.Column="1" Width="80" HorizontalAlignment="Left"/>
                 </Grid>
-                <CheckBox x:Name="ChkInstallStarterPack" Content="Install Starter Pack" Margin="5" IsChecked="True"/>
-                <CheckBox x:Name="ChkInstallCommunityServer" Content="Install TABGCommunityServer" Margin="5"/>
+                <CheckBox x:Name="ChkInstallStarterPack" Content="StarterPack — Match mechanics, loadouts, win conditions"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkStarterPackFixes" Content="StarterPackFixes — Loot drop control"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkCustomSpawnpoints" Content="CustomSpawnpoints — Custom spawn points"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkFreddoCommission" Content="FreddoTABGCommission — Curses, grenades on kill, bans"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkMatchTimeout" Content="MatchAndPreMatchTimeout — Match timing"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkServerLogger" Content="ServerLogger — Player logging"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkVoteToStart" Content="VoteToStart — Vote-to-start"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkInstallCommunityServer" Content="TABGCommunityServer — Community server"
+                          Margin="5,3"/>
+                <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
+                    <Button Content="Select All" Width="80" Click="SelectAllPlugins_Click" Margin="0,0,5,0"/>
+                    <Button Content="Select None" Width="80" Click="SelectNonePlugins_Click" Margin="0,0,5,0"/>
+                    <Button Content="Sigma Preset" Width="100" Click="SelectSigmaPlugins_Click"
+                            ToolTip="Select the plugins required for the CollinSigma preset"/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
 
         <!-- Log -->
-        <GroupBox Grid.Row="4" Header="Installation Log">
+        <GroupBox Grid.Row="2" Header="Installation Log">
             <ScrollViewer x:Name="LogScrollViewer">
                 <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
             </ScrollViewer>
         </GroupBox>
 
         <!-- Actions -->
-        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnInstall" Content="INSTALL" Height="40" Width="140" Click="BtnInstall_Click"/>
             <Button x:Name="BtnContinue" Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0" Click="BtnContinue_Click"/>
         </StackPanel>

@@ -165,6 +165,7 @@ namespace TabgInstaller.Core
         bool   skipStarterPack,
         bool   skipCitruslib,
         bool   installCommunityServer = false,
+        List<string>? bundledPlugins = null,
         CancellationToken ct = default
     )
     {
@@ -314,6 +315,34 @@ namespace TabgInstaller.Core
             await FixDoorstopConfigAsync(serverDir, _log); // Ensure BepInEx is enabled
             Directory.CreateDirectory(_pluginsDir);
 
+            // Install selected bundled plugins
+            if (bundledPlugins != null && bundledPlugins.Count > 0)
+            {
+                _log.Report("• Installing selected bundled plugins...");
+                var bundledDir = BuiltInPresets.FindBundledPluginsDir();
+                if (bundledDir != null)
+                {
+                    foreach (var dll in bundledPlugins)
+                    {
+                        var src = Path.Combine(bundledDir, dll);
+                        var dst = Path.Combine(_pluginsDir, dll);
+                        if (File.Exists(src))
+                        {
+                            File.Copy(src, dst, overwrite: true);
+                            _log.Report($"  → Installed {dll}");
+                        }
+                        else
+                        {
+                            _log.Report($"  ⚠️ Bundled plugin not found: {dll}");
+                        }
+                    }
+                }
+                else
+                {
+                    _log.Report("  ⚠️ Could not find bundled plugins directory");
+                }
+            }
+
             // Define actual tags to be used, potentially overriding with latest
             string actualStarterPackTag = starterPackTag;
             string actualCitrusLibTag = citrusLibTag;
@@ -437,16 +466,19 @@ namespace TabgInstaller.Core
                         WorkingDirectory = serverDir,
                         UseShellExecute = true,
                         Verb = "runas"
-                    }
+                    },
+                    EnableRaisingEvents = true
                 };
                 setupProcess.Start();
-                // Give it a moment to initialize, then close it automatically
-                await Task.Delay(2000, ct);
-                if (!setupProcess.HasExited)
+                _log.Report("  → StarterPackSetup.exe launched. Waiting for it to finish...");
+                // Wait up to 30 seconds for the process to exit on its own
+                var exited = await Task.Run(() => setupProcess.WaitForExit(30_000), ct);
+                if (!exited && !setupProcess.HasExited)
                 {
+                    _log.Report("  → StarterPackSetup.exe still running after 30s, closing it...");
                     setupProcess.Kill();
                 }
-                _log.Report("  → StarterPackSetup.exe launched and closed automatically.");
+                _log.Report("  → StarterPackSetup.exe finished.");
             }
             catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {

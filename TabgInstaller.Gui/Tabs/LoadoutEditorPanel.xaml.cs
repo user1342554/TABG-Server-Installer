@@ -411,7 +411,6 @@ namespace TabgInstaller.Gui.Tabs
                 IsChecked = lo.Curses.Contains(c.Id)
             }).ToList();
 
-            // Subscribe to changes
             foreach (var entry in entries)
             {
                 entry.PropertyChanged += (s, _) =>
@@ -427,6 +426,49 @@ namespace TabgInstaller.Gui.Tabs
             }
 
             IcCurses.ItemsSource = entries;
+
+            // Blessing checkboxes — blessings are items in the loadout
+            var blessingItems = ItemDatabase.ByCategory("Blessings").ToList();
+            var existingItemIds = lo.Items.Select(it => it.Id).ToHashSet();
+
+            var blessingEntries = blessingItems.Select(b => new BlessingCheckEntry
+            {
+                ItemId = b.Id,
+                DisplayText = $"{b.Name} ({b.Id})",
+                IsChecked = existingItemIds.Contains(b.Id.ToString())
+            }).ToList();
+
+            foreach (var entry in blessingEntries)
+            {
+                entry.PropertyChanged += (s, _) =>
+                {
+                    if (s is BlessingCheckEntry be)
+                    {
+                        var idStr = be.ItemId.ToString();
+                        if (be.IsChecked)
+                        {
+                            // Add blessing as item if not already present
+                            if (!lo.Items.Any(it => it.Id == idStr))
+                            {
+                                lo.Items.Add(new ItemViewModel(idStr, 1));
+                                RefreshItemsGrid(lo);
+                            }
+                        }
+                        else
+                        {
+                            // Remove blessing item
+                            var match = lo.Items.FirstOrDefault(it => it.Id == idStr);
+                            if (match != null)
+                            {
+                                lo.Items.Remove(match);
+                                RefreshItemsGrid(lo);
+                            }
+                        }
+                    }
+                };
+            }
+
+            IcBlessings.ItemsSource = blessingEntries;
         }
 
         private static string ResolveItemName(string id)
@@ -575,6 +617,30 @@ namespace TabgInstaller.Gui.Tabs
         internal class CurseCheckEntry : INotifyPropertyChanged
         {
             public int CurseId { get; set; }
+            public string DisplayText { get; set; } = "";
+
+            private bool _isChecked;
+            public bool IsChecked
+            {
+                get => _isChecked;
+                set
+                {
+                    if (_isChecked != value)
+                    {
+                        _isChecked = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            private void OnPropertyChanged([CallerMemberName] string? name = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        internal class BlessingCheckEntry : INotifyPropertyChanged
+        {
+            public int ItemId { get; set; }
             public string DisplayText { get; set; } = "";
 
             private bool _isChecked;

@@ -23,30 +23,34 @@
 
         <!-- Add / Edit -->
         <GroupBox Grid.Row="1" Header="Add Admin" Margin="0,0,0,8">
-            <Grid Margin="4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Label Grid.Column="0" Content="Name:"/>
-                <TextBox Grid.Column="1" x:Name="TxtName" Margin="2"/>
-                <Label Grid.Column="2" Content="Epic ID:"/>
-                <TextBox Grid.Column="3" x:Name="TxtEpicId" Margin="2"/>
-                <Label Grid.Column="4" Content="Level:"/>
-                <ComboBox Grid.Column="5" x:Name="CmbPermLevel" Margin="2" SelectedIndex="3">
-                    <ComboBoxItem Content="1"/>
-                    <ComboBoxItem Content="2"/>
-                    <ComboBoxItem Content="3"/>
-                    <ComboBoxItem Content="4"/>
-                    <ComboBoxItem Content="5"/>
-                </ComboBox>
-                <Button Grid.Column="6" Content="Add" Width="60" Margin="4,2,2,2" Click="AddAdmin_Click"/>
-            </Grid>
+            <StackPanel Margin="4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Name:"/>
+                    <TextBox Grid.Column="1" x:Name="TxtName" Margin="2"/>
+                    <Label Grid.Column="2" Content="Epic ID:"/>
+                    <TextBox Grid.Column="3" x:Name="TxtEpicId" Margin="2"/>
+                    <Label Grid.Column="4" Content="Level:"/>
+                    <ComboBox Grid.Column="5" x:Name="CmbPermLevel" Margin="2" SelectedIndex="3">
+                        <ComboBoxItem Content="1"/>
+                        <ComboBoxItem Content="2"/>
+                        <ComboBoxItem Content="3"/>
+                        <ComboBoxItem Content="4"/>
+                        <ComboBoxItem Content="5"/>
+                    </ComboBox>
+                    <Button Grid.Column="6" Content="Add" Width="60" Margin="4,2,2,2" Click="AddAdmin_Click"/>
+                </Grid>
+                <TextBlock Margin="4,6,4,0" Foreground="Gray" FontSize="11" TextWrapping="Wrap"
+                           Text="How to find your Epic ID: Open TABG, join a server with Citruslib, and check the Guestbook log file in the server folder. Your Epic ID will be listed next to your player name. Alternatively, an admin can use /id &lt;yourname&gt; in the server chat."/>
+            </StackPanel>
         </GroupBox>
 
         <!-- Actions -->
