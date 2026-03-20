@@ -72,11 +72,16 @@ This project would not exist without the work of these developers and communitie
 | Plugin | Author | Description |
 |--------|--------|-------------|
 | [StarterPack](https://github.com/ContagiouslyStupid/TABGStarterPack) | **ContagiouslyStupid** | Server configuration and match mechanics — the backbone of modded TABG servers |
+| MatchAndPreMatchTimeout | **ContagiouslyStupid** | Ends the game or restarts the lobby after a configurable amount of time |
+| ServerLogger | **ContagiouslyStupid** | Logs the name, PlayFab ID, and Epic ID of every new player |
+| VoteToStart | **ContagiouslyStupid** | `/votestart` command to vote-start the server |
 | [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | **CyrusTheLesser** | Code library for TABG-DS modding — custom chat commands, loot tables, settings, player management |
 | [ModerationTools](https://github.com/CyrusTheLesser/ModerationTools) | **CyrusTheLesser** | Server moderation — blacklist/whitelist, kick/ban via Epic IDs |
 | FreddoTABGCommission | **Freddo** | Commission/loadout system, bans, curses, grenade-on-kill mechanics |
 | FreddoFixStarterPack | **Freddo** | Loot drop fixes for StarterPack |
 | FreddoCustomSpawnpoints | **Freddo** | Custom spawn location support |
+| Enhanced TABG | **Freddo** | Client-side enhancements |
+| Pop-up Blocker | **Freddo** | Disables anti-cheat pop-ups on client |
 | [TASM](https://github.com/RedBigz/TASM) | **RedBigz** | Totally Accurate Server Mod — plugin support and command system |
 | ComputeryLib | **Computery** | Core server library — CLI handler, chat commands, message logging, visitor tracking, config improvements |
 | LandfallPlzFixServer | **Computery** | Server-side game fixes |
@@ -84,11 +89,6 @@ This project would not exist without the work of these developers and communitie
 | SteamworksEnforcer | **Computery** | Steam authentication enforcement |
 | TokenAuthFixer | **Computery** | Token authentication fixes |
 | BinsCinematicMod | **Bins** | Camera/cinematic mod |
-| MatchAndPreMatchTimeout | — | Match timeout management |
-| ServerLogger | — | Server-side logging |
-| VoteToStart | — | Vote-to-start functionality |
-| Enhanced TABG | — | Client-side enhancements |
-| Pop-up Blocker | — | Client-side pop-up removal |
 
 ### Community Tools & References
 
