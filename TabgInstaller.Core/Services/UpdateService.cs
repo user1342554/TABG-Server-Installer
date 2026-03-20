@@ -87,14 +87,25 @@ namespace TabgInstaller.Core.Services
                 log?.Report("Extracting update...");
                 ZipFile.ExtractToDirectory(zipPath, tempDir, overwriteFiles: true);
 
+                // Handle nested folder: if the zip contains a single subfolder with
+                // the actual files, use that folder as the source instead of tempDir.
+                var sourceDir = tempDir;
+                var topEntries = Directory.GetFileSystemEntries(tempDir);
+                if (topEntries.Length == 1 && Directory.Exists(topEntries[0]))
+                {
+                    // ZIP had a single wrapper folder (e.g. "publish/" or "TABG-Server-Installer/")
+                    sourceDir = topEntries[0];
+                    log?.Report($"Detected nested folder in ZIP, using: {Path.GetFileName(sourceDir)}");
+                }
+
                 // Write updater batch script
                 var scriptPath = Path.Combine(Path.GetTempPath(), "TabgInstaller_Updater.bat");
                 var exeName = Path.GetFileName(Process.GetCurrentProcess().MainModule?.FileName ?? "TabgInstaller.Gui.exe");
 
                 var script = $@"@echo off
 echo Updating TABG Installer...
-timeout /t 2 /nobreak >nul
-xcopy /s /y /q ""{tempDir}\*"" ""{appDir}""
+timeout /t 3 /nobreak >nul
+xcopy /s /y /q ""{sourceDir}\*"" ""{appDir}""
 echo Update complete. Restarting...
 start """" ""{Path.Combine(appDir, exeName)}""
 rd /s /q ""{tempDir}"" 2>nul
@@ -126,7 +137,12 @@ del ""%~f0"" 2>nul
             if (string.IsNullOrEmpty(tag)) return null;
             // Strip common prefixes: "v1.2.0", "V1.2.0"
             var s = tag.TrimStart('v', 'V');
-            return Version.TryParse(s, out var v) ? v : null;
+            if (!Version.TryParse(s, out var v)) return null;
+            // Normalize to 4-component version so "1.3.0" (Revision=-1) doesn't
+            // compare as less than assembly version "1.3.0.0" (Revision=0)
+            if (v.Revision < 0)
+                v = new Version(v.Major, v.Minor, v.Build, 0);
+            return v;
         }
 
         private class GitHubReleaseDto

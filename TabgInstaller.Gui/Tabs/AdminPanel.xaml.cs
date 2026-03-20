@@ -25,7 +25,7 @@ namespace TabgInstaller.Gui.Tabs
             LoadAdmins();
         }
 
-        private string GetPermsPath() => Path.Combine(_serverDir, "PlayerPerms.json");
+        private string GetPermsPath() => Path.Combine(_serverDir, "BepInEx", "config", "CitrusLib", "PlayerPerms.json");
 
         private void LoadAdmins()
         {
@@ -114,7 +114,9 @@ namespace TabgInstaller.Gui.Tabs
 
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 var json = JsonSerializer.Serialize(root, options);
-                File.WriteAllText(GetPermsPath(), json);
+                var permsPath = GetPermsPath();
+                Directory.CreateDirectory(Path.GetDirectoryName(permsPath)!);
+                File.WriteAllText(permsPath, json);
                 TxtStatus.Text = $"Saved {_admins.Count} admin(s)";
             }
             catch (Exception ex)
