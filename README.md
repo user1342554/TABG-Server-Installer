@@ -72,26 +72,33 @@ This project would not exist without the work of these developers and communitie
 | Plugin | Author | Description |
 |--------|--------|-------------|
 | [StarterPack](https://github.com/ContagiouslyStupid/TABGStarterPack) | **ContagiouslyStupid** | Server configuration and match mechanics — the backbone of modded TABG servers |
-| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | **CyrusTheLesser** | Utility library for TABG plugins |
-| FreddoTABGCommission | **Freddo** | Commission/loadout system |
-| FreddoFixStarterPack | **Freddo** | Bug fixes for StarterPack |
+| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | **CyrusTheLesser** | Code library for TABG-DS modding — custom chat commands, loot tables, settings, player management |
+| [ModerationTools](https://github.com/CyrusTheLesser/ModerationTools) | **CyrusTheLesser** | Server moderation — blacklist/whitelist, kick/ban via Epic IDs |
+| FreddoTABGCommission | **Freddo** | Commission/loadout system, bans, curses, grenade-on-kill mechanics |
+| FreddoFixStarterPack | **Freddo** | Loot drop fixes for StarterPack |
 | FreddoCustomSpawnpoints | **Freddo** | Custom spawn location support |
-| MatchAndPreMatchTimeout | Unknown | Match timeout management |
-| ServerLogger | Unknown | Server-side logging |
-| VoteToStart | Unknown | Vote-to-start functionality |
+| [TASM](https://github.com/RedBigz/TASM) | **RedBigz** | Totally Accurate Server Mod — plugin support and command system |
+| ComputeryLib | **Computery** | Core server library — CLI handler, chat commands, message logging, visitor tracking, config improvements |
+| LandfallPlzFixServer | **Computery** | Server-side game fixes |
+| LandfallPlzFixClient | **Computery** | Client-side game fixes |
+| SteamworksEnforcer | **Computery** | Steam authentication enforcement |
+| TokenAuthFixer | **Computery** | Token authentication fixes |
+| BinsCinematicMod | **Bins** | Camera/cinematic mod |
+| MatchAndPreMatchTimeout | — | Match timeout management |
+| ServerLogger | — | Server-side logging |
+| VoteToStart | — | Vote-to-start functionality |
+| Enhanced TABG | — | Client-side enhancements |
+| Pop-up Blocker | — | Client-side pop-up removal |
 
 ### Community Tools & References
 
 | Project | Author | Used For |
 |---------|--------|----------|
-| [AntiCheatBootErrorRemover](https://github.com/C0mputery/AntiCheatBootErrorRemover) | **C0mputery** | Anti-cheat bypass reference for dedicated servers |
-| [TABGCommunityServer](https://github.com/JIBSIL/TABGCommunityServer) | **JIBSIL** | Community server tooling reference |
+| [ComputerysUltimateTABGServer](https://github.com/C0mputery/AntiCheatBootErrorRemover) | **Computery** | Full community server rewrite — room management, tick system, packet handling, admin commands |
+| [AntiCheatBootErrorRemover](https://github.com/C0mputery/AntiCheatBootErrorRemover) | **Computery** | Anti-cheat bypass reference for dedicated servers |
+| [TABGCommunityServer](https://github.com/JIBSIL/TABGCommunityServer) | **JIBSIL** | Original community server foundation (CUTS is based on this) |
 | [tabg-word-list](https://github.com/landfallgames/tabg-word-list) | **Landfall Games** | Official word list for server name validation |
-
-### Community Contributors
-
-- **Jon_ass** — Preset design, server admin, and testing
-- **Freddo** — Plugin development and preset design
+| [dnSpyEx](https://github.com/dnSpyEx/dnSpy) | dnSpyEx Team | .NET decompiler used for modding research |
 
 ### Installer (this project)
 
