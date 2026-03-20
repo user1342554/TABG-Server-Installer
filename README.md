@@ -58,36 +58,53 @@ This software is provided **as-is** with no warranty of any kind. Use at your ow
 
 ## Credits
 
-This project would not exist without the work of these developers and communities:
+This project would not exist without the work of these developers and communities. If you contributed something and aren't listed here (or want to be credited differently), please reach out!
 
-### Core Libraries
+### Core Libraries & Frameworks
 
-| Component | Author | Repository |
-|-----------|--------|------------|
+| Component | Author | Link |
+|-----------|--------|------|
 | [BepInEx](https://github.com/BepInEx/BepInEx) | BepInEx Team | Unity/Mono game plugin framework (v5.4.22) |
-| [StarterPack](https://github.com/ContagiouslyStupid/TABGStarterPack) | ContagiouslyStupid | TABG server configuration and match mechanics plugin |
-| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | CyrusTheLesser | Utility library for TABG plugins |
 | [HarmonyLib](https://github.com/pardeike/Harmony) | Andreas Pardeike | Runtime method patching (bundled with BepInEx) |
 
-### Bundled Plugins
+### TABG Mod Authors
 
-- **CustomSpawnpoints** — Custom spawn location support
-- **FreddoTABGCommission** — Commission/loadout system
-- **MatchAndPreMatchTimeout** — Match timeout management
-- **ServerLogger** — Server-side logging
-- **StarterPackFixes** — Bug fixes for StarterPack
-- **VoteToStart** — Vote-to-start functionality
+| Plugin | Author | Description |
+|--------|--------|-------------|
+| [StarterPack](https://github.com/ContagiouslyStupid/TABGStarterPack) | **ContagiouslyStupid** | Server configuration and match mechanics — the backbone of modded TABG servers |
+| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | **CyrusTheLesser** | Utility library for TABG plugins |
+| FreddoTABGCommission | **Freddo** | Commission/loadout system |
+| FreddoFixStarterPack | **Freddo** | Bug fixes for StarterPack |
+| FreddoCustomSpawnpoints | **Freddo** | Custom spawn location support |
+| MatchAndPreMatchTimeout | Unknown | Match timeout management |
+| ServerLogger | Unknown | Server-side logging |
+| VoteToStart | Unknown | Vote-to-start functionality |
+
+### Community Tools & References
+
+| Project | Author | Used For |
+|---------|--------|----------|
+| [AntiCheatBootErrorRemover](https://github.com/C0mputery/AntiCheatBootErrorRemover) | **C0mputery** | Anti-cheat bypass reference for dedicated servers |
+| [TABGCommunityServer](https://github.com/JIBSIL/TABGCommunityServer) | **JIBSIL** | Community server tooling reference |
+| [tabg-word-list](https://github.com/landfallgames/tabg-word-list) | **Landfall Games** | Official word list for server name validation |
+
+### Community Contributors
+
+- **Jon_ass** — Preset design, server admin, and testing
+- **Freddo** — Plugin development and preset design
 
 ### Installer (this project)
 
 - **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, and all the glue code tying everything together
 
-### NuGet Dependencies
+### Third-Party Libraries
 
 - [Octokit](https://github.com/octokit/octokit.net) — GitHub API (auto-updater)
-- [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) — JSON handling
+- [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) by James Newton-King — JSON handling
 - [Polly](https://github.com/App-vNext/Polly) — Resilience and retry policies
 - [RestSharp](https://github.com/restsharp/RestSharp) — HTTP client
+
+> **Know someone who should be credited?** Open an issue or DM me on Discord.
 
 ## Contact
 
