@@ -104,7 +104,17 @@ namespace TabgInstaller.Core.Services
 
                 var script = $@"@echo off
 echo Updating TABG Installer...
-timeout /t 3 /nobreak >nul
+timeout /t 2 /nobreak >nul
+REM Wait until the EXE is no longer locked (up to 15 seconds)
+set RETRIES=0
+:waitloop
+copy /b /y ""{Path.Combine(sourceDir, exeName)}"" ""{Path.Combine(appDir, exeName)}"" >nul 2>&1
+if not errorlevel 1 goto docopy
+set /a RETRIES+=1
+if %RETRIES% GEQ 15 goto docopy
+timeout /t 1 /nobreak >nul
+goto waitloop
+:docopy
 xcopy /s /y /q ""{sourceDir}\*"" ""{appDir}""
 echo Update complete. Restarting...
 start """" ""{Path.Combine(appDir, exeName)}""
