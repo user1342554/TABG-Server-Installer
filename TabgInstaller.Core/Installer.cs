@@ -315,6 +315,25 @@ namespace TabgInstaller.Core
             await FixDoorstopConfigAsync(serverDir, _log); // Ensure BepInEx is enabled
             Directory.CreateDirectory(_pluginsDir);
 
+            // Always install Citruslib as a core dependency (required by StarterPack and most plugins)
+            {
+                var bundledDir = BuiltInPresets.FindBundledPluginsDir();
+                if (bundledDir != null)
+                {
+                    var citrusSrc = Path.Combine(bundledDir, CitrusDllAssetName);
+                    var citrusDst = Path.Combine(_pluginsDir, CitrusDllAssetName);
+                    if (File.Exists(citrusSrc))
+                    {
+                        File.Copy(citrusSrc, citrusDst, overwrite: true);
+                        _log.Report($"  → Installed {CitrusDllAssetName} (core dependency)");
+                    }
+                    else
+                    {
+                        _log.Report($"  ⚠️ {CitrusDllAssetName} not found in bundled plugins — many mods will not work!");
+                    }
+                }
+            }
+
             // Install selected bundled plugins
             if (bundledPlugins != null && bundledPlugins.Count > 0)
             {
@@ -1113,7 +1132,7 @@ namespace TabgInstaller.Core
             "# Auto-generated default vanilla whitelist by TabgInstaller",
                 "TABG.exe", "TABG_Data", "UnityPlayer.dll", "UnityCrashHandler64.exe",
                 "steam_appid.txt", "doorstop_config.ini", "libdoorstop.so", "run_bepinex.cmd", "run_bepinex.sh",
-                "MonoBleedingEdge", "TheStarterPack.json", "game_settings.txt",
+                "MonoBleedingEdge", "TheStarterPack.json", "TheStarterPack.txt", "game_settings.txt",
                 "winhttp.dll", "backup"
             };
         if (fileExisted)
@@ -1144,6 +1163,7 @@ namespace TabgInstaller.Core
             ensureEntry("TABG_Data", "TABG_Data");
             ensureEntry("MonoBleedingEdge", "MonoBleedingEdge");
             ensureEntry("TheStarterPack.json", "TheStarterPack.json");
+            ensureEntry("TheStarterPack.txt", "TheStarterPack.txt");
             ensureEntry("game_settings.txt", "game_settings.txt");
             ensureEntry("backup", "backup folder");
 
