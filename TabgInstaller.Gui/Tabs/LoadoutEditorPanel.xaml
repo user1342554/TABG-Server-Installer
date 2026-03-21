@@ -11,7 +11,8 @@
         <!-- Top Bar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
             <Label Content="Loadout Mode:" VerticalAlignment="Center"/>
-            <ComboBox x:Name="CmbMode" Width="160" IsEnabled="False" VerticalAlignment="Center" Margin="4,0,0,0">
+            <ComboBox x:Name="CmbMode" Width="160" VerticalAlignment="Center" Margin="4,0,0,0"
+                      SelectionChanged="CmbMode_SelectionChanged">
                 <ComboBoxItem Content="Normal"/>
                 <ComboBoxItem Content="GunGame"/>
                 <ComboBoxItem Content="ReverseGunGame"/>
@@ -33,10 +34,12 @@
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="Loadouts" FontWeight="Bold" Margin="0,0,0,4"/>
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,4,0,0">
-                    <Button Content="Add" Width="60" Margin="0,0,4,0" Click="AddLoadout_Click"/>
-                    <Button Content="Remove" Width="60" Margin="0,0,4,0" Click="RemoveLoadout_Click"/>
-                    <Button Content="Up" Width="40" Margin="0,0,4,0" Click="MoveUp_Click"/>
-                    <Button Content="Down" Width="40" Click="MoveDown_Click"/>
+                    <Button Content="Add" Width="50" Margin="0,0,4,0" Click="AddLoadout_Click"/>
+                    <Button Content="Duplicate" Width="68" Margin="0,0,4,0" Click="DuplicateLoadout_Click"
+                            ToolTip="Clone the selected loadout"/>
+                    <Button Content="Remove" Width="58" Margin="0,0,4,0" Click="RemoveLoadout_Click"/>
+                    <Button Content="Up" Width="32" Margin="0,0,4,0" Click="MoveUp_Click"/>
+                    <Button Content="Down" Width="42" Click="MoveDown_Click"/>
                 </StackPanel>
                 <ListBox x:Name="LstLoadouts" DisplayMemberPath="DisplayName"
                          SelectionChanged="LstLoadouts_SelectionChanged"/>
@@ -62,12 +65,13 @@
                     <!-- Items List -->
                     <TextBlock Text="Items" FontWeight="Bold" Margin="0,0,0,4"/>
                     <DataGrid x:Name="DgItems" AutoGenerateColumns="False" CanUserAddRows="False"
-                              CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              Height="180" Margin="0,0,0,4" SelectionMode="Single">
+                              CanUserDeleteRows="False" HeadersVisibility="Column"
+                              Height="180" Margin="0,0,0,4" SelectionMode="Single"
+                              CellEditEnding="DgItems_CellEditEnding">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Item Name" Binding="{Binding ItemName}" Width="*"/>
-                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
-                            <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
+                            <DataGridTextColumn Header="Item Name" Binding="{Binding ItemName}" Width="*" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Qty" Binding="{Binding Quantity, Mode=TwoWay}" Width="50"/>
                             <DataGridTemplateColumn Header="" Width="60">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -82,14 +86,28 @@
                     <!-- Add Item Section -->
                     <GroupBox Header="Add Item" Margin="0,0,0,8">
                         <StackPanel Margin="4">
+                            <!-- Search box -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Label Content="Category:" Width="70"/>
-                                <ComboBox x:Name="CmbCategory" Width="160"
-                                          SelectionChanged="CmbCategory_SelectionChanged"/>
+                                <Label Content="Search:" Width="70"/>
+                                <TextBox x:Name="TxtItemSearch" Width="250"
+                                         TextChanged="TxtItemSearch_TextChanged"
+                                         ToolTip="Type to search items across all categories"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Label Content="Item:" Width="70"/>
-                                <ComboBox x:Name="CmbItem" Width="250"/>
+                            <ListBox x:Name="LstSearchResults" Height="120" Margin="0,0,0,4"
+                                     Visibility="Collapsed"
+                                     MouseDoubleClick="LstSearchResults_MouseDoubleClick"
+                                     ToolTip="Double-click to add item"/>
+                            <!-- Category/Item dropdowns -->
+                            <StackPanel x:Name="PnlCategorySelect">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Label Content="Category:" Width="70"/>
+                                    <ComboBox x:Name="CmbCategory" Width="160"
+                                              SelectionChanged="CmbCategory_SelectionChanged"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Label Content="Item:" Width="70"/>
+                                    <ComboBox x:Name="CmbItem" Width="250"/>
+                                </StackPanel>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <Label Content="Quantity:" Width="70"/>
@@ -100,8 +118,8 @@
                     </GroupBox>
 
                     <!-- Curse Assignment Section -->
-                    <GroupBox Header="Curse Assignment" Margin="0,0,0,4">
-                        <ItemsControl x:Name="IcCurses">
+                    <Expander Header="Curse Assignment" IsExpanded="False" Margin="0,0,0,4">
+                        <ItemsControl x:Name="IcCurses" Margin="4">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -114,10 +132,10 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </GroupBox>
+                    </Expander>
 
                     <!-- Blessing Assignment Section -->
-                    <GroupBox Header="Blessing Assignment (added as items)" Margin="0,0,0,4">
+                    <Expander Header="Blessing Assignment (added as items)" IsExpanded="False" Margin="0,0,0,4">
                         <StackPanel>
                             <TextBlock Text="Blessings are added as items to this loadout." Foreground="Gray" FontSize="11" Margin="4,2,4,4"/>
                             <ItemsControl x:Name="IcBlessings">
@@ -134,7 +152,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
-                    </GroupBox>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

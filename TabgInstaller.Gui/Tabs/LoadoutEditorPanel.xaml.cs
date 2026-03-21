@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 
@@ -19,11 +20,13 @@ namespace TabgInstaller.Gui.Tabs
         private readonly StarterPackLoadoutService _loadoutSvc = new();
         private readonly ObservableCollection<LoadoutViewModel> _loadouts = new();
         private bool _suppressSelectionChange;
+        private bool _suppressDirty;
         private FreddoCommissionSettings? _commissionSettings;
         private FileSystemWatcher? _watcherRoot;
         private FileSystemWatcher? _watcherCfg;
         private Timer? _debounce;
         private bool _saving;
+        private bool _dirty;
 
         public LoadoutEditorPanel()
         {
@@ -42,6 +45,21 @@ namespace TabgInstaller.Gui.Tabs
             _serverDir = serverDir;
             LoadAll();
             SetupWatchers();
+        }
+
+        private void MarkDirty()
+        {
+            if (_suppressDirty) return;
+            if (!_dirty)
+            {
+                _dirty = true;
+                TxtStatus.Text = "Unsaved changes";
+            }
+        }
+
+        private void ClearDirty()
+        {
+            _dirty = false;
         }
 
         private void SetupWatchers()
@@ -86,6 +104,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             try
             {
+                _suppressDirty = true;
                 var settings = StarterPackConfigService.Read(_serverDir);
                 var mode = settings.GetLoadoutMode();
                 SetModeCombo(mode);
@@ -108,10 +127,13 @@ namespace TabgInstaller.Gui.Tabs
                 if (_loadouts.Count > 0)
                     LstLoadouts.SelectedIndex = 0;
 
+                ClearDirty();
+                _suppressDirty = false;
                 TxtStatus.Text = $"Loaded {_loadouts.Count} loadouts.";
             }
             catch (Exception ex)
             {
+                _suppressDirty = false;
                 TxtStatus.Text = $"Load error: {ex.Message}";
             }
         }
@@ -137,6 +159,13 @@ namespace TabgInstaller.Gui.Tabs
                 3 => "KeepInventory",
                 _ => "Normal"
             };
+        }
+
+        // ── Mode Changed ──
+
+        private void CmbMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            MarkDirty();
         }
 
         // ── Loadout Curse Parsing ──
@@ -209,6 +238,7 @@ namespace TabgInstaller.Gui.Tabs
                 ModConfigService.WriteCommission(_serverDir, commission);
                 _saving = false;
 
+                ClearDirty();
                 TxtStatus.Text = "Saved successfully.";
             }
             catch (Exception ex)
@@ -270,6 +300,7 @@ namespace TabgInstaller.Gui.Tabs
                 if (_loadouts.Count > 0)
                     LstLoadouts.SelectedIndex = 0;
 
+                MarkDirty();
                 TxtStatus.Text = $"Imported {_loadouts.Count} loadouts.";
                 dlg.Close();
             };
@@ -333,16 +364,47 @@ namespace TabgInstaller.Gui.Tabs
             var lo = new LoadoutViewModel("New Loadout", 100, new List<StarterPackLoadoutService.Item>(), new HashSet<int>());
             _loadouts.Add(lo);
             LstLoadouts.SelectedItem = lo;
+            MarkDirty();
+        }
+
+        private void DuplicateLoadout_Click(object sender, RoutedEventArgs e)
+        {
+            if (LstLoadouts.SelectedItem is not LoadoutViewModel source) return;
+
+            // Deep copy items and curses
+            var clonedItems = source.Items.Select(it =>
+                new StarterPackLoadoutService.Item(it.Id, it.Quantity)).ToList();
+            var clonedCurses = new HashSet<int>(source.Curses);
+
+            var clone = new LoadoutViewModel(
+                source.Name + " (Copy)",
+                source.Percent,
+                clonedItems,
+                clonedCurses);
+
+            var idx = _loadouts.IndexOf(source);
+            _loadouts.Insert(idx + 1, clone);
+            LstLoadouts.SelectedItem = clone;
+            MarkDirty();
         }
 
         private void RemoveLoadout_Click(object sender, RoutedEventArgs e)
         {
             if (LstLoadouts.SelectedItem is LoadoutViewModel lo)
             {
+                var result = MessageBox.Show(
+                    $"Remove loadout \"{lo.Name}\"?",
+                    "Confirm Remove",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes) return;
+
                 var idx = _loadouts.IndexOf(lo);
                 _loadouts.Remove(lo);
                 if (_loadouts.Count > 0)
                     LstLoadouts.SelectedIndex = Math.Min(idx, _loadouts.Count - 1);
+                MarkDirty();
             }
         }
 
@@ -353,6 +415,7 @@ namespace TabgInstaller.Gui.Tabs
             {
                 _loadouts.Move(idx, idx - 1);
                 LstLoadouts.SelectedIndex = idx - 1;
+                MarkDirty();
             }
         }
 
@@ -363,6 +426,7 @@ namespace TabgInstaller.Gui.Tabs
             {
                 _loadouts.Move(idx, idx + 1);
                 LstLoadouts.SelectedIndex = idx + 1;
+                MarkDirty();
             }
         }
 
@@ -380,6 +444,7 @@ namespace TabgInstaller.Gui.Tabs
                 TxtPercent.Text = "";
                 DgItems.ItemsSource = null;
                 IcCurses.ItemsSource = null;
+                IcBlessings.ItemsSource = null;
                 return;
             }
 
@@ -421,6 +486,7 @@ namespace TabgInstaller.Gui.Tabs
                             lo.Curses.Add(ce.CurseId);
                         else
                             lo.Curses.Remove(ce.CurseId);
+                        MarkDirty();
                     }
                 };
             }
@@ -464,6 +530,7 @@ namespace TabgInstaller.Gui.Tabs
                                 RefreshItemsGrid(lo);
                             }
                         }
+                        MarkDirty();
                     }
                 };
             }
@@ -497,6 +564,8 @@ namespace TabgInstaller.Gui.Tabs
                 LstLoadouts.Items.Refresh();
                 LstLoadouts.SelectedIndex = idx;
                 _suppressSelectionChange = false;
+
+                MarkDirty();
             }
         }
 
@@ -515,8 +584,72 @@ namespace TabgInstaller.Gui.Tabs
                     LstLoadouts.Items.Refresh();
                     LstLoadouts.SelectedIndex = idx;
                     _suppressSelectionChange = false;
+
+                    MarkDirty();
                 }
             }
+        }
+
+        // ── Item Search ──
+
+        private void TxtItemSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var query = TxtItemSearch.Text.Trim();
+            if (string.IsNullOrEmpty(query))
+            {
+                LstSearchResults.Visibility = Visibility.Collapsed;
+                PnlCategorySelect.Visibility = Visibility.Visible;
+                LstSearchResults.ItemsSource = null;
+                return;
+            }
+
+            // Search across all items
+            var matches = ItemDatabase.AllItems
+                .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                            || item.Id.ToString() == query)
+                .OrderBy(item => item.Category)
+                .ThenBy(item => item.Name)
+                .Take(30)
+                .Select(item => $"{item.Name} ({item.Id}) [{item.Category}]")
+                .ToList();
+
+            if (matches.Count > 0)
+            {
+                LstSearchResults.ItemsSource = matches;
+                LstSearchResults.Visibility = Visibility.Visible;
+                PnlCategorySelect.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                LstSearchResults.ItemsSource = new[] { "(no matches)" };
+                LstSearchResults.Visibility = Visibility.Visible;
+                PnlCategorySelect.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LstSearchResults_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (LstLoadouts.SelectedItem is not LoadoutViewModel lo) return;
+            if (LstSearchResults.SelectedItem is not string selected) return;
+            if (selected == "(no matches)") return;
+
+            // Extract ID from "Name (ID) [Category]" format
+            var openParen = selected.LastIndexOf('(');
+            var closeParen = selected.LastIndexOf(')');
+            if (openParen < 0 || closeParen < 0) return;
+
+            var idStr = selected.Substring(openParen + 1, closeParen - openParen - 1);
+
+            if (!int.TryParse(TxtQuantity.Text, out var qty) || qty < 1)
+                qty = 1;
+            if (qty > 255) qty = 255;
+
+            lo.Items.Add(new ItemViewModel(idStr, qty));
+            RefreshItemsGrid(lo);
+            MarkDirty();
+
+            // Clear search
+            TxtItemSearch.Text = "";
         }
 
         // ── Item Management ──
@@ -536,21 +669,43 @@ namespace TabgInstaller.Gui.Tabs
         private void AddItem_Click(object sender, RoutedEventArgs e)
         {
             if (LstLoadouts.SelectedItem is not LoadoutViewModel lo) return;
+
+            // If search results are visible and something is selected, add from search
+            if (LstSearchResults.Visibility == Visibility.Visible
+                && LstSearchResults.SelectedItem is string searchSelected
+                && searchSelected != "(no matches)")
+            {
+                var op = searchSelected.LastIndexOf('(');
+                var cp = searchSelected.LastIndexOf(')');
+                if (op >= 0 && cp >= 0)
+                {
+                    var idStr = searchSelected.Substring(op + 1, cp - op - 1);
+                    if (!int.TryParse(TxtQuantity.Text, out var q) || q < 1) q = 1;
+                    if (q > 255) q = 255;
+                    lo.Items.Add(new ItemViewModel(idStr, q));
+                    RefreshItemsGrid(lo);
+                    MarkDirty();
+                    TxtItemSearch.Text = "";
+                    return;
+                }
+            }
+
+            // Otherwise add from category dropdown
             if (CmbItem.SelectedItem is not string selected) return;
 
-            // Extract ID from "Name (ID)" format
             var openParen = selected.LastIndexOf('(');
             var closeParen = selected.LastIndexOf(')');
             if (openParen < 0 || closeParen < 0) return;
 
-            var idStr = selected.Substring(openParen + 1, closeParen - openParen - 1);
+            var id = selected.Substring(openParen + 1, closeParen - openParen - 1);
 
             if (!int.TryParse(TxtQuantity.Text, out var qty) || qty < 1)
                 qty = 1;
             if (qty > 255) qty = 255;
 
-            lo.Items.Add(new ItemViewModel(idStr, qty));
+            lo.Items.Add(new ItemViewModel(id, qty));
             RefreshItemsGrid(lo);
+            MarkDirty();
         }
 
         private void RemoveItem_Click(object sender, RoutedEventArgs e)
@@ -564,6 +719,30 @@ namespace TabgInstaller.Gui.Tabs
                 {
                     lo.Items.Remove(match);
                     RefreshItemsGrid(lo);
+                    MarkDirty();
+                }
+            }
+        }
+
+        // ── Inline Quantity Editing ──
+
+        private void DgItems_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (LstLoadouts.SelectedItem is not LoadoutViewModel lo) return;
+            if (e.EditAction == DataGridEditAction.Cancel) return;
+            if (e.Column.Header?.ToString() != "Qty") return;
+
+            if (e.EditingElement is TextBox tb && e.Row.Item is ItemDisplayRow row)
+            {
+                if (int.TryParse(tb.Text, out var newQty) && newQty >= 1 && newQty <= 255)
+                {
+                    // Update the underlying ItemViewModel
+                    var match = lo.Items.FirstOrDefault(it => it.Id == row.Id && it.Quantity == row.Quantity);
+                    if (match != null)
+                    {
+                        match.Quantity = newQty;
+                        MarkDirty();
+                    }
                 }
             }
         }
@@ -577,7 +756,14 @@ namespace TabgInstaller.Gui.Tabs
             public ObservableCollection<ItemViewModel> Items { get; }
             public HashSet<int> Curses { get; }
 
-            public string DisplayName => $"{Name} ({Percent}%)";
+            public string DisplayName
+            {
+                get
+                {
+                    var itemCount = Items.Count;
+                    return $"{Name} ({Percent}%) - {itemCount} item{(itemCount != 1 ? "s" : "")}";
+                }
+            }
 
             public LoadoutViewModel(string name, int percent, List<StarterPackLoadoutService.Item> items, HashSet<int> curses)
             {
