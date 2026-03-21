@@ -25,6 +25,13 @@ namespace TabgInstaller.Gui.Tabs
             {
                 PathBox.Text = detectedPath;
             }
+
+            // Auto-detect TABG client path
+            var clientPath = Installer.TryFindTabgClientPath();
+            if (!string.IsNullOrEmpty(clientPath))
+            {
+                ClientPathBox.Text = clientPath;
+            }
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)
@@ -233,6 +240,58 @@ namespace TabgInstaller.Gui.Tabs
                     secretTab.IsEnabled = true;
                 if (mainWindow.FindName("MainTabs") is TabControl tabs)
                     tabs.SelectedIndex = 1;
+            }
+        }
+
+        private async void BtnInstallClientMods_Click(object sender, RoutedEventArgs e)
+        {
+            string clientDir = ClientPathBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(clientDir) || !Directory.Exists(clientDir))
+            {
+                MessageBox.Show("Please enter a valid TABG client folder path.\n\nUsually: C:\\Program Files (x86)\\Steam\\steamapps\\common\\TotallyAccurateBattlegrounds",
+                    "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                "This will install BepInEx and the Flying Controls mod on your TABG client.\n\n" +
+                "This lets you steer Helicopters, UFOs, and Hover vehicles on modded servers.\n\n" +
+                "Controls: W/S = thrust, A/D = turn, Space = go up\n\n" +
+                "Continue?",
+                "Install Client Mods", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            SetUiEnabled(false);
+
+            var progress = new Progress<string>(line =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    TxtLog.AppendText(line + Environment.NewLine);
+                    LogScrollViewer.ScrollToEnd();
+                });
+            });
+
+            try
+            {
+                TxtLog.AppendText("=== Installing Client Mods ===" + Environment.NewLine);
+                bool success = await Task.Run(() => ClientModInstaller.InstallAsync(clientDir, progress));
+
+                if (success)
+                    MessageBox.Show("Client mods installed! Launch TABG from Steam normally to play.\n\nFlying controls: W/S thrust, A/D turn, Space = up",
+                        "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                else
+                    MessageBox.Show("Client mod installation had errors. Check the log.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                TxtLog.AppendText($"ERROR: {ex.Message}" + Environment.NewLine);
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetUiEnabled(true);
             }
         }
 

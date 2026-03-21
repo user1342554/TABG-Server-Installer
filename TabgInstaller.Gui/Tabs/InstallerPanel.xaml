@@ -5,6 +5,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -61,15 +62,31 @@
             </StackPanel>
         </GroupBox>
 
+        <!-- Client Mods -->
+        <GroupBox Grid.Row="2" Header="Client Mods (for flying vehicles)" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap" Margin="5,3" FontSize="11"
+                           Text="Install BepInEx + Flying Controls on your TABG client so you can steer Helicopters, UFOs, and Hover vehicles. Point this at your TABG game folder (not the server)."/>
+                <Grid Margin="5,5,5,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ClientPathBox" Grid.Column="0" Margin="0,0,5,0"/>
+                    <Button Content="Install Client Mods" Grid.Column="1" Width="140" Click="BtnInstallClientMods_Click"/>
+                </Grid>
+            </StackPanel>
+        </GroupBox>
+
         <!-- Log -->
-        <GroupBox Grid.Row="2" Header="Installation Log">
+        <GroupBox Grid.Row="3" Header="Installation Log">
             <ScrollViewer x:Name="LogScrollViewer">
                 <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
             </ScrollViewer>
         </GroupBox>
 
         <!-- Actions -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnInstall" Content="INSTALL" Height="40" Width="140" Click="BtnInstall_Click"/>
             <Button x:Name="BtnContinue" Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0" Click="BtnContinue_Click"/>
         </StackPanel>
