@@ -33,16 +33,19 @@ namespace TabgInstaller.UnusedVehicles
 
         private void Awake()
         {
+            _harmony = new Harmony("tabginstaller.unusedvehicles");
+            _harmony.PatchAll(typeof(SearchForCarsPatch));
+            Logger.LogInfo("[UnusedVehicles] Plugin loaded. Patch applied.");
+        }
+
+        private void Start()
+        {
+            // Defer discovery and command registration to Start() so Citruslib is ready
             try { DiscoverVehicles(); }
             catch (Exception ex) { Logger.LogError($"[UnusedVehicles] Discovery failed: {ex}"); }
 
-            _harmony = new Harmony("tabginstaller.unusedvehicles");
-            _harmony.PatchAll(typeof(SearchForCarsPatch));
-
             try { RegisterCommands(); }
             catch (Exception ex) { Logger.LogWarning($"[UnusedVehicles] Commands failed: {ex.Message}"); }
-
-            Logger.LogInfo("[UnusedVehicles] Plugin loaded.");
         }
 
         private void RegisterCommands()

@@ -36,6 +36,13 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy StarterPackSetup.exe to output directory -->
+  <ItemGroup>
+    <None Include="StarterPackSetup.exe" Condition="Exists('StarterPackSetup.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <!-- Copy bundled server plugin DLLs to output directory -->
   <ItemGroup>
     <None Include="plugins\**\*.dll">

@@ -51,6 +51,8 @@
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkUnusedVehicles" Content="UnusedVehicles — Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)"
                           Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkSoloTesting" Content="SoloTesting — Prevents 'You Win' when testing alone"
+                          Margin="5,3"/>
                 <CheckBox x:Name="ChkInstallCommunityServer" Content="TABGCommunityServer — Community server"
                           Margin="5,3"/>
                 <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
@@ -63,18 +65,38 @@
         </GroupBox>
 
         <!-- Client Mods -->
-        <GroupBox Grid.Row="2" Header="Client Mods (for flying vehicles)" Margin="0,0,0,10">
+        <GroupBox Grid.Row="2" Header="Client Mods (creates a modded TABG copy — EAC blocks mods in Steam folder)" Margin="0,0,0,10">
             <StackPanel>
-                <TextBlock TextWrapping="Wrap" Margin="5,3" FontSize="11"
-                           Text="Install BepInEx + Flying Controls on your TABG client so you can steer Helicopters, UFOs, and Hover vehicles. Point this at your TABG game folder (not the server)."/>
-                <Grid Margin="5,5,5,3">
+                <Grid Margin="5,3,5,2">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="ClientPathBox" Grid.Column="0" Margin="0,0,5,0"/>
-                    <Button Content="Install Client Mods" Grid.Column="1" Width="140" Click="BtnInstallClientMods_Click"/>
+                    <Label Content="TABG Steam folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="ClientPathBox" Grid.Column="1"/>
                 </Grid>
+                <Grid Margin="5,2,5,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Modded copy folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="ClientModdedPathBox" Grid.Column="1"/>
+                </Grid>
+                <CheckBox x:Name="ChkClientFlyingControls" Content="FlyingControls — Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientEnhancedTabg" Content="Enhanced TABG — Infinite LOD (F1), HUD toggle (F2), fog removal (F3)"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientCoordsDisplay" Content="Coords Display — Press F5 to show your X/Y/Z position"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientModSettings" Content="Mod Settings — In-game settings menu for all mods (press #)"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientPopupBlocker" Content="Pop-up Blocker — Disable anti-cheat popups for custom servers"
+                          Margin="5,3" IsChecked="True"/>
+                <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
+                    <Button Content="INSTALL CLIENT MODS" Height="30" Width="200" Click="BtnInstallClientMods_Click"/>
+                    <Button x:Name="BtnLaunchModdedTabg" Content="LAUNCH MODDED TABG" Height="30" Width="200" Margin="10,0,0,0" Click="BtnLaunchModdedTabg_Click"/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
 
