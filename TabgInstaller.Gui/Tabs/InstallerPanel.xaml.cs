@@ -38,7 +38,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             ChkCitruslib, ChkInstallStarterPack, ChkStarterPackFixes,
             ChkCustomSpawnpoints, ChkFreddoCommission, ChkMatchTimeout,
-            ChkServerLogger, ChkVoteToStart, ChkInstallCommunityServer
+            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkInstallCommunityServer
         };
 
         private void SelectAllPlugins_Click(object sender, RoutedEventArgs e)
@@ -131,6 +131,7 @@ namespace TabgInstaller.Gui.Tabs
                 if (ChkMatchTimeout.IsChecked == true) selectedBundledPlugins.Add("MatchAndPreMatchTimeout.dll");
                 if (ChkServerLogger.IsChecked == true) selectedBundledPlugins.Add("ServerLogger.dll");
                 if (ChkVoteToStart.IsChecked == true) selectedBundledPlugins.Add("VoteToStart.dll");
+                if (ChkUnusedVehicles.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.UnusedVehicles.dll");
 
                 int exitCode = await Task.Run(async () =>
                 {

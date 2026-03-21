@@ -16,6 +16,8 @@ namespace TabgInstaller.Core
         private static readonly string[] GameModePlugins = { "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll", "FreddoTABGCommission.dll" };
         /// <summary>Plugins for standard BR mode.</summary>
         private static readonly string[] BattleRoyalePlugins = { "Citruslib.dll", "MatchAndPreMatchTimeout.dll", "ServerLogger.dll", "VoteToStart.dll" };
+        /// <summary>Optional standalone plugin that spawns cut/unused vehicles (Heli, UFO, Mustang, VW, etc).</summary>
+        public static readonly string UnusedVehiclesPlugin = "TabgInstaller.UnusedVehicles.dll";
 
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
