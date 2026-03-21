@@ -49,7 +49,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             ChkCitruslib, ChkInstallStarterPack, ChkStarterPackFixes,
             ChkCustomSpawnpoints, ChkFreddoCommission, ChkMatchTimeout,
-            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkSoloTesting, ChkInstallCommunityServer
+            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkBigSmoke, ChkMGLFlashbang, ChkSoloTesting, ChkInstallCommunityServer
         };
 
         private void SelectAllPlugins_Click(object sender, RoutedEventArgs e)
@@ -143,6 +143,7 @@ namespace TabgInstaller.Gui.Tabs
                 if (ChkServerLogger.IsChecked == true) selectedBundledPlugins.Add("ServerLogger.dll");
                 if (ChkVoteToStart.IsChecked == true) selectedBundledPlugins.Add("VoteToStart.dll");
                 if (ChkUnusedVehicles.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.UnusedVehicles.dll");
+                if (ChkBigSmoke.IsChecked == true || ChkMGLFlashbang.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.CustomGrenades.dll");
                 if (ChkSoloTesting.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.SoloTesting.dll");
 
                 int exitCode = await Task.Run(async () =>
@@ -299,6 +300,7 @@ namespace TabgInstaller.Gui.Tabs
             if (ChkClientFlyingControls.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.FlyingControls.dll");
             if (ChkClientEnhancedTabg.IsChecked == true) selectedClientPlugins.Add("Enhanced TABG.dll");
             if (ChkClientCoordsDisplay.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.CoordsDisplay.dll");
+            if (ChkClientBigSmoke.IsChecked == true || ChkClientMGLFlashbang.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.CustomGrenades.dll");
             if (ChkClientModSettings.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.ModSettings.dll");
             if (ChkClientPopupBlocker.IsChecked == true) selectedClientPlugins.Add("Pop-up Blocker.dll");
 

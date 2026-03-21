@@ -51,6 +51,10 @@
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkUnusedVehicles" Content="UnusedVehicles — Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)"
                           Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkBigSmoke" Content="BigSmokeGrenade — Giant purple smoke grenades (/give 208)"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkMGLFlashbang" Content="MGLFlashbang — MGL shoots flashbang rounds"
+                          Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkSoloTesting" Content="SoloTesting — Prevents 'You Win' when testing alone"
                           Margin="5,3"/>
                 <CheckBox x:Name="ChkInstallCommunityServer" Content="TABGCommunityServer — Community server"
@@ -86,6 +90,10 @@
                 <CheckBox x:Name="ChkClientFlyingControls" Content="FlyingControls — Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)"
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkClientEnhancedTabg" Content="Enhanced TABG — Infinite LOD (F1), HUD toggle (F2), fog removal (F3)"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientBigSmoke" Content="BigSmokeGrenade — Giant purple smoke grenades"
+                          Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientMGLFlashbang" Content="MGLFlashbang — MGL shoots flashbang rounds"
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkClientCoordsDisplay" Content="Coords Display — Press F5 to show your X/Y/Z position"
                           Margin="5,3" IsChecked="True"/>
