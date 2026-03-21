@@ -74,7 +74,22 @@ namespace TabgInstaller.FlyingControls
                 try
                 {
                     if (!IsFlyingVehicle(__instance)) return true; // Not flying: run original
-                    if (!__instance.driverSeat || !__instance.driverSeat.occupant) return true; // No driver: run original
+
+                    // No driver: kill momentum and let it fall gently
+                    if (!__instance.driverSeat || !__instance.driverSeat.occupant)
+                    {
+                        var r = __instance.mainRig;
+                        if (r != null && !r.isKinematic)
+                        {
+                            // Kill horizontal velocity, allow gravity to pull it down
+                            r.velocity = new Vector3(r.velocity.x * 0.95f, r.velocity.y * 0.98f, r.velocity.z * 0.95f);
+                            r.angularVelocity *= 0.9f;
+                            // Auto-level while falling
+                            Vector3 fallCorrection = Vector3.Cross(r.transform.up, Vector3.up);
+                            r.AddTorque(fallCorrection * 4f, ForceMode.Acceleration);
+                        }
+                        return false; // Skip original (which applies antiGrav upward force)
+                    }
 
                     // Only take over if WE are in this vehicle
                     bool isOurs = __instance.isSimulatedByMe;

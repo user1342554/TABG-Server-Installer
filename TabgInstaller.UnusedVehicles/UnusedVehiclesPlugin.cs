@@ -64,27 +64,55 @@ namespace TabgInstaller.UnusedVehicles
 
                 string search = string.Join(" ", prms).ToLower();
                 string matchedName = null;
+                int matchedIdx = -1;
                 foreach (var kvp in VehicleIndices)
-                    if (kvp.Key.ToLower().Contains(search)) { matchedName = kvp.Key; break; }
+                {
+                    if (kvp.Key.ToLower().Contains(search))
+                    {
+                        matchedName = kvp.Key;
+                        matchedIdx = kvp.Value;
+                        break;
+                    }
+                }
 
                 if (matchedName == null) { Citrus.SelfParrot(player, $"No vehicle matching '{search}'."); return; }
 
-                if (SpawnedVehiclePositions.ContainsKey(matchedName) && SpawnedVehiclePositions[matchedName].Count > 0)
+                // Find the nearest car of this type on the server and move it to the player
+                var room = Citrus.World?.GameRoomReference;
+                if (room == null || room.Cars == null) { Citrus.SelfParrot(player, "Server not ready."); return; }
+
+                Vector3 playerPos = player.PlayerPosition;
+                TABGCarServer nearestCar = null;
+                float nearestDist = float.MaxValue;
+
+                foreach (var car in room.Cars)
                 {
-                    Vector3 playerPos = player.PlayerPosition;
-                    Vector3 nearest = SpawnedVehiclePositions[matchedName][0];
-                    float nearestDist = Vector3.Distance(playerPos, nearest);
-                    foreach (var pos in SpawnedVehiclePositions[matchedName])
+                    if (car.CarTypeIdentifier == matchedIdx)
                     {
-                        float dist = Vector3.Distance(playerPos, pos);
-                        if (dist < nearestDist) { nearest = pos; nearestDist = dist; }
+                        float dist = Vector3.Distance(playerPos, car.CarPosition);
+                        if (dist < nearestDist) { nearestCar = car; nearestDist = dist; }
                     }
-                    Citrus.Teleport(player, nearest + Vector3.up * 2f);
-                    Citrus.SelfParrot(player, $"Teleported to {matchedName} ({nearestDist:F0}m away)");
+                }
+
+                if (nearestCar != null)
+                {
+                    // Move the vehicle to the player's position (5m in front)
+                    Vector3 forward = Quaternion.Euler(0, player.PlayerRotation.y, 0) * Vector3.forward;
+                    Vector3 spawnPos = playerPos + forward * 5f;
+                    // Raycast to find ground
+                    if (Physics.Raycast(spawnPos + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 100f))
+                        spawnPos = hit.point + Vector3.up * 1f;
+                    else
+                        spawnPos.y = playerPos.y;
+
+                    nearestCar.UpdatePosition(spawnPos);
+                    Citrus.SelfParrot(player, $"Spawned {matchedName} in front of you!");
                 }
                 else
-                    Citrus.SelfParrot(player, $"{matchedName} not spawned this match.");
-            }, "UnusedVehicles", "Teleport to a vehicle", "<name>", 2);
+                {
+                    Citrus.SelfParrot(player, $"No {matchedName} available. Try another vehicle.");
+                }
+            }, "UnusedVehicles", "Spawn a vehicle at your position", "<name>", 2);
 
             Citrus.AddCommand("vehicles", (string[] prms, TABGPlayerServer player) =>
             {
