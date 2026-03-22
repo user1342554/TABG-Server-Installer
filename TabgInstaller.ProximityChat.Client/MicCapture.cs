@@ -62,7 +62,8 @@ namespace TabgInstaller.ProximityChat.Client
                     rms += _sampleBuffer[i] * _sampleBuffer[i];
                 rms = Mathf.Sqrt(rms / FrameSamples);
 
-                if (rms < sensitivity) continue;
+                // VAD disabled for debugging — always send
+                // if (rms < sensitivity) continue;
 
                 // Convert float[-1,1] to 16-bit PCM bytes (little-endian)
                 // 960 samples * 2 bytes = 1920 bytes per frame
