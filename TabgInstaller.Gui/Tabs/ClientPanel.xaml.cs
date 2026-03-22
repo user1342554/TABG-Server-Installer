@@ -82,6 +82,11 @@ namespace TabgInstaller.Gui.Tabs
                 selectedClientPlugins.Add("TabgInstaller.ProximityChat.Client.dll");
                 selectedClientPlugins.Add("Concentus.dll");
             }
+            if (ChkClientHuntMode.IsChecked == true)
+            {
+                selectedClientPlugins.Add("TabgInstaller.HuntMode.Client.dll");
+                selectedClientPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
+            }
 
             if (selectedClientPlugins.Count == 0)
             {
