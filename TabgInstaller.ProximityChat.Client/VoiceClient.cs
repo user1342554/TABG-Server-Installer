@@ -27,7 +27,7 @@ namespace TabgInstaller.ProximityChat.Client
             _log = log;
         }
 
-        public void Connect(string serverIp, int serverPort)
+        public void Connect(string serverIp, int serverPort, byte playerIndex)
         {
             try
             {
@@ -42,9 +42,9 @@ namespace TabgInstaller.ProximityChat.Client
                 };
                 _receiveThread.Start();
 
-                byte[] handshake = PacketProtocol.WriteHandshake();
+                byte[] handshake = PacketProtocol.WriteHandshake(playerIndex);
                 _udp.Send(handshake, handshake.Length, _serverEndpoint);
-                _log("[ProximityChat] Handshake sent to " + _serverEndpoint);
+                _log($"[ProximityChat] Handshake sent to {_serverEndpoint} as player {playerIndex}");
             }
             catch (Exception ex)
             {

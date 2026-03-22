@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
@@ -15,6 +14,7 @@ namespace TabgInstaller.ProximityChat.Client
         public static ConfigEntry<float> MasterVolume;
         public static ConfigEntry<string> MicrophoneDevice;
         public static ConfigEntry<int> VoicePort;
+        public static ConfigEntry<string> ServerIP;
 
         private VoiceClient _voiceClient;
         private MicCapture _micCapture;
@@ -32,6 +32,7 @@ namespace TabgInstaller.ProximityChat.Client
             MasterVolume = Config.Bind("ProximityChat", "MasterVolume", 1.0f, "Overall voice chat volume");
             MicrophoneDevice = Config.Bind("ProximityChat", "MicrophoneDevice", "", "Microphone device name (empty = system default)");
             VoicePort = Config.Bind("ProximityChat", "VoicePort", 7778, "UDP port for voice traffic (must match server)");
+            ServerIP = Config.Bind("ProximityChat", "ServerIP", "127.0.0.1", "Voice server IP address (server machine's IP)");
 
             try
             {
@@ -124,7 +125,9 @@ namespace TabgInstaller.ProximityChat.Client
                     _playback.EnqueueAudio(senderId, seq, opusData, opusLen);
                 };
 
-                _voiceClient.Connect(serverIp, voicePort);
+                // Get local player index
+                byte localPlayerIndex = GetLocalPlayerIndex();
+                _voiceClient.Connect(serverIp, voicePort, localPlayerIndex);
 
                 try
                 {
@@ -155,59 +158,19 @@ namespace TabgInstaller.ProximityChat.Client
 
         private string GetServerIp()
         {
-            // Primary: ServerConnector.Instance.m_clientNetworker.GetServerIdentifier() → "ip:port"
+            return ServerIP.Value;
+        }
+
+        private byte GetLocalPlayerIndex()
+        {
             try
             {
-                var connector = Landfall.Network.ServerConnector.Instance;
-                if (connector != null)
-                {
-                    var networkerField = typeof(Landfall.Network.ServerConnector).GetField("m_clientNetworker",
-                        BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (networkerField != null)
-                    {
-                        var networker = networkerField.GetValue(connector);
-                        if (networker != null)
-                        {
-                            var getIdMethod = networker.GetType().GetMethod("GetServerIdentifier",
-                                BindingFlags.Public | BindingFlags.Instance);
-                            if (getIdMethod != null)
-                            {
-                                string identifier = getIdMethod.Invoke(networker, null) as string;
-                                if (!string.IsNullOrEmpty(identifier))
-                                {
-                                    // Format is "ip:port" — extract just the IP
-                                    int colonIdx = identifier.LastIndexOf(':');
-                                    if (colonIdx > 0)
-                                        return identifier.Substring(0, colonIdx);
-                                    return identifier;
-                                }
-                            }
-                        }
-                    }
-                }
+                var handler = Landfall.Network.PhotonServerHandler.instance;
+                if (handler != null && handler.LocalPlayer != null)
+                    return handler.LocalPlayer.PlayerIndex;
             }
             catch { }
-
-            // Fallback: ServerConnector.LastJoinedServerText → "ip : port"
-            try
-            {
-                var lastJoined = typeof(Landfall.Network.ServerConnector).GetProperty("LastJoinedServerText",
-                    BindingFlags.Public | BindingFlags.Static);
-                if (lastJoined != null)
-                {
-                    string val = lastJoined.GetValue(null) as string;
-                    if (!string.IsNullOrEmpty(val))
-                    {
-                        // Format is "ip : port" — extract just the IP
-                        string[] parts = val.Split(new[] { " : ", ":" }, StringSplitOptions.None);
-                        if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0].Trim()))
-                            return parts[0].Trim();
-                    }
-                }
-            }
-            catch { }
-
-            return null;
+            return 0;
         }
 
         private void OnGUI()

@@ -21,9 +21,17 @@ namespace TabgInstaller.ProximityChat
             return packet;
         }
 
-        public static byte[] WriteHandshake()
+        public static byte[] WriteHandshake(byte playerIndex)
         {
-            return new byte[] { PacketTypeHandshake };
+            return new byte[] { PacketTypeHandshake, playerIndex };
+        }
+
+        public static bool TryReadHandshake(byte[] data, out byte playerIndex)
+        {
+            playerIndex = 0;
+            if (data.Length < 2) return false;
+            playerIndex = data[1];
+            return true;
         }
 
         // Server → Client config: [type:1][minRange:4][maxRange:4][falloff:1]

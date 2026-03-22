@@ -75,7 +75,7 @@ namespace TabgInstaller.ProximityChat.Server
 
                     if (packetType == PacketProtocol.PacketTypeHandshake)
                     {
-                        HandleHandshake(remoteEp);
+                        HandleHandshake(data, remoteEp);
                     }
                     else if (packetType == PacketProtocol.PacketTypeAudio)
                     {
@@ -94,12 +94,21 @@ namespace TabgInstaller.ProximityChat.Server
             }
         }
 
-        private void HandleHandshake(IPEndPoint remoteEp)
+        private void HandleHandshake(byte[] data, IPEndPoint remoteEp)
         {
-            int playerId = FindPlayerByIp(remoteEp.Address.ToString());
-            if (playerId < 0)
+            if (!PacketProtocol.TryReadHandshake(data, out byte playerIndex))
             {
-                _log($"[ProximityChat] Handshake from unknown IP: {remoteEp.Address}");
+                _log("[ProximityChat] Invalid handshake packet");
+                return;
+            }
+
+            int playerId = (int)playerIndex;
+
+            // Verify this player actually exists in the game
+            var player = FindPlayerById(playerId);
+            if (player == null)
+            {
+                _log($"[ProximityChat] Handshake from unknown player index: {playerIndex}");
                 return;
             }
 
@@ -149,67 +158,6 @@ namespace TabgInstaller.ProximityChat.Server
                 }
                 catch { }
             }
-        }
-
-        private int FindPlayerByIp(string ip)
-        {
-            try
-            {
-                var players = Citrus.players;
-                if (players == null) return -1;
-
-                // Get the EnetServer instance to look up Peer IPs
-                object enetServer = null;
-                try
-                {
-                    var world = Citrus.World;
-                    if (world != null)
-                    {
-                        // ServerClient has m_server field (EnetServer or UnityTransportServer)
-                        var serverField = world.GetType().GetField("m_server",
-                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        if (serverField != null)
-                            enetServer = serverField.GetValue(world);
-                    }
-                }
-                catch { }
-
-                foreach (var playerRef in players)
-                {
-                    if (playerRef == null || playerRef.player == null) continue;
-                    var player = playerRef.player;
-                    try
-                    {
-                        string playerIp = null;
-
-                        // Primary: use EnetServer.GetPeer(playerIndex).IP
-                        if (enetServer != null)
-                        {
-                            var getPeerMethod = enetServer.GetType().GetMethod("GetPeer");
-                            if (getPeerMethod != null)
-                            {
-                                var peer = getPeerMethod.Invoke(enetServer, new object[] { (uint)player.PlayerIndex });
-                                if (peer != null)
-                                {
-                                    var ipProp = peer.GetType().GetProperty("IP");
-                                    if (ipProp != null)
-                                    {
-                                        uint ipUint = (uint)ipProp.GetValue(peer);
-                                        byte[] ipBytes = BitConverter.GetBytes(ipUint);
-                                        playerIp = new IPAddress(ipBytes).ToString();
-                                    }
-                                }
-                            }
-                        }
-
-                        if (playerIp != null && playerIp == ip)
-                            return player.PlayerIndex;
-                    }
-                    catch { }
-                }
-            }
-            catch { }
-            return -1;
         }
 
         private TABGPlayerServer FindPlayerById(int playerId)
