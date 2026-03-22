@@ -77,6 +77,11 @@ namespace TabgInstaller.Gui.Tabs
             if (ChkClientBigSmoke.IsChecked == true || ChkClientMGLFlashbang.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.CustomGrenades.dll");
             if (ChkClientModSettings.IsChecked == true) selectedClientPlugins.Add("TabgInstaller.ModSettings.dll");
             if (ChkClientPopupBlocker.IsChecked == true) selectedClientPlugins.Add("Pop-up Blocker.dll");
+            if (ChkClientProximityChat.IsChecked == true)
+            {
+                selectedClientPlugins.Add("TabgInstaller.ProximityChat.Client.dll");
+                selectedClientPlugins.Add("Concentus.dll");
+            }
 
             if (selectedClientPlugins.Count == 0)
             {

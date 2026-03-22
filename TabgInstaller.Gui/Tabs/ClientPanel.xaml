@@ -40,6 +40,8 @@
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkClientPopupBlocker" Content="Pop-up Blocker — Disable anti-cheat popups for custom servers"
                           Margin="5,3" IsChecked="True"/>
+                <CheckBox x:Name="ChkClientProximityChat" Content="Proximity Chat — Proximity voice chat for custom servers"
+                          Margin="5,3" IsChecked="True"/>
                 <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
                     <Button Content="INSTALL CLIENT MODS" Height="30" Width="200" Click="BtnInstallClientMods_Click"/>
                     <Button x:Name="BtnLaunchModdedTabg" Content="LAUNCH MODDED TABG" Height="30" Width="200" Margin="10,0,0,0" Click="BtnLaunchModdedTabg_Click"/>
