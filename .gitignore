@@ -30,6 +30,8 @@ publish/
 # Allow bundled plugin DLLs
 !TabgInstaller.Gui/plugins/
 !TabgInstaller.Gui/plugins/*.dll
+!TabgInstaller.Gui/client-plugins/
+!TabgInstaller.Gui/client-plugins/*.dll
 # Allow markdown, config, and scripts
 !*.md
 !*.ps1
