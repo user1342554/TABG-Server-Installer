@@ -11,7 +11,11 @@
             <TabItem Header="Installer">
                 <tabs:InstallerPanel x:Name="InstallerTab"/>
             </TabItem>
-            
+
+            <TabItem Header="Client">
+                <tabs:ClientPanel x:Name="ClientTab"/>
+            </TabItem>
+
             <TabItem Header="Config" x:Name="ConfigTabItem" IsEnabled="False">
                 <tabs:ConfigPanel x:Name="ConfigTab"/>
             </TabItem>

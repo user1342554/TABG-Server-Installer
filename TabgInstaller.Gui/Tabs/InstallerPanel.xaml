@@ -5,7 +5,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -68,55 +67,15 @@
             </StackPanel>
         </GroupBox>
 
-        <!-- Client Mods -->
-        <GroupBox Grid.Row="2" Header="Client Mods (creates a modded TABG copy — EAC blocks mods in Steam folder)" Margin="0,0,0,10">
-            <StackPanel>
-                <Grid Margin="5,3,5,2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Label Content="TABG Steam folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="ClientPathBox" Grid.Column="1"/>
-                </Grid>
-                <Grid Margin="5,2,5,5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Label Content="Modded copy folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="ClientModdedPathBox" Grid.Column="1"/>
-                </Grid>
-                <CheckBox x:Name="ChkClientFlyingControls" Content="FlyingControls — Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientEnhancedTabg" Content="Enhanced TABG — Infinite LOD (F1), HUD toggle (F2), fog removal (F3)"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientBigSmoke" Content="BigSmokeGrenade — Giant purple smoke grenades"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientMGLFlashbang" Content="MGLFlashbang — MGL shoots flashbang rounds"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientCoordsDisplay" Content="Coords Display — Press F5 to show your X/Y/Z position"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientModSettings" Content="Mod Settings — In-game settings menu for all mods (press #)"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkClientPopupBlocker" Content="Pop-up Blocker — Disable anti-cheat popups for custom servers"
-                          Margin="5,3" IsChecked="True"/>
-                <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
-                    <Button Content="INSTALL CLIENT MODS" Height="30" Width="200" Click="BtnInstallClientMods_Click"/>
-                    <Button x:Name="BtnLaunchModdedTabg" Content="LAUNCH MODDED TABG" Height="30" Width="200" Margin="10,0,0,0" Click="BtnLaunchModdedTabg_Click"/>
-                </StackPanel>
-            </StackPanel>
-        </GroupBox>
-
         <!-- Log -->
-        <GroupBox Grid.Row="3" Header="Installation Log">
+        <GroupBox Grid.Row="2" Header="Installation Log">
             <ScrollViewer x:Name="LogScrollViewer">
                 <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
             </ScrollViewer>
         </GroupBox>
 
         <!-- Actions -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnInstall" Content="INSTALL" Height="40" Width="140" Click="BtnInstall_Click"/>
             <Button x:Name="BtnContinue" Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0" Click="BtnContinue_Click"/>
         </StackPanel>
