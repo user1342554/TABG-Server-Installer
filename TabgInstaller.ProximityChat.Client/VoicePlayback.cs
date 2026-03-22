@@ -162,14 +162,13 @@ namespace TabgInstaller.ProximityChat.Client
                 UnityEngine.Object.DontDestroyOnLoad(_go);
 
                 _audioSource = _go.AddComponent<AudioSource>();
-                _audioSource.spatialBlend = 1.0f;
-                _audioSource.minDistance = minDist;
-                _audioSource.maxDistance = maxDist;
-                _audioSource.rolloffMode = rolloff;
+                _audioSource.spatialBlend = 0f; // 2D for now — hear everywhere
                 _audioSource.volume = masterVol;
                 _audioSource.loop = true;
                 _audioSource.dopplerLevel = 0f;
-                _audioSource.spread = 0f;
+                _audioSource.bypassEffects = true;
+                _audioSource.bypassListenerEffects = true;
+                _audioSource.bypassReverbZones = true;
 
                 _clip = AudioClip.Create($"Voice_{playerId}", RingBufferSize, 1, sampleRate, true, OnPcmRead);
                 _audioSource.clip = _clip;
