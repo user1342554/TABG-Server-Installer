@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
+using HarmonyLib;
+using Landfall.Network;
 using UnityEngine;
 
 namespace TabgInstaller.ProximityChat.Client
@@ -13,81 +16,68 @@ namespace TabgInstaller.ProximityChat.Client
         public static ConfigEntry<float> MicSensitivity;
         public static ConfigEntry<float> MasterVolume;
         public static ConfigEntry<string> MicrophoneDevice;
-        public static ConfigEntry<int> VoicePort;
-        public static ConfigEntry<string> ServerIP;
 
-        private VoiceClient _voiceClient;
         private MicCapture _micCapture;
         private VoicePlayback _playback;
         private SpeakerIcon _speakerIcon;
+        private Harmony _harmony;
         private bool _started;
-        private float _retryTimer;
-        private int _retryCount;
-        private const int MaxRetries = 3;
+
+        internal static ProximityChatClientPlugin Instance;
 
         private void Awake()
         {
+            Instance = this;
             Enabled = Config.Bind("ProximityChat", "Enabled", true, "Enable/disable voice chat");
             MicSensitivity = Config.Bind("ProximityChat", "MicSensitivity", 0.01f, "Voice activity detection threshold (RMS)");
             MasterVolume = Config.Bind("ProximityChat", "MasterVolume", 1.0f, "Overall voice chat volume");
             MicrophoneDevice = Config.Bind("ProximityChat", "MicrophoneDevice", "", "Microphone device name (empty = system default)");
-            VoicePort = Config.Bind("ProximityChat", "VoicePort", 7778, "UDP port for voice traffic (must match server)");
-            ServerIP = Config.Bind("ProximityChat", "ServerIP", "127.0.0.1", "Voice server IP address (server machine's IP)");
 
             try
             {
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Enabled", "Toggle voice chat on/off", Enabled);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Mic Sensitivity", "VAD threshold", MicSensitivity);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Master Volume", "Voice chat volume", MasterVolume);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Voice Port", "Must match server config", VoicePort);
             }
             catch { }
 
             _speakerIcon = new SpeakerIcon();
-            Logger.LogInfo("[ProximityChat] Client plugin loaded.");
+            _playback = new VoicePlayback(MasterVolume.Value);
+
+            // Patch client message receiving to intercept voice packets
+            _harmony = new Harmony("tabginstaller.proximitychat.client");
+            _harmony.PatchAll(typeof(VoiceReceivePatch));
+
+            Logger.LogInfo("[ProximityChat] Client plugin loaded — using game network.");
         }
 
         private void Update()
         {
             if (!Enabled.Value) return;
 
-            // Try to connect when we are in a game session
+            // Start mic when entering a game session
             if (!_started && IsInGameSession())
             {
-                TryConnect();
+                StartVoice();
             }
 
-            if (_voiceClient != null && _voiceClient.IsConnected)
+            if (_started)
             {
                 _micCapture?.ProcessMicData(MicSensitivity.Value);
                 _playback?.Tick();
 
                 if (_playback != null)
                 {
-                    // Sync transform cache to SpeakerIcon so it can render icons above talking players
                     _speakerIcon.UpdatePlayerCache(_playback.GetPlayerTransformCache());
-
                     foreach (int id in _playback.GetTalkingPlayerIds())
                         _speakerIcon.SetTalking(id, true);
-
-                    _playback.UpdateConfig(_voiceClient.MinRange, _voiceClient.MaxRange, _voiceClient.FalloffCurve);
-                }
-            }
-            else if (_started && _retryCount < MaxRetries)
-            {
-                _retryTimer -= Time.deltaTime;
-                if (_retryTimer <= 0)
-                {
-                    _retryTimer = 5f;
-                    _retryCount++;
-                    Logger.LogInfo($"[ProximityChat] Retry {_retryCount}/{MaxRetries}...");
-                    TryConnect();
                 }
             }
 
+            // Cleanup when leaving
             if (_started && !IsInGameSession())
             {
-                Cleanup();
+                StopVoice();
             }
         }
 
@@ -95,106 +85,101 @@ namespace TabgInstaller.ProximityChat.Client
         {
             try
             {
-                var handler = Landfall.Network.PhotonServerHandler.instance;
+                var handler = PhotonServerHandler.instance;
                 return handler != null && handler.AllPlayers != null;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
-        private void TryConnect()
+        private void StartVoice()
         {
             try
             {
-                string serverIp = GetServerIp();
-                if (serverIp == null)
+                if (Microphone.devices.Length > 0)
                 {
-                    Logger.LogWarning("[ProximityChat] Cannot determine server IP yet.");
-                    return;
+                    _micCapture = new MicCapture(MicrophoneDevice.Value);
+                    _micCapture.OnFrameEncoded += OnVoiceFrameEncoded;
+                    _micCapture.StartRecording();
+                    Logger.LogInfo("[ProximityChat] Microphone started.");
                 }
-
-                int voicePort = VoicePort.Value;
-
-                _playback = new VoicePlayback(MasterVolume.Value);
-
-                _voiceClient = new VoiceClient(msg => Logger.LogInfo(msg));
-                _voiceClient.OnAudioReceived += (senderId, seq, opusData, opusLen) =>
+                else
                 {
-                    _playback.EnqueueAudio(senderId, seq, opusData, opusLen);
-                };
-
-                // Get local player index
-                byte localPlayerIndex = GetLocalPlayerIndex();
-                _voiceClient.Connect(serverIp, voicePort, localPlayerIndex);
-
-                try
-                {
-                    if (Microphone.devices.Length > 0)
-                    {
-                        _micCapture = new MicCapture(MicrophoneDevice.Value);
-                        _micCapture.OnFrameEncoded += (data, len) => _voiceClient.SendAudio(data, len);
-                        _micCapture.StartRecording();
-                    }
-                    else
-                    {
-                        Logger.LogWarning("[ProximityChat] No microphone found — receive-only mode.");
-                    }
+                    Logger.LogWarning("[ProximityChat] No microphone — receive-only mode.");
                 }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning($"[ProximityChat] Mic init failed, receive-only: {ex.Message}");
-                }
-
                 _started = true;
-                Logger.LogInfo($"[ProximityChat] Connected to {serverIp}:{voicePort}");
             }
             catch (Exception ex)
             {
-                Logger.LogError($"[ProximityChat] Connect failed: {ex.Message}");
+                Logger.LogError($"[ProximityChat] Start failed: {ex.Message}");
             }
         }
 
-        private string GetServerIp()
+        private void OnVoiceFrameEncoded(byte[] opusData, int opusLength)
         {
-            return ServerIP.Value;
-        }
-
-        private byte GetLocalPlayerIndex()
-        {
+            // Send voice data to server through the game's network
             try
             {
-                var handler = Landfall.Network.PhotonServerHandler.instance;
-                if (handler != null && handler.LocalPlayer != null)
-                    return handler.LocalPlayer.PlayerIndex;
+                var connector = ServerConnector.Instance;
+                if (connector == null) return;
+
+                byte[] buffer = new byte[opusLength];
+                Buffer.BlockCopy(opusData, 0, buffer, 0, opusLength);
+                connector.SendMessageToServer((EventCode)240, buffer, false); // Unreliable
             }
             catch { }
-            return 0;
+        }
+
+        /// <summary>
+        /// Harmony prefix patch on ServerConnector.OnEvent to intercept incoming voice packets (EventCode 240).
+        /// Extracts sender index and opus data, then enqueues for playback.
+        /// </summary>
+        [HarmonyPatch(typeof(ServerConnector), "OnEvent")]
+        internal static class VoiceReceivePatch
+        {
+            static bool Prefix(ClientPackage clientPackage)
+            {
+                if ((byte)clientPackage.Code != 240) return true;
+
+                try
+                {
+                    if (Instance == null || !Instance._started || Instance._playback == null) return false;
+
+                    byte[] data = clientPackage.Buffer;
+                    if (data == null || data.Length < 2) return false;
+
+                    byte senderIndex = data[0];
+                    byte[] opusData = new byte[data.Length - 1];
+                    Buffer.BlockCopy(data, 1, opusData, 0, opusData.Length);
+
+                    // EnqueueAudio is safe to call from any thread
+                    Instance._playback.EnqueueAudio(senderIndex, 0, opusData, opusData.Length);
+                }
+                catch { }
+
+                return false; // Consume the event
+            }
+        }
+
+        private void StopVoice()
+        {
+            _micCapture?.Dispose();
+            _micCapture = null;
+            _playback?.Dispose();
+            _playback = new VoicePlayback(MasterVolume.Value); // Reset for next game
+            _started = false;
         }
 
         private void OnGUI()
         {
-            if (Enabled.Value)
+            if (Enabled.Value && _started)
                 _speakerIcon?.OnGUI();
-        }
-
-        private void Cleanup()
-        {
-            _micCapture?.Dispose();
-            _micCapture = null;
-            _voiceClient?.Dispose();
-            _voiceClient = null;
-            _playback?.Dispose();
-            _playback = null;
-            _started = false;
-            _retryCount = 0;
-            _retryTimer = 0;
         }
 
         private void OnDestroy()
         {
-            Cleanup();
+            _micCapture?.Dispose();
+            _playback?.Dispose();
+            _harmony?.UnpatchSelf();
         }
     }
 }

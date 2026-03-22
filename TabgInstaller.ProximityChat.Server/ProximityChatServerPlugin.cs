@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
+using CitrusLib;
 using HarmonyLib;
 using Landfall.Network;
+using UnityEngine;
 
 namespace TabgInstaller.ProximityChat.Server
 {
@@ -12,60 +15,96 @@ namespace TabgInstaller.ProximityChat.Server
     {
         public static ConfigEntry<float> MaxRange;
         public static ConfigEntry<float> MinRange;
-        public static ConfigEntry<int> VoicePort;
         public static ConfigEntry<string> FalloffCurve;
-
-        private VoiceServer _voiceServer;
-
-        private void Awake()
-        {
-            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f, "Distance beyond which audio is not relayed");
-            MinRange = Config.Bind("ProximityChat", "MinRange", 5f, "Distance within which audio is full volume");
-            VoicePort = Config.Bind("ProximityChat", "VoicePort", 7778, "UDP port for voice traffic");
-            FalloffCurve = Config.Bind("ProximityChat", "FalloffCurve", "Linear", "Volume falloff: Linear or Logarithmic");
-
-            Logger.LogInfo("[ProximityChat] Server plugin loaded.");
-        }
 
         private Harmony _harmony;
 
-        private void Start()
-        {
-            try
-            {
-                _voiceServer = new VoiceServer(
-                    VoicePort.Value,
-                    MinRange.Value,
-                    MaxRange.Value,
-                    FalloffCurve.Value,
-                    msg => Logger.LogInfo(msg)
-                );
-                _voiceServer.Start();
+        internal static ProximityChatServerPlugin Instance;
 
-                _harmony = new Harmony("tabginstaller.proximitychat.server");
-                _harmony.PatchAll(typeof(PlayerDisconnectPatch));
-                PlayerDisconnectPatch.Server = _voiceServer;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[ProximityChat] Failed to start: {ex}");
-            }
+        private void Awake()
+        {
+            Instance = this;
+            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f, "Distance beyond which audio is not relayed");
+            MinRange = Config.Bind("ProximityChat", "MinRange", 5f, "Distance within which audio is full volume");
+            FalloffCurve = Config.Bind("ProximityChat", "FalloffCurve", "Linear", "Volume falloff: Linear or Logarithmic");
+
+            _harmony = new Harmony("tabginstaller.proximitychat.server");
+            _harmony.PatchAll(typeof(VoiceMessagePatch));
+
+            Logger.LogInfo("[ProximityChat] Server plugin loaded — using game network for voice relay.");
         }
 
         private void OnDestroy()
         {
-            _voiceServer?.Dispose();
             _harmony?.UnpatchSelf();
         }
 
-        [HarmonyPatch(typeof(GameRoom), "RemovePlayer")]
-        internal static class PlayerDisconnectPatch
+        /// <summary>
+        /// Harmony prefix patch on ServerClient.HandleNetorkEvent to intercept voice packets (EventCode 240).
+        /// Voice data is relayed only to nearby players using the game's built-in networking.
+        /// </summary>
+        [HarmonyPatch(typeof(ServerClient), "HandleNetorkEvent")]
+        internal static class VoiceMessagePatch
         {
-            internal static VoiceServer Server;
-            static void Postfix(TABGPlayerServer player)
+            static bool Prefix(ServerPackage networkEvent, ServerClient __instance)
             {
-                if (player != null && Server != null)
-                    Server.OnPlayerDisconnected(player.PlayerIndex);
+                // Only intercept our custom voice event code (240)
+                if ((byte)networkEvent.Code != 240) return true;
+
+                try
+                {
+                    byte senderIndex = networkEvent.SenderPlayerID;
+                    byte[] voiceData = networkEvent.Buffer;
+
+                    // Find sender player via GameRoom
+                    var senderPlayer = __instance.GameRoomReference.FindPlayer(senderIndex);
+                    if (senderPlayer == null) return false;
+
+                    Vector3 senderPos = senderPlayer.PlayerPosition;
+                    float maxRange = MaxRange.Value;
+
+                    // Find all players in range using Citrus.players
+                    var recipients = new List<byte>();
+                    var players = Citrus.players;
+                    if (players == null) return false;
+
+                    foreach (var playerRef in players)
+                    {
+                        if (playerRef == null || playerRef.player == null) continue;
+                        var player = playerRef.player;
+                        if (player.PlayerIndex == senderIndex) continue;
+
+                        float dist = Vector3.Distance(senderPos, player.PlayerPosition);
+                        if (dist <= maxRange)
+                        {
+                            recipients.Add(player.PlayerIndex);
+                        }
+                    }
+
+                    if (recipients.Count > 0)
+                    {
+                        // Prepend sender index so clients know who is talking
+                        byte[] relayData = new byte[1 + voiceData.Length];
+                        relayData[0] = senderIndex;
+                        Buffer.BlockCopy(voiceData, 0, relayData, 1, voiceData.Length);
+
+                        // Send unreliably for low-latency voice delivery
+                        __instance.SendMessageToClients(
+                            (EventCode)240,
+                            relayData,
+                            recipients.ToArray(),
+                            false,  // reliable = false (voice doesn't need guaranteed delivery)
+                            false   // encrypted = false
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (Instance != null)
+                        Instance.Logger.LogError($"[ProximityChat] Relay error: {ex.Message}");
+                }
+
+                return false; // Consume the event — no default handler for code 240
             }
         }
     }

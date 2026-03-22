@@ -81,17 +81,12 @@
                         <TextBox x:Name="TxtProxChatMinRange" Width="80"/>
                         <TextBlock Text="(default 5)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <StackPanel Orientation="Horizontal">
                         <Label Content="Falloff Curve:" Width="130"/>
                         <ComboBox x:Name="CmbProxChatFalloff" Width="140">
                             <ComboBoxItem Content="Linear"/>
                             <ComboBoxItem Content="Logarithmic"/>
                         </ComboBox>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Label Content="Voice Port:" Width="130"/>
-                        <TextBox x:Name="TxtProxChatVoicePort" Width="80"/>
-                        <TextBlock Text="(default 7778)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>

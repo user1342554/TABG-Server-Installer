@@ -122,7 +122,7 @@ namespace TabgInstaller.Gui.Tabs
                             string val = ExtractCfgValue(trimmed);
                             CmbProxChatFalloff.SelectedIndex = val == "Logarithmic" ? 1 : 0;
                         }
-                        else if (trimmed.StartsWith("VoicePort")) TxtProxChatVoicePort.Text = ExtractCfgValue(trimmed);
+                        // VoicePort removed — voice now uses game network
                     }
                 }
                 else
@@ -130,7 +130,6 @@ namespace TabgInstaller.Gui.Tabs
                     TxtProxChatMaxRange.Text = "50";
                     TxtProxChatMinRange.Text = "5";
                     CmbProxChatFalloff.SelectedIndex = 0;
-                    TxtProxChatVoicePort.Text = "7778";
                 }
             }
             catch { }
@@ -200,11 +199,6 @@ MaxRange = {TxtProxChatMaxRange.Text.Trim()}
 # Setting type: Single
 # Default value: 5
 MinRange = {TxtProxChatMinRange.Text.Trim()}
-
-## UDP port for voice traffic
-# Setting type: Int32
-# Default value: 7778
-VoicePort = {TxtProxChatVoicePort.Text.Trim()}
 
 ## Volume falloff: Linear or Logarithmic
 # Setting type: String
