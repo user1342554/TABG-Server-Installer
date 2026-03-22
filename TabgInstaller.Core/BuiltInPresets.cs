@@ -19,13 +19,16 @@ namespace TabgInstaller.Core
         /// <summary>Optional standalone plugin that spawns cut/unused vehicles (Heli, UFO, Mustang, VW, etc).</summary>
         public static readonly string UnusedVehiclesPlugin = "TabgInstaller.UnusedVehicles.dll";
 
+        private static readonly string[] JuggernautPlugins = { "Citruslib.dll", "JuggernautMode.Server.dll" };
+
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
             CollinSigma(),
             BattleRoyaleMoreLoot(),
             DeathmatchBigWork(),
             GunGameCastle(),
-            ScavengePointOfImpact()
+            ScavengePointOfImpact(),
+            JuggernautMode()
         };
 
         /// <summary>Deploy a built-in preset by writing all its files and copying required plugins.</summary>
@@ -786,6 +789,45 @@ Spawnpoints =-41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,
                 "KeepInventory scavenge at Point Of Impact. 20 players, 25 kills. Items persist through death. Loot drops enabled. 50% heal on kill. Infinite lives.",
                 "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
                 files, GameModePlugins);
+        }
+
+        private static BuiltInPreset JuggernautMode()
+        {
+            const string gs = @"ServerName=Juggernaut Mode Server
+ServerDescription=Juggernaut Mode - One massive player vs everyone!
+GameMode=Brawl
+TeamMode=SOLO
+MaxPlayers=20
+PlayersToStart=3
+GroupsToStart=3
+Countdown=15
+StripLootByPercentage=1.0
+NoRing=1
+DEBUG_DEATHMATCH=0
+CarSpawnRate=0
+AllowSpectating=True
+AutoTeam=False
+NumberOfLivesPerTeam=Infinity
+UseTimedForceStart=True
+ForceStartTime=120
+MinPlayersToForceStart=3
+KillsToWin=65535
+WeaponDissapearTime=10
+UseKicks=True
+UseSouls=0
+AllowRejoins=True
+";
+
+            var files = new Dictionary<string, string>
+            {
+                ["game_settings.txt"] = gs,
+            };
+
+            return new BuiltInPreset(
+                "Juggernaut Mode",
+                "One massive player vs everyone. Kill the Juggernaut to become the Juggernaut. First to target score wins. 20 players, no ring, infinite respawns.",
+                "Requires plugins: Citruslib, JuggernautMode.Server. Client mod (JuggernautMode.Client) recommended for boss bar, loadout picker, and scoreboard.",
+                files, JuggernautPlugins);
         }
     }
 }

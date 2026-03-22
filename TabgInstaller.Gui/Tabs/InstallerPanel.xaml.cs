@@ -39,7 +39,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             ChkCitruslib, ChkInstallStarterPack, ChkStarterPackFixes,
             ChkCustomSpawnpoints, ChkFreddoCommission, ChkMatchTimeout,
-            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkBigSmoke, ChkMGLFlashbang, ChkSoloTesting, ChkInstallCommunityServer, ChkProximityChat, ChkHuntMode
+            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkBigSmoke, ChkMGLFlashbang, ChkSoloTesting, ChkInstallCommunityServer, ChkProximityChat, ChkHuntMode, ChkJuggernautMode
         };
 
         private void SelectAllPlugins_Click(object sender, RoutedEventArgs e)
@@ -141,6 +141,7 @@ namespace TabgInstaller.Gui.Tabs
                     selectedBundledPlugins.Add("TabgInstaller.HuntMode.dll");
                     selectedBundledPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
                 }
+                if (ChkJuggernautMode.IsChecked == true) selectedBundledPlugins.Add("JuggernautMode.Server.dll");
 
                 int exitCode = await Task.Run(async () =>
                 {

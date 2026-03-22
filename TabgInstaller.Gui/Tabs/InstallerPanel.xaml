@@ -62,6 +62,8 @@
                           Margin="5,3" IsChecked="True"/>
                 <CheckBox x:Name="ChkHuntMode" Content="Hunt Mode (4v1) — 1 Killer vs 4 Survivors survival"
                           Margin="5,3" IsChecked="False"/>
+                <CheckBox x:Name="ChkJuggernautMode" Content="Juggernaut Mode — One massive player vs everyone, score-based"
+                          Margin="5,3" IsChecked="False"/>
                 <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
                     <Button Content="Select All" Width="80" Click="SelectAllPlugins_Click" Margin="0,0,5,0"/>
                     <Button Content="Select None" Width="80" Click="SelectNonePlugins_Click" Margin="0,0,5,0"/>

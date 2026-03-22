@@ -87,6 +87,7 @@ namespace TabgInstaller.Gui.Tabs
                 selectedClientPlugins.Add("TabgInstaller.HuntMode.Client.dll");
                 selectedClientPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
             }
+            if (ChkClientJuggernautMode.IsChecked == true) selectedClientPlugins.Add("JuggernautMode.Client.dll");
 
             if (selectedClientPlugins.Count == 0)
             {
