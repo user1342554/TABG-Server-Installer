@@ -104,6 +104,36 @@ namespace TabgInstaller.Gui.Tabs
             {
                 StatusText.Text = $"Error loading: {ex.Message}";
             }
+
+            try
+            {
+                string proxCfgPath = Path.Combine(_serverDir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg");
+                if (File.Exists(proxCfgPath))
+                {
+                    var lines = File.ReadAllLines(proxCfgPath);
+                    foreach (var line in lines)
+                    {
+                        var trimmed = line.Trim();
+                        if (trimmed.StartsWith("#") || trimmed.StartsWith("[") || trimmed.Length == 0) continue;
+                        if (trimmed.StartsWith("MaxRange")) TxtProxChatMaxRange.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("MinRange")) TxtProxChatMinRange.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("FalloffCurve"))
+                        {
+                            string val = ExtractCfgValue(trimmed);
+                            CmbProxChatFalloff.SelectedIndex = val == "Logarithmic" ? 1 : 0;
+                        }
+                        else if (trimmed.StartsWith("VoicePort")) TxtProxChatVoicePort.Text = ExtractCfgValue(trimmed);
+                    }
+                }
+                else
+                {
+                    TxtProxChatMaxRange.Text = "50";
+                    TxtProxChatMinRange.Text = "5";
+                    CmbProxChatFalloff.SelectedIndex = 0;
+                    TxtProxChatVoicePort.Text = "7778";
+                }
+            }
+            catch { }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -151,12 +181,51 @@ namespace TabgInstaller.Gui.Tabs
                 _saving = false;
 
                 StatusText.Text = "Settings saved";
+
+                try
+                {
+                    string proxCfgDir = Path.Combine(_serverDir, "BepInEx", "config");
+                    Directory.CreateDirectory(proxCfgDir);
+                    string proxCfgPath = Path.Combine(proxCfgDir, "tabginstaller.proximitychat.server.cfg");
+
+                    string falloff = CmbProxChatFalloff.SelectedIndex == 1 ? "Logarithmic" : "Linear";
+                    string content = $@"[ProximityChat]
+
+## Distance beyond which audio is not relayed
+# Setting type: Single
+# Default value: 50
+MaxRange = {TxtProxChatMaxRange.Text.Trim()}
+
+## Distance within which audio is full volume
+# Setting type: Single
+# Default value: 5
+MinRange = {TxtProxChatMinRange.Text.Trim()}
+
+## UDP port for voice traffic
+# Setting type: Int32
+# Default value: 7778
+VoicePort = {TxtProxChatVoicePort.Text.Trim()}
+
+## Volume falloff: Linear or Logarithmic
+# Setting type: String
+# Default value: Linear
+FalloffCurve = {falloff}
+";
+                    File.WriteAllText(proxCfgPath, content);
+                }
+                catch { }
             }
             catch (Exception ex)
             {
                 _saving = false;
                 StatusText.Text = $"Error saving: {ex.Message}";
             }
+        }
+
+        private static string ExtractCfgValue(string line)
+        {
+            int eq = line.IndexOf('=');
+            return eq >= 0 ? line.Substring(eq + 1).Trim() : "";
         }
 
         private void SelectGrenadeById(ComboBox combo, int id)

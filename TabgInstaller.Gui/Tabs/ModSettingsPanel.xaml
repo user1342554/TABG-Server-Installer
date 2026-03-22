@@ -68,6 +68,34 @@
                 </StackPanel>
             </GroupBox>
 
+            <!-- Proximity Chat -->
+            <GroupBox Header="Proximity Chat" Margin="0,0,0,8">
+                <StackPanel Margin="8">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label Content="Max Range (m):" Width="130"/>
+                        <TextBox x:Name="TxtProxChatMaxRange" Width="80"/>
+                        <TextBlock Text="(default 50)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label Content="Min Range (m):" Width="130"/>
+                        <TextBox x:Name="TxtProxChatMinRange" Width="80"/>
+                        <TextBlock Text="(default 5)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label Content="Falloff Curve:" Width="130"/>
+                        <ComboBox x:Name="CmbProxChatFalloff" Width="140">
+                            <ComboBoxItem Content="Linear"/>
+                            <ComboBoxItem Content="Logarithmic"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Voice Port:" Width="130"/>
+                        <TextBox x:Name="TxtProxChatVoicePort" Width="80"/>
+                        <TextBlock Text="(default 7778)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
             <!-- Bottom bar -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <Button Content="Save" Width="100" Click="SaveButton_Click"/>
