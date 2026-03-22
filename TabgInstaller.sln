@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.UnusedVehicle
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.FlyingControls", "TabgInstaller.FlyingControls\TabgInstaller.FlyingControls.csproj", "{C2D3E4F5-A6B7-8901-CDEF-123456789ABC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.ProximityChat.Server", "TabgInstaller.ProximityChat.Server\TabgInstaller.ProximityChat.Server.csproj", "{A1B2C3D4-5678-9ABC-DEF0-111111111111}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{C2D3E4F5-A6B7-8901-CDEF-123456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2D3E4F5-A6B7-8901-CDEF-123456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2D3E4F5-A6B7-8901-CDEF-123456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-5678-9ABC-DEF0-111111111111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-5678-9ABC-DEF0-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-5678-9ABC-DEF0-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-5678-9ABC-DEF0-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
