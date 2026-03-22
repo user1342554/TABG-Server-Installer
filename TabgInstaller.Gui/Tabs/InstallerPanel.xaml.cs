@@ -39,7 +39,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             ChkCitruslib, ChkInstallStarterPack, ChkStarterPackFixes,
             ChkCustomSpawnpoints, ChkFreddoCommission, ChkMatchTimeout,
-            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkBigSmoke, ChkMGLFlashbang, ChkSoloTesting, ChkInstallCommunityServer
+            ChkServerLogger, ChkVoteToStart, ChkUnusedVehicles, ChkBigSmoke, ChkMGLFlashbang, ChkSoloTesting, ChkInstallCommunityServer, ChkProximityChat
         };
 
         private void SelectAllPlugins_Click(object sender, RoutedEventArgs e)
@@ -135,6 +135,7 @@ namespace TabgInstaller.Gui.Tabs
                 if (ChkUnusedVehicles.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.UnusedVehicles.dll");
                 if (ChkBigSmoke.IsChecked == true || ChkMGLFlashbang.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.CustomGrenades.dll");
                 if (ChkSoloTesting.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.SoloTesting.dll");
+                if (ChkProximityChat.IsChecked == true) selectedBundledPlugins.Add("TabgInstaller.ProximityChat.Server.dll");
 
                 int exitCode = await Task.Run(async () =>
                 {
