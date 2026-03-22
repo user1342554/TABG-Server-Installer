@@ -119,12 +119,26 @@ namespace TabgInstaller.ProximityChat.Client
         }
 
         private int _sendCount;
+        private bool _peerReady;
         private void OnVoiceFrameEncoded(byte[] opusData, int opusLength)
         {
             try
             {
                 var connector = ServerConnector.Instance;
-                if (connector == null) { Logger.LogWarning("[ProximityChat] ServerConnector is null!"); return; }
+                if (connector == null) return;
+
+                // Silently drop until peer is ready (avoids "Peer not created" spam)
+                if (!_peerReady)
+                {
+                    try
+                    {
+                        byte[] test = new byte[0];
+                        connector.SendMessageToServer((EventCode)240, test, false);
+                        _peerReady = true;
+                        Logger.LogInfo("[ProximityChat] Network peer ready — starting voice send.");
+                    }
+                    catch { return; } // Peer not ready yet, drop silently
+                }
 
                 byte[] buffer = new byte[opusLength];
                 Buffer.BlockCopy(opusData, 0, buffer, 0, opusLength);
@@ -133,7 +147,7 @@ namespace TabgInstaller.ProximityChat.Client
                 if (_sendCount % 50 == 1)
                     Logger.LogInfo($"[ProximityChat] Sent voice frame #{_sendCount} ({opusLength} bytes)");
             }
-            catch (Exception ex) { Logger.LogError($"[ProximityChat] Send error: {ex}"); }
+            catch { } // Silently drop on any error
         }
 
         /// <summary>
