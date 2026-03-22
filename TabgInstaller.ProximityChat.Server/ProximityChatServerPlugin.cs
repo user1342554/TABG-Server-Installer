@@ -46,6 +46,7 @@ namespace TabgInstaller.ProximityChat.Server
         [HarmonyPatch(typeof(ServerClient), "HandleNetorkEvent")]
         internal static class VoiceMessagePatch
         {
+            private static int _relayCount;
             static bool Prefix(ServerPackage networkEvent, ServerClient __instance)
             {
                 // Only intercept our custom voice event code (240)
@@ -55,6 +56,9 @@ namespace TabgInstaller.ProximityChat.Server
                 {
                     byte senderIndex = networkEvent.SenderPlayerID;
                     byte[] voiceData = networkEvent.Buffer;
+                    _relayCount++;
+                    if (_relayCount % 50 == 1 && Instance != null)
+                        Instance.Logger.LogInfo($"[ProximityChat] Relay #{_relayCount}: voice from player {senderIndex} ({voiceData?.Length ?? 0} bytes)");
 
                     // Find sender player via GameRoom
                     var senderPlayer = __instance.GameRoomReference.FindPlayer(senderIndex);

@@ -114,19 +114,22 @@ namespace TabgInstaller.ProximityChat.Client
             }
         }
 
+        private int _sendCount;
         private void OnVoiceFrameEncoded(byte[] opusData, int opusLength)
         {
-            // Send voice data to server through the game's network
             try
             {
                 var connector = ServerConnector.Instance;
-                if (connector == null) return;
+                if (connector == null) { Logger.LogWarning("[ProximityChat] ServerConnector is null!"); return; }
 
                 byte[] buffer = new byte[opusLength];
                 Buffer.BlockCopy(opusData, 0, buffer, 0, opusLength);
-                connector.SendMessageToServer((EventCode)240, buffer, false); // Unreliable
+                connector.SendMessageToServer((EventCode)240, buffer, false);
+                _sendCount++;
+                if (_sendCount % 50 == 1)
+                    Logger.LogInfo($"[ProximityChat] Sent voice frame #{_sendCount} ({opusLength} bytes)");
             }
-            catch { }
+            catch (Exception ex) { Logger.LogError($"[ProximityChat] Send error: {ex}"); }
         }
 
         /// <summary>
@@ -136,13 +139,19 @@ namespace TabgInstaller.ProximityChat.Client
         [HarmonyPatch(typeof(ServerConnector), "OnEvent")]
         internal static class VoiceReceivePatch
         {
+            private static int _recvCount;
             static bool Prefix(ClientPackage clientPackage)
             {
                 if ((byte)clientPackage.Code != 240) return true;
 
                 try
                 {
-                    if (Instance == null || !Instance._started || Instance._playback == null) return false;
+                    _recvCount++;
+                    if (Instance == null || !Instance._started || Instance._playback == null)
+                    {
+                        if (Instance != null) Instance.Logger.LogWarning($"[ProximityChat] Received voice but not ready (started={Instance?._started})");
+                        return false;
+                    }
 
                     byte[] data = clientPackage.Buffer;
                     if (data == null || data.Length < 2) return false;
@@ -151,12 +160,16 @@ namespace TabgInstaller.ProximityChat.Client
                     byte[] opusData = new byte[data.Length - 1];
                     Buffer.BlockCopy(data, 1, opusData, 0, opusData.Length);
 
-                    // EnqueueAudio is safe to call from any thread
                     Instance._playback.EnqueueAudio(senderIndex, 0, opusData, opusData.Length);
+                    if (_recvCount % 50 == 1)
+                        Instance.Logger.LogInfo($"[ProximityChat] Received voice #{_recvCount} from player {senderIndex} ({opusData.Length} bytes)");
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    if (Instance != null) Instance.Logger.LogError($"[ProximityChat] Receive error: {ex}");
+                }
 
-                return false; // Consume the event
+                return false;
             }
         }
 

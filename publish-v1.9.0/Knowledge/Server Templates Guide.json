@@ -1,0 +1,97 @@
+{
+  "description": "Guide for configuring TABG server templates, loadouts, spawns, curses, and match settings",
+  "starterPack": {
+    "description": "TheStarterPack.txt is a key=value config file that controls match mechanics, loadouts, and spawn settings.",
+    "settings": {
+      "WinCondition": { "type": "enum", "values": ["Default", "KillsToWin", "Debug"], "description": "How the match ends. Default=last alive, KillsToWin=kill count, Debug=timer only" },
+      "KillsToWin": { "type": "int", "description": "Number of kills to win in KillsToWin mode" },
+      "ForceKillAtStart": { "type": "bool", "description": "Force kill players out of trucks at match start. Required for deathmatch/gungame modes." },
+      "DropItemsOnDeath": { "type": "bool", "description": "Whether items drop on death" },
+      "ItemsGiven": { "type": "string", "description": "Items given to all players. Format: id:qty,id:qty" },
+      "Loadouts": { "type": "string", "description": "Loadout definitions. Format: Name:pct%id:qty,id:qty/NextName:pct%id:qty/" },
+      "HealOnKill": { "type": "bool", "description": "Whether players heal on kill" },
+      "HealOnKillAmount": { "type": "float", "description": "Percentage of HP healed on kill" },
+      "CanGoDown": { "type": "bool", "description": "Whether team members go down or respawn instantly" },
+      "CanLockOut": { "type": "bool", "description": "Whether players can be locked out" },
+      "ValidSpawnPoints": { "type": "int_array", "description": "Spawn point indices: 0=Tall Work, 1=Circle Town, 2=Western, 3=Containers, 4=Chaos, 5=Factory, 6=Custom" },
+      "CustomSpawnPoint": { "type": "vector3", "description": "Custom spawn coordinates x,y,z (used when ValidSpawnPoints contains 6)" },
+      "PercentOfVotes": { "type": "int", "description": "Required percent of votes to start" },
+      "MinNumberOfPlayers": { "type": "int", "description": "Required number of players to start" },
+      "TimeToStart": { "type": "int", "description": "Seconds after voting for match to begin" },
+      "SpelldropEnabled": { "type": "bool", "description": "Enable spell drops from sky" },
+      "MinSpellDropDelay": { "type": "int", "description": "Min seconds between spell drops" },
+      "MaxSpellDropDelay": { "type": "int", "description": "Max seconds between spell drops" },
+      "SpellDropOffset": { "type": "int", "description": "Seconds before first spell drop" },
+      "PreMatchTimeout": { "type": "float", "description": "Pre-lobby timeout in minutes" },
+      "PeriMatchTimeout": { "type": "float", "description": "Match timeout in minutes" }
+    }
+  },
+  "loadoutFormats": {
+    "standard": "Name:percentage%itemId:qty,itemId:qty/NextName:percentage%itemId:qty/",
+    "gunGame": "GunGame/Name:100%itemId:qty/NextName:100%itemId:qty/ (advances weapon on kill)",
+    "reverseGunGame": "ReverseGunGame/Name:100%itemId:qty/ (advances on death, needs 2 empty loadouts at start)",
+    "keepInventory": "KeepInventory/Name:100%itemId:qty/ (items persist through death, do NOT combine with GunGame)"
+  },
+  "loadoutCurses": {
+    "description": "Set in plugin config as 'LoadoutCurses = curseIds/curseIds/...'",
+    "format": "Comma-separated curse IDs per loadout, loadouts separated by /",
+    "example": "2,4/8,14 = curses 2+4 on loadout 1, curses 8+14 on loadout 2. Loadouts after final / get no curses."
+  },
+  "ringSettings": {
+    "description": "In game_settings.txt, RingSizes and RingSpeeds are arrays of three values",
+    "deathmatchTip": "For no-ring-closing: RingSizes=244,244,244 and RingSpeeds=0.001,50,0.001"
+  },
+  "builtInTemplates": [
+    {
+      "name": "Battle Royale - More Loot",
+      "description": "Classic BR, 40 players, solo, force start at 5 players, enhanced loot"
+    },
+    {
+      "name": "Deathmatch - Big Work",
+      "description": "FFA at Big Work, 20 players, 20 kills to win, 35 random loadouts with curses",
+      "loadoutCurses": "14,14,17,1/1,0,14/17,13/6/12/13/4,9/6"
+    },
+    {
+      "name": "Gun Game - Castle",
+      "description": "Progressive Gun Game at Castle, 20 players, 35 kills, weapon advances on kill"
+    },
+    {
+      "name": "Scavenge - Point Of Impact",
+      "description": "KeepInventory mode, 20 players, 25 kills, items persist through death"
+    }
+  ],
+  "spawnLocations": {
+    "single": {
+      "Tall Work": "-313,170,-530",
+      "WW2 Town": "-465,175,-481",
+      "Containers": "-169,125,159",
+      "Finland": "-573,130,301",
+      "Circle Town": "141,140,-375",
+      "Chaos": "-13,140,-523",
+      "Big Power": "723,125,-689",
+      "Small Power": "439,130,-274",
+      "Oasis": "631,126,487",
+      "Middle Of Sand": "454,140,313",
+      "City Bridge": "-787,125,69",
+      "Snow": "-534,170,-311"
+    },
+    "multi": {
+      "BIG WORK": { "spawns": "363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,-709;342,-687;278,-674;284,-626;322,-654", "lobby": "366,130,-646" },
+      "ACTUAL CASTLE": { "spawns": "-702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-691,523;-667,532;-671,550;-656,527;-688,568", "lobby": "-689,145,510" },
+      "POINT OF IMPACT": { "spawns": "-41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,559;-125,541;-71,519;-50,559;27,554", "lobby": "-74,125,611" },
+      "CITY NORMAL": { "spawns": "-619,-20;-651,-33;-694,-40;-702,2;-664,18;-640,-1;-656,-21;-633,-53;-660,-77;-619,-80;-578,-17;-611,32;-696,40;-728,-11;-675,-98;-626,-124;-578,-100", "lobby": "-674,125,-8" },
+      "WESTERN": { "spawns": "710,650;663,643;640,642;615,629;617,601;618,572;654,550;663,543;688,573;685,609;666,619;642,629;619,587;602,652;594,620,675,602;707,605;709,540", "lobby": "659,125,600" },
+      "PYRAMID": { "spawns": "632,240;633,197;674,200;683,257;642,278;622,300;584,271;586,195;597,228", "lobby": "636,125,240" },
+      "SNOW CASTLE": { "spawns": "-367,-728;-344,-760;-330,-796;-358,-817;-382,-790;-413,-808;-401,-774;-403,-793;-383,-753;-419,-744;-373,-778;-360,-784", "lobby": "-385,175,-771" },
+      "INDUSTRY": { "spawns": "17,-51;68,-7;98,28;111,-13;77,-48;45,-92;129,-97;180,-115;191,-82;164,-47;211,-31;191,12;157,-10;122,-141;62,-6", "lobby": "98,125,-95" },
+      "LONG WALL": { "spawns": "420,50;447,66;504,96;494,119;461,111;434,105;475,50;450,22;467,80;491,153;453,148;431,133;396,94;526,96;518,55;484,41;446,44", "lobby": "433,140,73" }
+    }
+  },
+  "curses": {
+    "0": "Recoil", "1": "Inaccuracy", "2": "Random Shooting", "3": "Always Shoot",
+    "4": "Big", "5": "Fog", "6": "Fragile", "7": "Frog", "8": "Gravity",
+    "9": "No Jump", "10": "Only Look Right", "11": "Rubber Banding",
+    "12": "Slow Gun", "13": "Slow Reload", "14": "Slow Bullets",
+    "15": "Slow Medicine", "16": "Small Jump", "17": "Small Mag", "18": "Varying Sensitivity"
+  }
+}
