@@ -85,10 +85,14 @@ namespace TabgInstaller.ProximityChat.Client
         {
             try
             {
+                // Try multiple detection methods
+                var connector = ServerConnector.Instance;
+                if (connector != null) return true;
                 var handler = PhotonServerHandler.instance;
-                return handler != null && handler.AllPlayers != null;
+                if (handler != null) return true;
             }
-            catch { return false; }
+            catch { }
+            return false;
         }
 
         private void StartVoice()
@@ -147,10 +151,15 @@ namespace TabgInstaller.ProximityChat.Client
                 try
                 {
                     _recvCount++;
-                    if (Instance == null || !Instance._started || Instance._playback == null)
+                    if (Instance == null || Instance._playback == null)
                     {
-                        if (Instance != null) Instance.Logger.LogWarning($"[ProximityChat] Received voice but not ready (started={Instance?._started})");
                         return false;
+                    }
+                    // Auto-start if we receive voice but haven't started yet
+                    if (!Instance._started)
+                    {
+                        Instance._started = true;
+                        Instance.Logger.LogInfo("[ProximityChat] Auto-started on first voice receive.");
                     }
 
                     byte[] data = clientPackage.Buffer;
