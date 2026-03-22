@@ -1,6 +1,4 @@
 using System;
-using Concentus.Enums;
-using Concentus.Structs;
 using UnityEngine;
 
 namespace TabgInstaller.ProximityChat.Client
@@ -9,16 +7,14 @@ namespace TabgInstaller.ProximityChat.Client
     {
         private const int SampleRate = 48000;
         private const int FrameSizeMs = 20;
-        private const int FrameSamples = SampleRate * FrameSizeMs / 1000;
-        private const int Channels = 1;
-        private const int BitRate = 24000;
+        private const int FrameSamples48k = SampleRate * FrameSizeMs / 1000; // 960 samples at 48kHz
+        private const int TargetSampleRate = 16000;
+        private const int FrameSamples = TargetSampleRate * FrameSizeMs / 1000; // 320 samples at 16kHz
+        private const int DownsampleFactor = SampleRate / TargetSampleRate; // 3
 
         private AudioClip _micClip;
         private int _lastSamplePos;
-        private readonly float[] _sampleBuffer = new float[FrameSamples];
-        private readonly short[] _pcmBuffer = new short[FrameSamples];
-        private readonly byte[] _opusBuffer = new byte[4000];
-        private readonly OpusEncoder _encoder;
+        private readonly float[] _sampleBuffer = new float[FrameSamples48k];
         private readonly string _deviceName;
         private bool _recording;
 
@@ -27,8 +23,6 @@ namespace TabgInstaller.ProximityChat.Client
         public MicCapture(string deviceName)
         {
             _deviceName = string.IsNullOrEmpty(deviceName) ? null : deviceName;
-            _encoder = new OpusEncoder(SampleRate, Channels, OpusApplication.OPUS_APPLICATION_VOIP);
-            _encoder.Bitrate = BitRate;
         }
 
         public void StartRecording()
@@ -60,33 +54,30 @@ namespace TabgInstaller.ProximityChat.Client
             else
                 available = (_micClip.samples - _lastSamplePos) + currentPos;
 
-            while (available >= FrameSamples)
+            while (available >= FrameSamples48k)
             {
                 _micClip.GetData(_sampleBuffer, _lastSamplePos);
-                _lastSamplePos = (_lastSamplePos + FrameSamples) % _micClip.samples;
-                available -= FrameSamples;
+                _lastSamplePos = (_lastSamplePos + FrameSamples48k) % _micClip.samples;
+                available -= FrameSamples48k;
 
                 float rms = 0f;
-                for (int i = 0; i < FrameSamples; i++)
+                for (int i = 0; i < FrameSamples48k; i++)
                     rms += _sampleBuffer[i] * _sampleBuffer[i];
-                rms = Mathf.Sqrt(rms / FrameSamples);
+                rms = Mathf.Sqrt(rms / FrameSamples48k);
 
                 if (rms < sensitivity) continue;
 
+                // Downsample from 48kHz to 16kHz by taking every 3rd sample,
+                // then convert to 16-bit PCM bytes (little-endian)
+                byte[] pcmBytes = new byte[FrameSamples * 2];
                 for (int i = 0; i < FrameSamples; i++)
-                    _pcmBuffer[i] = (short)(Mathf.Clamp(_sampleBuffer[i], -1f, 1f) * 32767f);
-
-                try
                 {
-                    int encodedLength = _encoder.Encode(_pcmBuffer, 0, FrameSamples, _opusBuffer, 0, _opusBuffer.Length);
-                    if (encodedLength > 0)
-                    {
-                        byte[] encoded = new byte[encodedLength];
-                        Buffer.BlockCopy(_opusBuffer, 0, encoded, 0, encodedLength);
-                        OnFrameEncoded?.Invoke(encoded, encodedLength);
-                    }
+                    short sample = (short)(Mathf.Clamp(_sampleBuffer[i * DownsampleFactor], -1f, 1f) * 32767f);
+                    pcmBytes[i * 2]     = (byte)(sample & 0xFF);
+                    pcmBytes[i * 2 + 1] = (byte)((sample >> 8) & 0xFF);
                 }
-                catch { }
+
+                OnFrameEncoded?.Invoke(pcmBytes, pcmBytes.Length);
             }
         }
 

@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Concentus.Enums;
-using Concentus.Structs;
 using UnityEngine;
 
 namespace TabgInstaller.ProximityChat.Client
 {
     public class VoicePlayback : IDisposable
     {
-        private const int SampleRate = 48000;
-        private const int FrameSamples = 960;
-        private const int RingBufferSize = SampleRate * 2;
+        private const int SampleRate = 16000;
+        private const int FrameSamples = 320; // 20ms at 16kHz
+        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 16kHz
         private const int MaxSources = 32;
 
         private readonly Dictionary<int, PlayerVoiceSource> _sources = new Dictionary<int, PlayerVoiceSource>();
@@ -26,8 +24,8 @@ namespace TabgInstaller.ProximityChat.Client
         {
             public int SenderId;
             public ushort Sequence;
-            public byte[] OpusData;
-            public int OpusLength;
+            public byte[] PcmData;
+            public int PcmLength;
         }
 
         private readonly Dictionary<int, Transform> _playerTransformCache = new Dictionary<int, Transform>();
@@ -51,8 +49,8 @@ namespace TabgInstaller.ProximityChat.Client
             {
                 SenderId = senderId,
                 Sequence = sequence,
-                OpusData = opusData,
-                OpusLength = opusLength
+                PcmData = opusData,
+                PcmLength = opusLength
             });
         }
 
@@ -66,7 +64,7 @@ namespace TabgInstaller.ProximityChat.Client
 
             while (_audioQueue.TryDequeue(out var queued))
             {
-                ProcessAudioOnMainThread(queued.SenderId, queued.Sequence, queued.OpusData, queued.OpusLength);
+                ProcessAudioOnMainThread(queued.SenderId, queued.Sequence, queued.PcmData, queued.PcmLength);
             }
 
             foreach (var kvp in _sources)
@@ -88,7 +86,7 @@ namespace TabgInstaller.ProximityChat.Client
             }
         }
 
-        private void ProcessAudioOnMainThread(int senderId, ushort sequence, byte[] opusData, int opusLength)
+        private void ProcessAudioOnMainThread(int senderId, ushort sequence, byte[] pcmData, int pcmLength)
         {
             if (!_sources.TryGetValue(senderId, out var source))
             {
@@ -100,7 +98,7 @@ namespace TabgInstaller.ProximityChat.Client
                     source.AttachToPlayer(transform);
             }
 
-            source.DecodeAndFeed(opusData, opusLength);
+            source.DecodeAndFeed(pcmData, pcmLength);
             source.LastReceiveTime = Time.unscaledTime;
         }
 
@@ -150,8 +148,6 @@ namespace TabgInstaller.ProximityChat.Client
             private readonly AudioSource _audioSource;
             private readonly AudioClip _clip;
             private readonly float[] _ringBuffer;
-            private readonly OpusDecoder _decoder;
-            private readonly short[] _pcmBuffer = new short[FrameSamples];
             private int _writePos;
             private readonly object _lock = new object();
 
@@ -161,7 +157,6 @@ namespace TabgInstaller.ProximityChat.Client
             public PlayerVoiceSource(int playerId, int sampleRate, float minDist, float maxDist, AudioRolloffMode rolloff, float masterVol)
             {
                 _ringBuffer = new float[RingBufferSize];
-                _decoder = new OpusDecoder(sampleRate, 1);
 
                 _go = new GameObject($"VoiceSource_{playerId}");
                 UnityEngine.Object.DontDestroyOnLoad(_go);
@@ -183,21 +178,18 @@ namespace TabgInstaller.ProximityChat.Client
                 LastReceiveTime = Time.unscaledTime;
             }
 
-            public void DecodeAndFeed(byte[] opusData, int opusLength)
+            public void DecodeAndFeed(byte[] pcmData, int pcmLength)
             {
-                int decoded;
-                try
-                {
-                    decoded = _decoder.Decode(opusData, 0, opusLength, _pcmBuffer, 0, FrameSamples, false);
-                }
-                catch { return; }
-                if (decoded <= 0) return;
+                // pcmData contains raw 16-bit PCM samples (little-endian)
+                int sampleCount = pcmLength / 2;
+                if (sampleCount <= 0) return;
 
                 lock (_lock)
                 {
-                    for (int i = 0; i < decoded; i++)
+                    for (int i = 0; i < sampleCount; i++)
                     {
-                        _ringBuffer[_writePos] = _pcmBuffer[i] / 32768f;
+                        short sample = (short)(pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
+                        _ringBuffer[_writePos] = sample / 32768f;
                         _writePos = (_writePos + 1) % RingBufferSize;
                     }
                 }
