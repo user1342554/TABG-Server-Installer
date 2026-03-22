@@ -122,6 +122,11 @@ namespace TabgInstaller.ProximityChat.Client
             catch { }
         }
 
+        public Dictionary<int, Transform> GetPlayerTransformCache()
+        {
+            return _playerTransformCache;
+        }
+
         public bool IsPlayerTalking(int playerId)
         {
             return _sources.ContainsKey(playerId);
