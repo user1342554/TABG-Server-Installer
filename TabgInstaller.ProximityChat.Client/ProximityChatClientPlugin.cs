@@ -155,43 +155,54 @@ namespace TabgInstaller.ProximityChat.Client
 
         private string GetServerIp()
         {
-            // Try multiple reflection paths to find the server IP
+            // Primary: ServerConnector.Instance.m_clientNetworker.GetServerIdentifier() → "ip:port"
             try
             {
-                var serverClient = UnityEngine.Object.FindObjectOfType<Landfall.Network.ServerClient>();
-                if (serverClient != null)
+                var connector = Landfall.Network.ServerConnector.Instance;
+                if (connector != null)
                 {
-                    foreach (string fieldName in new[] { "m_serverIP", "m_ip", "serverIP", "ip" })
+                    var networkerField = typeof(Landfall.Network.ServerConnector).GetField("m_clientNetworker",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (networkerField != null)
                     {
-                        var field = typeof(Landfall.Network.ServerClient).GetField(fieldName,
-                            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                        if (field != null)
+                        var networker = networkerField.GetValue(connector);
+                        if (networker != null)
                         {
-                            var val = field.GetValue(serverClient) as string;
-                            if (!string.IsNullOrEmpty(val)) return val;
-                        }
-                    }
-                    foreach (string propName in new[] { "IP", "ServerIP", "ConnectedIP" })
-                    {
-                        var prop = typeof(Landfall.Network.ServerClient).GetProperty(propName,
-                            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                        if (prop != null)
-                        {
-                            var val = prop.GetValue(serverClient) as string;
-                            if (!string.IsNullOrEmpty(val)) return val;
+                            var getIdMethod = networker.GetType().GetMethod("GetServerIdentifier",
+                                BindingFlags.Public | BindingFlags.Instance);
+                            if (getIdMethod != null)
+                            {
+                                string identifier = getIdMethod.Invoke(networker, null) as string;
+                                if (!string.IsNullOrEmpty(identifier))
+                                {
+                                    // Format is "ip:port" — extract just the IP
+                                    int colonIdx = identifier.LastIndexOf(':');
+                                    if (colonIdx > 0)
+                                        return identifier.Substring(0, colonIdx);
+                                    return identifier;
+                                }
+                            }
                         }
                     }
                 }
             }
             catch { }
 
+            // Fallback: ServerConnector.LastJoinedServerText → "ip : port"
             try
             {
-                string[] args = Environment.GetCommandLineArgs();
-                for (int i = 0; i < args.Length - 1; i++)
+                var lastJoined = typeof(Landfall.Network.ServerConnector).GetProperty("LastJoinedServerText",
+                    BindingFlags.Public | BindingFlags.Static);
+                if (lastJoined != null)
                 {
-                    if (args[i] == "-connect" || args[i] == "-ip")
-                        return args[i + 1];
+                    string val = lastJoined.GetValue(null) as string;
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        // Format is "ip : port" — extract just the IP
+                        string[] parts = val.Split(new[] { " : ", ":" }, StringSplitOptions.None);
+                        if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0].Trim()))
+                            return parts[0].Trim();
+                    }
                 }
             }
             catch { }

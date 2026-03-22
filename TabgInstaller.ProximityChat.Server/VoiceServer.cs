@@ -155,10 +155,24 @@ namespace TabgInstaller.ProximityChat.Server
         {
             try
             {
-                var world = Citrus.World;
-                if (world == null) return -1;
                 var players = Citrus.players;
                 if (players == null) return -1;
+
+                // Get the EnetServer instance to look up Peer IPs
+                object enetServer = null;
+                try
+                {
+                    var world = Citrus.World;
+                    if (world != null)
+                    {
+                        // ServerClient has m_server field (EnetServer or UnityTransportServer)
+                        var serverField = world.GetType().GetField("m_server",
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (serverField != null)
+                            enetServer = serverField.GetValue(world);
+                    }
+                }
+                catch { }
 
                 foreach (var playerRef in players)
                 {
@@ -167,26 +181,27 @@ namespace TabgInstaller.ProximityChat.Server
                     try
                     {
                         string playerIp = null;
-                        var netPlayerProp = player.GetType().GetProperty("NetworkPlayer");
-                        if (netPlayerProp != null)
+
+                        // Primary: use EnetServer.GetPeer(playerIndex).IP
+                        if (enetServer != null)
                         {
-                            var netPlayer = netPlayerProp.GetValue(player);
-                            if (netPlayer != null)
+                            var getPeerMethod = enetServer.GetType().GetMethod("GetPeer");
+                            if (getPeerMethod != null)
                             {
-                                var ipProp = netPlayer.GetType().GetProperty("IP");
-                                playerIp = ipProp?.GetValue(netPlayer) as string;
+                                var peer = getPeerMethod.Invoke(enetServer, new object[] { (uint)player.PlayerIndex });
+                                if (peer != null)
+                                {
+                                    var ipProp = peer.GetType().GetProperty("IP");
+                                    if (ipProp != null)
+                                    {
+                                        uint ipUint = (uint)ipProp.GetValue(peer);
+                                        byte[] ipBytes = BitConverter.GetBytes(ipUint);
+                                        playerIp = new IPAddress(ipBytes).ToString();
+                                    }
+                                }
                             }
                         }
-                        if (playerIp == null)
-                        {
-                            var epField = player.GetType().GetField("m_endPoint",
-                                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                            if (epField != null)
-                            {
-                                var ep = epField.GetValue(player) as IPEndPoint;
-                                playerIp = ep?.Address.ToString();
-                            }
-                        }
+
                         if (playerIp != null && playerIp == ip)
                             return player.PlayerIndex;
                     }
