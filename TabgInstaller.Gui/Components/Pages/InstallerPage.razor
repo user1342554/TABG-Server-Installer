@@ -88,6 +88,7 @@
             new() { Label = "Hunt Mode (4v1) \u2014 1 Killer vs 4 Survivors survival", IsChecked = false },
             new() { Label = "Juggernaut Mode \u2014 One massive player vs everyone, score-based", IsChecked = false },
             new() { Label = "TABGVR Server \u2014 VR hand sync for VR players (requires client mod too)", IsChecked = false },
+            new() { Label = "Fake Players \u2014 Spawn dummy players via admin commands (everyone can use commands)", IsChecked = false },
         };
 
         var detectedPath = Installer.TryFindTabgServerPath();
@@ -199,6 +200,7 @@
             }
             if (plugins[15].IsChecked) selectedBundledPlugins.Add("JuggernautMode.Server.dll");
             if (plugins[16].IsChecked) selectedBundledPlugins.Add("TABGVR.Server.CitrusLib.dll");
+            if (plugins[17].IsChecked) selectedBundledPlugins.Add("TabgInstaller.FakePlayers.dll");
 
             int exitCode = await Task.Run(async () =>
             {
