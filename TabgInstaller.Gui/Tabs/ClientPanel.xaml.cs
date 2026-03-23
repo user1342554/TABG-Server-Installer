@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -87,6 +88,8 @@ namespace TabgInstaller.Gui.Tabs
                 selectedClientPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
             }
             if (ChkClientJuggernautMode.IsChecked == true) selectedClientPlugins.Add("JuggernautMode.Client.dll");
+            bool installVR = ChkClientTabgVR.IsChecked == true;
+            if (installVR) selectedClientPlugins.Add("TABGVR.dll");
 
             if (selectedClientPlugins.Count == 0)
             {
@@ -119,6 +122,44 @@ namespace TabgInstaller.Gui.Tabs
             {
                 TxtLog.AppendText("=== Installing Client Mods ===" + Environment.NewLine);
                 bool success = await Task.Run(() => ClientModInstaller.InstallAsync(clientDir, moddedDir, selectedClientPlugins, progress));
+
+                // Install TABGVR extras (XR runtime, OpenXR loader) if selected
+                if (success && installVR)
+                {
+                    await Task.Run(() =>
+                    {
+                        try
+                        {
+                            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                            var vrZipCandidates = new[]
+                            {
+                                Path.Combine(baseDir, "tabgvr", "TABGVR.zip"),
+                                Path.Combine(baseDir, "..", "tabgvr", "TABGVR.zip"),
+                                Path.Combine(baseDir, "..", "..", "tabgvr", "TABGVR.zip"),
+                                Path.Combine(baseDir, "..", "..", "..", "tabgvr", "TABGVR.zip"),
+                            };
+
+                            string vrZip = null;
+                            foreach (var c in vrZipCandidates)
+                                if (File.Exists(c)) { vrZip = Path.GetFullPath(c); break; }
+
+                            if (vrZip != null)
+                            {
+                                ((IProgress<string>)progress).Report("Installing TABGVR extras (XR runtime, OpenXR)...");
+                                ZipFile.ExtractToDirectory(vrZip, moddedDir, overwriteFiles: true);
+                                ((IProgress<string>)progress).Report("TABGVR VR runtime installed.");
+                            }
+                            else
+                            {
+                                ((IProgress<string>)progress).Report("WARNING: TABGVR.zip not found — VR runtime files not installed. TABGVR.dll was installed but VR may not work without the runtime.");
+                            }
+                        }
+                        catch (Exception vrEx)
+                        {
+                            ((IProgress<string>)progress).Report($"WARNING: Failed to extract TABGVR extras: {vrEx.Message}");
+                        }
+                    });
+                }
 
                 if (success)
                     MessageBox.Show($"Client mods installed!\n\nModded TABG is at:\n{moddedDir}\n\nTo play:\n1. Make sure Steam is open\n2. Run TotallyAccurateBattlegrounds.exe from the modded folder\n3. Do NOT launch through Steam",

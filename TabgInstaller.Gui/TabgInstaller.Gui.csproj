@@ -59,6 +59,14 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy bundled TABGVR zip to output directory -->
+  <ItemGroup>
+    <None Include="tabgvr\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>tabgvr\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
   <!-- Include logo as Resource for WPF pack URI -->
   <ItemGroup>
     <Resource Include="..\logo\tabg-mod-manager-icon-256.png">

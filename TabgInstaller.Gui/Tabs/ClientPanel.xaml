@@ -46,6 +46,8 @@
                           Margin="5,3" IsChecked="False"/>
                 <CheckBox x:Name="ChkClientJuggernautMode" Content="Juggernaut Mode Client — Boss bar, loadout picker, scoreboard"
                           Margin="5,3" IsChecked="False"/>
+                <CheckBox x:Name="ChkClientTabgVR" Content="TABGVR — Play TABG in Virtual Reality (requires VR headset)"
+                          Margin="5,3" IsChecked="False"/>
                 <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
                     <Button Content="INSTALL CLIENT MODS" Height="30" Width="200" Click="BtnInstallClientMods_Click"/>
                     <Button x:Name="BtnLaunchModdedTabg" Content="LAUNCH MODDED TABG" Height="30" Width="200" Margin="10,0,0,0" Click="BtnLaunchModdedTabg_Click"/>
