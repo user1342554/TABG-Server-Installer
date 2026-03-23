@@ -22,6 +22,13 @@ Thumbs.db
 *.userprefs
 # Ignore publish folders
 publish/
+publish-*/
+
+# Ignore release archives
+TabgInstaller-v*.zip
+
+# Ignore temp directories
+_tabgvr_temp/
 # Allow necessary libraries in Libs/
 !*/Libs/*.dll
 # Allow built mods dlls

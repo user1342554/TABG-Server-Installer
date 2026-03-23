@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo/tabg-mod-manager-icon-256.png" alt="TABG Server Installer" width="128" />
+
 <pre>
  _____                                                               _____
 ( ___ )-------------------------------------------------------------( ___ )
@@ -93,6 +95,10 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 | BigSmokeGrenade | ON | Giant purple smoke grenades |
 | MGLFlashbang | ON | MGL shoots flashbang rounds |
 | ProximityChat | ON | Proximity voice chat server relay |
+| HuntMode | OFF | 4v1 survival — 1 Killer vs 4 Survivors |
+| JuggernautMode | OFF | One massive player vs everyone, score-based |
+| TABGVR Server | OFF | VR hand sync for VR players (requires client mod) |
+| FakePlayers | OFF | Spawn dummy players via admin commands |
 | SoloTesting | OFF | Solo play without instant win |
 
 ### Client Plugins
@@ -107,6 +113,9 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 | ModSettings | ON | In-game settings menu (press #) |
 | Pop-up Blocker | ON | Disable anti-cheat popups |
 | ProximityChat | ON | Proximity voice chat — mic capture + playback |
+| HuntMode Client | OFF | HUD and perk selection UI for Hunt Mode |
+| JuggernautMode Client | OFF | Boss bar, loadout picker, scoreboard |
+| TABGVR | OFF | Play TABG in Virtual Reality (requires VR headset) |
 
 ## Proximity Voice Chat
 
@@ -187,6 +196,10 @@ This project would not exist without the work of these developers and communitie
 | ModSettings | anonymer_hase | In-game settings menu for all mods |
 | SoloTesting | anonymer_hase | Solo testing mode |
 | ProximityChat | anonymer_hase | Proximity voice chat (server + client) |
+| HuntMode | anonymer_hase | 4v1 survival game mode (server + client) |
+| JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) |
+| TABGVR | anonymer_hase | VR support for TABG (server + client) |
+| FakePlayers | anonymer_hase | Spawn dummy players for testing |
 
 ### Third-Party Libraries
 
