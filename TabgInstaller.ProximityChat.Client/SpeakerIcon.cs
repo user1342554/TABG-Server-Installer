@@ -49,7 +49,7 @@ namespace TabgInstaller.ProximityChat.Client
 
             // === HUD OVERLAY (top-left corner) ===
             float hudX = 10f;
-            float hudY = 10f;
+            float hudY = Screen.height / 2f - 60f; // Middle-left
             float hudWidth = 220f;
             float hudHeight = 28f;
             float padding = 4f;
