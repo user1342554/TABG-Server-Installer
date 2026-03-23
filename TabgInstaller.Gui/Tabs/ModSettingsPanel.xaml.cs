@@ -105,6 +105,46 @@ namespace TabgInstaller.Gui.Tabs
                 StatusText.Text = $"Error loading: {ex.Message}";
             }
 
+            // Juggernaut Mode
+            try
+            {
+                string juggCfgPath = Path.Combine(_serverDir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg");
+                if (File.Exists(juggCfgPath))
+                {
+                    var lines = File.ReadAllLines(juggCfgPath);
+                    foreach (var line in lines)
+                    {
+                        var trimmed = line.Trim();
+                        if (trimmed.StartsWith("#") || trimmed.StartsWith("[") || trimmed.Length == 0) continue;
+                        if (trimmed.StartsWith("PointsToWin")) TxtJuggPointsToWin.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("HP")) TxtJuggHP.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("JuggernautKillBonus")) TxtJuggKillBonus.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("JuggernautKillPoints")) TxtJuggKillPoints.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("RegularKillPoints")) TxtJuggRegularKillPoints.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("DamagePerPoint")) TxtJuggDamagePerPoint.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("LoadoutChoices")) TxtJuggLoadoutChoices.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("LoadoutTimeout")) TxtJuggLoadoutTimeout.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("MinSpawnDistance")) TxtJuggMinSpawnDist.Text = ExtractCfgValue(trimmed);
+                        else if (trimmed.StartsWith("MinPlayers")) TxtJuggMinPlayers.Text = ExtractCfgValue(trimmed);
+                    }
+                }
+                else
+                {
+                    // Defaults
+                    TxtJuggPointsToWin.Text = "100";
+                    TxtJuggHP.Text = "1000";
+                    TxtJuggKillBonus.Text = "5";
+                    TxtJuggKillPoints.Text = "2";
+                    TxtJuggRegularKillPoints.Text = "1";
+                    TxtJuggDamagePerPoint.Text = "10";
+                    TxtJuggLoadoutChoices.Text = "3";
+                    TxtJuggLoadoutTimeout.Text = "10";
+                    TxtJuggMinSpawnDist.Text = "50";
+                    TxtJuggMinPlayers.Text = "3";
+                }
+            }
+            catch { }
+
             try
             {
                 string proxCfgPath = Path.Combine(_serverDir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg");
@@ -206,6 +246,78 @@ MinRange = {TxtProxChatMinRange.Text.Trim()}
 FalloffCurve = {falloff}
 ";
                     File.WriteAllText(proxCfgPath, content);
+                }
+                catch { }
+
+                // Juggernaut Mode
+                try
+                {
+                    string juggCfgDir = Path.Combine(_serverDir, "BepInEx", "config");
+                    Directory.CreateDirectory(juggCfgDir);
+                    string juggCfgPath = Path.Combine(juggCfgDir, "com.gigaschmiga.juggernautmode.cfg");
+
+                    string juggContent = $@"[Scoring]
+
+## Points to win the match
+# Setting type: Int32
+# Default value: 100
+PointsToWin = {TxtJuggPointsToWin.Text.Trim()}
+
+## Points awarded per damage chunk
+# Setting type: Int32
+# Default value: 1
+DamagePointsPerChunk = 1
+
+## Damage required per point chunk
+# Setting type: Int32
+# Default value: 10
+DamagePerPoint = {TxtJuggDamagePerPoint.Text.Trim()}
+
+## Bonus points for killing the Juggernaut
+# Setting type: Int32
+# Default value: 5
+JuggernautKillBonus = {TxtJuggKillBonus.Text.Trim()}
+
+## Points Juggernaut earns per kill
+# Setting type: Int32
+# Default value: 2
+JuggernautKillPoints = {TxtJuggKillPoints.Text.Trim()}
+
+## Points for killing a regular player
+# Setting type: Int32
+# Default value: 1
+RegularKillPoints = {TxtJuggRegularKillPoints.Text.Trim()}
+
+[Juggernaut]
+
+## Juggernaut health points
+# Setting type: Single
+# Default value: 1000
+HP = {TxtJuggHP.Text.Trim()}
+
+## Number of loadout choices on respawn
+# Setting type: Int32
+# Default value: 3
+LoadoutChoices = {TxtJuggLoadoutChoices.Text.Trim()}
+
+## Seconds before auto-picking a loadout
+# Setting type: Single
+# Default value: 10
+LoadoutTimeout = {TxtJuggLoadoutTimeout.Text.Trim()}
+
+## Minimum spawn distance from Juggernaut
+# Setting type: Single
+# Default value: 50
+MinSpawnDistance = {TxtJuggMinSpawnDist.Text.Trim()}
+
+[General]
+
+## Minimum players to start
+# Setting type: Int32
+# Default value: 3
+MinPlayers = {TxtJuggMinPlayers.Text.Trim()}
+";
+                    File.WriteAllText(juggCfgPath, juggContent);
                 }
                 catch { }
             }
