@@ -1,1 +1,351 @@
-<div class="pad-5"><p>ModSettingsPanel - coming soon</p></div>
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to edit mod settings.</span>
+        </div>
+    }
+    else
+    {
+        <div class="scroll-area" style="flex:1; padding:4px;">
+
+            <!-- StarterPack Fixes -->
+            <GroupBox Header="StarterPack Fixes" Style="margin-top:10px;">
+                <div style="padding:4px;">
+                    <label data-tooltip="When enabled, items drop from loot containers. Disable for loadout-only modes.">
+                        <input type="checkbox" @bind="_enableLootDrops" />
+                        Enable Loot Drops
+                    </label>
+                </div>
+            </GroupBox>
+
+            <!-- Grenades On Death - Attacker -->
+            <GroupBox Header="Grenades On Death - Attacker" Style="margin-top:12px;">
+                <div style="padding:4px;">
+                    <div style="margin-bottom:6px;">
+                        <label>
+                            <input type="checkbox" @bind="_attackerEnabled" />
+                            Enabled
+                        </label>
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns:130px 1fr;">
+                        <label>Chance (0.0 - 1.0):</label>
+                        <input type="text" style="width:80px;" @bind="_attackerChanceText" />
+
+                        <label>Grenade:</label>
+                        <select style="width:220px;" @bind="_attackerGrenadeIndex">
+                            <option value="-1">(none)</option>
+                            @for (int i = 0; i < _grenades.Count; i++)
+                            {
+                                var g = _grenades[i];
+                                <option value="@i">@g.Name (@g.Id)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </GroupBox>
+
+            <!-- Grenades On Death - Corpse -->
+            <GroupBox Header="Grenades On Death - Corpse" Style="margin-top:12px;">
+                <div style="padding:4px;">
+                    <div style="margin-bottom:6px;">
+                        <label>
+                            <input type="checkbox" @bind="_corpseEnabled" />
+                            Enabled
+                        </label>
+                    </div>
+                    <div class="grid-2col" style="grid-template-columns:130px 1fr;">
+                        <label>Chance (0.0 - 1.0):</label>
+                        <input type="text" style="width:80px;" @bind="_corpseChanceText" />
+
+                        <label>Grenade:</label>
+                        <select style="width:220px;" @bind="_corpseGrenadeIndex">
+                            <option value="-1">(none)</option>
+                            @for (int i = 0; i < _grenades.Count; i++)
+                            {
+                                var g = _grenades[i];
+                                <option value="@i">@g.Name (@g.Id)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </GroupBox>
+
+            <!-- Lives & Advanced -->
+            <GroupBox Header="Lives &amp; Advanced" Style="margin-top:12px;">
+                <div class="grid-2col" style="grid-template-columns:130px 1fr; padding:4px;">
+                    <label>Lives:</label>
+                    <div class="hstack">
+                        <input type="text" style="width:80px;" @bind="_livesText" />
+                        <span style="color:gray;">(256 = infinite)</span>
+                    </div>
+
+                    <label>Streaming Distance:</label>
+                    <div class="hstack">
+                        <input type="text" style="width:80px;" @bind="_streamingDistanceText" />
+                        <span style="color:gray;">(-1 = normal)</span>
+                    </div>
+                </div>
+            </GroupBox>
+
+            <!-- Ban List -->
+            <GroupBox Header="Ban List" Style="margin-top:12px;">
+                <div style="padding:4px;">
+                    <div style="color:gray; margin-bottom:4px;">One Epic ID per line</div>
+                    <textarea class="monospace" style="width:100%; height:120px;"
+                              @bind="_banListText"></textarea>
+                </div>
+            </GroupBox>
+
+            <!-- Proximity Chat -->
+            <GroupBox Header="Proximity Chat" Style="margin-top:12px;">
+                <div class="grid-2col" style="grid-template-columns:130px 1fr; padding:4px;">
+                    <label>Max Range (m):</label>
+                    <div class="hstack">
+                        <input type="text" style="width:80px;" @bind="_proxChatMaxRangeText" />
+                        <span style="color:gray;">(default 50)</span>
+                    </div>
+
+                    <label>Min Range (m):</label>
+                    <div class="hstack">
+                        <input type="text" style="width:80px;" @bind="_proxChatMinRangeText" />
+                        <span style="color:gray;">(default 5)</span>
+                    </div>
+
+                    <label>Falloff Curve:</label>
+                    <select style="width:140px;" @bind="_proxChatFalloff">
+                        <option value="Linear">Linear</option>
+                        <option value="Logarithmic">Logarithmic</option>
+                    </select>
+                </div>
+            </GroupBox>
+
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
+            <button style="width:100px;" @onclick="Save">Save</button>
+            <span class="status-text @_statusCss">@_statusText</span>
+        </div>
+    }
+</div>
+
+@code {
+    private List<GameItem> _grenades = new();
+
+    // StarterPack Fixes
+    private bool _enableLootDrops;
+
+    // Grenades - Attacker
+    private bool _attackerEnabled;
+    private string _attackerChanceText = "1";
+    private int _attackerGrenadeIndex = -1;
+
+    // Grenades - Corpse
+    private bool _corpseEnabled;
+    private string _corpseChanceText = "0.2";
+    private int _corpseGrenadeIndex = -1;
+
+    // Lives & Advanced
+    private string _livesText = "256";
+    private string _streamingDistanceText = "-1";
+
+    // Ban List
+    private string _banListText = "";
+
+    // Proximity Chat
+    private string _proxChatMaxRangeText = "50";
+    private string _proxChatMinRangeText = "5";
+    private string _proxChatFalloff = "Linear";
+
+    // Status
+    private string _statusText = "";
+    private string _statusCss = "";
+
+    protected override void OnInitialized()
+    {
+        _grenades = ItemDatabase.ByCategory("Grenades").OrderBy(g => g.Name).ToList();
+
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            Load();
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            Load();
+            StateHasChanged();
+        });
+    }
+
+    private void Load()
+    {
+        try
+        {
+            var commission = ModConfigService.ReadCommission(State.ServerDir);
+            var fixes = ModConfigService.ReadFixes(State.ServerDir);
+
+            // StarterPack Fixes
+            _enableLootDrops = fixes.EnableLootDrops;
+
+            // Grenades - Attacker
+            _attackerEnabled = commission.GrenadeAttackerEnabled;
+            _attackerChanceText = commission.GrenadeAttackerChance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _attackerGrenadeIndex = _grenades.FindIndex(g => g.Id == commission.GrenadeAttackerId);
+
+            // Grenades - Corpse
+            _corpseEnabled = commission.GrenadeCorpseEnabled;
+            _corpseChanceText = commission.GrenadeCorpseChance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _corpseGrenadeIndex = _grenades.FindIndex(g => g.Id == commission.GrenadeCorpseId);
+
+            // Lives & Advanced
+            _livesText = commission.Lives.ToString();
+            _streamingDistanceText = commission.StreamingDistance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            // Ban List: comma-separated -> one per line
+            if (!string.IsNullOrWhiteSpace(commission.BanList))
+            {
+                var ids = commission.BanList
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .Where(s => s.Length > 0);
+                _banListText = string.Join(Environment.NewLine, ids);
+            }
+            else
+            {
+                _banListText = "";
+            }
+
+            _statusText = "Settings loaded.";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error loading: {ex.Message}";
+            _statusCss = "error";
+        }
+
+        // Proximity Chat config
+        try
+        {
+            string proxCfgPath = System.IO.Path.Combine(State.ServerDir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg");
+            if (System.IO.File.Exists(proxCfgPath))
+            {
+                var lines = System.IO.File.ReadAllLines(proxCfgPath);
+                foreach (var line in lines)
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("#") || trimmed.StartsWith("[") || trimmed.Length == 0) continue;
+                    if (trimmed.StartsWith("MaxRange")) _proxChatMaxRangeText = ExtractCfgValue(trimmed);
+                    else if (trimmed.StartsWith("MinRange")) _proxChatMinRangeText = ExtractCfgValue(trimmed);
+                    else if (trimmed.StartsWith("FalloffCurve")) _proxChatFalloff = ExtractCfgValue(trimmed) == "Logarithmic" ? "Logarithmic" : "Linear";
+                }
+            }
+            else
+            {
+                _proxChatMaxRangeText = "50";
+                _proxChatMinRangeText = "5";
+                _proxChatFalloff = "Linear";
+            }
+        }
+        catch { }
+    }
+
+    private void Save()
+    {
+        try
+        {
+            // Read existing commission to preserve LoadoutCurses and LoadoutBlessings
+            var commission = ModConfigService.ReadCommission(State.ServerDir);
+
+            // StarterPack Fixes
+            var fixes = new StarterPackFixesSettings
+            {
+                EnableLootDrops = _enableLootDrops
+            };
+
+            // Grenades - Attacker
+            commission.GrenadeAttackerEnabled = _attackerEnabled;
+            if (float.TryParse(_attackerChanceText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var attackerChance))
+                commission.GrenadeAttackerChance = attackerChance;
+            if (_attackerGrenadeIndex >= 0 && _attackerGrenadeIndex < _grenades.Count)
+                commission.GrenadeAttackerId = _grenades[_attackerGrenadeIndex].Id;
+
+            // Grenades - Corpse
+            commission.GrenadeCorpseEnabled = _corpseEnabled;
+            if (float.TryParse(_corpseChanceText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var corpseChance))
+                commission.GrenadeCorpseChance = corpseChance;
+            if (_corpseGrenadeIndex >= 0 && _corpseGrenadeIndex < _grenades.Count)
+                commission.GrenadeCorpseId = _grenades[_corpseGrenadeIndex].Id;
+
+            // Lives & Advanced
+            if (int.TryParse(_livesText, out var lives))
+                commission.Lives = lives;
+            if (float.TryParse(_streamingDistanceText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sd))
+                commission.StreamingDistance = sd;
+
+            // Ban List: one per line -> comma-separated
+            var banLines = _banListText
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0);
+            commission.BanList = string.Join(",", banLines);
+
+            // Write both configs
+            ModConfigService.WriteCommission(State.ServerDir, commission);
+            ModConfigService.WriteFixes(State.ServerDir, fixes);
+
+            _statusText = "Settings saved.";
+            _statusCss = "success";
+
+            // Save Proximity Chat config
+            try
+            {
+                string proxCfgDir = System.IO.Path.Combine(State.ServerDir, "BepInEx", "config");
+                System.IO.Directory.CreateDirectory(proxCfgDir);
+                string proxCfgPath = System.IO.Path.Combine(proxCfgDir, "tabginstaller.proximitychat.server.cfg");
+
+                string content = $@"[ProximityChat]
+
+## Distance beyond which audio is not relayed
+# Setting type: Single
+# Default value: 50
+MaxRange = {_proxChatMaxRangeText.Trim()}
+
+## Distance within which audio is full volume
+# Setting type: Single
+# Default value: 5
+MinRange = {_proxChatMinRangeText.Trim()}
+
+## Volume falloff: Linear or Logarithmic
+# Setting type: String
+# Default value: Linear
+FalloffCurve = {_proxChatFalloff}
+";
+                System.IO.File.WriteAllText(proxCfgPath, content);
+            }
+            catch { }
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error saving: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private static string ExtractCfgValue(string line)
+    {
+        int eq = line.IndexOf('=');
+        return eq >= 0 ? line.Substring(eq + 1).Trim() : "";
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+}
