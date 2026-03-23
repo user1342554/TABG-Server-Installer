@@ -137,7 +137,7 @@ This software is provided **as-is** with no warranty of any kind. Use at your ow
 
 ## Credits
 
-This project would not exist without the work of these developers and communities. The mods and libraries bundled here were collected from the TABG modding community's Discord servers and repositories — I did not write them, I just packaged them into one installer. If you contributed something and aren't listed here, want to be credited differently, or **want your work removed from this project**, please contact me and I will do so immediately.
+This project would not exist without the work of these developers and communities. If you contributed something and aren't listed here, want to be credited differently, or **want your work removed from this project**, please contact me and I will do so immediately.
 
 ### Core Libraries & Frameworks
 
