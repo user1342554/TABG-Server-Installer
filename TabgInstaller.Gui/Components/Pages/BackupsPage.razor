@@ -1,4 +1,206 @@
-<div class="pad-10">
-    <h3>Backups</h3>
-    <p>Backups panel - coming soon</p>
+@inject AppState State
+@implements IDisposable
+
+<div class="pad-10 vstack" style="height: 100%;">
+    <!-- Header -->
+    <div style="margin-bottom: 8px;">
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">Backups</div>
+        <div>Manage server backups</div>
+    </div>
+
+    @if (!State.IsServerConfigured)
+    {
+        <p>No server configured. Use the Installer tab first.</p>
+    }
+    else
+    {
+        <!-- Backup List -->
+        <div style="flex: 1; overflow-y: auto; margin-bottom: 8px;">
+            @if (_backups.Count == 0)
+            {
+                <div style="text-align: center; margin-top: 20px;">No backups found</div>
+            }
+            else
+            {
+                @foreach (var backup in _backups)
+                {
+                    <div class="hstack" style="margin-bottom: 4px; padding: 6px; border: 1px solid #444; border-radius: 4px; align-items: center;">
+                        <!-- Left: backup info -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: bold;">@backup.Name</div>
+                            <div style="font-size: 0.9em; opacity: 0.8;">
+                                @backup.CreatedDate.ToString("yyyy-MM-dd HH:mm") (@_backupService.FormatFileSize(backup.SizeInBytes))
+                            </div>
+                        </div>
+                        <!-- Right: action buttons -->
+                        <div class="hstack" style="margin-left: 8px; gap: 4px;">
+                            <button style="width: 70px;" @onclick="() => RestoreBackup(backup)" disabled="@_isBusy">Restore</button>
+                            <button style="width: 70px;" @onclick="() => DeleteBackup(backup)" disabled="@_isBusy">Delete</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="hstack" style="justify-content: flex-end; gap: 8px;">
+            <button style="width: 80px;" @onclick="RefreshBackups" disabled="@_isBusy">Refresh</button>
+            <button style="width: 120px;" @onclick="CreateBackup" disabled="@_isBusy">
+                @(_isCreating ? "Creating..." : "Create Backup")
+            </button>
+        </div>
+    }
 </div>
+
+<ConfirmDialog @ref="_dialog" />
+
+@code {
+    [CascadingParameter]
+    private ConfirmDialog Dialog { get; set; } = null!;
+
+    private ConfirmDialog _dialog = null!;
+
+    private List<BackupInfo> _backups = new();
+    private BackupService _backupService = null!;
+    private bool _isBusy;
+    private bool _isCreating;
+
+    protected override void OnInitialized()
+    {
+        _backupService = new BackupService(new Progress<string>(_ => { }));
+        State.OnServerConfigured += OnServerConfigured;
+
+        if (State.IsServerConfigured)
+        {
+            LoadBackups();
+        }
+    }
+
+    private void OnServerConfigured()
+    {
+        LoadBackups();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void LoadBackups()
+    {
+        if (!State.IsServerConfigured)
+            return;
+
+        _backups = _backupService.GetAvailableBackups(State.ServerDir);
+    }
+
+    private void RefreshBackups()
+    {
+        LoadBackups();
+    }
+
+    private async Task CreateBackup()
+    {
+        if (!State.IsServerConfigured) return;
+
+        _isBusy = true;
+        _isCreating = true;
+        StateHasChanged();
+
+        try
+        {
+            var dialog = Dialog ?? _dialog;
+            var progress = new Progress<string>(_ => { });
+            var service = new BackupService(progress);
+            bool success = await service.CreateBackupAsync(State.ServerDir);
+
+            if (success)
+            {
+                LoadBackups();
+                await dialog.ShowAsync("Success", "Backup created successfully!");
+            }
+            else
+            {
+                await dialog.ShowAsync("Error", "Failed to create backup. Check the log for details.");
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            _isCreating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreBackup(BackupInfo backup)
+    {
+        var dialog = Dialog ?? _dialog;
+
+        bool confirmed = await dialog.ShowAsync(
+            "Confirm Restore",
+            $"Are you sure you want to restore backup '{backup.Name}'?\n\nThis will replace your current server files with the backup files.\nCurrent files will be backed up with '.pre-restore' extension.",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        _isBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            var progress = new Progress<string>(_ => { });
+            var service = new BackupService(progress);
+            bool success = await service.RestoreBackupAsync(State.ServerDir, backup);
+
+            if (success)
+            {
+                await dialog.ShowAsync("Success", "Backup restored successfully!");
+            }
+            else
+            {
+                await dialog.ShowAsync("Error", "Failed to restore backup. Check the log for details.");
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteBackup(BackupInfo backup)
+    {
+        var dialog = Dialog ?? _dialog;
+
+        bool confirmed = await dialog.ShowAsync(
+            "Confirm Delete",
+            $"Are you sure you want to delete backup '{backup.Name}'?\n\nThis action cannot be undone!",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        _isBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            bool success = _backupService.DeleteBackup(backup);
+
+            if (success)
+            {
+                LoadBackups();
+                await dialog.ShowAsync("Success", "Backup deleted successfully!");
+            }
+            else
+            {
+                await dialog.ShowAsync("Error", "Failed to delete backup.");
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+}
