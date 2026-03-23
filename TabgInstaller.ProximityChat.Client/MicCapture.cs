@@ -65,8 +65,8 @@ namespace TabgInstaller.ProximityChat.Client
                     rms += _sampleBuffer[i] * _sampleBuffer[i];
                 rms = Mathf.Sqrt(rms / FrameSamples48k);
 
-                // VAD disabled — threshold too aggressive, filters real voice
-                // if (rms < sensitivity) continue;
+                // Very low threshold to filter silence/noise but let voice through
+                if (rms < 0.002f) continue;
 
                 // Downsample 48kHz -> 16kHz (take every 3rd sample)
                 // Convert float[-1,1] to 8-bit unsigned PCM (0-255, 128=silence)

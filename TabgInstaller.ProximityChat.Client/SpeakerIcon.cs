@@ -92,32 +92,7 @@ namespace TabgInstaller.ProximityChat.Client
             foreach (int id in toRemove)
                 _talkingTimers.Remove(id);
 
-            // === 3D WORLD ICON (above player head) ===
-            if (Camera.main == null) return;
-
-            foreach (var kvp in new Dictionary<int, float>(_talkingTimers))
-            {
-                int playerId = kvp.Key;
-                float timer = kvp.Value;
-
-                if (!_playerTransformCache.TryGetValue(playerId, out var playerTransform) || playerTransform == null)
-                    continue;
-
-                Vector3 worldPos = playerTransform.position + Vector3.up * 2.5f;
-                Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
-
-                if (screenPos.z <= 0) continue;
-
-                float guiY = Screen.height - screenPos.y;
-                float alpha = Mathf.Clamp01(timer / FadeOutDuration);
-
-                var oldColor = GUI.color;
-                // Pulsing green glow
-                float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 6f);
-                GUI.color = new Color(0.3f, 1f, 0.3f, alpha * pulse);
-                GUI.Label(new Rect(screenPos.x - 12, guiY - 30, 24, 24), "\u266B", _worldStyle);
-                GUI.color = oldColor;
-            }
+            // 3D world icon removed — player positions unreliable via relay
         }
 
         private void InitStyles()
