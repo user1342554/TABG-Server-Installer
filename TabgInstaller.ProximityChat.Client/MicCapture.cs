@@ -5,13 +5,16 @@ namespace TabgInstaller.ProximityChat.Client
 {
     public class MicCapture : IDisposable
     {
-        private const int SampleRate = 48000;
+        private const int SampleRate = 48000;         // capture at 48kHz
+        private const int TargetRate = 8000;          // output at 8kHz
+        private const int DownsampleFactor = 6;       // 48000 / 8000
         private const int FrameSizeMs = 20;
-        private const int FrameSamples = SampleRate * FrameSizeMs / 1000; // 960 samples at 48kHz
+        private const int FrameSamples48k = SampleRate * FrameSizeMs / 1000; // 960 samples at 48kHz
+        private const int FrameSamples8k = TargetRate * FrameSizeMs / 1000;  // 160 samples at 8kHz
 
         private AudioClip _micClip;
         private int _lastSamplePos;
-        private readonly float[] _sampleBuffer = new float[FrameSamples];
+        private readonly float[] _sampleBuffer = new float[FrameSamples48k];
         private readonly string _deviceName;
         private bool _recording;
 
@@ -51,28 +54,28 @@ namespace TabgInstaller.ProximityChat.Client
             else
                 available = (_micClip.samples - _lastSamplePos) + currentPos;
 
-            while (available >= FrameSamples)
+            while (available >= FrameSamples48k)
             {
                 _micClip.GetData(_sampleBuffer, _lastSamplePos);
-                _lastSamplePos = (_lastSamplePos + FrameSamples) % _micClip.samples;
-                available -= FrameSamples;
+                _lastSamplePos = (_lastSamplePos + FrameSamples48k) % _micClip.samples;
+                available -= FrameSamples48k;
 
                 float rms = 0f;
-                for (int i = 0; i < FrameSamples; i++)
+                for (int i = 0; i < FrameSamples48k; i++)
                     rms += _sampleBuffer[i] * _sampleBuffer[i];
-                rms = Mathf.Sqrt(rms / FrameSamples);
+                rms = Mathf.Sqrt(rms / FrameSamples48k);
 
                 // VAD disabled — send all frames
                 // if (rms < sensitivity) continue;
 
-                // Convert float[-1,1] to 16-bit PCM bytes (little-endian)
-                // 960 samples * 2 bytes = 1920 bytes per frame
-                byte[] pcmBytes = new byte[FrameSamples * 2];
-                for (int i = 0; i < FrameSamples; i++)
+                // Downsample 48kHz -> 8kHz (take every 6th sample)
+                // Convert float[-1,1] to 8-bit unsigned PCM (0-255, 128=silence)
+                // 160 samples * 1 byte = 160 bytes per frame — well under MTU
+                byte[] pcmBytes = new byte[FrameSamples8k];
+                for (int i = 0; i < FrameSamples8k; i++)
                 {
-                    short sample = (short)(Mathf.Clamp(_sampleBuffer[i], -1f, 1f) * 32767f);
-                    pcmBytes[i * 2]     = (byte)(sample & 0xFF);
-                    pcmBytes[i * 2 + 1] = (byte)((sample >> 8) & 0xFF);
+                    float s = Mathf.Clamp(_sampleBuffer[i * DownsampleFactor], -1f, 1f);
+                    pcmBytes[i] = (byte)((s * 0.5f + 0.5f) * 255f);
                 }
 
                 OnFrameEncoded?.Invoke(pcmBytes, pcmBytes.Length);

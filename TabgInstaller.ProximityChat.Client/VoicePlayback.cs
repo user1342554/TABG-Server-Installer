@@ -7,9 +7,9 @@ namespace TabgInstaller.ProximityChat.Client
 {
     public class VoicePlayback : IDisposable
     {
-        private const int SampleRate = 48000;
-        private const int FrameSamples = 960; // 20ms at 48kHz
-        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 48kHz
+        private const int SampleRate = 8000;
+        private const int FrameSamples = 160; // 20ms at 8kHz
+        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 8kHz = 16000
         private const int MaxSources = 32;
 
         private readonly Dictionary<int, PlayerVoiceSource> _sources = new Dictionary<int, PlayerVoiceSource>();
@@ -166,7 +166,8 @@ namespace TabgInstaller.ProximityChat.Client
                 audioSource.bypassReverbZones = true;
 
                 // Play a 1-second silent clip so OnAudioFilterRead gets called continuously
-                audioSource.clip = AudioClip.Create($"Silent_{playerId}", SampleRate, 1, SampleRate, false);
+                // Use 48kHz for the clip so Unity drives the audio thread at 48kHz
+                audioSource.clip = AudioClip.Create($"Silent_{playerId}", 48000, 1, 48000, false);
                 audioSource.Play();
 
                 // VoiceAudioFilter reads from its ring buffer and writes into the audio pipeline
@@ -178,14 +179,14 @@ namespace TabgInstaller.ProximityChat.Client
             public void DecodeAndFeed(byte[] pcmData, int pcmLength)
             {
                 if (_filter == null) return;
-                int sampleCount = pcmLength / 2;
+                // Each byte is 8-bit unsigned PCM: convert back to float[-1, 1]
+                int sampleCount = pcmLength;
                 if (sampleCount <= 0) return;
 
                 float[] samples = new float[sampleCount];
                 for (int i = 0; i < sampleCount; i++)
                 {
-                    short sample = (short)(pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
-                    samples[i] = sample / 32768f;
+                    samples[i] = (pcmData[i] / 255f) * 2f - 1f;
                 }
                 _filter.Feed(samples);
             }
@@ -210,10 +211,13 @@ namespace TabgInstaller.ProximityChat.Client
     // Must be a public non-nested class so Unity's AddComponent can find it.
     public class VoiceAudioFilter : MonoBehaviour
     {
-        private float[] _buffer = new float[96000]; // 2 sec at 48kHz
+        private float[] _buffer = new float[16000]; // 2 sec at 8kHz
         private int _writePos;
         private int _readPos;
-        private int _available; // how many samples are ready to play
+        private int _available; // how many 8kHz samples are ready to play
+
+        private int _outputCounter;
+        private float _lastSample;
 
         public void Feed(float[] samples)
         {
@@ -228,21 +232,24 @@ namespace TabgInstaller.ProximityChat.Client
             }
         }
 
-        // Called by Unity's audio thread — output voice data when available, silence otherwise
+        // Called by Unity's audio thread at 48kHz.
+        // Each 8kHz sample must be held for 6 output samples (48000/8000 = 6).
         private void OnAudioFilterRead(float[] data, int channels)
         {
             lock (this)
             {
                 for (int i = 0; i < data.Length; i += channels)
                 {
-                    float sample = 0f;
-                    if (_available > 0)
+                    float sample = _lastSample;
+                    if (_outputCounter == 0 && _available > 0)
                     {
                         sample = _buffer[_readPos];
                         _buffer[_readPos] = 0f;
                         _readPos = (_readPos + 1) % _buffer.Length;
                         _available--;
+                        _lastSample = sample;
                     }
+                    _outputCounter = (_outputCounter + 1) % 6; // 48000/8000
 
                     for (int ch = 0; ch < channels; ch++)
                         data[i + ch] = sample;
