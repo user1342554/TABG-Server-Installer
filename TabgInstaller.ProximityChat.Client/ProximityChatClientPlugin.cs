@@ -144,14 +144,8 @@ namespace TabgInstaller.ProximityChat.Client
         internal static class VoiceReceivePatch
         {
             private static int _recvCount;
-            private static int _logCounter;
             static bool Prefix(ClientPackage clientPackage)
             {
-                // Log every 500th event to check what codes arrive
-                _logCounter++;
-                if (_logCounter % 500 == 1 && Instance != null)
-                    Instance.Logger.LogInfo($"[ProximityChat] OnEvent #{_logCounter}: code={(byte)clientPackage.Code}, len={clientPackage.Buffer?.Length ?? -1}");
-
                 if ((byte)clientPackage.Code != 240) return true;
 
                 try

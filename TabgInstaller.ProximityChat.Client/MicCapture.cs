@@ -6,11 +6,11 @@ namespace TabgInstaller.ProximityChat.Client
     public class MicCapture : IDisposable
     {
         private const int SampleRate = 48000;         // capture at 48kHz
-        private const int TargetRate = 8000;          // output at 8kHz
-        private const int DownsampleFactor = 6;       // 48000 / 8000
+        private const int TargetRate = 16000;         // output at 16kHz
+        private const int DownsampleFactor = 3;       // 48000 / 16000
         private const int FrameSizeMs = 20;
-        private const int FrameSamples48k = SampleRate * FrameSizeMs / 1000; // 960 samples at 48kHz
-        private const int FrameSamples8k = TargetRate * FrameSizeMs / 1000;  // 160 samples at 8kHz
+        private const int FrameSamples48k = SampleRate * FrameSizeMs / 1000;    // 960 samples at 48kHz
+        private const int FrameSamplesTarget = TargetRate * FrameSizeMs / 1000; // 320 samples at 16kHz
 
         private AudioClip _micClip;
         private int _lastSamplePos;
@@ -65,14 +65,13 @@ namespace TabgInstaller.ProximityChat.Client
                     rms += _sampleBuffer[i] * _sampleBuffer[i];
                 rms = Mathf.Sqrt(rms / FrameSamples48k);
 
-                // VAD disabled — send all frames
-                // if (rms < sensitivity) continue;
+                if (rms < sensitivity) continue;
 
-                // Downsample 48kHz -> 8kHz (take every 6th sample)
+                // Downsample 48kHz -> 16kHz (take every 3rd sample)
                 // Convert float[-1,1] to 8-bit unsigned PCM (0-255, 128=silence)
-                // 160 samples * 1 byte = 160 bytes per frame — well under MTU
-                byte[] pcmBytes = new byte[FrameSamples8k];
-                for (int i = 0; i < FrameSamples8k; i++)
+                // 320 samples * 1 byte = 320 bytes per frame — well under MTU
+                byte[] pcmBytes = new byte[FrameSamplesTarget];
+                for (int i = 0; i < FrameSamplesTarget; i++)
                 {
                     float s = Mathf.Clamp(_sampleBuffer[i * DownsampleFactor], -1f, 1f);
                     pcmBytes[i] = (byte)((s * 0.5f + 0.5f) * 255f);

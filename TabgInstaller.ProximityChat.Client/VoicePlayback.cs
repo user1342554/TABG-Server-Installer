@@ -7,9 +7,9 @@ namespace TabgInstaller.ProximityChat.Client
 {
     public class VoicePlayback : IDisposable
     {
-        private const int SampleRate = 8000;
-        private const int FrameSamples = 160; // 20ms at 8kHz
-        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 8kHz = 16000
+        private const int SampleRate = 16000;
+        private const int FrameSamples = 320; // 20ms at 16kHz
+        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 16kHz = 32000
         private const int MaxSources = 32;
 
         private readonly Dictionary<int, PlayerVoiceSource> _sources = new Dictionary<int, PlayerVoiceSource>();
@@ -211,7 +211,7 @@ namespace TabgInstaller.ProximityChat.Client
     // Must be a public non-nested class so Unity's AddComponent can find it.
     public class VoiceAudioFilter : MonoBehaviour
     {
-        private float[] _buffer = new float[16000]; // 2 sec at 8kHz
+        private float[] _buffer = new float[32000]; // 2 sec at 16kHz
         private int _writePos;
         private int _readPos;
         private int _available; // how many 8kHz samples are ready to play
@@ -233,7 +233,7 @@ namespace TabgInstaller.ProximityChat.Client
         }
 
         // Called by Unity's audio thread at 48kHz.
-        // Each 8kHz sample must be held for 6 output samples (48000/8000 = 6).
+        // Each 16kHz sample must be held for 3 output samples (48000/16000 = 3).
         private void OnAudioFilterRead(float[] data, int channels)
         {
             lock (this)
@@ -249,7 +249,7 @@ namespace TabgInstaller.ProximityChat.Client
                         _available--;
                         _lastSample = sample;
                     }
-                    _outputCounter = (_outputCounter + 1) % 6; // 48000/8000
+                    _outputCounter = (_outputCounter + 1) % 3; // 48000/16000
 
                     for (int ch = 0; ch < channels; ch++)
                         data[i + ch] = sample;
