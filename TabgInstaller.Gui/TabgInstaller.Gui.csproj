@@ -68,8 +68,8 @@
 
   <!-- Include logo as Resource for WPF pack URI -->
   <ItemGroup>
-    <Resource Include="..\logo\tabg-mod-manager-icon-256.png">
-      <Link>Assets\tabg-mod-manager-icon-256.png</Link>
+    <Resource Include="..\logo\tabg-server-installer-256.png">
+      <Link>Assets\tabg-server-installer-256.png</Link>
     </Resource>
   </ItemGroup>
 

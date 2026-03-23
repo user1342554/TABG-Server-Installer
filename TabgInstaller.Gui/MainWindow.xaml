@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
         Title="TABG Manager" Height="800" Width="1200"
-        Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
+        Icon="pack://application:,,,/Assets/tabg-server-installer-256.png">
 
     <blazor:BlazorWebView x:Name="WebView" HostPage="wwwroot/index.html">
         <blazor:BlazorWebView.RootComponents>
