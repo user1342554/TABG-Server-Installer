@@ -1,23 +1,22 @@
 @inject AppState State
 @implements IDisposable
 
-<div class="tab-control">
-    <div class="tab-headers">
-        @foreach (var tab in _tabs)
-        {
-            <button class="tab-header @(tab == _activeTab ? "active" : "") @(!tab.Enabled ? "disabled" : "")"
-                    @onclick="() => SelectTab(tab)"
-                    disabled="@(!tab.Enabled)">
-                @tab.Title
-            </button>
-        }
-    </div>
-    <div class="tab-content">
-        @_activeTab?.Content
-    </div>
-</div>
-
 <CascadingValue Value="_dialog">
+    <div class="tab-control">
+        <div class="tab-headers">
+            @foreach (var tab in _tabs)
+            {
+                <button class="tab-header @(tab == _activeTab ? "active" : "") @(!tab.Enabled ? "disabled" : "")"
+                        @onclick="() => SelectTab(tab)"
+                        disabled="@(!tab.Enabled)">
+                    @tab.Title
+                </button>
+            }
+        </div>
+        <div class="tab-content">
+            @_activeTab?.Content
+        </div>
+    </div>
     <ConfirmDialog @ref="_dialog" />
 </CascadingValue>
 
@@ -31,6 +30,12 @@
         public string Title { get; set; } = "";
         public bool Enabled { get; set; } = true;
         public RenderFragment? Content { get; set; }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            StateHasChanged(); // Re-render so CascadingValue propagates the @ref-set _dialog to children
     }
 
     protected override void OnInitialized()
