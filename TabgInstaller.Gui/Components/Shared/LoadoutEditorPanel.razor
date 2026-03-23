@@ -1,1 +1,862 @@
-<div class="pad-5"><p>LoadoutEditorPanel - coming soon</p></div>
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to edit loadouts.</span>
+        </div>
+    }
+    else
+    {
+        <!-- Top Bar -->
+        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
+            <label>Loadout Mode:</label>
+            <select style="width:160px;" @bind="_selectedMode">
+                <option value="Normal">Normal</option>
+                <option value="GunGame">GunGame</option>
+                <option value="ReverseGunGame">ReverseGunGame</option>
+                <option value="KeepInventory">KeepInventory</option>
+            </select>
+            <button style="margin-left:16px; padding:2px 8px;" @onclick="ImportRaw">Import Raw</button>
+            <button style="padding:2px 8px;" @onclick="ExportRaw">Export Raw</button>
+        </div>
+
+        <!-- Main Split Panel -->
+        <div class="split-panel" style="flex:1; min-height:0;">
+
+            <!-- Left Pane - Loadout List -->
+            <div class="left-pane" style="display:flex; flex-direction:column; padding:4px;">
+                <div style="font-weight:bold; margin-bottom:4px;">Loadouts</div>
+                <div class="scroll-area" style="flex:1; border:1px solid #ACACAC; background:white;">
+                    @for (int i = 0; i < _loadouts.Count; i++)
+                    {
+                        var idx = i;
+                        var lo = _loadouts[idx];
+                        <div class="@(_selectedIndex == idx ? "list-view-item selected" : "list-view-item")"
+                             @onclick="() => SelectLoadout(idx)">
+                            @lo.DisplayName
+                        </div>
+                    }
+                </div>
+                <div class="hstack" style="margin-top:4px; flex-wrap:wrap;">
+                    <button style="width:50px;" @onclick="AddLoadout">Add</button>
+                    <button style="width:68px;" title="Clone the selected loadout" @onclick="DuplicateLoadout">Duplicate</button>
+                    <button style="width:58px;" @onclick="RemoveLoadout">Remove</button>
+                    <button style="width:32px;" @onclick="MoveUp">Up</button>
+                    <button style="width:42px;" @onclick="MoveDown">Down</button>
+                </div>
+            </div>
+
+            <!-- Right Pane - Loadout Editor -->
+            <div class="right-pane">
+                @if (SelectedLoadout != null)
+                {
+                    <!-- Name and Weight -->
+                    <div class="hstack" style="margin-bottom:4px;">
+                        <label style="width:60px;">Name:</label>
+                        <input type="text" style="width:200px;" value="@SelectedLoadout.Name"
+                               @oninput="OnNameChanged" />
+                    </div>
+                    <div class="hstack" style="margin-bottom:8px;">
+                        <label style="width:60px;">Weight:</label>
+                        <input type="text" style="width:60px;" value="@_percentText"
+                               @oninput="OnPercentChanged" />
+                        <span>%</span>
+                    </div>
+
+                    <!-- Items List -->
+                    <div style="font-weight:bold; margin-bottom:4px;">Items</div>
+                    <div style="max-height:180px; overflow-y:auto; border:1px solid #ACACAC; margin-bottom:4px;">
+                        <table class="data-grid" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Item Name</th>
+                                    <th style="width:50px;">ID</th>
+                                    <th style="width:60px;">Qty</th>
+                                    <th style="width:60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < SelectedLoadout.Items.Count; i++)
+                                {
+                                    var itemIdx = i;
+                                    var item = SelectedLoadout.Items[itemIdx];
+                                    <tr>
+                                        <td>@ResolveItemName(item.Id)</td>
+                                        <td>@item.Id</td>
+                                        <td>
+                                            <input type="text" style="width:45px;" value="@item.Quantity"
+                                                   @onchange="e => OnItemQtyChanged(itemIdx, e)" />
+                                        </td>
+                                        <td>
+                                            <button style="padding:0 2px; font-size:11px;" @onclick="() => RemoveItem(itemIdx)">Remove</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Add Item Section -->
+                    <GroupBox Header="Add Item" Style="margin-bottom:8px;">
+                        <!-- Search box -->
+                        <div class="hstack" style="margin-bottom:4px;">
+                            <label style="width:70px;">Search:</label>
+                            <input type="text" style="width:250px;" value="@_searchText"
+                                   @oninput="OnSearchChanged"
+                                   title="Type to search items across all categories" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(_searchText))
+                        {
+                            <div style="max-height:120px; overflow-y:auto; border:1px solid #ACACAC; margin-bottom:4px; background:white;">
+                                @if (_searchResults.Count == 0)
+                                {
+                                    <div class="list-view-item" style="color:gray;">(no matches)</div>
+                                }
+                                else
+                                {
+                                    @for (int i = 0; i < _searchResults.Count; i++)
+                                    {
+                                        var srIdx = i;
+                                        var sr = _searchResults[srIdx];
+                                        <div class="@(_selectedSearchIndex == srIdx ? "list-view-item selected" : "list-view-item")"
+                                             @onclick="() => _selectedSearchIndex = srIdx"
+                                             @ondblclick="() => AddFromSearch(srIdx)"
+                                             title="Double-click to add item">
+                                            @sr.DisplayText
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+
+                        @if (string.IsNullOrEmpty(_searchText))
+                        {
+                            <!-- Category/Item dropdowns -->
+                            <div class="hstack" style="margin-bottom:4px;">
+                                <label style="width:70px;">Category:</label>
+                                <select style="width:160px;" value="@_selectedCategory"
+                                        @onchange="OnCategoryChanged">
+                                    @foreach (var cat in ItemDatabase.Categories)
+                                    {
+                                        <option value="@cat">@cat</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="hstack" style="margin-bottom:4px;">
+                                <label style="width:70px;">Item:</label>
+                                <select style="width:250px;" @bind="_selectedItemDisplay">
+                                    @foreach (var item in _categoryItems)
+                                    {
+                                        <option value="@item">@item</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+
+                        <div class="hstack">
+                            <label style="width:70px;">Quantity:</label>
+                            <input type="text" style="width:60px;" @bind="_quantityText" />
+                            <button style="width:60px; margin-left:8px;" @onclick="AddItem">Add</button>
+                        </div>
+                    </GroupBox>
+
+                    <!-- Curse Assignment -->
+                    <details style="margin-bottom:4px;">
+                        <summary style="cursor:pointer; font-weight:bold;">Curse Assignment</summary>
+                        <div style="display:flex; flex-wrap:wrap; padding:4px;">
+                            @foreach (var curse in _curseEntries)
+                            {
+                                var entry = curse;
+                                <label style="width:185px; margin:2px 4px; display:flex; align-items:center; gap:4px;">
+                                    <input type="checkbox" checked="@entry.IsChecked"
+                                           @onchange="e => OnCurseToggled(entry, e)" />
+                                    @entry.DisplayText
+                                </label>
+                            }
+                        </div>
+                    </details>
+
+                    <!-- Blessing Assignment -->
+                    <details style="margin-bottom:4px;">
+                        <summary style="cursor:pointer; font-weight:bold;">Blessing Assignment (added as items)</summary>
+                        <div style="color:gray; font-size:11px; margin:4px;">Blessings are added as items to this loadout.</div>
+                        <div style="display:flex; flex-wrap:wrap; padding:4px;">
+                            @foreach (var blessing in _blessingEntries)
+                            {
+                                var entry = blessing;
+                                <label style="width:185px; margin:2px 4px; display:flex; align-items:center; gap:4px;">
+                                    <input type="checkbox" checked="@entry.IsChecked"
+                                           @onchange="e => OnBlessingToggled(entry, e)" />
+                                    @entry.DisplayText
+                                </label>
+                            }
+                        </div>
+                    </details>
+                }
+                else
+                {
+                    <div style="color:gray; font-style:italic; padding:8px;">Select a loadout to edit.</div>
+                }
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
+            <button style="width:100px;" @onclick="Save">Save</button>
+            <span class="status-text @_statusCss">@_statusText</span>
+        </div>
+    }
+</div>
+
+<!-- Import Dialog -->
+@if (_showImportDialog)
+{
+    <div class="dialog-overlay" @onclick="() => _showImportDialog = false">
+        <div class="dialog-box" style="width:560px;" @onclick:stopPropagation>
+            <div class="dialog-title">Import Raw Loadouts</div>
+            <div style="margin-bottom:4px;">Paste the raw loadout string (including optional GunGame/ prefix):</div>
+            <textarea style="width:100%; height:180px;" @bind="_importText"></textarea>
+            <div class="dialog-buttons" style="margin-top:8px;">
+                <button @onclick="DoImport">Import</button>
+                <button @onclick="() => _showImportDialog = false">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Export Dialog -->
+@if (_showExportDialog)
+{
+    <div class="dialog-overlay" @onclick="() => _showExportDialog = false">
+        <div class="dialog-box" style="width:560px;" @onclick:stopPropagation>
+            <div class="dialog-title">Export Raw Loadouts</div>
+            <div style="margin-bottom:4px;">Raw loadout string (copy this):</div>
+            <textarea style="width:100%; height:180px;" readonly>@_exportText</textarea>
+            <div class="dialog-buttons" style="margin-top:8px;">
+                <button @onclick="() => _showExportDialog = false">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Confirm Remove Dialog -->
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    // ── Services ──
+    private readonly StarterPackLoadoutService _loadoutSvc = new();
+
+    // ── State ──
+    private List<LoadoutVm> _loadouts = new();
+    private int _selectedIndex = -1;
+    private string _selectedMode = "Normal";
+    private FreddoCommissionSettings? _commissionSettings;
+
+    private string _statusText = "";
+    private string _statusCss = "";
+    private bool _dirty;
+
+    // Editor fields for the selected loadout
+    private string _percentText = "";
+
+    // Search
+    private string _searchText = "";
+    private List<SearchResult> _searchResults = new();
+    private int _selectedSearchIndex = -1;
+
+    // Category/Item dropdowns
+    private string _selectedCategory = "";
+    private List<string> _categoryItems = new();
+    private string _selectedItemDisplay = "";
+    private string _quantityText = "1";
+
+    // Curse/Blessing entries for the selected loadout
+    private List<CurseEntry> _curseEntries = new();
+    private List<BlessingEntry> _blessingEntries = new();
+
+    // Dialogs
+    private bool _showImportDialog;
+    private string _importText = "";
+    private bool _showExportDialog;
+    private string _exportText = "";
+    private ConfirmDialog _confirmDialog = default!;
+
+    private LoadoutVm? SelectedLoadout =>
+        _selectedIndex >= 0 && _selectedIndex < _loadouts.Count ? _loadouts[_selectedIndex] : null;
+
+    // ── Lifecycle ──
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            LoadAll();
+
+        // Initialize category
+        if (ItemDatabase.Categories.Count > 0)
+        {
+            _selectedCategory = ItemDatabase.Categories[0];
+            RefreshCategoryItems();
+        }
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            LoadAll();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+
+    // ── Loading ──
+
+    private void LoadAll()
+    {
+        try
+        {
+            var settings = StarterPackConfigService.Read(State.ServerDir);
+            _selectedMode = settings.GetLoadoutMode();
+
+            var rawLoadouts = settings.GetLoadoutsWithoutPrefix();
+            var parsed = _loadoutSvc.ParseLoadoutsValue(rawLoadouts);
+
+            _commissionSettings = ModConfigService.ReadCommission(State.ServerDir);
+            var perLoadoutCurses = ParseLoadoutCurses(_commissionSettings.LoadoutCurses);
+
+            _loadouts.Clear();
+            for (int i = 0; i < parsed.Count; i++)
+            {
+                var lo = parsed[i];
+                var curses = i < perLoadoutCurses.Count ? perLoadoutCurses[i] : new HashSet<int>();
+                _loadouts.Add(new LoadoutVm(lo.Name, lo.Percent, lo.Items, curses));
+            }
+
+            if (_loadouts.Count > 0)
+                SelectLoadout(0);
+            else
+                _selectedIndex = -1;
+
+            _dirty = false;
+            _statusText = $"Loaded {_loadouts.Count} loadouts.";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Load error: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    // ── Loadout Curse Parsing ──
+
+    private static List<HashSet<int>> ParseLoadoutCurses(string raw)
+    {
+        var result = new List<HashSet<int>>();
+        if (string.IsNullOrWhiteSpace(raw)) return result;
+
+        var groups = raw.Split('/', StringSplitOptions.None);
+        foreach (var group in groups)
+        {
+            var set = new HashSet<int>();
+            if (!string.IsNullOrWhiteSpace(group))
+            {
+                foreach (var tok in group.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (int.TryParse(tok, out var id))
+                        set.Add(id);
+                }
+            }
+            result.Add(set);
+        }
+        return result;
+    }
+
+    private string BuildLoadoutCurses()
+    {
+        var parts = new List<string>();
+        foreach (var lo in _loadouts)
+        {
+            if (lo.Curses.Count > 0)
+                parts.Add(string.Join(",", lo.Curses.OrderBy(c => c)));
+            else
+                parts.Add("");
+        }
+
+        // Trim trailing empty groups
+        while (parts.Count > 0 && string.IsNullOrEmpty(parts[^1]))
+            parts.RemoveAt(parts.Count - 1);
+
+        return string.Join("/", parts);
+    }
+
+    // ── Selection ──
+
+    private void SelectLoadout(int index)
+    {
+        _selectedIndex = index;
+        var lo = SelectedLoadout;
+        if (lo != null)
+        {
+            _percentText = lo.Percent.ToString();
+            RefreshCurseCheckboxes(lo);
+            RefreshBlessingCheckboxes(lo);
+        }
+        else
+        {
+            _curseEntries.Clear();
+            _blessingEntries.Clear();
+        }
+    }
+
+    // ── Name / Percent Changed ──
+
+    private void OnNameChanged(ChangeEventArgs e)
+    {
+        if (SelectedLoadout == null) return;
+        SelectedLoadout.Name = e.Value?.ToString() ?? "";
+        MarkDirty();
+    }
+
+    private void OnPercentChanged(ChangeEventArgs e)
+    {
+        if (SelectedLoadout == null) return;
+        _percentText = e.Value?.ToString() ?? "";
+        if (int.TryParse(_percentText, out var pct))
+        {
+            SelectedLoadout.Percent = pct;
+            MarkDirty();
+        }
+    }
+
+    // ── Item Quantity Changed ──
+
+    private void OnItemQtyChanged(int itemIndex, ChangeEventArgs e)
+    {
+        if (SelectedLoadout == null) return;
+        if (itemIndex < 0 || itemIndex >= SelectedLoadout.Items.Count) return;
+        if (int.TryParse(e.Value?.ToString(), out var qty) && qty >= 1 && qty <= 255)
+        {
+            SelectedLoadout.Items[itemIndex].Quantity = qty;
+            MarkDirty();
+        }
+    }
+
+    // ── Loadout List Management ──
+
+    private void AddLoadout()
+    {
+        var lo = new LoadoutVm("New Loadout", 100, new List<StarterPackLoadoutService.Item>(), new HashSet<int>());
+        _loadouts.Add(lo);
+        SelectLoadout(_loadouts.Count - 1);
+        MarkDirty();
+    }
+
+    private void DuplicateLoadout()
+    {
+        if (SelectedLoadout == null) return;
+
+        var source = SelectedLoadout;
+        var clonedItems = source.Items.Select(it =>
+            new StarterPackLoadoutService.Item(it.Id, it.Quantity)).ToList();
+        var clonedCurses = new HashSet<int>(source.Curses);
+
+        var clone = new LoadoutVm(
+            source.Name + " (Copy)",
+            source.Percent,
+            clonedItems,
+            clonedCurses);
+
+        var idx = _selectedIndex;
+        _loadouts.Insert(idx + 1, clone);
+        SelectLoadout(idx + 1);
+        MarkDirty();
+    }
+
+    private async Task RemoveLoadout()
+    {
+        if (SelectedLoadout == null) return;
+
+        var confirmed = await _confirmDialog.ShowAsync(
+            "Confirm Remove",
+            $"Remove loadout \"{SelectedLoadout.Name}\"?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        var idx = _selectedIndex;
+        _loadouts.RemoveAt(idx);
+        if (_loadouts.Count > 0)
+            SelectLoadout(Math.Min(idx, _loadouts.Count - 1));
+        else
+            _selectedIndex = -1;
+        MarkDirty();
+    }
+
+    private void MoveUp()
+    {
+        if (_selectedIndex <= 0) return;
+        var idx = _selectedIndex;
+        var item = _loadouts[idx];
+        _loadouts.RemoveAt(idx);
+        _loadouts.Insert(idx - 1, item);
+        SelectLoadout(idx - 1);
+        MarkDirty();
+    }
+
+    private void MoveDown()
+    {
+        if (_selectedIndex < 0 || _selectedIndex >= _loadouts.Count - 1) return;
+        var idx = _selectedIndex;
+        var item = _loadouts[idx];
+        _loadouts.RemoveAt(idx);
+        _loadouts.Insert(idx + 1, item);
+        SelectLoadout(idx + 1);
+        MarkDirty();
+    }
+
+    // ── Search ──
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? "";
+        _selectedSearchIndex = -1;
+
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _searchResults.Clear();
+            return;
+        }
+
+        var query = _searchText.Trim();
+        _searchResults = ItemDatabase.AllItems
+            .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                        || item.Id.ToString() == query)
+            .OrderBy(item => item.Category)
+            .ThenBy(item => item.Name)
+            .Take(30)
+            .Select(item => new SearchResult(item.Id, $"{item.Name} ({item.Id}) [{item.Category}]"))
+            .ToList();
+    }
+
+    private void AddFromSearch(int searchIndex)
+    {
+        if (SelectedLoadout == null) return;
+        if (searchIndex < 0 || searchIndex >= _searchResults.Count) return;
+
+        var sr = _searchResults[searchIndex];
+        if (!int.TryParse(_quantityText, out var qty) || qty < 1) qty = 1;
+        if (qty > 255) qty = 255;
+
+        SelectedLoadout.Items.Add(new ItemVm(sr.ItemId.ToString(), qty));
+        MarkDirty();
+
+        // Clear search
+        _searchText = "";
+        _searchResults.Clear();
+        _selectedSearchIndex = -1;
+    }
+
+    // ── Category / Item Dropdowns ──
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        _selectedCategory = e.Value?.ToString() ?? "";
+        RefreshCategoryItems();
+    }
+
+    private void RefreshCategoryItems()
+    {
+        _categoryItems = ItemDatabase.ByCategory(_selectedCategory)
+            .Select(item => $"{item.Name} ({item.Id})")
+            .ToList();
+        _selectedItemDisplay = _categoryItems.FirstOrDefault() ?? "";
+    }
+
+    private void AddItem()
+    {
+        if (SelectedLoadout == null) return;
+
+        // If search results are visible and something is selected, add from search
+        if (!string.IsNullOrEmpty(_searchText) && _selectedSearchIndex >= 0 && _selectedSearchIndex < _searchResults.Count)
+        {
+            AddFromSearch(_selectedSearchIndex);
+            return;
+        }
+
+        // Otherwise add from category dropdown
+        if (string.IsNullOrEmpty(_selectedItemDisplay)) return;
+
+        var openParen = _selectedItemDisplay.LastIndexOf('(');
+        var closeParen = _selectedItemDisplay.LastIndexOf(')');
+        if (openParen < 0 || closeParen < 0) return;
+
+        var id = _selectedItemDisplay.Substring(openParen + 1, closeParen - openParen - 1);
+
+        if (!int.TryParse(_quantityText, out var qty) || qty < 1) qty = 1;
+        if (qty > 255) qty = 255;
+
+        SelectedLoadout.Items.Add(new ItemVm(id, qty));
+        MarkDirty();
+    }
+
+    private void RemoveItem(int itemIndex)
+    {
+        if (SelectedLoadout == null) return;
+        if (itemIndex < 0 || itemIndex >= SelectedLoadout.Items.Count) return;
+        SelectedLoadout.Items.RemoveAt(itemIndex);
+        MarkDirty();
+    }
+
+    // ── Curse Checkboxes ──
+
+    private void RefreshCurseCheckboxes(LoadoutVm lo)
+    {
+        _curseEntries = ItemDatabase.Curses.Select(c => new CurseEntry
+        {
+            CurseId = c.Id,
+            DisplayText = $"{c.Name} ({c.Id})",
+            IsChecked = lo.Curses.Contains(c.Id)
+        }).ToList();
+    }
+
+    private void OnCurseToggled(CurseEntry entry, ChangeEventArgs e)
+    {
+        if (SelectedLoadout == null) return;
+
+        bool isChecked = false;
+        if (e.Value is bool b) isChecked = b;
+        else if (e.Value is string s && bool.TryParse(s, out var parsed)) isChecked = parsed;
+
+        entry.IsChecked = isChecked;
+
+        if (isChecked)
+            SelectedLoadout.Curses.Add(entry.CurseId);
+        else
+            SelectedLoadout.Curses.Remove(entry.CurseId);
+
+        MarkDirty();
+    }
+
+    // ── Blessing Checkboxes ──
+
+    private void RefreshBlessingCheckboxes(LoadoutVm lo)
+    {
+        var blessingItems = ItemDatabase.ByCategory("Blessings").ToList();
+        var existingItemIds = lo.Items.Select(it => it.Id).ToHashSet();
+
+        _blessingEntries = blessingItems.Select(b => new BlessingEntry
+        {
+            ItemId = b.Id,
+            DisplayText = $"{b.Name} ({b.Id})",
+            IsChecked = existingItemIds.Contains(b.Id.ToString())
+        }).ToList();
+    }
+
+    private void OnBlessingToggled(BlessingEntry entry, ChangeEventArgs e)
+    {
+        if (SelectedLoadout == null) return;
+
+        bool isChecked = false;
+        if (e.Value is bool b) isChecked = b;
+        else if (e.Value is string s && bool.TryParse(s, out var parsed)) isChecked = parsed;
+
+        entry.IsChecked = isChecked;
+
+        var idStr = entry.ItemId.ToString();
+        if (isChecked)
+        {
+            if (!SelectedLoadout.Items.Any(it => it.Id == idStr))
+            {
+                SelectedLoadout.Items.Add(new ItemVm(idStr, 1));
+            }
+        }
+        else
+        {
+            var match = SelectedLoadout.Items.FirstOrDefault(it => it.Id == idStr);
+            if (match != null)
+                SelectedLoadout.Items.Remove(match);
+        }
+
+        MarkDirty();
+    }
+
+    // ── Import / Export ──
+
+    private void ImportRaw()
+    {
+        _importText = "";
+        _showImportDialog = true;
+    }
+
+    private void DoImport()
+    {
+        var raw = _importText.Trim();
+        if (string.IsNullOrEmpty(raw))
+        {
+            _statusText = "No text entered.";
+            _statusCss = "error";
+            _showImportDialog = false;
+            return;
+        }
+
+        // Detect mode prefix
+        string mode = "Normal";
+        string body = raw;
+        if (raw.StartsWith("GunGame/")) { mode = "GunGame"; body = raw.Substring("GunGame/".Length); }
+        else if (raw.StartsWith("ReverseGunGame/")) { mode = "ReverseGunGame"; body = raw.Substring("ReverseGunGame/".Length); }
+        else if (raw.StartsWith("KeepInventory/")) { mode = "KeepInventory"; body = raw.Substring("KeepInventory/".Length); }
+
+        _selectedMode = mode;
+        var parsed = _loadoutSvc.ParseLoadoutsValue(body);
+        _loadouts.Clear();
+        foreach (var lo in parsed)
+            _loadouts.Add(new LoadoutVm(lo.Name, lo.Percent, lo.Items, new HashSet<int>()));
+
+        if (_loadouts.Count > 0)
+            SelectLoadout(0);
+        else
+            _selectedIndex = -1;
+
+        MarkDirty();
+        _statusText = $"Imported {_loadouts.Count} loadouts.";
+        _statusCss = "";
+        _showImportDialog = false;
+    }
+
+    private void ExportRaw()
+    {
+        var records = _loadouts.Select(lo =>
+            new StarterPackLoadoutService.Loadout(
+                lo.Name,
+                lo.Percent,
+                lo.Items.Select(it => new StarterPackLoadoutService.Item(it.Id, it.Quantity)).ToList()
+            )).ToList();
+
+        var body = _loadoutSvc.BuildLoadoutsValue(records);
+        _exportText = _selectedMode == "Normal" ? body : _selectedMode + "/" + body;
+        _showExportDialog = true;
+    }
+
+    // ── Saving ──
+
+    private void Save()
+    {
+        try
+        {
+            var settings = StarterPackConfigService.Read(State.ServerDir);
+
+            // Build loadout records
+            var records = _loadouts.Select(lo =>
+                new StarterPackLoadoutService.Loadout(
+                    lo.Name,
+                    lo.Percent,
+                    lo.Items.Select(it => new StarterPackLoadoutService.Item(it.Id, it.Quantity)).ToList()
+                )).ToList();
+
+            var loadoutsStr = _loadoutSvc.BuildLoadoutsValue(records);
+            settings.SetLoadoutsWithPrefix(_selectedMode, loadoutsStr);
+            StarterPackConfigService.Write(State.ServerDir, settings);
+
+            // Save curses
+            var commission = _commissionSettings ?? ModConfigService.ReadCommission(State.ServerDir);
+            commission.LoadoutCurses = BuildLoadoutCurses();
+            ModConfigService.WriteCommission(State.ServerDir, commission);
+
+            _dirty = false;
+            _statusText = "Saved successfully.";
+            _statusCss = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Save error: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    // ── Helpers ──
+
+    private void MarkDirty()
+    {
+        if (!_dirty)
+        {
+            _dirty = true;
+            _statusText = "Unsaved changes";
+            _statusCss = "";
+        }
+    }
+
+    private static string ResolveItemName(string id)
+    {
+        if (int.TryParse(id, out var numId))
+        {
+            var name = ItemDatabase.GetNameById(numId);
+            if (name != null) return name;
+        }
+        return $"(#{id})";
+    }
+
+    // ── View Models (local) ──
+
+    private class LoadoutVm
+    {
+        public string Name { get; set; }
+        public int Percent { get; set; }
+        public List<ItemVm> Items { get; }
+        public HashSet<int> Curses { get; }
+
+        public string DisplayName
+        {
+            get
+            {
+                var itemCount = Items.Count;
+                return $"{Name} ({Percent}%) - {itemCount} item{(itemCount != 1 ? "s" : "")}";
+            }
+        }
+
+        public LoadoutVm(string name, int percent, List<StarterPackLoadoutService.Item> items, HashSet<int> curses)
+        {
+            Name = name;
+            Percent = percent;
+            Items = items.Select(it => new ItemVm(it.Id, it.Quantity)).ToList();
+            Curses = curses;
+        }
+    }
+
+    private class ItemVm
+    {
+        public string Id { get; set; }
+        public int Quantity { get; set; }
+
+        public ItemVm(string id, int quantity)
+        {
+            Id = id;
+            Quantity = quantity;
+        }
+    }
+
+    private record SearchResult(int ItemId, string DisplayText);
+
+    private class CurseEntry
+    {
+        public int CurseId { get; set; }
+        public string DisplayText { get; set; } = "";
+        public bool IsChecked { get; set; }
+    }
+
+    private class BlessingEntry
+    {
+        public int ItemId { get; set; }
+        public string DisplayText { get; set; } = "";
+        public bool IsChecked { get; set; }
+    }
+}
