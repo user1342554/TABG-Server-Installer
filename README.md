@@ -33,6 +33,7 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 ## Features
 
 - **One-click server setup** — Installs BepInEx, plugins, and generates default configs automatically
+- **Client mod installer** — Creates a modded TABG copy with BepInEx + client plugins (separate from Steam to bypass EAC)
 - **Config editor** — GUI for editing game settings, match rules, ring behavior, spawn points, and loadouts
 - **Preset templates** — Battle Royale, Deathmatch, Gun Game, Scavenge, and more
 - **Weapon spawn config** — Control weapon spawn rates per category
@@ -40,12 +41,83 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 - **Backup system** — Create and restore server config backups
 - **Auto-updater** — Checks GitHub Releases for new versions on startup
 - **Self-contained** — No .NET installation required, just extract and run
+- **Proximity voice chat** — Built-in proximity-based voice chat through the game's network (no extra ports needed, works with relay)
+- **Custom vehicles** — Spawns cut vehicles (Helicopter, UFO, Mustang, VW, Hover Bike, Hover Car, Box Car)
+- **Flying controls** — Client mod to steer flying vehicles (W/S/A/D + Space/Ctrl)
+- **Custom grenades** — Giant purple smoke grenades + MGL flashbang rounds
+- **In-game settings menu** — Press # to adjust mod settings in-game
+- **Coords display** — Press F5 to show X/Y/Z position
 
 ## Download
 
 1. Go to the [latest release](https://github.com/user1342554/TABG-Server-Installer/releases/latest)
 2. Download the `.zip` file
 3. Extract anywhere and run `TabgInstaller.Gui.exe`
+
+## Quick Start
+
+### Server Setup
+
+1. Download and extract the latest release
+2. Run `TabgInstaller.Gui.exe`
+3. Select your TABG Dedicated Server path (auto-detected from Steam)
+4. Check the plugins you want
+5. Click **INSTALL**
+6. Configure settings in the **Config** tab
+7. Start the server from the installer
+
+### Client Setup (for players)
+
+1. Go to the **Client** tab
+2. Select your TABG Steam folder
+3. Choose a destination for the modded copy
+4. Check the mods you want (including Proximity Chat)
+5. Click **INSTALL CLIENT MODS**
+6. Launch the modded TABG from the installer (**NOT** from Steam)
+
+## Plugins
+
+### Server Plugins
+
+| Plugin | Default | Description |
+|--------|---------|-------------|
+| Citruslib | ON | Core server library — admin commands, permissions, loot tables |
+| StarterPack | ON | Match mechanics, loadouts, win conditions |
+| StarterPackFixes | ON | Loot drop control |
+| CustomSpawnpoints | ON | Custom spawn locations |
+| FreddoTABGCommission | ON | Curses, grenades on kill, bans |
+| MatchAndPreMatchTimeout | ON | Match timing and auto-start |
+| ServerLogger | ON | Player logging |
+| VoteToStart | ON | Vote-to-start command |
+| UnusedVehicles | ON | Spawns cut vehicles (Heli, UFO, Mustang, VW, etc.) |
+| BigSmokeGrenade | ON | Giant purple smoke grenades |
+| MGLFlashbang | ON | MGL shoots flashbang rounds |
+| ProximityChat | ON | Proximity voice chat server relay |
+| SoloTesting | OFF | Solo play without instant win |
+
+### Client Plugins
+
+| Plugin | Default | Description |
+|--------|---------|-------------|
+| FlyingControls | ON | Steer helicopters, UFOs, hover vehicles |
+| Enhanced TABG | ON | Infinite LOD (F1), HUD toggle (F2), fog removal (F3) |
+| BigSmokeGrenade | ON | See the purple smoke effect client-side |
+| MGLFlashbang | ON | See the flashbang effect client-side |
+| CoordsDisplay | ON | F5 to show X/Y/Z coordinates |
+| ModSettings | ON | In-game settings menu (press #) |
+| Pop-up Blocker | ON | Disable anti-cheat popups |
+| ProximityChat | ON | Proximity voice chat — mic capture + playback |
+
+## Proximity Voice Chat
+
+Voice communication is built directly into the game's existing network connection — no additional ports, no separate voice servers, and it works transparently through a relay.
+
+- Voice data travels through the game's relay network — no direct port forwarding required
+- The server relays voice packets only to nearby players based on in-game distance
+- Configurable maximum range (default: 50 m)
+- HUD indicator shows who is currently talking
+- Open microphone with noise gate to suppress background noise
+- 16 kHz audio quality
 
 ## Disclaimer
 
@@ -104,6 +176,17 @@ This project would not exist without the work of these developers and communitie
 ### Installer (this project)
 
 - **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, and all the glue code tying everything together
+
+| Plugin | Author | Description |
+|--------|--------|-------------|
+| UnusedVehicles | anonymer_hase | Spawns cut/unused vehicles on the map |
+| FlyingControls | anonymer_hase | Client-side flying vehicle steering |
+| BigSmokeGrenade | anonymer_hase | Giant purple smoke grenades |
+| MGLFlashbang | anonymer_hase | MGL flashbang rounds |
+| CoordsDisplay | anonymer_hase | In-game coordinate display |
+| ModSettings | anonymer_hase | In-game settings menu for all mods |
+| SoloTesting | anonymer_hase | Solo testing mode |
+| ProximityChat | anonymer_hase | Proximity voice chat (server + client) |
 
 ### Third-Party Libraries
 
