@@ -1,4 +1,278 @@
-<div class="pad-10">
-    <h3>Installer</h3>
-    <p>Installer panel - coming soon</p>
+@using System.Threading
+@inject AppState State
+
+<div class="pad-10 vstack" style="height: 100%;">
+    <!-- Server Path -->
+    <GroupBox Header="Server Path">
+        <div class="hstack">
+            <input type="text" @bind="serverPath" style="flex: 1;" disabled="@isInstalling" />
+            <button style="width: 80px;" @onclick="Browse_Click" disabled="@isInstalling">Browse</button>
+        </div>
+    </GroupBox>
+
+    <!-- Plugins -->
+    <GroupBox Header="Plugins">
+        <div class="vstack" style="gap: 0;">
+            @for (int i = 0; i < plugins.Length; i++)
+            {
+                var idx = i;
+                <label class="checkbox-row">
+                    <input type="checkbox" @bind="plugins[idx].IsChecked" disabled="@isInstalling" />
+                    @plugins[idx].Label
+                </label>
+                @if (idx == 0)
+                {
+                    <div class="hstack" style="margin-left: 20px; margin-bottom: 2px;">
+                        <span>Tag:</span>
+                        <input type="text" @bind="citrusTag" style="width: 80px;" disabled="@isInstalling" />
+                    </div>
+                }
+            }
+            <div class="hstack" style="margin: 6px 5px 2px 5px;">
+                <button style="width: 80px;" @onclick="SelectAll" disabled="@isInstalling">Select All</button>
+                <button style="width: 80px;" @onclick="SelectNone" disabled="@isInstalling">Select None</button>
+                <button style="width: 100px;" @onclick="SelectSigma" disabled="@isInstalling"
+                        data-tooltip="Select the plugins required for the CollinSigma preset">Sigma Preset</button>
+            </div>
+        </div>
+    </GroupBox>
+
+    <!-- Installation Log -->
+    <GroupBox Header="Installation Log" Style="flex: 1; display: flex; flex-direction: column;">
+        <div class="log-area" style="flex: 1; max-height: 300px;" @ref="logElement">@logText</div>
+    </GroupBox>
+
+    <!-- Actions -->
+    <div class="hstack" style="margin-top: 10px;">
+        <button style="width: 140px; height: 40px;" @onclick="BtnInstall_Click" disabled="@isInstalling">INSTALL</button>
+        <button style="width: 200px; height: 40px;" @onclick="BtnContinue_Click" disabled="@isInstalling">Continue without install</button>
+    </div>
 </div>
+
+@code {
+    [CascadingParameter]
+    private ConfirmDialog Dialog { get; set; } = null!;
+
+    private string serverPath = "";
+    private string citrusTag = "v0.7";
+    private string logText = "";
+    private bool isInstalling;
+    private ElementReference logElement;
+
+    private PluginEntry[] plugins = null!;
+
+    private class PluginEntry
+    {
+        public string Label { get; set; } = "";
+        public bool IsChecked { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        plugins = new PluginEntry[]
+        {
+            new() { Label = "Citruslib \u2014 Core server library (admin, permissions, commands)", IsChecked = true },
+            new() { Label = "StarterPack \u2014 Match mechanics, loadouts, win conditions", IsChecked = true },
+            new() { Label = "StarterPackFixes \u2014 Loot drop control", IsChecked = true },
+            new() { Label = "CustomSpawnpoints \u2014 Custom spawn points", IsChecked = true },
+            new() { Label = "FreddoTABGCommission \u2014 Curses, grenades on kill, bans", IsChecked = true },
+            new() { Label = "MatchAndPreMatchTimeout \u2014 Match timing", IsChecked = true },
+            new() { Label = "ServerLogger \u2014 Player logging", IsChecked = true },
+            new() { Label = "VoteToStart \u2014 Vote-to-start", IsChecked = true },
+            new() { Label = "UnusedVehicles \u2014 Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)", IsChecked = true },
+            new() { Label = "BigSmokeGrenade \u2014 Giant purple smoke grenades (/give 208)", IsChecked = true },
+            new() { Label = "MGLFlashbang \u2014 MGL shoots flashbang rounds", IsChecked = true },
+            new() { Label = "SoloTesting \u2014 Prevents 'You Win' when testing alone", IsChecked = false },
+            new() { Label = "TABGCommunityServer \u2014 Community server", IsChecked = false },
+            new() { Label = "ProximityChat \u2014 Proximity voice chat (requires client mod too)", IsChecked = true },
+            new() { Label = "Hunt Mode (4v1) \u2014 1 Killer vs 4 Survivors survival", IsChecked = false },
+            new() { Label = "Juggernaut Mode \u2014 One massive player vs everyone, score-based", IsChecked = false },
+            new() { Label = "TABGVR Server \u2014 VR hand sync for VR players (requires client mod too)", IsChecked = false },
+        };
+
+        var detectedPath = Installer.TryFindTabgServerPath();
+        if (!string.IsNullOrEmpty(detectedPath))
+        {
+            serverPath = detectedPath;
+        }
+    }
+
+    private async Task Browse_Click()
+    {
+        await Dialog.ShowAsync("Manual Path Entry",
+            "Please paste the path to your server directory into the text box manually.");
+    }
+
+    private void SelectAll()
+    {
+        foreach (var p in plugins) p.IsChecked = true;
+    }
+
+    private void SelectNone()
+    {
+        foreach (var p in plugins) p.IsChecked = false;
+    }
+
+    private void SelectSigma()
+    {
+        foreach (var p in plugins) p.IsChecked = false;
+        plugins[0].IsChecked = true;  // Citruslib
+        plugins[1].IsChecked = true;  // StarterPack
+        plugins[2].IsChecked = true;  // StarterPackFixes
+        plugins[3].IsChecked = true;  // CustomSpawnpoints
+        plugins[4].IsChecked = true;  // FreddoTABGCommission
+    }
+
+    private async Task BtnInstall_Click()
+    {
+        const string serverName = "enormous";
+        const string serverPassword = "enormous";
+        const string serverDesc = "enormous";
+
+        string tag = citrusTag.Trim();
+        bool skipCitrus = !plugins[0].IsChecked;
+        bool installCommunityServer = plugins[12].IsChecked;
+        string serverDir = serverPath.Trim();
+
+        bool confirmed = await Dialog.ShowAsync("Installation Warning",
+            "WARNING: Installation will modify server files!\n\nA backup will be created in the 'backup' folder before installation.\nDo you want to continue?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed)
+            return;
+
+        if (string.IsNullOrWhiteSpace(serverDir))
+        {
+            await Dialog.ShowAsync("Folder Not Selected",
+                "Please select a valid TABG server folder.");
+            return;
+        }
+
+        if (!System.IO.Directory.Exists(serverDir))
+        {
+            await Dialog.ShowAsync("Folder Not Found",
+                $"The path '{serverDir}' does not exist.\nPlease select a valid TABG server folder.");
+            return;
+        }
+
+        if (tag.Length == 0 && !skipCitrus)
+        {
+            await Dialog.ShowAsync("Invalid Input",
+                "CitrusLib tag is required if not skipping the plugin.");
+            return;
+        }
+
+        isInstalling = true;
+        logText = "";
+        StateHasChanged();
+
+        var progress = new Progress<string>(line =>
+        {
+            InvokeAsync(() =>
+            {
+                logText += line + Environment.NewLine;
+                StateHasChanged();
+            });
+        });
+
+        var cts = new CancellationTokenSource();
+
+        try
+        {
+            bool skipStarterPack = !plugins[1].IsChecked;
+
+            var selectedBundledPlugins = new List<string>();
+            if (plugins[2].IsChecked) selectedBundledPlugins.Add("StarterPackFixes.dll");
+            if (plugins[3].IsChecked) selectedBundledPlugins.Add("CustomSpawnpoints.dll");
+            if (plugins[4].IsChecked) selectedBundledPlugins.Add("FreddoTABGCommission.dll");
+            if (plugins[5].IsChecked) selectedBundledPlugins.Add("MatchAndPreMatchTimeout.dll");
+            if (plugins[6].IsChecked) selectedBundledPlugins.Add("ServerLogger.dll");
+            if (plugins[7].IsChecked) selectedBundledPlugins.Add("VoteToStart.dll");
+            if (plugins[8].IsChecked) selectedBundledPlugins.Add("TabgInstaller.UnusedVehicles.dll");
+            if (plugins[9].IsChecked || plugins[10].IsChecked) selectedBundledPlugins.Add("TabgInstaller.CustomGrenades.dll");
+            if (plugins[11].IsChecked) selectedBundledPlugins.Add("TabgInstaller.SoloTesting.dll");
+            if (plugins[13].IsChecked) selectedBundledPlugins.Add("TabgInstaller.ProximityChat.Server.dll");
+            if (plugins[14].IsChecked)
+            {
+                selectedBundledPlugins.Add("TabgInstaller.HuntMode.dll");
+                selectedBundledPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
+            }
+            if (plugins[15].IsChecked) selectedBundledPlugins.Add("JuggernautMode.Server.dll");
+            if (plugins[16].IsChecked) selectedBundledPlugins.Add("TABGVR.Server.CitrusLib.dll");
+
+            int exitCode = await Task.Run(async () =>
+            {
+                var backupService = new BackupService(progress);
+                if (System.IO.Directory.Exists(serverDir) && System.IO.Directory.GetFileSystemEntries(serverDir).Length > 0)
+                {
+                    ((IProgress<string>)progress).Report("Creating backup...");
+                    bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
+                    if (!backupSuccess)
+                        ((IProgress<string>)progress).Report("Warning: Backup failed - continuing anyway.");
+                }
+
+                var installer = new Installer(gameDir: serverDir, log: progress);
+
+                return await installer.RunAsync(
+                    serverDir: serverDir,
+                    serverName: serverName,
+                    serverPassword: serverPassword,
+                    serverDescription: serverDesc,
+                    starterPackTag: "",
+                    citrusLibTag: tag,
+                    skipStarterPack: skipStarterPack,
+                    skipCitruslib: skipCitrus,
+                    installCommunityServer: installCommunityServer,
+                    bundledPlugins: selectedBundledPlugins,
+                    ct: cts.Token
+                );
+            });
+
+            if (!cts.IsCancellationRequested)
+            {
+                if (exitCode == 0)
+                {
+                    ((IProgress<string>)progress).Report("Installation completed successfully!");
+                    State.SetServerDir(serverDir);
+                    await Dialog.ShowAsync("Success",
+                        "Installation completed successfully! Switching to Config tab.\n\nChange Server Name, Password and Description in Server Settings.");
+                }
+                else
+                {
+                    await Dialog.ShowAsync("Installation Failed",
+                        $"Installation ended with code {exitCode}. See log output.");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            ((IProgress<string>)progress).Report("Installation cancelled by user.");
+            await Dialog.ShowAsync("Cancelled", "Installation cancelled.");
+        }
+        catch (Exception ex)
+        {
+            progress.LogException("Unknown error during installation", ex);
+            await Dialog.ShowAsync("Error",
+                $"Unknown error during installation:\n{ex.Message}");
+        }
+        finally
+        {
+            isInstalling = false;
+            cts.Dispose();
+            StateHasChanged();
+        }
+    }
+
+    private async Task BtnContinue_Click()
+    {
+        string serverDir = serverPath.Trim();
+        if (string.IsNullOrWhiteSpace(serverDir) || !System.IO.Directory.Exists(serverDir))
+        {
+            await Dialog.ShowAsync("Folder Not Selected",
+                "Please select a valid TABG server folder.");
+            return;
+        }
+
+        State.SetServerDir(serverDir);
+    }
+}
