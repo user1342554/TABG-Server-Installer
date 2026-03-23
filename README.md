@@ -219,4 +219,4 @@ Have questions, feature requests, or found a bug?
 
 Released under the **MIT License** — see [`LICENSE`](./LICENSE).
 
-This license applies to the installer code only. Bundled third-party components retain their own respective licenses.
+This license applies to the installer code only. Bundled third-party components retain their own respective licenses — see [`THIRD-PARTY-LICENSES`](./THIRD-PARTY-LICENSES) for details.
