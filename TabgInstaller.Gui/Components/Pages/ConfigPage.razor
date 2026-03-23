@@ -1,4 +1,293 @@
-<div class="pad-10">
-    <h3>Config</h3>
-    <p>Config panel - coming soon</p>
+@using System.Diagnostics
+@using System.IO
+@inject AppState State
+@implements IDisposable
+
+<div class="pad-10 vstack" style="height: 100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <p>No server configured. Use the Installer tab first.</p>
+    }
+    else
+    {
+        <!-- Quick Actions -->
+        <div class="hstack" style="margin-bottom: 6px;">
+            <button style="margin: 2px;" @onclick="HardReset_Click">Hard Reset</button>
+            <button style="margin: 2px;" @onclick="OpenServerFolder_Click">Open Server Folder</button>
+            <button style="margin: 2px;" @onclick="OpenLogs_Click">Open Logs</button>
+            <button style="margin: 2px;" @onclick="OpenConfigs_Click">Open Config Files</button>
+            <button style="margin: 2px;" @onclick="QuickSaveRestart_Click">Quick-save &amp; Restart</button>
+        </div>
+
+        <!-- Sub-tab control -->
+        <div class="sub-tab-control">
+            <div class="sub-tab-headers">
+                @for (int i = 0; i < _tabNames.Length; i++)
+                {
+                    var idx = i;
+                    <div class="sub-tab-header @(idx == _activeTab ? "active" : "")"
+                         @onclick="() => _activeTab = idx">
+                        @_tabNames[idx]
+                    </div>
+                }
+            </div>
+
+            <div class="sub-tab-content">
+                @switch (_activeTab)
+                {
+                    case 0: <!-- Server Settings -->
+                        <div class="vstack" style="height: 100%;">
+                            <div style="flex: 1; overflow: auto;">
+                                <p>GameSettingsGrid coming soon</p>
+                            </div>
+                            <div class="hstack" style="margin: 5px;">
+                                <button style="width: 100px;" @onclick="SaveButton_Click">Save</button>
+                                <button style="width: 140px; margin-left: 5px;" @onclick="OpenGameSettings_Click">Open in Notepad</button>
+                                <span style="margin-left: 10px; align-self: center;">@_statusText</span>
+                            </div>
+                        </div>
+                        break;
+
+                    case 1:
+                        <MatchSettingsPanel />
+                        break;
+
+                    case 2:
+                        <RingSpawnsPanel />
+                        break;
+
+                    case 3:
+                        <LoadoutEditorPanel />
+                        break;
+
+                    case 4:
+                        <ModSettingsPanel />
+                        break;
+
+                    case 5:
+                        <AdminPanel />
+                        break;
+
+                    case 6:
+                        <PluginsPanel />
+                        break;
+
+                    case 7:
+                        <PresetsGrid />
+                        break;
+
+                    case 8:
+                        <ReferencePanel />
+                        break;
+
+                    case 9:
+                        <ConsolePanel />
+                        break;
+                }
+            </div>
+        </div>
+    }
 </div>
+
+<ConfirmDialog @ref="_dialog" />
+
+@code {
+    private readonly string[] _tabNames =
+    {
+        "Server Settings", "Match Settings", "Ring & Spawns", "Loadouts",
+        "Mod Settings", "Admins", "Plugins", "Presets", "Reference", "Console"
+    };
+
+    private int _activeTab;
+    private string _statusText = "";
+    private ConfirmDialog _dialog = null!;
+
+    private string _serverDir = "";
+    private GameSettingsDynamicViewModel? _vm;
+    private FileSystemWatcher? _gameSettingsWatcher;
+    private DateTime _lastWriteTime = DateTime.MinValue;
+    private System.Timers.Timer? _statusClearTimer;
+    private bool _suppressWatcher;
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+        {
+            LoadSettings();
+        }
+    }
+
+    private void OnServerConfigured()
+    {
+        LoadSettings();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void LoadSettings()
+    {
+        _serverDir = State.ServerDir;
+        _vm = State.GameSettingsVm;
+
+        DisposeWatcher();
+        SetupFileWatcher();
+    }
+
+    private void SetupFileWatcher()
+    {
+        try
+        {
+            var gsPath = Path.Combine(_serverDir, "game_settings.txt");
+            if (!File.Exists(gsPath)) return;
+
+            var dir = Path.GetDirectoryName(gsPath);
+            if (dir == null) return;
+
+            _gameSettingsWatcher = new FileSystemWatcher(dir)
+            {
+                Filter = Path.GetFileName(gsPath),
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+            };
+
+            _gameSettingsWatcher.Changed += (s, e) =>
+            {
+                if (_suppressWatcher) return;
+                var currentWriteTime = File.GetLastWriteTime(e.FullPath);
+                if (currentWriteTime != _lastWriteTime)
+                {
+                    _lastWriteTime = currentWriteTime;
+                    try
+                    {
+                        var gs = ConfigIO.ReadGameSettings(e.FullPath);
+                        _vm = new GameSettingsDynamicViewModel(gs);
+                        State.GameSettingsVm = _vm;
+                        _statusText = "Settings reloaded from file";
+                        InvokeAsync(StateHasChanged);
+                    }
+                    catch { }
+                }
+            };
+
+            _gameSettingsWatcher.EnableRaisingEvents = true;
+        }
+        catch { }
+    }
+
+    private void SaveButton_Click()
+    {
+        if (_vm == null || string.IsNullOrEmpty(_serverDir)) return;
+
+        _suppressWatcher = true;
+        var path = Path.Combine(_serverDir, "game_settings.txt");
+        ConfigIO.WriteGameSettings(_vm.ToModel(), path);
+        _statusText = "Settings saved to file";
+
+        // Re-enable watcher after a short delay
+        _statusClearTimer?.Dispose();
+        _statusClearTimer = new System.Timers.Timer(1000);
+        _statusClearTimer.AutoReset = false;
+        _statusClearTimer.Elapsed += (s, e) => _suppressWatcher = false;
+        _statusClearTimer.Start();
+    }
+
+    private void OpenGameSettings_Click()
+    {
+        try
+        {
+            var path = Path.Combine(_serverDir, "game_settings.txt");
+            if (!File.Exists(path))
+            {
+                _statusText = "game_settings.txt not found. Save settings first.";
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "notepad.exe",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = false
+            });
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Could not open file: {ex.Message}";
+        }
+    }
+
+    private async Task HardReset_Click()
+    {
+        var confirmed = await _dialog.ShowAsync(
+            "Confirm Hard Reset",
+            "This will reset all settings to defaults. Continue?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (confirmed && _vm != null)
+        {
+            var defaults = new GameSettingsData();
+            _vm = new GameSettingsDynamicViewModel(defaults);
+            State.GameSettingsVm = _vm;
+            _statusText = "Settings reset to defaults (not saved yet)";
+        }
+    }
+
+    private void OpenServerFolder_Click()
+    {
+        if (!string.IsNullOrEmpty(_serverDir))
+            Process.Start("explorer", _serverDir);
+    }
+
+    private void OpenLogs_Click()
+    {
+        if (string.IsNullOrEmpty(_serverDir)) return;
+        var logDir = Path.Combine(_serverDir, "BepInEx");
+        if (!Directory.Exists(logDir)) logDir = _serverDir;
+        Process.Start("explorer", logDir);
+    }
+
+    private void OpenConfigs_Click()
+    {
+        if (!string.IsNullOrEmpty(_serverDir))
+            Process.Start("explorer", _serverDir);
+    }
+
+    private void QuickSaveRestart_Click()
+    {
+        SaveButton_Click();
+
+        var proc = State.ServerProcess;
+        if (proc?.IsRunning == true)
+        {
+            proc.Stop();
+            Task.Delay(1000).ContinueWith(_ =>
+            {
+                try
+                {
+                    proc.Start();
+                    InvokeAsync(StateHasChanged);
+                }
+                catch (Exception ex)
+                {
+                    _statusText = $"Failed to restart: {ex.Message}";
+                    InvokeAsync(StateHasChanged);
+                }
+            });
+        }
+    }
+
+    private void DisposeWatcher()
+    {
+        if (_gameSettingsWatcher != null)
+        {
+            _gameSettingsWatcher.EnableRaisingEvents = false;
+            _gameSettingsWatcher.Dispose();
+            _gameSettingsWatcher = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+        DisposeWatcher();
+        _statusClearTimer?.Dispose();
+    }
+}
