@@ -1,48 +1,47 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System.Configuration;
-using System.Data;
-using System.Windows;
+using System;
 using System.IO;
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace TabgInstaller.Gui
+namespace TabgInstaller.Gui;
+
+public partial class App : Application
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : System.Windows.Application
+    public static IServiceProvider Services { get; private set; } = null!;
+
+    public App() { }
+
+    private void Application_Startup(object sender, StartupEventArgs e)
     {
-        //private readonly ILogger<App> _logger;
-        //private readonly IHost _host;
+        try
+        {
+            var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+            Directory.CreateDirectory(logDir);
+            var logFile = Path.Combine(logDir, "startup.log");
+            File.AppendAllText(logFile, $"Starting {DateTime.Now}\n");
 
-        public App() { }
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddWpfBlazorWebView();
+            serviceCollection.AddSingleton<Services.AppState>();
 
-        private void Application_Startup(object sender, StartupEventArgs e)
+            Services = serviceCollection.BuildServiceProvider();
+
+            var mw = new MainWindow();
+            mw.Show();
+
+            File.AppendAllText(logFile, "MainWindow shown\n");
+        }
+        catch (Exception ex)
         {
             try
             {
-                var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                 Directory.CreateDirectory(logDir);
-                var logFile = Path.Combine(logDir, "startup.log");
-                File.AppendAllText(logFile, $"Starting {System.DateTime.Now}\n");
-
-                var mw = new MainWindow();
-                mw.Show();
-
-                File.AppendAllText(logFile, "MainWindow shown\n");
+                File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
             }
-            catch (System.Exception ex)
-            {
-                try
-                {
-                    var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
-                    Directory.CreateDirectory(logDir);
-                    File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
-                }
-                catch { }
-                MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown(-1);
-            }
+            catch { }
+            MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(-1);
         }
     }
 }
