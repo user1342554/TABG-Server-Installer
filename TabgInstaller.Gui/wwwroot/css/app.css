@@ -232,6 +232,8 @@ input[type="range"] {
     font-size: 12px;
 }
 .data-grid tr:hover { background: #E8F0FE; }
+.data-grid tr.selected { background: #CCE4F7; }
+.data-grid tr.selected:hover { background: #B8D8F0; }
 
 /* ── ScrollViewer ── */
 .scroll-area {

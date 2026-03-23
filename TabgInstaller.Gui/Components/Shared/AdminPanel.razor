@@ -1,1 +1,249 @@
-<div class="pad-5"><p>AdminPanel - coming soon</p></div>
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to manage admins.</span>
+        </div>
+    }
+    else
+    {
+        <!-- Admin List -->
+        <GroupBox Header="Server Admins" Style="flex:1; display:flex; flex-direction:column;">
+            <div class="scroll-area" style="flex:1; max-height:300px;">
+                <table class="data-grid">
+                    <thead>
+                        <tr>
+                            <th style="width:160px;">Name</th>
+                            <th style="width:300px;">Epic ID</th>
+                            <th style="width:80px;">Perm Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var admin in _admins)
+                        {
+                            <tr class="@(admin == _selectedAdmin ? "selected" : "")"
+                                @onclick="() => _selectedAdmin = admin"
+                                style="cursor:pointer;">
+                                <td>@admin.Name</td>
+                                <td>@admin.EpicId</td>
+                                <td>@admin.PermLevel</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </GroupBox>
+
+        <!-- Add Admin -->
+        <GroupBox Header="Add Admin" Style="margin-top:8px;">
+            <div style="padding:4px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <label style="width:60px;">Name:</label>
+                    <input type="text" style="flex:1; min-width:100px;" @bind="_newName" />
+                    <label style="width:60px;">Epic ID:</label>
+                    <input type="text" style="flex:2; min-width:150px;" @bind="_newEpicId" />
+                    <label style="width:50px;">Level:</label>
+                    <select style="width:60px;" @bind="_newPermLevel">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <button style="width:60px;" @onclick="AddAdmin">Add</button>
+                </div>
+                <div style="margin-top:6px; color:gray; font-size:11px;">
+                    How to find your Epic ID: Open TABG, join a server with Citruslib, and check the Guestbook log file
+                    in the server folder. Your Epic ID will be listed next to your player name.
+                    Alternatively, an admin can use /id &lt;yourname&gt; in the server chat.
+                </div>
+            </div>
+        </GroupBox>
+
+        <!-- Actions -->
+        <div class="hstack" style="padding:4px 0; margin-top:8px; flex-shrink:0;">
+            <button style="width:120px;" @onclick="RemoveAdmin">Remove Selected</button>
+            <button style="width:80px; margin-left:4px;" @onclick="Save">Save</button>
+            <span class="status-text @_statusCss" style="margin-left:10px;">@_statusText</span>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    private ConfirmDialog? Dialog { get; set; }
+
+    private List<AdminEntry> _admins = new();
+    private AdminEntry? _selectedAdmin;
+
+    private string _newName = "";
+    private string _newEpicId = "";
+    private int _newPermLevel = 4;
+
+    private string _statusText = "";
+    private string _statusCss = "";
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            LoadAdmins();
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            LoadAdmins();
+            StateHasChanged();
+        });
+    }
+
+    private string GetPermsPath() =>
+        System.IO.Path.Combine(State.ServerDir, "BepInEx", "config", "CitrusLib", "PlayerPerms.json");
+
+    private string GetExtraSettingsPath() =>
+        System.IO.Path.Combine(State.ServerDir, "BepInEx", "config", "CitrusLib", "ExtraSettings.json");
+
+    private void LoadAdmins()
+    {
+        _admins.Clear();
+        _selectedAdmin = null;
+
+        try
+        {
+            var permsPath = GetPermsPath();
+            var extraPath = GetExtraSettingsPath();
+
+            var epicIds = ConfigIO.ReadPlayerPerms(permsPath);
+            var extra = ConfigIO.ReadExtraSettings(extraPath);
+
+            foreach (var epicId in epicIds)
+            {
+                extra.TryGetValue($"admin_name_{epicId}", out var name);
+                extra.TryGetValue($"admin_perm_{epicId}", out var permStr);
+                int.TryParse(permStr, out var perm);
+                if (perm < 1 || perm > 5) perm = 4;
+
+                _admins.Add(new AdminEntry
+                {
+                    Name = name ?? "",
+                    EpicId = epicId,
+                    PermLevel = perm
+                });
+            }
+
+            _statusText = $"Loaded {_admins.Count} admin(s)";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error loading: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private async Task AddAdmin()
+    {
+        var name = _newName.Trim();
+        var epicId = _newEpicId.Trim();
+
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(epicId))
+        {
+            if (Dialog != null)
+                await Dialog.ShowAsync("Missing Info", "Please enter both a name and an Epic ID.");
+            else
+            {
+                _statusText = "Please enter both a name and an Epic ID.";
+                _statusCss = "error";
+            }
+            return;
+        }
+
+        _admins.Add(new AdminEntry { Name = name, EpicId = epicId, PermLevel = _newPermLevel });
+        _newName = "";
+        _newEpicId = "";
+        _statusText = $"Added {name}";
+        _statusCss = "";
+    }
+
+    private async Task RemoveAdmin()
+    {
+        if (_selectedAdmin == null) return;
+
+        if (Dialog != null)
+        {
+            var confirmed = await Dialog.ShowAsync(
+                "Confirm Remove",
+                $"Remove admin \"{_selectedAdmin.Name}\"?",
+                ConfirmDialog.DialogMode.YesNo);
+            if (!confirmed) return;
+        }
+
+        var removed = _selectedAdmin;
+        _admins.Remove(_selectedAdmin);
+        _selectedAdmin = null;
+        _statusText = $"Removed {removed.Name}";
+        _statusCss = "";
+    }
+
+    private void Save()
+    {
+        try
+        {
+            var permsPath = GetPermsPath();
+            var extraPath = GetExtraSettingsPath();
+
+            // Build the Epic ID list for PlayerPerms.json
+            var epicIds = _admins.Select(a => a.EpicId).ToList();
+
+            // Build the extra settings dict preserving non-admin keys
+            var extra = ConfigIO.ReadExtraSettings(extraPath);
+
+            // Remove old admin_name_ and admin_perm_ keys
+            var keysToRemove = extra.Keys
+                .Where(k => k.StartsWith("admin_name_") || k.StartsWith("admin_perm_"))
+                .ToList();
+            foreach (var key in keysToRemove)
+                extra.Remove(key);
+
+            // Add current admin entries
+            foreach (var admin in _admins)
+            {
+                extra[$"admin_name_{admin.EpicId}"] = admin.Name;
+                extra[$"admin_perm_{admin.EpicId}"] = admin.PermLevel.ToString();
+            }
+
+            // Ensure directories exist
+            var permsDir = System.IO.Path.GetDirectoryName(permsPath);
+            if (!string.IsNullOrEmpty(permsDir))
+                System.IO.Directory.CreateDirectory(permsDir);
+
+            ConfigIO.WritePlayerPerms(epicIds, permsPath);
+            ConfigIO.WriteExtraSettings(extra, extraPath);
+
+            _statusText = $"Saved {_admins.Count} admin(s)";
+            _statusCss = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error saving: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+
+    private class AdminEntry
+    {
+        public string Name { get; set; } = "";
+        public string EpicId { get; set; } = "";
+        public int PermLevel { get; set; } = 4;
+    }
+}
