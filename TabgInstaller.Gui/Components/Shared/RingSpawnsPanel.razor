@@ -1,1 +1,323 @@
-<div class="pad-5"><p>RingSpawnsPanel - coming soon</p></div>
+@using TabgInstaller.Core
+@using TabgInstaller.Core.Model
+@using TabgInstaller.Core.Services
+@inject AppState State
+
+<div style="display: flex; flex-direction: column; height: 100%; padding: 8px;">
+    <!-- Scrollable content area -->
+    <div class="scroll-area" style="flex: 1; overflow-y: auto;">
+        <div style="padding: 4px;">
+
+            <!-- Location Picker -->
+            <GroupBox Header="Location Picker">
+                <div class="grid-2col" style="padding: 4px;">
+                    <div style="width: 180px;">Location</div>
+                    <div class="hstack">
+                        <select style="flex: 1;" value="@_selectedLocationIndex"
+                                @onchange="OnLocationChanged">
+                            @for (int i = 0; i < ItemDatabase.SpawnLocations.Count; i++)
+                            {
+                                var loc = ItemDatabase.SpawnLocations[i];
+                                <option value="@i">@loc.Name</option>
+                            }
+                        </select>
+                        <button style="width: 120px; margin-left: 8px;" @onclick="ApplyLocation">Apply Location</button>
+                    </div>
+                </div>
+                <div style="margin-top: 4px; color: gray; font-size: 11px;">
+                    @_locationInfo
+                </div>
+            </GroupBox>
+
+            <!-- Ring Settings -->
+            <GroupBox Header="Ring Settings" Style="margin-top: 12px;">
+                <div class="grid-2col" style="padding: 4px;">
+                    <div style="width: 180px;">Ring Sizes (3 values)</div>
+                    <div>
+                        <input type="text" style="width: 100%;" value="@_ringSizes"
+                               @onchange="e => _ringSizes = e.Value?.ToString() ?? string.Empty" />
+                    </div>
+
+                    <div style="width: 180px;">Ring Speeds (3 values)</div>
+                    <div>
+                        <input type="text" style="width: 100%;" value="@_ringSpeeds"
+                               @onchange="e => _ringSpeeds = e.Value?.ToString() ?? string.Empty" />
+                    </div>
+                </div>
+                <div class="hstack" style="margin-top: 6px;">
+                    <button style="width: 180px;" @onclick="PresetDeathmatch">No Closing (Deathmatch)</button>
+                    <button style="width: 120px; margin-left: 8px;" @onclick="PresetStandardBR">Standard BR</button>
+                </div>
+            </GroupBox>
+
+            <!-- Lobby Spawn -->
+            <GroupBox Header="Lobby Spawn" Style="margin-top: 12px;">
+                <div class="grid-2col" style="padding: 4px;">
+                    <div style="width: 180px;">Custom Spawn Point (x,y,z)</div>
+                    <div>
+                        <input type="text" style="width: 100%;" value="@_customSpawnPoint"
+                               @onchange="e => _customSpawnPoint = e.Value?.ToString() ?? string.Empty" />
+                    </div>
+
+                    <div style="width: 180px;">Use Custom Spawn</div>
+                    <div>
+                        <input type="checkbox" checked="@_useCustomSpawn"
+                               @onchange="OnUseCustomSpawnChanged" />
+                    </div>
+                </div>
+                <div style="margin-top: 4px; color: gray; font-size: 11px;">
+                    @_spawnInfo
+                </div>
+            </GroupBox>
+
+            <!-- Match Spawns -->
+            <GroupBox Header="Match Spawns" Style="margin-top: 12px;">
+                <div style="margin-bottom: 4px;">Spawn Coordinates (one x,z per line):</div>
+                <textarea class="monospace" style="width: 100%; height: 160px;"
+                          value="@_matchSpawns"
+                          @oninput="OnMatchSpawnsInput">@_matchSpawns</textarea>
+                <div style="margin-top: 4px; color: gray; font-size: 11px;">
+                    @_spawnCount
+                </div>
+            </GroupBox>
+
+        </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="hstack" style="padding: 4px 4px 4px 4px; margin-top: 8px;">
+        <button style="width: 100px;" @onclick="Save">Save</button>
+        <span class="status-text" style="margin-left: 12px;">@_statusText</span>
+    </div>
+</div>
+
+@code {
+    private int _selectedLocationIndex;
+    private string _locationInfo = "";
+    private string _ringSizes = "";
+    private string _ringSpeeds = "";
+    private string _customSpawnPoint = "";
+    private bool _useCustomSpawn;
+    private string _spawnInfo = "When checked, ValidSpawnPoints is set to 6 (custom).";
+    private string _matchSpawns = "";
+    private string _spawnCount = "";
+    private string _statusText = "";
+
+    private StarterPackTextSettings? _starterPackSettings;
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+        {
+            LoadSettings();
+        }
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            LoadSettings();
+            StateHasChanged();
+        });
+    }
+
+    private void LoadSettings()
+    {
+        try
+        {
+            // Select first location by default
+            _selectedLocationIndex = 0;
+            UpdateLocationInfo();
+
+            // Load StarterPack settings
+            _starterPackSettings = StarterPackConfigService.Read(State.ServerDir);
+            _customSpawnPoint = _starterPackSettings.CustomSpawnPoint;
+            _useCustomSpawn = _starterPackSettings.ValidSpawnPoints.Contains("6");
+            UpdateSpawnInfo();
+
+            // Load game_settings.txt for ring sizes/speeds
+            var gsPath = System.IO.Path.Combine(State.ServerDir, "game_settings.txt");
+            if (System.IO.File.Exists(gsPath))
+            {
+                var gs = ConfigIO.ReadGameSettings(gsPath);
+                _ringSizes = gs.RingSizes;
+                _ringSpeeds = gs.RingSpeeds;
+            }
+
+            // Load match spawn points
+            var spawnPoints = ModConfigService.ReadSpawnPoints(State.ServerDir);
+            _matchSpawns = SpawnPointsToMultiline(spawnPoints);
+            UpdateSpawnCount();
+
+            _statusText = "Settings loaded.";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error loading: {ex.Message}";
+        }
+    }
+
+    private void OnLocationChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var idx))
+        {
+            _selectedLocationIndex = idx;
+            UpdateLocationInfo();
+        }
+    }
+
+    private void UpdateLocationInfo()
+    {
+        if (_selectedLocationIndex >= 0 && _selectedLocationIndex < ItemDatabase.SpawnLocations.Count)
+        {
+            var loc = ItemDatabase.SpawnLocations[_selectedLocationIndex];
+            var spawnCount = loc.MatchSpawns.Split(';').Length;
+            _locationInfo = $"Ring Size: {loc.RingSize}  |  Lobby: {loc.LobbySpawn}  |  Spawns: {spawnCount} points";
+        }
+        else
+        {
+            _locationInfo = "";
+        }
+    }
+
+    private void ApplyLocation()
+    {
+        if (_selectedLocationIndex < 0 || _selectedLocationIndex >= ItemDatabase.SpawnLocations.Count) return;
+
+        var loc = ItemDatabase.SpawnLocations[_selectedLocationIndex];
+
+        // Fill ring sizes with the location's ring size repeated 3 times
+        _ringSizes = $"{loc.RingSize}, {loc.RingSize}, {loc.RingSize}";
+
+        // Fill lobby spawn
+        _customSpawnPoint = loc.LobbySpawn;
+        _useCustomSpawn = true;
+        UpdateSpawnInfo();
+
+        // Fill match spawns
+        _matchSpawns = SpawnPointsToMultiline(loc.MatchSpawns);
+        UpdateSpawnCount();
+
+        _statusText = $"Applied location: {loc.Name}";
+    }
+
+    private void PresetDeathmatch()
+    {
+        // Use current location ring size if one is selected, otherwise keep existing
+        if (_selectedLocationIndex >= 0 && _selectedLocationIndex < ItemDatabase.SpawnLocations.Count)
+        {
+            var loc = ItemDatabase.SpawnLocations[_selectedLocationIndex];
+            _ringSizes = $"{loc.RingSize}, {loc.RingSize}, {loc.RingSize}";
+        }
+        _ringSpeeds = "0.001, 50, 0.001";
+        _statusText = "Applied deathmatch ring preset.";
+    }
+
+    private void PresetStandardBR()
+    {
+        _ringSizes = "4240.0, 3450.0, 1710.0";
+        _ringSpeeds = "120, 120, 150";
+        _statusText = "Applied standard BR ring preset.";
+    }
+
+    private void OnUseCustomSpawnChanged(ChangeEventArgs e)
+    {
+        if (e.Value is bool b)
+            _useCustomSpawn = b;
+        else if (e.Value is string s && bool.TryParse(s, out var parsed))
+            _useCustomSpawn = parsed;
+
+        UpdateSpawnInfo();
+    }
+
+    private void UpdateSpawnInfo()
+    {
+        _spawnInfo = _useCustomSpawn
+            ? "ValidSpawnPoints will be set to 6 (custom)."
+            : "Custom spawn disabled. ValidSpawnPoints will revert to default.";
+    }
+
+    private void OnMatchSpawnsInput(ChangeEventArgs e)
+    {
+        _matchSpawns = e.Value?.ToString() ?? "";
+        UpdateSpawnCount();
+    }
+
+    private void UpdateSpawnCount()
+    {
+        var lines = _matchSpawns
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .ToArray();
+        _spawnCount = $"{lines.Length} spawn point(s)";
+    }
+
+    private void Save()
+    {
+        try
+        {
+            // Save StarterPack settings (CustomSpawnPoint, ValidSpawnPoints)
+            if (_starterPackSettings == null)
+                _starterPackSettings = StarterPackConfigService.Read(State.ServerDir);
+
+            _starterPackSettings.CustomSpawnPoint = _customSpawnPoint.Trim();
+            if (_useCustomSpawn)
+                _starterPackSettings.ValidSpawnPoints = "6";
+            else if (_starterPackSettings.ValidSpawnPoints == "6")
+                _starterPackSettings.ValidSpawnPoints = "2";
+
+            StarterPackConfigService.Write(State.ServerDir, _starterPackSettings);
+
+            // Save match spawn points
+            var spawnPointsStr = MultilineToSpawnPoints(_matchSpawns);
+            ModConfigService.WriteSpawnPoints(State.ServerDir, spawnPointsStr);
+
+            // Save ring sizes/speeds to game_settings.txt
+            var gsPath = System.IO.Path.Combine(State.ServerDir, "game_settings.txt");
+            var gs = System.IO.File.Exists(gsPath)
+                ? ConfigIO.ReadGameSettings(gsPath)
+                : new GameSettingsData();
+
+            gs.RingSizes = _ringSizes.Trim();
+            gs.RingSpeeds = _ringSpeeds.Trim();
+            ConfigIO.WriteGameSettings(gs, gsPath);
+
+            _statusText = "Settings saved.";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error saving: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Converts semicolon-separated "x,z;x,z;..." to multiline "x,z\nx,z\n..."
+    /// </summary>
+    private static string SpawnPointsToMultiline(string spawnPoints)
+    {
+        if (string.IsNullOrWhiteSpace(spawnPoints)) return "";
+        var points = spawnPoints.Split(';')
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrEmpty(p));
+        return string.Join(Environment.NewLine, points);
+    }
+
+    /// <summary>
+    /// Converts multiline "x,z\nx,z\n..." back to semicolon-separated "x,z;x,z;..."
+    /// </summary>
+    private static string MultilineToSpawnPoints(string multiline)
+    {
+        if (string.IsNullOrWhiteSpace(multiline)) return "";
+        var points = multiline.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrEmpty(p));
+        return string.Join(";", points);
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+}
