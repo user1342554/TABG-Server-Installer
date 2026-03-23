@@ -1,1 +1,236 @@
-<div class="pad-5"><p>PluginsPanel - coming soon</p></div>
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to manage plugins.</span>
+        </div>
+    }
+    else
+    {
+        <label style="margin-bottom:4px;">Installed plugins (BepInEx/plugins):</label>
+
+        <div class="list-view" style="height:280px; overflow-y:auto;">
+            @foreach (var plugin in _plugins)
+            {
+                <div class="list-view-item @(plugin == _selectedPlugin ? "selected" : "")"
+                     @onclick="() => _selectedPlugin = plugin">
+                    <div class="checkbox-row">
+                        <input type="checkbox" checked="@plugin.IsEnabled"
+                               @onchange="e => TogglePlugin(plugin, (bool)(e.Value ?? false))" />
+                        <span>@plugin.Name</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="hstack" style="margin-top:10px;">
+            <button style="width:100px;" @onclick="AddPlugin">Add DLL...</button>
+            <button style="width:120px; margin-left:5px;" @onclick="RemovePlugin">Remove Selected</button>
+            <button style="width:100px; margin-left:5px;" @onclick="OpenPluginsFolder">Open Folder</button>
+        </div>
+
+        <span class="status-text @_statusCss" style="margin-top:6px;">@_statusText</span>
+    }
+</div>
+
+<ConfirmDialog @ref="_dialog" />
+
+@code {
+    private ConfirmDialog _dialog = null!;
+    private List<PluginEntry> _plugins = new();
+    private PluginEntry? _selectedPlugin;
+    private string _statusText = "";
+    private string _statusCss = "";
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            LoadPluginsList();
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            LoadPluginsList();
+            StateHasChanged();
+        });
+    }
+
+    private string PluginsDir => State.PluginsDir;
+    private string DisabledDir => System.IO.Path.Combine(PluginsDir, "disabled");
+
+    private void LoadPluginsList()
+    {
+        _plugins.Clear();
+        _selectedPlugin = null;
+
+        try
+        {
+            if (!System.IO.Directory.Exists(PluginsDir))
+            {
+                System.IO.Directory.CreateDirectory(PluginsDir);
+            }
+
+            foreach (var dll in System.IO.Directory.GetFiles(PluginsDir, "*.dll"))
+            {
+                _plugins.Add(new PluginEntry { Name = System.IO.Path.GetFileName(dll), IsEnabled = true });
+            }
+
+            if (System.IO.Directory.Exists(DisabledDir))
+            {
+                foreach (var dll in System.IO.Directory.GetFiles(DisabledDir, "*.dll"))
+                {
+                    _plugins.Add(new PluginEntry { Name = System.IO.Path.GetFileName(dll), IsEnabled = false });
+                }
+            }
+
+            _statusText = $"Loaded {_plugins.Count} plugin(s)";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Error loading plugins: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private void TogglePlugin(PluginEntry plugin, bool newEnabled)
+    {
+        // Determine source and destination based on current state (before toggle)
+        var src = plugin.IsEnabled
+            ? System.IO.Path.Combine(PluginsDir, plugin.Name)
+            : System.IO.Path.Combine(DisabledDir, plugin.Name);
+        var dst = plugin.IsEnabled
+            ? System.IO.Path.Combine(DisabledDir, plugin.Name)
+            : System.IO.Path.Combine(PluginsDir, plugin.Name);
+
+        try
+        {
+            if (!plugin.IsEnabled)
+            {
+                // Moving from disabled to enabled - source is disabled dir, no need to create disabled dir
+            }
+            else
+            {
+                // Moving from enabled to disabled - ensure disabled dir exists
+                if (!System.IO.Directory.Exists(DisabledDir))
+                    System.IO.Directory.CreateDirectory(DisabledDir);
+            }
+
+            if (System.IO.File.Exists(src))
+            {
+                if (System.IO.File.Exists(dst))
+                    System.IO.File.Delete(dst);
+                System.IO.File.Move(src, dst);
+            }
+
+            plugin.IsEnabled = newEnabled;
+            _statusText = $"{plugin.Name} {(newEnabled ? "enabled" : "disabled")}";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to toggle plugin: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private void AddPlugin()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "DLL files (*.dll)|*.dll",
+            Title = "Select plugin DLL"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                if (!System.IO.Directory.Exists(PluginsDir))
+                    System.IO.Directory.CreateDirectory(PluginsDir);
+
+                var dst = System.IO.Path.Combine(PluginsDir, System.IO.Path.GetFileName(dialog.FileName));
+                System.IO.File.Copy(dialog.FileName, dst, true);
+                LoadPluginsList();
+                _statusText = $"Added {System.IO.Path.GetFileName(dialog.FileName)}";
+                _statusCss = "success";
+            }
+            catch (Exception ex)
+            {
+                _statusText = $"Failed to add plugin: {ex.Message}";
+                _statusCss = "error";
+            }
+        }
+    }
+
+    private async Task RemovePlugin()
+    {
+        if (_selectedPlugin == null)
+        {
+            _statusText = "No plugin selected";
+            _statusCss = "";
+            return;
+        }
+
+        var confirmed = await _dialog.ShowAsync(
+            "Confirm",
+            $"Remove {_selectedPlugin.Name}?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        try
+        {
+            var path = _selectedPlugin.IsEnabled
+                ? System.IO.Path.Combine(PluginsDir, _selectedPlugin.Name)
+                : System.IO.Path.Combine(DisabledDir, _selectedPlugin.Name);
+
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+                var removedName = _selectedPlugin.Name;
+                LoadPluginsList();
+                _statusText = $"Removed {removedName}";
+                _statusCss = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to remove plugin: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private void OpenPluginsFolder()
+    {
+        try
+        {
+            if (!System.IO.Directory.Exists(PluginsDir))
+                System.IO.Directory.CreateDirectory(PluginsDir);
+
+            System.Diagnostics.Process.Start("explorer", PluginsDir);
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to open folder: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+
+    private class PluginEntry
+    {
+        public string Name { get; set; } = "";
+        public bool IsEnabled { get; set; }
+    }
+}

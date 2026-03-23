@@ -1,1 +1,141 @@
-<div class="pad-5"><p>ConsolePanel - coming soon</p></div>
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to use the console.</span>
+        </div>
+    }
+    else
+    {
+        <!-- Top bar -->
+        <div class="hstack" style="margin-bottom:5px; flex-shrink:0;">
+            <button style="width:100px; margin:2px;" disabled="@_isRunning" @onclick="StartServer">Start Server</button>
+            <button style="width:100px; margin:2px;" disabled="@(!_isRunning)" @onclick="StopServer">Stop Server</button>
+            <button style="width:100px; margin:2px;" @onclick="ClearConsole">Clear Console</button>
+        </div>
+
+        <!-- Scrollable output area -->
+        <div class="log-area" style="flex:1; overflow-y:auto; margin-bottom:5px;" @ref="_consoleDiv">
+            @_consoleOutput
+        </div>
+
+        <!-- Command input -->
+        <div style="display:flex; flex-shrink:0;">
+            <input type="text" style="flex:1;" @bind="_commandText" @bind:event="oninput"
+                   @onkeydown="OnCommandKeyDown" placeholder="Enter command..." />
+            <button style="width:60px; margin-left:5px;" @onclick="SendCommand">Send</button>
+        </div>
+    }
+</div>
+
+<ConfirmDialog @ref="_dialog" />
+
+@code {
+    private ConfirmDialog _dialog = null!;
+    private ElementReference _consoleDiv;
+    private string _consoleOutput = "";
+    private string _commandText = "";
+    private bool _isRunning;
+    private string _statusText = "";
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            SubscribeToProcess();
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            SubscribeToProcess();
+            StateHasChanged();
+        });
+    }
+
+    private void SubscribeToProcess()
+    {
+        var proc = State.ServerProcess;
+        if (proc != null)
+        {
+            proc.OutputReceived += OnOutputReceived;
+            _isRunning = proc.IsRunning;
+        }
+    }
+
+    private void OnOutputReceived(string line)
+    {
+        InvokeAsync(() =>
+        {
+            _consoleOutput += line + Environment.NewLine;
+            _isRunning = State.ServerProcess?.IsRunning ?? false;
+            StateHasChanged();
+        });
+    }
+
+    private async Task StartServer()
+    {
+        var proc = State.ServerProcess;
+        if (proc == null || proc.IsRunning) return;
+
+        try
+        {
+            proc.Start();
+            _isRunning = true;
+            _consoleOutput += $"[Server started]{Environment.NewLine}";
+        }
+        catch (Exception ex)
+        {
+            await _dialog.ShowAsync("Failed to start", ex.Message);
+        }
+    }
+
+    private void StopServer()
+    {
+        var proc = State.ServerProcess;
+        if (proc == null || !proc.IsRunning) return;
+
+        proc.Stop();
+        _isRunning = false;
+        _consoleOutput += $"[Server stopped]{Environment.NewLine}";
+    }
+
+    private void ClearConsole()
+    {
+        _consoleOutput = "";
+    }
+
+    private void SendCommand()
+    {
+        var proc = State.ServerProcess;
+        if (proc?.IsRunning == true && !string.IsNullOrWhiteSpace(_commandText))
+        {
+            _consoleOutput += $"> {_commandText}{Environment.NewLine}";
+            _consoleOutput += $"Command sending not implemented yet{Environment.NewLine}";
+            _commandText = "";
+        }
+    }
+
+    private void OnCommandKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SendCommand();
+        }
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+
+        var proc = State.ServerProcess;
+        if (proc != null)
+        {
+            proc.OutputReceived -= OnOutputReceived;
+        }
+    }
+}
