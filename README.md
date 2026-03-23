@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="logo/tabg-mod-manager-icon-256.png" alt="TABG Server Installer" width="128" />
-
 <pre>
  _____                                                               _____
 ( ___ )-------------------------------------------------------------( ___ )
