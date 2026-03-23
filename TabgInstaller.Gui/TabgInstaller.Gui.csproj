@@ -12,10 +12,6 @@
   <ItemGroup>
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="Controls\" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.12" />

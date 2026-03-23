@@ -1,6 +1,4 @@
-using System;
 using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Components.Layout;
 
@@ -8,11 +6,6 @@ namespace TabgInstaller.Gui;
 
 public partial class MainWindow : Window
 {
-    // Stub so old WPF panels (InstallerPanel, PresetsGrid) still compile.
-    // These will be removed when the old WPF tabs are deleted (Task 19).
-    public ConfigTabStub ConfigTab { get; } = new();
-    public class ConfigTabStub { public void Initialize(string serverDir) { } }
-
     public MainWindow()
     {
         InitializeComponent();
