@@ -1,4 +1,240 @@
-<div class="pad-10">
-    <h3>Client</h3>
-    <p>Client panel - coming soon</p>
+@using System.IO
+@using System.IO.Compression
+
+<div class="pad-10 vstack" style="height: 100%;">
+    <!-- Client Mods -->
+    <GroupBox Header="Client Mods (creates a modded TABG copy — EAC blocks mods in Steam folder)">
+        <div class="vstack" style="gap: 0;">
+            <div class="hstack" style="margin: 5px 5px 2px 5px;">
+                <span style="white-space: nowrap; padding-right: 4px;">TABG Steam folder:</span>
+                <input type="text" @bind="clientPath" style="flex: 1;" disabled="@isInstalling" />
+            </div>
+            <div class="hstack" style="margin: 5px 5px 5px 5px;">
+                <span style="white-space: nowrap; padding-right: 4px;">Modded copy folder:</span>
+                <input type="text" @bind="moddedPath" style="flex: 1;" disabled="@isInstalling" />
+            </div>
+
+            @for (int i = 0; i < clientMods.Length; i++)
+            {
+                var idx = i;
+                <label class="checkbox-row">
+                    <input type="checkbox" @bind="clientMods[idx].IsChecked" disabled="@isInstalling" />
+                    @clientMods[idx].Label
+                </label>
+            }
+
+            <div class="hstack" style="margin: 6px 5px 2px 5px;">
+                <button style="width: 200px; height: 30px;" @onclick="BtnInstallClientMods_Click" disabled="@isInstalling">INSTALL CLIENT MODS</button>
+                <button style="width: 200px; height: 30px;" @onclick="BtnLaunchModdedTabg_Click" disabled="@isInstalling">LAUNCH MODDED TABG</button>
+            </div>
+        </div>
+    </GroupBox>
+
+    <!-- Log -->
+    <GroupBox Header="Log" Style="flex: 1; display: flex; flex-direction: column;">
+        <div class="log-area" style="flex: 1; max-height: 300px;" @ref="logElement">@logText</div>
+    </GroupBox>
 </div>
+
+@code {
+    [CascadingParameter]
+    private ConfirmDialog Dialog { get; set; } = null!;
+
+    private string clientPath = "";
+    private string moddedPath = "";
+    private string logText = "";
+    private bool isInstalling;
+    private ElementReference logElement;
+
+    private ClientModEntry[] clientMods = null!;
+
+    private class ClientModEntry
+    {
+        public string Label { get; set; } = "";
+        public bool IsChecked { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        clientMods = new ClientModEntry[]
+        {
+            new() { Label = "FlyingControls \u2014 Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)", IsChecked = true },
+            new() { Label = "Enhanced TABG \u2014 Infinite LOD (F1), HUD toggle (F2), fog removal (F3)", IsChecked = true },
+            new() { Label = "BigSmokeGrenade \u2014 Giant purple smoke grenades", IsChecked = true },
+            new() { Label = "MGLFlashbang \u2014 MGL shoots flashbang rounds", IsChecked = true },
+            new() { Label = "Coords Display \u2014 Press F5 to show your X/Y/Z position", IsChecked = true },
+            new() { Label = "Mod Settings \u2014 In-game settings menu for all mods (press #)", IsChecked = true },
+            new() { Label = "Pop-up Blocker \u2014 Disable anti-cheat popups for custom servers", IsChecked = true },
+            new() { Label = "Proximity Chat \u2014 Proximity voice chat for custom servers", IsChecked = true },
+            new() { Label = "Hunt Mode Client \u2014 HUD and perk selection UI", IsChecked = false },
+            new() { Label = "Juggernaut Mode Client \u2014 Boss bar, loadout picker, scoreboard", IsChecked = false },
+            new() { Label = "TABGVR \u2014 Play TABG in Virtual Reality (requires VR headset)", IsChecked = false },
+        };
+
+        var detectedPath = Installer.TryFindTabgClientPath();
+        if (!string.IsNullOrEmpty(detectedPath))
+        {
+            clientPath = detectedPath;
+            var parent = Path.GetDirectoryName(detectedPath);
+            if (parent != null)
+                moddedPath = Path.Combine(parent, "TABG_Modded");
+        }
+    }
+
+    private async Task BtnLaunchModdedTabg_Click()
+    {
+        string moddedDir = moddedPath.Trim();
+        string exe = Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe");
+        if (!File.Exists(exe))
+        {
+            await Dialog.ShowAsync("Not Installed",
+                "Modded TABG not found. Install client mods first.");
+            return;
+        }
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exe,
+                WorkingDirectory = moddedDir,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowAsync("Error", $"Failed to launch: {ex.Message}");
+        }
+    }
+
+    private async Task BtnInstallClientMods_Click()
+    {
+        string clientDir = clientPath.Trim();
+        string moddedDir = moddedPath.Trim();
+
+        if (string.IsNullOrWhiteSpace(clientDir) || !Directory.Exists(clientDir))
+        {
+            await Dialog.ShowAsync("Invalid Path",
+                "Please enter a valid TABG Steam folder path.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(moddedDir))
+        {
+            await Dialog.ShowAsync("Invalid Path",
+                "Please enter a folder path for the modded TABG copy.");
+            return;
+        }
+
+        var selectedClientPlugins = new List<string>();
+        if (clientMods[0].IsChecked) selectedClientPlugins.Add("TabgInstaller.FlyingControls.dll");
+        if (clientMods[1].IsChecked) selectedClientPlugins.Add("Enhanced TABG.dll");
+        if (clientMods[4].IsChecked) selectedClientPlugins.Add("TabgInstaller.CoordsDisplay.dll");
+        if (clientMods[2].IsChecked || clientMods[3].IsChecked) selectedClientPlugins.Add("TabgInstaller.CustomGrenades.dll");
+        if (clientMods[5].IsChecked) selectedClientPlugins.Add("TabgInstaller.ModSettings.dll");
+        if (clientMods[6].IsChecked) selectedClientPlugins.Add("Pop-up Blocker.dll");
+        if (clientMods[7].IsChecked)
+        {
+            selectedClientPlugins.Add("TabgInstaller.ProximityChat.Client.dll");
+        }
+        if (clientMods[8].IsChecked)
+        {
+            selectedClientPlugins.Add("TabgInstaller.HuntMode.Client.dll");
+            selectedClientPlugins.Add("TabgInstaller.HuntMode.Shared.dll");
+        }
+        if (clientMods[9].IsChecked) selectedClientPlugins.Add("JuggernautMode.Client.dll");
+        bool installVR = clientMods[10].IsChecked;
+        if (installVR) selectedClientPlugins.Add("TABGVR.dll");
+
+        if (selectedClientPlugins.Count == 0)
+        {
+            await Dialog.ShowAsync("No Mods Selected",
+                "Please select at least one client mod.");
+            return;
+        }
+
+        bool alreadyExists = Directory.Exists(moddedDir) && File.Exists(Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe"));
+
+        string confirmMessage = alreadyExists
+            ? $"Modded copy already exists at:\n{moddedDir}\n\nThis will update the mods. Continue?"
+            : $"This will copy TABG to:\n{moddedDir}\n\nThen install BepInEx + {selectedClientPlugins.Count} mod(s).\n\nTo play: open Steam, then run the exe from the modded folder.\n\nContinue?";
+
+        bool confirmed = await Dialog.ShowAsync("Install Client Mods", confirmMessage, ConfirmDialog.DialogMode.YesNo);
+        if (!confirmed) return;
+
+        isInstalling = true;
+        logText = "";
+        StateHasChanged();
+
+        var progress = new Progress<string>(line =>
+        {
+            InvokeAsync(() =>
+            {
+                logText += line + Environment.NewLine;
+                StateHasChanged();
+            });
+        });
+
+        try
+        {
+            logText += "=== Installing Client Mods ===" + Environment.NewLine;
+            StateHasChanged();
+
+            bool success = await Task.Run(() => ClientModInstaller.InstallAsync(clientDir, moddedDir, selectedClientPlugins, progress));
+
+            // Install TABGVR extras (XR runtime, OpenXR loader) if selected
+            if (success && installVR)
+            {
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                        var vrZipCandidates = new[]
+                        {
+                            Path.Combine(baseDir, "tabgvr", "TABGVR.zip"),
+                            Path.Combine(baseDir, "..", "tabgvr", "TABGVR.zip"),
+                            Path.Combine(baseDir, "..", "..", "tabgvr", "TABGVR.zip"),
+                            Path.Combine(baseDir, "..", "..", "..", "tabgvr", "TABGVR.zip"),
+                        };
+
+                        string? vrZip = null;
+                        foreach (var c in vrZipCandidates)
+                            if (File.Exists(c)) { vrZip = Path.GetFullPath(c); break; }
+
+                        if (vrZip != null)
+                        {
+                            ((IProgress<string>)progress).Report("Installing TABGVR extras (XR runtime, OpenXR)...");
+                            ZipFile.ExtractToDirectory(vrZip, moddedDir, overwriteFiles: true);
+                            ((IProgress<string>)progress).Report("TABGVR VR runtime installed.");
+                        }
+                        else
+                        {
+                            ((IProgress<string>)progress).Report("WARNING: TABGVR.zip not found \u2014 VR runtime files not installed. TABGVR.dll was installed but VR may not work without the runtime.");
+                        }
+                    }
+                    catch (Exception vrEx)
+                    {
+                        ((IProgress<string>)progress).Report($"WARNING: Failed to extract TABGVR extras: {vrEx.Message}");
+                    }
+                });
+            }
+
+            if (success)
+                await Dialog.ShowAsync("Success",
+                    $"Client mods installed!\n\nModded TABG is at:\n{moddedDir}\n\nTo play:\n1. Make sure Steam is open\n2. Run TotallyAccurateBattlegrounds.exe from the modded folder\n3. Do NOT launch through Steam");
+            else
+                await Dialog.ShowAsync("Warning",
+                    "Client mod installation had errors. Check the log.");
+        }
+        catch (Exception ex)
+        {
+            logText += $"ERROR: {ex.Message}" + Environment.NewLine;
+            StateHasChanged();
+            await Dialog.ShowAsync("Error", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            isInstalling = false;
+            StateHasChanged();
+        }
+    }
+}
