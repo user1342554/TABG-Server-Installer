@@ -1,0 +1,82 @@
+@inject AppState State
+@implements IDisposable
+
+<div class="tab-control">
+    <div class="tab-headers">
+        @foreach (var tab in _tabs)
+        {
+            <button class="tab-header @(tab == _activeTab ? "active" : "") @(!tab.Enabled ? "disabled" : "")"
+                    @onclick="() => SelectTab(tab)"
+                    disabled="@(!tab.Enabled)">
+                @tab.Title
+            </button>
+        }
+    </div>
+    <div class="tab-content">
+        @_activeTab?.Content
+    </div>
+</div>
+
+<CascadingValue Value="_dialog">
+    <ConfirmDialog @ref="_dialog" />
+</CascadingValue>
+
+@code {
+    private ConfirmDialog _dialog = null!;
+    private List<TabDef> _tabs = new();
+    private TabDef? _activeTab;
+
+    private class TabDef
+    {
+        public string Title { get; set; } = "";
+        public bool Enabled { get; set; } = true;
+        public RenderFragment? Content { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        _tabs = new List<TabDef>
+        {
+            new() { Title = "Installer", Enabled = true, Content = RenderInstaller() },
+            new() { Title = "Client", Enabled = true, Content = RenderClient() },
+            new() { Title = "Config", Enabled = false, Content = RenderConfig() },
+            new() { Title = "Backups", Enabled = false, Content = RenderBackups() },
+            new() { Title = "Super Secret Settings", Enabled = false, Content = RenderSuperSecret() },
+        };
+        _activeTab = _tabs[0];
+
+        State.OnServerConfigured += OnServerConfigured;
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            _tabs[2].Enabled = true;
+            _tabs[3].Enabled = true;
+            _tabs[4].Enabled = true;
+            _activeTab = _tabs[2];
+            StateHasChanged();
+        });
+    }
+
+    private void SelectTab(TabDef tab)
+    {
+        if (tab.Enabled)
+        {
+            _activeTab = tab;
+            StateHasChanged();
+        }
+    }
+
+    private RenderFragment RenderInstaller() => @<TabgInstaller.Gui.Components.Pages.InstallerPage />;
+    private RenderFragment RenderClient() => @<TabgInstaller.Gui.Components.Pages.ClientPage />;
+    private RenderFragment RenderConfig() => @<TabgInstaller.Gui.Components.Pages.ConfigPage />;
+    private RenderFragment RenderBackups() => @<TabgInstaller.Gui.Components.Pages.BackupsPage />;
+    private RenderFragment RenderSuperSecret() => @<TabgInstaller.Gui.Components.Pages.SuperSecretPage />;
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+}

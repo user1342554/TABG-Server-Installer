@@ -1,0 +1,54 @@
+@if (_isVisible)
+{
+    <div class="dialog-overlay" @onclick="OnOverlayClick">
+        <div class="dialog-box" @onclick:stopPropagation>
+            <div class="dialog-title">@_title</div>
+            <div class="dialog-message">@_message</div>
+            <div class="dialog-buttons">
+                @if (_mode == DialogMode.YesNo)
+                {
+                    <button @onclick="() => Close(true)">Yes</button>
+                    <button @onclick="() => Close(false)">No</button>
+                }
+                else
+                {
+                    <button @onclick="() => Close(true)">OK</button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isVisible;
+    private string _title = "";
+    private string _message = "";
+    private DialogMode _mode;
+    private TaskCompletionSource<bool>? _tcs;
+
+    public enum DialogMode { OK, YesNo }
+
+    public Task<bool> ShowAsync(string title, string message, DialogMode mode = DialogMode.OK)
+    {
+        _title = title;
+        _message = message;
+        _mode = mode;
+        _isVisible = true;
+        _tcs = new TaskCompletionSource<bool>();
+        StateHasChanged();
+        return _tcs.Task;
+    }
+
+    private void Close(bool result)
+    {
+        _isVisible = false;
+        _tcs?.SetResult(result);
+        StateHasChanged();
+    }
+
+    private void OnOverlayClick()
+    {
+        if (_mode == DialogMode.OK)
+            Close(true);
+    }
+}
