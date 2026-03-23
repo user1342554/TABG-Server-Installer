@@ -1,1 +1,345 @@
-<div class="pad-5"><p>PresetsGrid - coming soon</p></div>
+@using System.IO
+@inject AppState State
+@implements IDisposable
+
+<div style="display:flex; flex-direction:column; height:100%; padding:10px;">
+    @if (!State.IsServerConfigured)
+    {
+        <div class="pad-5">
+            <span class="status-text info">Configure a server directory to manage presets.</span>
+        </div>
+    }
+    else
+    {
+        <!-- Built-in Server Templates -->
+        <GroupBox Header="Server Templates" Style="margin-bottom:10px;">
+            <div style="display:flex; gap:10px;">
+                <!-- Template List -->
+                <div style="width:200px; flex-shrink:0;">
+                    <div class="scroll-area" style="height:120px; border:1px solid #ACACAC; background:white; overflow-y:auto;">
+                        @foreach (var preset in BuiltInPresets.All)
+                        {
+                            var p = preset;
+                            <div class="@(p == _selectedTemplate ? "list-view-item selected" : "list-view-item")"
+                                 style="font-weight:600; cursor:pointer;"
+                                 @onclick="() => SelectTemplate(p)">
+                                @p.Name
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Template Details -->
+                <div style="flex:1; display:flex; flex-direction:column;">
+                    <div style="margin-bottom:6px; white-space:pre-wrap;">@_templateDesc</div>
+                    @if (!string.IsNullOrEmpty(_templateNotes))
+                    {
+                        <div style="font-size:11px; color:gray; margin-bottom:8px;">@_templateNotes</div>
+                    }
+                    <button style="width:200px;" @onclick="ApplyTemplate_Click">Apply Template to Server</button>
+                </div>
+            </div>
+        </GroupBox>
+
+        <!-- User Presets -->
+        <div style="display:flex; gap:10px; flex:1; min-height:0;">
+            <!-- Preset List -->
+            <div style="width:200px; flex-shrink:0; display:flex; flex-direction:column;">
+                <div style="font-weight:bold;">Saved Presets:</div>
+                <div class="scroll-area" style="height:200px; border:1px solid #ACACAC; background:white; overflow-y:auto; margin-top:4px;">
+                    @foreach (var preset in _presets)
+                    {
+                        var pName = preset;
+                        <div class="@(pName == _selectedPreset ? "list-view-item selected" : "list-view-item")"
+                             style="cursor:pointer;"
+                             @onclick="() => _selectedPreset = pName">
+                            @pName
+                        </div>
+                    }
+                </div>
+                <div class="hstack" style="margin-top:6px;">
+                    <button style="width:60px;" @onclick="LoadPreset_Click">Load</button>
+                    <button style="width:60px; margin-left:6px;" @onclick="DeletePreset_Click">Delete</button>
+                </div>
+            </div>
+
+            <!-- Files Selection and Save -->
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <div style="font-weight:bold;">Files to include when saving:</div>
+                <div style="margin-top:4px;">
+                    @foreach (var entry in _fileEntries)
+                    {
+                        var fe = entry;
+                        <label style="display:flex; align-items:center; gap:4px; margin:2px 0;">
+                            <input type="checkbox" checked="@fe.IsSelected"
+                                   @onchange="e => OnFileToggled(fe, e)" />
+                            @fe.Display
+                        </label>
+                    }
+                </div>
+                <button style="width:220px; margin-top:10px;" @onclick="SavePreset_Click">Save current as new preset...</button>
+            </div>
+        </div>
+
+        <!-- Status -->
+        @if (!string.IsNullOrEmpty(_statusText))
+        {
+            <div style="margin-top:8px;">
+                <span class="status-text @_statusCss">@_statusText</span>
+            </div>
+        }
+    }
+</div>
+
+<!-- Save Preset Name Dialog -->
+@if (_showSaveDialog)
+{
+    <div class="dialog-overlay" @onclick="() => _showSaveDialog = false">
+        <div class="dialog-box" style="width:360px;" @onclick:stopPropagation>
+            <div class="dialog-title">Save Preset</div>
+            <div style="margin-bottom:8px;">Enter a name for the preset:</div>
+            <input type="text" style="width:100%;" @bind="_savePresetName" />
+            <div class="dialog-buttons" style="margin-top:8px;">
+                <button @onclick="DoSavePreset">Save</button>
+                <button @onclick="() => _showSaveDialog = false">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    // ── State ──
+    private BuiltInPresets.BuiltInPreset? _selectedTemplate;
+    private string _templateDesc = "";
+    private string _templateNotes = "";
+
+    private List<string> _presets = new();
+    private string? _selectedPreset;
+    private List<FileEntry> _fileEntries = new();
+
+    private string _statusText = "";
+    private string _statusCss = "";
+
+    // Save dialog
+    private bool _showSaveDialog;
+    private string _savePresetName = "MyPreset";
+
+    private ConfirmDialog _confirmDialog = default!;
+
+    // ── Lifecycle ──
+
+    protected override void OnInitialized()
+    {
+        State.OnServerConfigured += OnServerConfigured;
+        if (State.IsServerConfigured)
+            Refresh();
+    }
+
+    private void OnServerConfigured()
+    {
+        InvokeAsync(() =>
+        {
+            Refresh();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        State.OnServerConfigured -= OnServerConfigured;
+    }
+
+    // ── Refresh ──
+
+    private void Refresh()
+    {
+        RefreshPresets();
+        BuildFileList();
+    }
+
+    private void RefreshPresets()
+    {
+        _presets = PresetManager.ListPresets(State.ServerDir).OrderBy(p => p).ToList();
+        if (_selectedPreset != null && !_presets.Contains(_selectedPreset))
+            _selectedPreset = null;
+    }
+
+    private void BuildFileList()
+    {
+        _fileEntries.Clear();
+        foreach (var rel in PresetManager.DefaultConfigRelativePaths)
+        {
+            var abs = Path.Combine(State.ServerDir, rel);
+            if (File.Exists(abs))
+            {
+                _fileEntries.Add(new FileEntry { RelativePath = rel, IsSelected = true });
+            }
+        }
+    }
+
+    // ── Built-in Templates ──
+
+    private void SelectTemplate(BuiltInPresets.BuiltInPreset preset)
+    {
+        _selectedTemplate = preset;
+        _templateDesc = preset.Description;
+        _templateNotes = string.IsNullOrWhiteSpace(preset.Notes) ? "" : $"Notes: {preset.Notes}";
+    }
+
+    private async Task ApplyTemplate_Click()
+    {
+        if (!State.IsServerConfigured)
+        {
+            await _confirmDialog.ShowAsync("Error", "No server directory set. Please install/select a server first.");
+            return;
+        }
+
+        if (_selectedTemplate is not { } preset)
+        {
+            await _confirmDialog.ShowAsync("Error", "Please select a template to apply.");
+            return;
+        }
+
+        var filesList = string.Join("\n", preset.Files.Keys.Select(k => $"  - {k}"));
+        var confirmed = await _confirmDialog.ShowAsync(
+            "Apply Server Template",
+            $"Apply template '{preset.Name}'?\n\nThis will overwrite:\n{filesList}\n\nContinue?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        try
+        {
+            BuiltInPresets.Deploy(preset, State.ServerDir);
+
+            // Trigger a full reload so other config panels pick up new files
+            State.SetServerDir(State.ServerDir);
+
+            _statusText = $"Template '{preset.Name}' applied successfully. All settings have been reloaded.";
+            _statusCss = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to apply template: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    // ── User Presets ──
+
+    private void SavePreset_Click()
+    {
+        if (!State.IsServerConfigured) return;
+        _savePresetName = "MyPreset";
+        _showSaveDialog = true;
+    }
+
+    private async Task DoSavePreset()
+    {
+        _showSaveDialog = false;
+
+        var presetName = _savePresetName?.Trim();
+        if (string.IsNullOrWhiteSpace(presetName)) return;
+
+        var selectedPaths = _fileEntries.Where(f => f.IsSelected).Select(f => f.RelativePath).ToArray();
+        if (selectedPaths.Length == 0)
+        {
+            await _confirmDialog.ShowAsync("Error", "Please select at least one file to include.");
+            return;
+        }
+
+        try
+        {
+            PresetManager.SavePreset(State.ServerDir, presetName, selectedPaths);
+            RefreshPresets();
+            _statusText = $"Preset '{presetName}' saved.";
+            _statusCss = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to save preset: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private async Task LoadPreset_Click()
+    {
+        if (_selectedPreset is not { } presetName)
+        {
+            await _confirmDialog.ShowAsync("Error", "Please select a preset to load.");
+            return;
+        }
+
+        var confirmed = await _confirmDialog.ShowAsync(
+            "Load Preset",
+            $"Overwrite current config files with preset '{presetName}'?",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        try
+        {
+            PresetManager.LoadPreset(State.ServerDir, presetName);
+
+            // Trigger a full reload so other config panels pick up new files
+            State.SetServerDir(State.ServerDir);
+
+            _statusText = $"Preset '{presetName}' loaded.";
+            _statusCss = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to load preset: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    private async Task DeletePreset_Click()
+    {
+        if (_selectedPreset is not { } presetName)
+        {
+            await _confirmDialog.ShowAsync("Error", "Please select a preset to delete.");
+            return;
+        }
+
+        var confirmed = await _confirmDialog.ShowAsync(
+            "Delete Preset",
+            $"Delete preset '{presetName}'? This cannot be undone.",
+            ConfirmDialog.DialogMode.YesNo);
+
+        if (!confirmed) return;
+
+        try
+        {
+            PresetManager.DeletePreset(State.ServerDir, presetName);
+            _selectedPreset = null;
+            RefreshPresets();
+            _statusText = $"Preset '{presetName}' deleted.";
+            _statusCss = "";
+        }
+        catch (Exception ex)
+        {
+            _statusText = $"Failed to delete preset: {ex.Message}";
+            _statusCss = "error";
+        }
+    }
+
+    // ── Helpers ──
+
+    private void OnFileToggled(FileEntry entry, ChangeEventArgs e)
+    {
+        if (e.Value is bool b)
+            entry.IsSelected = b;
+        else if (e.Value is string s && bool.TryParse(s, out var parsed))
+            entry.IsSelected = parsed;
+    }
+
+    private class FileEntry
+    {
+        public string RelativePath { get; set; } = string.Empty;
+        public string Display => RelativePath.Replace("\\", "/");
+        public bool IsSelected { get; set; } = true;
+    }
+}
