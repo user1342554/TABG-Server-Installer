@@ -473,45 +473,8 @@ namespace TabgInstaller.Core
                 File.Copy(localSetupPath, targetSetupPath, true);
                 _log.Report($"  → Copied {StarterPackSetupAssetName} to server root from local source.");
 
-            _log.Report("• Launching StarterPackSetup.exe to generate default configuration...");
-
-            try
-            {
-                var setupProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = Path.Combine(serverDir, StarterPackSetupAssetName),
-                        WorkingDirectory = serverDir,
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    },
-                    EnableRaisingEvents = true
-                };
-                setupProcess.Start();
-                _log.Report("  → StarterPackSetup.exe launched. Waiting for it to finish...");
-                // Wait up to 30 seconds for the process to exit on its own
-                var exited = await Task.Run(() => setupProcess.WaitForExit(30_000), ct);
-                if (!exited && !setupProcess.HasExited)
-                {
-                    _log.Report("  → StarterPackSetup.exe still running after 30s, closing it...");
-                    setupProcess.Kill();
-                }
-                _log.Report("  → StarterPackSetup.exe finished.");
-            }
-            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
-            {
-                // User cancelled UAC prompt
-                _log.Report("  ⚠️ StarterPackSetup.exe launch was cancelled (UAC prompt declined or blocked by security software).");
-                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
-                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
-            }
-            catch (Exception ex)
-            {
-                _log.Report($"  ⚠️ Failed to launch StarterPackSetup.exe: {ex.Message}");
-                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
-                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
-            }
+            _log.Report($"  → StarterPackSetup.exe is available at: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
+            _log.Report("    (Run it later to customize your StarterPack configuration)");
 
                 // Sanitize TheStarterPack.txt to ensure StarterPack can parse numeric fields correctly
                 try
