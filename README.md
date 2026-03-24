@@ -75,8 +75,7 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 5. Click **INSTALL CLIENT MODS**
 6. Launch the modded TABG from the installer (**NOT** from Steam)
 
-<details>
-<summary><h2>Plugins</h2></summary>
+## Plugins
 
 ### Server Plugins
 
@@ -116,10 +115,7 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 | JuggernautMode Client | OFF | Boss bar, loadout picker, scoreboard |
 | TABGVR | OFF | Play TABG in Virtual Reality (requires VR headset) |
 
-</details>
-
-<details>
-<summary><h2>Proximity Voice Chat</h2></summary>
+## Proximity Voice Chat
 
 Voice communication is built directly into the game's existing network connection — no additional ports, no separate voice servers, and it works transparently through a relay.
 
@@ -130,10 +126,7 @@ Voice communication is built directly into the game's existing network connectio
 - Open microphone with noise gate to suppress background noise
 - 16 kHz audio quality
 
-</details>
-
-<details>
-<summary><h2>Disclaimer</h2></summary>
+## Disclaimer
 
 This software is provided **as-is** with no warranty of any kind. Use at your own risk.
 
@@ -142,10 +135,7 @@ This software is provided **as-is** with no warranty of any kind. Use at your ow
 - Modifying game servers may violate the game's Terms of Service. The authors of this installer are **not responsible** for any bans, account actions, or other consequences resulting from its use.
 - The anti-cheat bypass component is intended solely for running private dedicated servers and is **not** meant for use in cheating or gaining unfair advantages in public matches.
 
-</details>
-
-<details>
-<summary><h2>Credits</h2></summary>
+## Credits
 
 This project would not exist without the work of these developers and communities. If you contributed something and aren't listed here, want to be credited differently, or **want your work removed from this project**, please contact me and I will do so immediately.
 
@@ -217,8 +207,6 @@ This project would not exist without the work of these developers and communitie
 - [RestSharp](https://github.com/restsharp/RestSharp) — HTTP client
 
 > **Know someone who should be credited?** Open an issue or DM me on Discord.
-
-</details>
 
 ## Contact
 
