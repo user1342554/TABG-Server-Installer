@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using TabgInstaller.Core.Services;
@@ -87,22 +88,33 @@ public partial class MainWindow : Window
 
             if (result != MessageBoxResult.Yes) return;
 
-            Title = "TABG Manager — Updating...";
-            bool ok = await updater.ApplyUpdateAsync(url);
+            // Show the update overlay
+            UpdateOverlay.Visibility = Visibility.Visible;
+            UpdateStatus.Text = "Downloading update...";
+
+            var progress = new Progress<string>(status =>
+            {
+                Dispatcher.Invoke(() => UpdateStatus.Text = status);
+            });
+
+            bool ok = await updater.ApplyUpdateAsync(url, progress);
             if (ok)
             {
+                UpdateStatus.Text = "Restarting...";
+                await Task.Delay(500);
                 Application.Current.Shutdown();
             }
             else
             {
+                UpdateOverlay.Visibility = Visibility.Collapsed;
                 MessageBox.Show("Update failed. You can download manually from GitHub.",
                     "Update Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                Title = "TABG Manager";
             }
         }
         catch
         {
             // Never block startup for update check failures
+            UpdateOverlay.Visibility = Visibility.Collapsed;
         }
     }
 }

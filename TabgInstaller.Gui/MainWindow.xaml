@@ -6,9 +6,38 @@
         WindowState="Maximized"
         Background="#F0EDED">
 
-    <blazor:BlazorWebView x:Name="WebView" HostPage="wwwroot/index.html">
-        <blazor:BlazorWebView.RootComponents>
-            <blazor:RootComponent x:Name="RootComponent" Selector="#app" />
-        </blazor:BlazorWebView.RootComponents>
-    </blazor:BlazorWebView>
+    <Grid>
+        <blazor:BlazorWebView x:Name="WebView" HostPage="wwwroot/index.html">
+            <blazor:BlazorWebView.RootComponents>
+                <blazor:RootComponent x:Name="RootComponent" Selector="#app" />
+            </blazor:BlazorWebView.RootComponents>
+        </blazor:BlazorWebView>
+
+        <!-- Update overlay -->
+        <Grid x:Name="UpdateOverlay" Visibility="Collapsed" Background="#F0EDED">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="T A B G   M A N A G E R" FontSize="14" FontWeight="Bold"
+                           Foreground="#999"
+                           HorizontalAlignment="Center" Margin="0,0,0,24"
+                           FontFamily="Segoe UI"/>
+                <TextBlock x:Name="UpdateTitle" Text="Updating..."
+                           FontSize="40" FontWeight="Bold"
+                           Foreground="#1A1A1A"
+                           HorizontalAlignment="Center" Margin="0,0,0,12"
+                           FontFamily="Segoe UI"/>
+                <TextBlock x:Name="UpdateStatus" Text="Downloading update..."
+                           FontSize="16" Foreground="#666"
+                           HorizontalAlignment="Center" Margin="0,0,0,32"
+                           FontFamily="Segoe UI"/>
+                <ProgressBar x:Name="UpdateProgress" IsIndeterminate="True"
+                             Width="320" Height="4"
+                             Foreground="#1A1A1A" Background="#DDD"
+                             BorderThickness="0"/>
+                <TextBlock Text="The app will restart automatically"
+                           FontSize="13" Foreground="#999"
+                           HorizontalAlignment="Center" Margin="0,24,0,0"
+                           FontFamily="Segoe UI"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>
