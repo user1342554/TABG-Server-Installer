@@ -1,112 +1,147 @@
 @using System.Collections
 @using TabgInstaller.Core.Services
 
-<div class="scroll-area" style="max-height: 100%; overflow-y: auto;">
-    @if (ViewModel == null)
+@if (ViewModel == null)
+{
+    <p style="color: var(--muted); padding: 1.25rem;">No settings loaded.</p>
+}
+else
+{
+    <!-- Identity & Networking -->
+    @RenderCard("Identity & Networking", new[] { "ServerName", "ServerDescription", "Password", "ServerBrowserIP", "Port", "MaxPlayers" })
+
+    <!-- Lobby & Start -->
+    @RenderCard("Lobby & Start", new[] { "TeamMode", "GameMode", "Relay", "AutoTeam", "LAN", "AllowSpectating" })
+
+    <!-- Timing -->
+    @RenderCard("Timing", new[] { "UseTimedForceStart", "ForceStartTime", "MinPlayersToForceStart", "PlayersToStart", "Countdown" })
+
+    <!-- Ring -->
+    @RenderCard("Ring", new[] { "NoRing", "BaseRingTime", "TimeBeforeFirstRing", "RingSizes", "RingSpeeds" })
+
+    <!-- Gameplay -->
+    @RenderCard("Gameplay", new[] { "CarSpawnRate", "StripLootByPercentage", "WeaponDissapearTime", "AllowRespawnMinigame", "AntiCheat" })
+
+    <!-- Advanced -->
+    @RenderCard("Advanced", new[] { "UseKicks", "AllowRejoins", "SpawnBots", "UsePlayFabStats", "DEBUG_DEATHMATCH" })
+
+    <!-- Remaining fields not in the above groups -->
+    @if (GetRemainingProps().Any())
     {
-        <p class="pad-5" style="color: gray; font-style: italic;">No settings loaded.</p>
-    }
-    else
-    {
-        @if (ViewModel.ShowGameModeWarning)
-        {
-            <div style="background: #FFF3CD; border: 1px solid #FFECB5; padding: 6px 10px; margin: 4px 0;">
-                @ViewModel.GameModeWarningText
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header">Other</div>
+            <div class="card-body">
+                @foreach (var prop in GetRemainingProps())
+                {
+                    @RenderField(prop)
+                }
             </div>
-        }
-
-        <div class="grid-2col" style="padding: 4px;">
-            @foreach (var prop in ViewModel.Properties)
-            {
-                if (!prop.IsVisible) continue;
-
-                <!-- Label column -->
-                <div style="width: 220px; padding: 2px 0;"
-                     data-tooltip="@GetTooltip(prop.Name)">
-                    @prop.Name
-                </div>
-
-                <!-- Control column -->
-                <div style="padding: 2px 0;">
-                    @switch (prop.ControlType)
-                    {
-                        case "CheckBox":
-                            <input type="checkbox" checked="@prop.BoolValue"
-                                   @onchange="e => OnCheckChanged(prop, e)" />
-                            break;
-
-                        case "ComboBox":
-                            @if (HasComboItems(prop))
-                            {
-                                <select value="@prop.ValueString"
-                                        @onchange="e => OnValueChanged(prop, e)"
-                                        style="min-width: 150px;">
-                                    @foreach (var item in GetComboItems(prop)!)
-                                    {
-                                        <option value="@item" selected="@(item == prop.ValueString)">@item</option>
-                                    }
-                                </select>
-                            }
-                            else
-                            {
-                                <input type="text" value="@prop.ValueString"
-                                       @onchange="e => OnValueChanged(prop, e)"
-                                       style="width: 200px;" />
-                            }
-                            break;
-
-                        case "Slider":
-                            <div class="hstack">
-                                <input type="range"
-                                       min="@prop.SliderMinimum.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                       max="@prop.SliderMaximum.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                       step="0.1"
-                                       value="@prop.ValueString"
-                                       @onchange="e => OnValueChanged(prop, e)"
-                                       style="width: 150px;" />
-                                <span style="margin-left: 5px; width: 40px;">@prop.ValueString</span>
-                            </div>
-                            break;
-
-                        case "NumericUpDown":
-                            <div class="hstack">
-                                <input type="text" value="@prop.ValueString"
-                                       @onchange="e => OnValueChanged(prop, e)"
-                                       style="width: 100px;" />
-                                <span style="color: gray; font-size: 10px; margin-left: 5px;">
-                                    (Min: @prop.NumericMinimum.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                                </span>
-                                <span style="color: gray; font-size: 10px;">
-                                    Max: @prop.NumericMaximum.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                                </span>
-                            </div>
-                            break;
-
-                        default:
-                            <input type="text" value="@prop.ValueString"
-                                   @onchange="e => OnValueChanged(prop, e)"
-                                   style="width: 200px;" />
-                            break;
-                    }
-                </div>
-            }
         </div>
     }
-</div>
+}
 
 @code {
     [Parameter] public GameSettingsDynamicViewModel? ViewModel { get; set; }
 
+    private RenderFragment RenderCard(string title, string[] propNames) => __builder =>
+    {
+        if (ViewModel == null) return;
+        var props = propNames
+            .Select(n => ViewModel.Properties.FirstOrDefault(p => p.Name == n))
+            .Where(p => p != null && p.IsVisible)
+            .ToList();
+
+        if (!props.Any()) return;
+
+        <div class="card">
+            <div class="card-header">@title</div>
+            <div class="card-body">
+                @foreach (var prop in props)
+                {
+                    @RenderField(prop!)
+                }
+            </div>
+        </div>;
+    };
+
+    private RenderFragment RenderField(SettingPropertyVM prop) => __builder =>
+    {
+        <div class="field">
+            <div class="field-name">@prop.Name</div>
+            <div class="field-input">
+                @switch (prop.ControlType)
+                {
+                    case "CheckBox":
+                        <input class="ctrl-checkbox" type="checkbox" checked="@prop.BoolValue"
+                               @onchange="e => OnCheckChanged(prop, e)" />
+                        break;
+
+                    case "ComboBox":
+                        @if (HasComboItems(prop))
+                        {
+                            <select class="ctrl-select" value="@prop.ValueString"
+                                    @onchange="e => OnValueChanged(prop, e)">
+                                @foreach (var item in GetComboItems(prop)!)
+                                {
+                                    <option value="@item" selected="@(item == prop.ValueString)">@item</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <input class="ctrl-text" type="text" value="@prop.ValueString"
+                                   @onchange="e => OnValueChanged(prop, e)" />
+                        }
+                        break;
+
+                    case "Slider":
+                        <div class="ctrl-slider-wrap">
+                            <input class="ctrl-slider" type="range"
+                                   min="@prop.SliderMinimum.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   max="@prop.SliderMaximum.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   step="0.1"
+                                   value="@prop.ValueString"
+                                   @onchange="e => OnValueChanged(prop, e)" />
+                            <span class="ctrl-slider-val">@prop.ValueString</span>
+                        </div>
+                        break;
+
+                    case "NumericUpDown":
+                        <input class="ctrl-text narrow" type="text" value="@prop.ValueString"
+                               @onchange="e => OnValueChanged(prop, e)" />
+                        <span class="ctrl-hint">@prop.NumericMinimum.ToString(System.Globalization.CultureInfo.InvariantCulture)-@prop.NumericMaximum.ToString(System.Globalization.CultureInfo.InvariantCulture)</span>
+                        break;
+
+                    default:
+                        <input class="ctrl-text" type="text" value="@prop.ValueString"
+                               @onchange="e => OnValueChanged(prop, e)" />
+                        break;
+                }
+            </div>
+        </div>
+    };
+
+    private static readonly HashSet<string> _groupedNames = new(new[] {
+        "ServerName", "ServerDescription", "Password", "ServerBrowserIP", "Port", "MaxPlayers",
+        "TeamMode", "GameMode", "Relay", "AutoTeam", "LAN", "AllowSpectating",
+        "UseTimedForceStart", "ForceStartTime", "MinPlayersToForceStart", "PlayersToStart", "Countdown",
+        "NoRing", "BaseRingTime", "TimeBeforeFirstRing", "RingSizes", "RingSpeeds",
+        "CarSpawnRate", "StripLootByPercentage", "WeaponDissapearTime", "AllowRespawnMinigame", "AntiCheat",
+        "UseKicks", "AllowRejoins", "SpawnBots", "UsePlayFabStats", "DEBUG_DEATHMATCH"
+    });
+
+    private List<SettingPropertyVM> GetRemainingProps()
+    {
+        if (ViewModel == null) return new();
+        return ViewModel.Properties.Where(p => p.IsVisible && !_groupedNames.Contains(p.Name)).ToList();
+    }
+
     private void OnCheckChanged(SettingPropertyVM prop, ChangeEventArgs e)
     {
         if (e.Value is bool b)
-        {
             prop.BoolValue = b;
-        }
         else if (e.Value is string s && bool.TryParse(s, out var parsed))
-        {
             prop.BoolValue = parsed;
-        }
     }
 
     private void OnValueChanged(SettingPropertyVM prop, ChangeEventArgs e)
@@ -124,51 +159,10 @@
     {
         var items = prop.ComboBoxItems;
         if (items == null) return null;
-
         if (items is IEnumerable<string> strings)
             return strings.ToList();
-
         if (items is IEnumerable enumerable)
             return enumerable.Cast<object>().Select(o => o.ToString() ?? "").ToList();
-
         return null;
-    }
-
-    private string? GetTooltip(string settingName)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(settingName)) return null;
-
-            var idx = KnowledgeIndex.Current;
-            if (idx.GameSettings.TryGetValue(settingName, out var gs))
-            {
-                var range = gs.Range != null
-                    ? $" Range: {gs.Range.Min}\u2013{gs.Range.Max}."
-                    : string.Empty;
-                var allowed = (gs.Allowed?.Length ?? 0) > 0
-                    ? $" Allowed: {string.Join(", ", gs.Allowed)}."
-                    : string.Empty;
-                var def = gs.Default != null
-                    ? $" Default: {gs.Default}."
-                    : string.Empty;
-                var desc = string.IsNullOrWhiteSpace(gs.Description) ? settingName : gs.Description;
-                var result = $"{desc}{def}{range}{allowed}".Trim();
-                return string.IsNullOrEmpty(result) ? null : result;
-            }
-
-            if (idx.StarterPackSettings.TryGetValue(settingName, out var sp))
-            {
-                var desc = string.IsNullOrWhiteSpace(sp.Description) ? settingName : sp.Description;
-                var result = string.IsNullOrWhiteSpace(sp.Syntax) ? desc : $"{desc} Syntax: {sp.Syntax}";
-                return string.IsNullOrEmpty(result) ? null : result;
-            }
-
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
     }
 }

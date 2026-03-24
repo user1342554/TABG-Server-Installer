@@ -1,39 +1,179 @@
 @using System.IO
 @using System.IO.Compression
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject AppState State
 
-<div class="pad-10 vstack" style="height: 100%;">
-    <!-- Client Mods -->
-    <GroupBox Header="Client Mods (creates a modded TABG copy — EAC blocks mods in Steam folder)">
-        <div class="vstack" style="gap: 0;">
-            <div class="hstack" style="margin: 5px 5px 2px 5px;">
-                <span style="white-space: nowrap; padding-right: 4px;">TABG Steam folder:</span>
-                <input type="text" @bind="clientPath" style="flex: 1;" disabled="@isInstalling" />
+<div class="main-2col">
+    <div class="primary">
+        <div class="hero">
+            <span class="hero-bg">MODS</span>
+            <h1 class="hero-title">Client Mods</h1>
+            <p class="hero-sub">Install mods to a separate TABG copy — EAC blocks mods in Steam folder</p>
+            <p class="hero-note">Creates a modded copy of TABG that runs independently</p>
+        </div>
+        <div class="path-bar">
+            <span class="path-label">TABG Steam Folder</span>
+            <input class="path-input" @bind="clientPath" readonly="@isInstalling" />
+        </div>
+        <div class="path-bar">
+            <span class="path-label">Modded Copy Folder</span>
+            <input class="path-input" @bind="moddedPath" readonly="@isInstalling" />
+        </div>
+
+        <!-- GAMEPLAY -->
+        <div class="category @(State.ClientCollapsed.Contains("gameplay") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("gameplay")'>
+                <span class="cat-name">Gameplay</span>
+                <span class="cat-count">@CatCount(0,1) / 2</span>
+                <span class="cat-chevron">&#9660;</span>
             </div>
-            <div class="hstack" style="margin: 5px 5px 5px 5px;">
-                <span style="white-space: nowrap; padding-right: 4px;">Modded copy folder:</span>
-                <input type="text" @bind="moddedPath" style="flex: 1;" disabled="@isInstalling" />
-            </div>
-
-            @for (int i = 0; i < clientMods.Length; i++)
-            {
-                var idx = i;
-                <label class="checkbox-row">
-                    <input type="checkbox" @bind="clientMods[idx].IsChecked" disabled="@isInstalling" />
-                    @clientMods[idx].Label
-                </label>
-            }
-
-            <div class="hstack" style="margin: 6px 5px 2px 5px;">
-                <button style="width: 200px; height: 30px;" @onclick="BtnInstallClientMods_Click" disabled="@isInstalling">INSTALL CLIENT MODS</button>
-                <button style="width: 200px; height: 30px;" @onclick="BtnLaunchModdedTabg_Click" disabled="@isInstalling">LAUNCH MODDED TABG</button>
+            <div class="cat-items">
+                <div class="plugin-item @(!clientMods[0].IsChecked ? "off" : "")" @onclick="() => Flip(0)">
+                    <div class="pchk @(clientMods[0].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">FlyingControls</div>
+                    <div class="plugin-desc">Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)</div>
+                </div>
+                <div class="plugin-item @(!clientMods[1].IsChecked ? "off" : "")" @onclick="() => Flip(1)">
+                    <div class="pchk @(clientMods[1].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Enhanced TABG</div>
+                    <div class="plugin-desc">Infinite LOD (F1), HUD toggle (F2), fog removal (F3)</div>
+                </div>
             </div>
         </div>
-    </GroupBox>
 
-    <!-- Log -->
-    <GroupBox Header="Log" Style="flex: 1; display: flex; flex-direction: column;">
-        <div class="log-area" style="flex: 1; max-height: 300px;" @ref="logElement">@logText</div>
-    </GroupBox>
+        <!-- WEAPONS & ITEMS -->
+        <div class="category @(State.ClientCollapsed.Contains("weapons") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("weapons")'>
+                <span class="cat-name">Weapons & Items</span>
+                <span class="cat-count">@CatCount(2,3) / 2</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!clientMods[2].IsChecked ? "off" : "")" @onclick="() => Flip(2)">
+                    <div class="pchk @(clientMods[2].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">BigSmokeGrenade</div>
+                    <div class="plugin-desc">Giant purple smoke grenades</div>
+                </div>
+                <div class="plugin-item @(!clientMods[3].IsChecked ? "off" : "")" @onclick="() => Flip(3)">
+                    <div class="pchk @(clientMods[3].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">MGLFlashbang</div>
+                    <div class="plugin-desc">MGL shoots flashbang rounds</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UTILITY -->
+        <div class="category @(State.ClientCollapsed.Contains("utility") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("utility")'>
+                <span class="cat-name">Utility</span>
+                <span class="cat-count">@CatCount(4,5,6,7) / 4</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!clientMods[4].IsChecked ? "off" : "")" @onclick="() => Flip(4)">
+                    <div class="pchk @(clientMods[4].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Coords Display</div>
+                    <div class="plugin-desc">Press F5 to show your X/Y/Z position</div>
+                </div>
+                <div class="plugin-item @(!clientMods[5].IsChecked ? "off" : "")" @onclick="() => Flip(5)">
+                    <div class="pchk @(clientMods[5].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Mod Settings</div>
+                    <div class="plugin-desc">In-game settings menu for all mods (press #)</div>
+                </div>
+                <div class="plugin-item @(!clientMods[6].IsChecked ? "off" : "")" @onclick="() => Flip(6)">
+                    <div class="pchk @(clientMods[6].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Pop-up Blocker</div>
+                    <div class="plugin-desc">Disable anti-cheat popups for custom servers</div>
+                </div>
+                <div class="plugin-item @(!clientMods[7].IsChecked ? "off" : "")" @onclick="() => Flip(7)">
+                    <div class="pchk @(clientMods[7].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Proximity Chat</div>
+                    <div class="plugin-desc">Proximity voice chat for custom servers</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME MODES & VR -->
+        <div class="category @(State.ClientCollapsed.Contains("modes") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("modes")'>
+                <span class="cat-name">Game Modes & VR</span>
+                <span class="cat-count">@CatCount(8,9,10) / 3</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!clientMods[8].IsChecked ? "off" : "")" @onclick="() => Flip(8)">
+                    <div class="pchk @(clientMods[8].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Hunt Mode Client</div>
+                    <div class="plugin-desc">HUD and perk selection UI</div>
+                </div>
+                <div class="plugin-item @(!clientMods[9].IsChecked ? "off" : "")" @onclick="() => Flip(9)">
+                    <div class="pchk @(clientMods[9].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Juggernaut Mode Client</div>
+                    <div class="plugin-desc">Boss bar, loadout picker, scoreboard</div>
+                </div>
+                <div class="plugin-item @(!clientMods[10].IsChecked ? "off" : "")" @onclick="() => Flip(10)">
+                    <div class="pchk @(clientMods[10].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">TABGVR</div>
+                    <div class="plugin-desc">Play TABG in Virtual Reality (requires VR headset)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="install-cta">
+            <button class="btn-install" @onclick="BtnInstallClientMods_Click" disabled="@isInstalling">
+                @(isInstalling ? "Installing..." : "Install Mods")
+            </button>
+            <button class="btn-skip" @onclick="BtnLaunchModdedTabg_Click" disabled="@isInstalling">
+                Launch Modded TABG
+            </button>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-val accent">@SelectedCount</div>
+                <div class="stat-label">Selected</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val">@clientMods.Length</div>
+                <div class="stat-label">Available</div>
+            </div>
+        </div>
+        <div class="log-section">
+            <div class="log-header">
+                <span class="log-title">Console</span>
+                <span class="log-status">
+                    @if (isInstalling)
+                    {
+                        <span class="status-dot"></span>
+                        <span>Installing</span>
+                    }
+                    else
+                    {
+                        <span>Ready</span>
+                    }
+                </span>
+            </div>
+            <div class="log-body" @ref="logElement">
+                @if (string.IsNullOrEmpty(logText))
+                {
+                    <div><span class="hi">[sys]</span> TABG Steam folder detected</div>
+                    <div><span class="hi">[sys]</span> Modded copy target set</div>
+                    <div><span class="hi">[sys]</span> @SelectedCount client mods selected</div>
+                    <div><span class="hi">[sys]</span> Ready for installation</div>
+                }
+                else
+                {
+                    @foreach (var line in logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <div><span class="hi">[log]</span> @StripEmoji(line)</div>
+                    }
+                }
+                <span class="log-cursor"></span>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -54,21 +194,60 @@
         public bool IsChecked { get; set; }
     }
 
+    private int SelectedCount => clientMods?.Count(m => m.IsChecked) ?? 0;
+
+    private int CatCount(params int[] indices)
+    {
+        if (clientMods == null) return 0;
+        return indices.Count(i => i < clientMods.Length && clientMods[i].IsChecked);
+    }
+
+    private void Toggle(string cat)
+    {
+        if (!State.ClientCollapsed.Remove(cat))
+            State.ClientCollapsed.Add(cat);
+    }
+
+    private void Flip(int idx)
+    {
+        if (!isInstalling)
+            clientMods[idx].IsChecked = !clientMods[idx].IsChecked;
+    }
+
+    private static string StripEmoji(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length);
+        foreach (var c in s)
+        {
+            if (c < 0x2600 || char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c) || c == '/' || c == '\\' || c == '>' || c == '<' || c == '=' || c == ':' || c == '.' || c == '[' || c == ']' || c == '(' || c == ')')
+                sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!string.IsNullOrEmpty(logText))
+        {
+            try { await JS.InvokeVoidAsync("scrollToBottom", logElement); } catch { }
+        }
+    }
+
     protected override void OnInitialized()
     {
         clientMods = new ClientModEntry[]
         {
-            new() { Label = "FlyingControls \u2014 Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)", IsChecked = true },
-            new() { Label = "Enhanced TABG \u2014 Infinite LOD (F1), HUD toggle (F2), fog removal (F3)", IsChecked = true },
-            new() { Label = "BigSmokeGrenade \u2014 Giant purple smoke grenades", IsChecked = true },
-            new() { Label = "MGLFlashbang \u2014 MGL shoots flashbang rounds", IsChecked = true },
-            new() { Label = "Coords Display \u2014 Press F5 to show your X/Y/Z position", IsChecked = true },
-            new() { Label = "Mod Settings \u2014 In-game settings menu for all mods (press #)", IsChecked = true },
-            new() { Label = "Pop-up Blocker \u2014 Disable anti-cheat popups for custom servers", IsChecked = true },
-            new() { Label = "Proximity Chat \u2014 Proximity voice chat for custom servers", IsChecked = true },
-            new() { Label = "Hunt Mode Client \u2014 HUD and perk selection UI", IsChecked = false },
-            new() { Label = "Juggernaut Mode Client \u2014 Boss bar, loadout picker, scoreboard", IsChecked = false },
-            new() { Label = "TABGVR \u2014 Play TABG in Virtual Reality (requires VR headset)", IsChecked = false },
+            new() { Label = "FlyingControls", IsChecked = true },
+            new() { Label = "Enhanced TABG", IsChecked = true },
+            new() { Label = "BigSmokeGrenade", IsChecked = true },
+            new() { Label = "MGLFlashbang", IsChecked = true },
+            new() { Label = "Coords Display", IsChecked = true },
+            new() { Label = "Mod Settings", IsChecked = true },
+            new() { Label = "Pop-up Blocker", IsChecked = true },
+            new() { Label = "Proximity Chat", IsChecked = true },
+            new() { Label = "Hunt Mode Client", IsChecked = false },
+            new() { Label = "Juggernaut Mode Client", IsChecked = false },
+            new() { Label = "TABGVR", IsChecked = false },
         };
 
         var detectedPath = Installer.TryFindTabgClientPath();
@@ -180,7 +359,6 @@
 
             bool success = await Task.Run(() => ClientModInstaller.InstallAsync(clientDir, moddedDir, selectedClientPlugins, progress));
 
-            // Install TABGVR extras (XR runtime, OpenXR loader) if selected
             if (success && installVR)
             {
                 await Task.Run(() =>
@@ -208,7 +386,7 @@
                         }
                         else
                         {
-                            ((IProgress<string>)progress).Report("WARNING: TABGVR.zip not found \u2014 VR runtime files not installed. TABGVR.dll was installed but VR may not work without the runtime.");
+                            ((IProgress<string>)progress).Report("WARNING: TABGVR.zip not found -- VR runtime files not installed.");
                         }
                     }
                     catch (Exception vrEx)

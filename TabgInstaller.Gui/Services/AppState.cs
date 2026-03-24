@@ -15,6 +15,10 @@ public class AppState
     public GameSettingsDynamicViewModel? GameSettingsVm { get; set; }
     public ServerProcessService? ServerProcess { get; set; }
 
+    // Collapsed category state (persists across tab switches)
+    public HashSet<string> InstallerCollapsed { get; } = new() { "core", "gameplay", "content", "social", "modes" };
+    public HashSet<string> ClientCollapsed { get; } = new() { "gameplay", "weapons", "utility", "modes" };
+
     public event Action? OnServerConfigured;
     public event Action? OnStateChanged;
 

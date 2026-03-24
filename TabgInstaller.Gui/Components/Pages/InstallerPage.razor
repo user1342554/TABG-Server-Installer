@@ -1,51 +1,234 @@
 @using System.Threading
+@using Microsoft.JSInterop
 @inject AppState State
+@inject IJSRuntime JS
 
-<div class="pad-10 vstack" style="height: 100%;">
-    <!-- Server Path -->
-    <GroupBox Header="Server Path">
-        <div class="hstack">
-            <input type="text" @bind="serverPath" style="flex: 1;" disabled="@isInstalling" />
-            <button style="width: 80px;" @onclick="Browse_Click" disabled="@isInstalling">Browse</button>
+<div class="main-2col">
+    <div class="primary">
+        <div class="hero">
+            <span class="hero-bg">TABG</span>
+            <h1 class="hero-title">Server Installer</h1>
+            <p class="hero-sub">Select plugins and install to your server directory</p>
+            <p class="hero-note">BepInEx + plugins installed from GitHub</p>
         </div>
-    </GroupBox>
+        <div class="path-bar">
+            <span class="path-label">Server Path</span>
+            <input class="path-input" @bind="serverPath" readonly="@isInstalling" />
+        </div>
+        <div class="path-bar">
+            <span class="path-label">Citrus Tag</span>
+            <input class="path-input" @bind="citrusTag" readonly="@isInstalling" style="max-width: 100px;" />
+        </div>
 
-    <!-- Plugins -->
-    <GroupBox Header="Plugins">
-        <div class="vstack" style="gap: 0;">
-            @for (int i = 0; i < plugins.Length; i++)
-            {
-                var idx = i;
-                <label class="checkbox-row">
-                    <input type="checkbox" @bind="plugins[idx].IsChecked" disabled="@isInstalling" />
-                    @plugins[idx].Label
-                </label>
-                @if (idx == 0)
-                {
-                    <div class="hstack" style="margin-left: 20px; margin-bottom: 2px;">
-                        <span>Tag:</span>
-                        <input type="text" @bind="citrusTag" style="width: 80px;" disabled="@isInstalling" />
-                    </div>
-                }
-            }
-            <div class="hstack" style="margin: 6px 5px 2px 5px;">
-                <button style="width: 80px;" @onclick="SelectAll" disabled="@isInstalling">Select All</button>
-                <button style="width: 80px;" @onclick="SelectNone" disabled="@isInstalling">Select None</button>
-                <button style="width: 100px;" @onclick="SelectSigma" disabled="@isInstalling"
-                        data-tooltip="Select the plugins required for the CollinSigma preset">Sigma Preset</button>
+        <!-- CORE -->
+        <div class="category @(State.InstallerCollapsed.Contains("core") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("core")'>
+                <span class="cat-name">Core</span>
+                <span class="cat-count">@CatCount(0,1,2) / 3</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!plugins[0].IsChecked ? "off" : "")" @onclick="() => Flip(0)">
+                    <div class="pchk @(plugins[0].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Citruslib</div>
+                    <div class="plugin-desc">Core server library — admin, permissions, commands</div>
+                </div>
+                <div class="plugin-item @(!plugins[1].IsChecked ? "off" : "")" @onclick="() => Flip(1)">
+                    <div class="pchk @(plugins[1].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">StarterPack</div>
+                    <div class="plugin-desc">Match mechanics, loadouts, win conditions</div>
+                </div>
+                <div class="plugin-item @(!plugins[2].IsChecked ? "off" : "")" @onclick="() => Flip(2)">
+                    <div class="pchk @(plugins[2].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">StarterPackFixes</div>
+                    <div class="plugin-desc">Loot drop control</div>
+                </div>
             </div>
         </div>
-    </GroupBox>
 
-    <!-- Installation Log -->
-    <GroupBox Header="Installation Log" Style="flex: 1; display: flex; flex-direction: column;">
-        <div class="log-area" style="flex: 1; max-height: 300px;" @ref="logElement">@logText</div>
-    </GroupBox>
+        <!-- GAMEPLAY -->
+        <div class="category @(State.InstallerCollapsed.Contains("gameplay") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("gameplay")'>
+                <span class="cat-name">Gameplay</span>
+                <span class="cat-count">@CatCount(3,4,5) / 3</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!plugins[3].IsChecked ? "off" : "")" @onclick="() => Flip(3)">
+                    <div class="pchk @(plugins[3].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">CustomSpawnpoints</div>
+                    <div class="plugin-desc">Custom spawn points</div>
+                </div>
+                <div class="plugin-item @(!plugins[4].IsChecked ? "off" : "")" @onclick="() => Flip(4)">
+                    <div class="pchk @(plugins[4].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">FreddoTABGCommission</div>
+                    <div class="plugin-desc">Curses, grenades on kill, bans</div>
+                </div>
+                <div class="plugin-item @(!plugins[5].IsChecked ? "off" : "")" @onclick="() => Flip(5)">
+                    <div class="pchk @(plugins[5].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">MatchAndPreMatchTimeout</div>
+                    <div class="plugin-desc">Match timing control</div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Actions -->
-    <div class="hstack" style="margin-top: 10px;">
-        <button style="width: 140px; height: 40px;" @onclick="BtnInstall_Click" disabled="@isInstalling">INSTALL</button>
-        <button style="width: 200px; height: 40px;" @onclick="BtnContinue_Click" disabled="@isInstalling">Continue without install</button>
+        <!-- CONTENT -->
+        <div class="category @(State.InstallerCollapsed.Contains("content") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("content")'>
+                <span class="cat-name">Content</span>
+                <span class="cat-count">@CatCount(8,9,10) / 3</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!plugins[8].IsChecked ? "off" : "")" @onclick="() => Flip(8)">
+                    <div class="pchk @(plugins[8].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">UnusedVehicles</div>
+                    <div class="plugin-desc">Spawn cut vehicles — Heli, UFO, Mustang, VW, HoverBike</div>
+                </div>
+                <div class="plugin-item @(!plugins[9].IsChecked ? "off" : "")" @onclick="() => Flip(9)">
+                    <div class="pchk @(plugins[9].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">BigSmokeGrenade</div>
+                    <div class="plugin-desc">Giant purple smoke grenades (/give 208)</div>
+                </div>
+                <div class="plugin-item @(!plugins[10].IsChecked ? "off" : "")" @onclick="() => Flip(10)">
+                    <div class="pchk @(plugins[10].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">MGLFlashbang</div>
+                    <div class="plugin-desc">MGL shoots flashbang rounds</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOCIAL & UTILITY -->
+        <div class="category @(State.InstallerCollapsed.Contains("social") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("social")'>
+                <span class="cat-name">Social & Utility</span>
+                <span class="cat-count">@CatCount(6,7,13) / 3</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!plugins[6].IsChecked ? "off" : "")" @onclick="() => Flip(6)">
+                    <div class="pchk @(plugins[6].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">ServerLogger</div>
+                    <div class="plugin-desc">Player logging</div>
+                </div>
+                <div class="plugin-item @(!plugins[7].IsChecked ? "off" : "")" @onclick="() => Flip(7)">
+                    <div class="pchk @(plugins[7].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">VoteToStart</div>
+                    <div class="plugin-desc">Vote-to-start</div>
+                </div>
+                <div class="plugin-item @(!plugins[13].IsChecked ? "off" : "")" @onclick="() => Flip(13)">
+                    <div class="pchk @(plugins[13].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">ProximityChat</div>
+                    <div class="plugin-desc">Proximity voice chat (requires client mod)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME MODES & DEBUG -->
+        <div class="category @(State.InstallerCollapsed.Contains("modes") ? "collapsed" : "")">
+            <div class="cat-header" @onclick='() => Toggle("modes")'>
+                <span class="cat-name">Game Modes & Debug</span>
+                <span class="cat-count">@CatCount(11,12,14,15,16,17) / 6</span>
+                <span class="cat-chevron">&#9660;</span>
+            </div>
+            <div class="cat-items">
+                <div class="plugin-item @(!plugins[11].IsChecked ? "off" : "")" @onclick="() => Flip(11)">
+                    <div class="pchk @(plugins[11].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">SoloTesting</div>
+                    <div class="plugin-desc">Prevents 'You Win' when testing alone</div>
+                </div>
+                <div class="plugin-item @(!plugins[12].IsChecked ? "off" : "")" @onclick="() => Flip(12)">
+                    <div class="pchk @(plugins[12].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">TABGCommunityServer</div>
+                    <div class="plugin-desc">Community server</div>
+                </div>
+                <div class="plugin-item @(!plugins[14].IsChecked ? "off" : "")" @onclick="() => Flip(14)">
+                    <div class="pchk @(plugins[14].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Hunt Mode (4v1)</div>
+                    <div class="plugin-desc">1 Killer vs 4 Survivors survival</div>
+                </div>
+                <div class="plugin-item @(!plugins[15].IsChecked ? "off" : "")" @onclick="() => Flip(15)">
+                    <div class="pchk @(plugins[15].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Juggernaut Mode</div>
+                    <div class="plugin-desc">One massive player vs everyone, score-based</div>
+                </div>
+                <div class="plugin-item @(!plugins[16].IsChecked ? "off" : "")" @onclick="() => Flip(16)">
+                    <div class="pchk @(plugins[16].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">TABGVR Server</div>
+                    <div class="plugin-desc">VR hand sync (requires client mod)</div>
+                </div>
+                <div class="plugin-item @(!plugins[17].IsChecked ? "off" : "")" @onclick="() => Flip(17)">
+                    <div class="pchk @(plugins[17].IsChecked ? "on" : "")"></div>
+                    <div class="plugin-name">Fake Players</div>
+                    <div class="plugin-desc">Spawn dummy players via admin commands</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="install-cta">
+            <button class="btn-install" @onclick="BtnInstall_Click" disabled="@isInstalling">
+                @(isInstalling ? "Installing..." : "Install")
+            </button>
+            <button class="btn-skip" @onclick="BtnContinue_Click" disabled="@isInstalling">
+                Continue without install
+            </button>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-val accent">@SelectedCount</div>
+                <div class="stat-label">Selected</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val">@plugins.Length</div>
+                <div class="stat-label">Available</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val">~45</div>
+                <div class="stat-label">MB Est.</div>
+            </div>
+            <div class="stat">
+                <div class="stat-val" style="color: @StatusColor;">@StatusText</div>
+                <div class="stat-label">Status</div>
+            </div>
+        </div>
+        <div class="log-section">
+            <div class="log-header">
+                <span class="log-title">Console</span>
+                <span class="log-status">
+                    @if (isInstalling)
+                    {
+                        <span class="status-dot"></span>
+                        <span>Installing</span>
+                    }
+                    else
+                    {
+                        <span>Ready</span>
+                    }
+                </span>
+            </div>
+            <div class="log-body" @ref="logElement">
+                @if (string.IsNullOrEmpty(logText))
+                {
+                    <div><span class="hi">[sys]</span> Initializing TABG Manager...</div>
+                    @if (!string.IsNullOrWhiteSpace(serverPath))
+                    {
+                        <div><span class="hi">[sys]</span> Server path detected <span class="ok">ok</span></div>
+                    }
+                    <div><span class="hi">[sys]</span> @SelectedCount plugins selected <span class="ok">ok</span></div>
+                    <div><span class="hi">[sys]</span> Ready for installation</div>
+                }
+                else
+                {
+                    @foreach (var line in logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <div><span class="hi">[log]</span> @StripEmoji(line)</div>
+                    }
+                }
+                <span class="log-cursor"></span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -67,28 +250,70 @@
         public bool IsChecked { get; set; }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!string.IsNullOrEmpty(logText))
+        {
+            try { await JS.InvokeVoidAsync("scrollToBottom", logElement); } catch { }
+        }
+    }
+
+    private static string StripEmoji(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length);
+        foreach (var c in s)
+        {
+            // Keep ASCII, Latin, common punctuation — skip surrogate pairs and symbol blocks
+            if (c < 0x2600 || char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c) || c == '/' || c == '\\' || c == '>' || c == '<' || c == '=' || c == ':' || c == '.' || c == '[' || c == ']' || c == '(' || c == ')')
+                sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    private int SelectedCount => plugins?.Count(p => p.IsChecked) ?? 0;
+    private string StatusText => isInstalling ? "..." : (string.IsNullOrWhiteSpace(serverPath) ? "---" : "OK");
+    private string StatusColor => isInstalling ? "var(--muted)" : (string.IsNullOrWhiteSpace(serverPath) ? "var(--muted)" : "#4ADE80");
+
+    private int CatCount(params int[] indices)
+    {
+        if (plugins == null) return 0;
+        return indices.Count(i => i < plugins.Length && plugins[i].IsChecked);
+    }
+
+    private void Toggle(string cat)
+    {
+        if (!State.InstallerCollapsed.Remove(cat))
+            State.InstallerCollapsed.Add(cat);
+    }
+
+    private void Flip(int idx)
+    {
+        if (!isInstalling)
+            plugins[idx].IsChecked = !plugins[idx].IsChecked;
+    }
+
     protected override void OnInitialized()
     {
         plugins = new PluginEntry[]
         {
-            new() { Label = "Citruslib \u2014 Core server library (admin, permissions, commands)", IsChecked = true },
-            new() { Label = "StarterPack \u2014 Match mechanics, loadouts, win conditions", IsChecked = true },
-            new() { Label = "StarterPackFixes \u2014 Loot drop control", IsChecked = true },
-            new() { Label = "CustomSpawnpoints \u2014 Custom spawn points", IsChecked = true },
-            new() { Label = "FreddoTABGCommission \u2014 Curses, grenades on kill, bans", IsChecked = true },
-            new() { Label = "MatchAndPreMatchTimeout \u2014 Match timing", IsChecked = true },
-            new() { Label = "ServerLogger \u2014 Player logging", IsChecked = true },
-            new() { Label = "VoteToStart \u2014 Vote-to-start", IsChecked = true },
-            new() { Label = "UnusedVehicles \u2014 Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)", IsChecked = true },
-            new() { Label = "BigSmokeGrenade \u2014 Giant purple smoke grenades (/give 208)", IsChecked = true },
-            new() { Label = "MGLFlashbang \u2014 MGL shoots flashbang rounds", IsChecked = true },
-            new() { Label = "SoloTesting \u2014 Prevents 'You Win' when testing alone", IsChecked = false },
-            new() { Label = "TABGCommunityServer \u2014 Community server", IsChecked = false },
-            new() { Label = "ProximityChat \u2014 Proximity voice chat (requires client mod too)", IsChecked = true },
-            new() { Label = "Hunt Mode (4v1) \u2014 1 Killer vs 4 Survivors survival", IsChecked = false },
-            new() { Label = "Juggernaut Mode \u2014 One massive player vs everyone, score-based", IsChecked = false },
-            new() { Label = "TABGVR Server \u2014 VR hand sync for VR players (requires client mod too)", IsChecked = false },
-            new() { Label = "Fake Players \u2014 Spawn dummy players via admin commands (everyone can use commands)", IsChecked = false },
+            new() { Label = "Citruslib", IsChecked = true },
+            new() { Label = "StarterPack", IsChecked = true },
+            new() { Label = "StarterPackFixes", IsChecked = true },
+            new() { Label = "CustomSpawnpoints", IsChecked = true },
+            new() { Label = "FreddoTABGCommission", IsChecked = true },
+            new() { Label = "MatchAndPreMatchTimeout", IsChecked = true },
+            new() { Label = "ServerLogger", IsChecked = true },
+            new() { Label = "VoteToStart", IsChecked = true },
+            new() { Label = "UnusedVehicles", IsChecked = true },
+            new() { Label = "BigSmokeGrenade", IsChecked = true },
+            new() { Label = "MGLFlashbang", IsChecked = true },
+            new() { Label = "SoloTesting", IsChecked = false },
+            new() { Label = "TABGCommunityServer", IsChecked = false },
+            new() { Label = "ProximityChat", IsChecked = true },
+            new() { Label = "Hunt Mode (4v1)", IsChecked = false },
+            new() { Label = "Juggernaut Mode", IsChecked = false },
+            new() { Label = "TABGVR Server", IsChecked = false },
+            new() { Label = "Fake Players", IsChecked = false },
         };
 
         var detectedPath = Installer.TryFindTabgServerPath();
@@ -102,26 +327,6 @@
     {
         await Dialog.ShowAsync("Manual Path Entry",
             "Please paste the path to your server directory into the text box manually.");
-    }
-
-    private void SelectAll()
-    {
-        foreach (var p in plugins) p.IsChecked = true;
-    }
-
-    private void SelectNone()
-    {
-        foreach (var p in plugins) p.IsChecked = false;
-    }
-
-    private void SelectSigma()
-    {
-        foreach (var p in plugins) p.IsChecked = false;
-        plugins[0].IsChecked = true;  // Citruslib
-        plugins[1].IsChecked = true;  // StarterPack
-        plugins[2].IsChecked = true;  // StarterPackFixes
-        plugins[3].IsChecked = true;  // CustomSpawnpoints
-        plugins[4].IsChecked = true;  // FreddoTABGCommission
     }
 
     private async Task BtnInstall_Click()

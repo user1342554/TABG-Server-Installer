@@ -1,130 +1,80 @@
 @inject AppState State
 @implements IDisposable
 
-<div style="display:flex; flex-direction:column; height:100%;">
-    @if (_settings == null)
-    {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to edit match settings.</span>
-        </div>
-    }
-    else
-    {
-        <div class="scroll-area" style="flex:1; padding:4px;">
-
-            <!-- Match Mode -->
-            <GroupBox Header="Match Mode" Style="margin-top:10px;">
-                <div class="grid-2col" style="grid-template-columns:180px 1fr;">
-                    <label>Loadout Mode</label>
-                    <select style="width:200px;" @bind="_loadoutMode">
-                        <option value="Normal">Normal</option>
-                        <option value="GunGame">GunGame</option>
-                        <option value="ReverseGunGame">ReverseGunGame</option>
-                        <option value="KeepInventory">KeepInventory</option>
-                    </select>
-
-                    <label>Win Condition</label>
-                    <select style="width:200px;" @bind="WinCondition">
-                        <option value="Default">Default</option>
-                        <option value="KillsToWin">KillsToWin</option>
-                        <option value="Debug">Debug</option>
-                    </select>
-
-                    @if (_settings.WinCondition == "KillsToWin")
-                    {
-                        <label>Kills To Win</label>
-                        <input type="text" style="width:100px;" @bind="_killsToWinText" />
-                    }
-
-                    <label>Force Kill At Start</label>
-                    <div>
-                        <input type="checkbox" @bind="_settings.ForceKillAtStart" />
-                    </div>
-
-                    <label>Heal On Kill</label>
-                    <div class="hstack">
-                        <input type="checkbox" @bind="_settings.HealOnKill" />
-                        <span style="margin-left:12px;">Heal Amount %:</span>
-                        <input type="text" style="width:60px;" @bind="_healOnKillAmountText" />
-                    </div>
-
-                    <label>Drop Items On Death</label>
-                    <div>
-                        <input type="checkbox" @bind="_settings.DropItemsOnDeath" />
-                    </div>
-
-                    <label>Can Go Down</label>
-                    <div>
-                        <input type="checkbox" @bind="_settings.CanGoDown" />
-                    </div>
-
-                    <label>Can Lock Out</label>
-                    <div>
-                        <input type="checkbox" @bind="_settings.CanLockOut" />
-                    </div>
-                </div>
-            </GroupBox>
-
-            <!-- Vote Settings -->
-            <GroupBox Header="Vote Settings" Style="margin-top:12px;">
-                <div class="grid-2col" style="grid-template-columns:180px 1fr;">
-                    <label>Percent Of Votes</label>
-                    <input type="text" style="width:100px;" @bind="_percentOfVotesText" />
-
-                    <label>Min Players</label>
-                    <input type="text" style="width:100px;" @bind="_minPlayersText" />
-
-                    <label>Time To Start (seconds)</label>
-                    <input type="text" style="width:100px;" @bind="_timeToStartText" />
-                </div>
-            </GroupBox>
-
-            <!-- Spell Drops -->
-            <GroupBox Header="Spell Drops" Style="margin-top:12px;">
-                <div class="grid-2col" style="grid-template-columns:180px 1fr;">
-                    <label>Enabled</label>
-                    <div>
-                        <input type="checkbox" @bind="_settings.SpelldropEnabled" />
-                    </div>
-
-                    <label>Min Delay (seconds)</label>
-                    <input type="text" style="width:100px;" @bind="_minSpellDropDelayText" />
-
-                    <label>Max Delay (seconds)</label>
-                    <input type="text" style="width:100px;" @bind="_maxSpellDropDelayText" />
-
-                    <label>First Drop Offset (seconds)</label>
-                    <input type="text" style="width:100px;" @bind="_spellDropOffsetText" />
-                </div>
-            </GroupBox>
-
-            <!-- Timeouts -->
-            <GroupBox Header="Timeouts" Style="margin-top:12px;">
-                <div class="grid-2col" style="grid-template-columns:180px 1fr;">
-                    <label>Pre-Match Timeout (minutes)</label>
-                    <input type="text" style="width:100px;" @bind="_preMatchTimeoutText" />
-
-                    <label>Match Timeout (minutes)</label>
-                    <input type="text" style="width:100px;" @bind="_periMatchTimeoutText" />
-                </div>
-            </GroupBox>
-
+@if (_settings == null)
+{
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        <p style="color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.1em;">Configure a server directory to edit match settings.</p>
+    </div>
+}
+else
+{
+    <div class="card-grid">
+        <!-- Match Mode -->
+        <div class="card">
+            <div class="card-header">Match Mode</div>
+            <div class="card-body">
+                <div class="field"><div class="field-name">Loadout Mode</div><div class="field-input"><select class="ctrl-select" @bind="_loadoutMode"><option value="Normal">Normal</option><option value="GunGame">GunGame</option><option value="ReverseGunGame">ReverseGunGame</option><option value="KeepInventory">KeepInventory</option></select></div></div>
+                <div class="field"><div class="field-name">Win Condition</div><div class="field-input"><select class="ctrl-select" @bind="WinCondition"><option value="Default">Default</option><option value="KillsToWin">KillsToWin</option><option value="Debug">Debug</option></select></div></div>
+                <div class="field"><div class="field-name">Kills To Win</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_killsToWinText" /><span class="ctrl-hint">only if KillsToWin</span></div></div>
+                <div class="field"><div class="field-name">Force Kill At Start</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.ForceKillAtStart" /></div></div>
+                <div class="field"><div class="field-name">Drop Items On Death</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.DropItemsOnDeath" /></div></div>
+                <div class="field"><div class="field-name">Can Go Down</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.CanGoDown" /></div></div>
+                <div class="field"><div class="field-name">Can Lock Out</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.CanLockOut" /></div></div>
+            </div>
         </div>
 
-        <!-- Bottom bar -->
-        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
-            <button style="width:100px;" @onclick="Save">Save</button>
-            <span class="status-text @_statusCss">@_statusText</span>
+        <!-- Heal & Combat -->
+        <div class="card">
+            <div class="card-header">Heal & Combat</div>
+            <div class="card-body">
+                <div class="field"><div class="field-name">Heal On Kill</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.HealOnKill" /></div></div>
+                <div class="field"><div class="field-name">Heal Amount %</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_healOnKillAmountText" /><span class="ctrl-hint">percent</span></div></div>
+            </div>
         </div>
-    }
-</div>
+
+        <!-- Vote Settings -->
+        <div class="card">
+            <div class="card-header">Vote Settings</div>
+            <div class="card-body">
+                <div class="field"><div class="field-name">Percent Of Votes</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_percentOfVotesText" /><span class="ctrl-hint">%</span></div></div>
+                <div class="field"><div class="field-name">Min Players</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_minPlayersText" /></div></div>
+                <div class="field"><div class="field-name">Time To Start</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_timeToStartText" /><span class="ctrl-hint">seconds</span></div></div>
+            </div>
+        </div>
+
+        <!-- Spell Drops -->
+        <div class="card">
+            <div class="card-header">Spell Drops</div>
+            <div class="card-body">
+                <div class="field"><div class="field-name">Enabled</div><div class="field-input"><input class="ctrl-checkbox" type="checkbox" @bind="_settings.SpelldropEnabled" /></div></div>
+                <div class="field"><div class="field-name">Min Delay</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_minSpellDropDelayText" /><span class="ctrl-hint">seconds</span></div></div>
+                <div class="field"><div class="field-name">Max Delay</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_maxSpellDropDelayText" /><span class="ctrl-hint">seconds</span></div></div>
+                <div class="field"><div class="field-name">First Drop Offset</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_spellDropOffsetText" /><span class="ctrl-hint">seconds</span></div></div>
+            </div>
+        </div>
+
+        <!-- Timeouts -->
+        <div class="card">
+            <div class="card-header">Timeouts</div>
+            <div class="card-body">
+                <div class="field"><div class="field-name">Pre-Match Timeout</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_preMatchTimeoutText" /><span class="ctrl-hint">minutes</span></div></div>
+                <div class="field"><div class="field-name">Match Timeout</div><div class="field-input"><input class="ctrl-text narrow" type="text" @bind="_periMatchTimeoutText" /><span class="ctrl-hint">minutes</span></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="bottom-btn" @onclick="Save">Save</button>
+        <span class="bottom-status">@(_statusText == "" ? "Settings loaded from StarterPack config" : _statusText)</span>
+    </div>
+}
 
 @code {
     private StarterPackTextSettings? _settings;
     private string _statusText = "";
     private string _statusCss = "";
 
-    // Text-backed fields for numeric inputs (so invalid text doesn't get silently lost)
     private string _loadoutMode = "Normal";
     private string _killsToWinText = "";
     private string _healOnKillAmountText = "20";
@@ -137,7 +87,6 @@
     private string _preMatchTimeoutText = "15";
     private string _periMatchTimeoutText = "15";
 
-    // Property wrapper so changing WinCondition triggers re-render (shows/hides KillsToWin row)
     private string WinCondition
     {
         get => _settings?.WinCondition ?? "Default";
@@ -169,37 +118,22 @@
         try
         {
             _settings = StarterPackConfigService.Read(State.ServerDir);
-
-            // Loadout mode
             _loadoutMode = _settings.GetLoadoutMode();
-
-            // KillsToWin
             _killsToWinText = _settings.KillsToWin?.ToString() ?? "";
-
-            // Heal on kill amount
             _healOnKillAmountText = _settings.HealOnKillAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            // Vote settings
             _percentOfVotesText = _settings.PercentOfVotes.ToString();
             _minPlayersText = _settings.MinNumberOfPlayers.ToString();
             _timeToStartText = _settings.TimeToStart.ToString();
-
-            // Spell drops
             _minSpellDropDelayText = _settings.MinSpellDropDelay.ToString();
             _maxSpellDropDelayText = _settings.MaxSpellDropDelay.ToString();
             _spellDropOffsetText = _settings.SpellDropOffset.ToString();
-
-            // Timeouts
             _preMatchTimeoutText = _settings.PreMatchTimeout.ToString(System.Globalization.CultureInfo.InvariantCulture);
             _periMatchTimeoutText = _settings.PeriMatchTimeout.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            _statusText = "Settings loaded.";
-            _statusCss = "";
+            _statusText = "";
         }
         catch (Exception ex)
         {
             _statusText = $"Error loading: {ex.Message}";
-            _statusCss = "error";
         }
     }
 
@@ -210,23 +144,19 @@
             if (_settings == null)
                 _settings = new StarterPackTextSettings();
 
-            // Loadout mode - preserve loadout content, change prefix
             var loadoutsWithoutPrefix = _settings.GetLoadoutsWithoutPrefix();
             _settings.SetLoadoutsWithPrefix(_loadoutMode, loadoutsWithoutPrefix);
 
-            // KillsToWin
             if (int.TryParse(_killsToWinText.Trim(), out var ktw))
                 _settings.KillsToWin = ktw;
             else
                 _settings.KillsToWin = null;
 
-            // Heal on kill amount
             if (float.TryParse(_healOnKillAmountText.Trim(),
                     System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out var healAmt))
                 _settings.HealOnKillAmount = healAmt;
 
-            // Vote settings
             if (int.TryParse(_percentOfVotesText.Trim(), out var pov))
                 _settings.PercentOfVotes = pov;
             if (int.TryParse(_minPlayersText.Trim(), out var mnp))
@@ -234,7 +164,6 @@
             if (int.TryParse(_timeToStartText.Trim(), out var tts))
                 _settings.TimeToStart = tts;
 
-            // Spell drops
             if (int.TryParse(_minSpellDropDelayText.Trim(), out var minsd))
                 _settings.MinSpellDropDelay = minsd;
             if (int.TryParse(_maxSpellDropDelayText.Trim(), out var maxsd))
@@ -242,7 +171,6 @@
             if (int.TryParse(_spellDropOffsetText.Trim(), out var sdo))
                 _settings.SpellDropOffset = sdo;
 
-            // Timeouts
             if (float.TryParse(_preMatchTimeoutText.Trim(),
                     System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out var pmt))
@@ -253,13 +181,11 @@
                 _settings.PeriMatchTimeout = pmtt;
 
             StarterPackConfigService.Write(State.ServerDir, _settings);
-            _statusText = "Settings saved.";
-            _statusCss = "success";
+            _statusText = "Settings saved";
         }
         catch (Exception ex)
         {
             _statusText = $"Error saving: {ex.Message}";
-            _statusCss = "error";
         }
     }
 

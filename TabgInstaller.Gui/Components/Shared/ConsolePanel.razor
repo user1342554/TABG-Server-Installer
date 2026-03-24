@@ -4,29 +4,74 @@
 <div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to use the console.</span>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                Configure a server directory to use the console.
+            </span>
         </div>
     }
     else
     {
-        <!-- Top bar -->
-        <div class="hstack" style="margin-bottom:5px; flex-shrink:0;">
-            <button style="width:100px; margin:2px;" disabled="@_isRunning" @onclick="StartServer">Start Server</button>
-            <button style="width:100px; margin:2px;" disabled="@(!_isRunning)" @onclick="StopServer">Stop Server</button>
-            <button style="width:100px; margin:2px;" @onclick="ClearConsole">Clear Console</button>
-        </div>
+        <div style="flex:1; display:grid; grid-template-columns:280px 1fr; overflow:hidden;">
 
-        <!-- Scrollable output area -->
-        <div class="log-area" style="flex:1; overflow-y:auto; margin-bottom:5px;" @ref="_consoleDiv">
-            @_consoleOutput
-        </div>
+            <!-- Left: Dashboard -->
+            <div class="col">
+                <!-- Server Control -->
+                <div class="col-header">Server Control</div>
+                <div style="padding:1.25rem;">
+                    <!-- Status -->
+                    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:1rem;">
+                        <div class="status-dot @(_isRunning ? "" : "off")"></div>
+                        <div>
+                            <div style="font-family:var(--display); font-weight:700; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                @(_isRunning ? "Server Running" : "Server Stopped")
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- Command input -->
-        <div style="display:flex; flex-shrink:0;">
-            <input type="text" style="flex:1;" @bind="_commandText" @bind:event="oninput"
-                   @onkeydown="OnCommandKeyDown" placeholder="Enter command..." />
-            <button style="width:60px; margin-left:5px;" @onclick="SendCommand">Send</button>
+                    <!-- Buttons -->
+                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <button class="btn-primary" style="width:100%; font-size:0.72rem; padding:0.7rem 1rem; letter-spacing:0.1em;"
+                                disabled="@_isRunning" @onclick="StartServer">Start</button>
+                        <button class="btn-secondary" style="width:100%; font-size:0.65rem; padding:0.6rem 1rem;"
+                                disabled="@(!_isRunning)" @onclick="StopServer">Stop</button>
+                    </div>
+                </div>
+
+                <!-- Player List Header -->
+                <div class="col-header" style="border-top:2px solid var(--fg);">
+                    Players
+                    <span class="col-meta">0 online</span>
+                </div>
+                <div class="col-body">
+                    <div style="padding:1.25rem; color:var(--muted); font-size:0.72rem; text-align:center;">
+                        No players connected
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Console Output -->
+            <div style="display:flex; flex-direction:column; overflow:hidden; border-right:none;">
+                <!-- Topbar -->
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 1.25rem; border-bottom:2px solid var(--fg); background:rgba(0,0,0,0.02); flex-shrink:0;">
+                    <span style="font-family:var(--display); font-weight:700; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em;">Server Output</span>
+                    <button style="font-family:var(--mono); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; padding:0.25rem 0.75rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;"
+                            @onclick="ClearConsole">Clear</button>
+                </div>
+
+                <!-- Console Output Area -->
+                <div class="log-body" style="flex:1; background:var(--log-bg); white-space:pre-wrap; word-wrap:break-word;" @ref="_consoleDiv">@_consoleOutput</div>
+
+                <!-- Command Input Bar -->
+                <div style="display:flex; align-items:center; border-top:2px solid var(--fg); flex-shrink:0;">
+                    <span style="padding:0 0.75rem; font-family:var(--mono); font-size:0.82rem; color:var(--muted); font-weight:700;">&gt;</span>
+                    <input type="text" class="ctrl-text" style="flex:1; border:none; padding:0.6rem 0.5rem;"
+                           @bind="_commandText" @bind:event="oninput"
+                           @onkeydown="OnCommandKeyDown" placeholder="Enter command..." />
+                    <button class="bottom-btn" style="height:100%; font-size:0.62rem; padding:0 1.2rem; border-right:none;"
+                            @onclick="SendCommand">Send</button>
+                </div>
+            </div>
         </div>
     }
 </div>

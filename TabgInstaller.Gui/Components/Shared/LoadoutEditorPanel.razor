@@ -4,210 +4,234 @@
 <div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to edit loadouts.</span>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                Configure a server directory to edit loadouts.
+            </span>
         </div>
     }
     else
     {
-        <!-- Top Bar -->
-        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
-            <label>Loadout Mode:</label>
-            <select style="width:160px;" @bind="_selectedMode">
-                <option value="Normal">Normal</option>
-                <option value="GunGame">GunGame</option>
-                <option value="ReverseGunGame">ReverseGunGame</option>
-                <option value="KeepInventory">KeepInventory</option>
-            </select>
-            <button style="margin-left:16px; padding:2px 8px;" @onclick="ImportRaw">Import Raw</button>
-            <button style="padding:2px 8px;" @onclick="ExportRaw">Export Raw</button>
-        </div>
+        <div style="flex:1; display:grid; grid-template-columns:240px 1fr 300px; overflow:hidden;">
 
-        <!-- Main Split Panel -->
-        <div class="split-panel" style="flex:1; min-height:0;">
+            <!-- Col 1: Loadout List -->
+            <div class="col">
+                <div class="col-header">
+                    Loadouts
+                    <span class="col-meta">@_loadouts.Count total</span>
+                </div>
 
-            <!-- Left Pane - Loadout List -->
-            <div class="left-pane" style="display:flex; flex-direction:column; padding:4px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Loadouts</div>
-                <div class="scroll-area" style="flex:1; border:1px solid #ACACAC; background:white;">
+                <!-- Mode Select -->
+                <div style="padding:0.5rem 1.25rem; border-bottom:1px solid var(--light-border);">
+                    <select class="ctrl-select" @bind="_selectedMode">
+                        <option value="Normal">Normal</option>
+                        <option value="GunGame">GunGame</option>
+                        <option value="ReverseGunGame">ReverseGunGame</option>
+                        <option value="KeepInventory">KeepInventory</option>
+                    </select>
+                </div>
+
+                <!-- Scrollable loadout items -->
+                <div class="col-body">
                     @for (int i = 0; i < _loadouts.Count; i++)
                     {
                         var idx = i;
                         var lo = _loadouts[idx];
-                        <div class="@(_selectedIndex == idx ? "list-view-item selected" : "list-view-item")"
+                        <div style="padding:0.45rem 1.25rem; border-bottom:1px solid var(--light-border); cursor:pointer; font-size:0.78rem; transition:all 0.1s; background:@(_selectedIndex == idx ? "var(--fg)" : "transparent"); color:@(_selectedIndex == idx ? "var(--bg)" : "inherit");"
                              @onclick="() => SelectLoadout(idx)">
-                            @lo.DisplayName
+                            <div style="font-weight:500;">@lo.Name</div>
+                            <div style="font-size:0.6rem; opacity:0.6;">@lo.Percent% &middot; @lo.Items.Count items</div>
                         </div>
                     }
                 </div>
-                <div class="hstack" style="margin-top:4px; flex-wrap:wrap;">
-                    <button style="width:50px;" @onclick="AddLoadout">Add</button>
-                    <button style="width:68px;" title="Clone the selected loadout" @onclick="DuplicateLoadout">Duplicate</button>
-                    <button style="width:58px;" @onclick="RemoveLoadout">Remove</button>
-                    <button style="width:32px;" @onclick="MoveUp">Up</button>
-                    <button style="width:42px;" @onclick="MoveDown">Down</button>
+
+                <!-- Action buttons -->
+                <div style="display:flex; flex-wrap:wrap; gap:0.25rem; padding:0.5rem 0.75rem; border-top:2px solid var(--fg); flex-shrink:0;">
+                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.3rem 0.5rem; background:var(--fg); color:var(--bg); border:none; cursor:pointer; transition:all 0.1s;" @onclick="AddLoadout">Add</button>
+                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.3rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;" @onclick="DuplicateLoadout">Clone</button>
+                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.3rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;" @onclick="RemoveLoadout">Del</button>
+                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.3rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;" @onclick="MoveUp">Up</button>
+                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.3rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;" @onclick="MoveDown">Down</button>
                 </div>
             </div>
 
-            <!-- Right Pane - Loadout Editor -->
-            <div class="right-pane">
+            <!-- Col 2: Editor -->
+            <div class="col">
                 @if (SelectedLoadout != null)
                 {
-                    <!-- Name and Weight -->
-                    <div class="hstack" style="margin-bottom:4px;">
-                        <label style="width:60px;">Name:</label>
-                        <input type="text" style="width:200px;" value="@SelectedLoadout.Name"
-                               @oninput="OnNameChanged" />
-                    </div>
-                    <div class="hstack" style="margin-bottom:8px;">
-                        <label style="width:60px;">Weight:</label>
-                        <input type="text" style="width:60px;" value="@_percentText"
-                               @oninput="OnPercentChanged" />
-                        <span>%</span>
-                    </div>
-
-                    <!-- Items List -->
-                    <div style="font-weight:bold; margin-bottom:4px;">Items</div>
-                    <div style="max-height:180px; overflow-y:auto; border:1px solid #ACACAC; margin-bottom:4px;">
-                        <table class="data-grid" style="width:100%;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left;">Item Name</th>
-                                    <th style="width:50px;">ID</th>
-                                    <th style="width:60px;">Qty</th>
-                                    <th style="width:60px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 0; i < SelectedLoadout.Items.Count; i++)
-                                {
-                                    var itemIdx = i;
-                                    var item = SelectedLoadout.Items[itemIdx];
-                                    <tr>
-                                        <td>@ResolveItemName(item.Id)</td>
-                                        <td>@item.Id</td>
-                                        <td>
-                                            <input type="text" style="width:45px;" value="@item.Quantity"
-                                                   @onchange="e => OnItemQtyChanged(itemIdx, e)" />
-                                        </td>
-                                        <td>
-                                            <button style="padding:0 2px; font-size:11px;" @onclick="() => RemoveItem(itemIdx)">Remove</button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Add Item Section -->
-                    <GroupBox Header="Add Item" Style="margin-bottom:8px;">
-                        <!-- Search box -->
-                        <div class="hstack" style="margin-bottom:4px;">
-                            <label style="width:70px;">Search:</label>
-                            <input type="text" style="width:250px;" value="@_searchText"
-                                   @oninput="OnSearchChanged"
-                                   title="Type to search items across all categories" />
+                    <div class="col-header">@SelectedLoadout.Name</div>
+                    <div class="col-body">
+                        <!-- Name and Weight fields -->
+                        <div class="field">
+                            <span class="field-name">Name</span>
+                            <div class="field-input">
+                                <input type="text" class="ctrl-text" value="@SelectedLoadout.Name"
+                                       @oninput="OnNameChanged" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <span class="field-name">Weight</span>
+                            <div class="field-input">
+                                <input type="text" class="ctrl-text narrow" value="@_percentText"
+                                       @oninput="OnPercentChanged" />
+                                <span class="ctrl-hint">%</span>
+                            </div>
                         </div>
 
-                        @if (!string.IsNullOrEmpty(_searchText))
-                        {
-                            <div style="max-height:120px; overflow-y:auto; border:1px solid #ACACAC; margin-bottom:4px; background:white;">
-                                @if (_searchResults.Count == 0)
-                                {
-                                    <div class="list-view-item" style="color:gray;">(no matches)</div>
-                                }
-                                else
-                                {
-                                    @for (int i = 0; i < _searchResults.Count; i++)
-                                    {
-                                        var srIdx = i;
-                                        var sr = _searchResults[srIdx];
-                                        <div class="@(_selectedSearchIndex == srIdx ? "list-view-item selected" : "list-view-item")"
-                                             @onclick="() => _selectedSearchIndex = srIdx"
-                                             @ondblclick="() => AddFromSearch(srIdx)"
-                                             title="Double-click to add item">
-                                            @sr.DisplayText
-                                        </div>
-                                    }
-                                }
-                            </div>
-                        }
-
-                        @if (string.IsNullOrEmpty(_searchText))
-                        {
-                            <!-- Category/Item dropdowns -->
-                            <div class="hstack" style="margin-bottom:4px;">
-                                <label style="width:70px;">Category:</label>
-                                <select style="width:160px;" value="@_selectedCategory"
-                                        @onchange="OnCategoryChanged">
-                                    @foreach (var cat in ItemDatabase.Categories)
-                                    {
-                                        <option value="@cat">@cat</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="hstack" style="margin-bottom:4px;">
-                                <label style="width:70px;">Item:</label>
-                                <select style="width:250px;" @bind="_selectedItemDisplay">
-                                    @foreach (var item in _categoryItems)
-                                    {
-                                        <option value="@item">@item</option>
-                                    }
-                                </select>
-                            </div>
-                        }
-
-                        <div class="hstack">
-                            <label style="width:70px;">Quantity:</label>
-                            <input type="text" style="width:60px;" @bind="_quantityText" />
-                            <button style="width:60px; margin-left:8px;" @onclick="AddItem">Add</button>
+                        <!-- Items Header Row -->
+                        <div style="display:grid; grid-template-columns:1fr 50px 55px 40px; padding:0.4rem 1rem; border-top:2px solid var(--fg); border-bottom:1px solid var(--light-border); background:rgba(0,0,0,0.02);">
+                            <span style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); font-weight:500;">Item</span>
+                            <span style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); font-weight:500;">ID</span>
+                            <span style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); font-weight:500;">Qty</span>
+                            <span></span>
                         </div>
-                    </GroupBox>
 
-                    <!-- Curse Assignment -->
-                    <details style="margin-bottom:4px;">
-                        <summary style="cursor:pointer; font-weight:bold;">Curse Assignment</summary>
-                        <div style="display:flex; flex-wrap:wrap; padding:4px;">
-                            @foreach (var curse in _curseEntries)
+                        <!-- Scrollable item rows -->
+                        <div style="overflow-y:auto; flex:1;">
+                            @for (int i = 0; i < SelectedLoadout.Items.Count; i++)
                             {
-                                var entry = curse;
-                                <label style="width:185px; margin:2px 4px; display:flex; align-items:center; gap:4px;">
-                                    <input type="checkbox" checked="@entry.IsChecked"
-                                           @onchange="e => OnCurseToggled(entry, e)" />
-                                    @entry.DisplayText
-                                </label>
+                                var itemIdx = i;
+                                var item = SelectedLoadout.Items[itemIdx];
+                                <div style="display:grid; grid-template-columns:1fr 50px 55px 40px; padding:0.35rem 1rem; border-bottom:1px solid var(--light-border); align-items:center; font-size:0.78rem;">
+                                    <span style="font-weight:500;">@ResolveItemName(item.Id)</span>
+                                    <span style="color:var(--muted); font-size:0.7rem;">@item.Id</span>
+                                    <input type="text" class="ctrl-text" style="width:40px; padding:0.15rem 0.3rem; font-size:0.72rem;" value="@item.Quantity"
+                                           @onchange="e => OnItemQtyChanged(itemIdx, e)" />
+                                    <button style="font-size:0.5rem; text-transform:uppercase; padding:0.15rem 0.3rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer;"
+                                            @onclick="() => RemoveItem(itemIdx)">Del</button>
+                                </div>
                             }
                         </div>
-                    </details>
-
-                    <!-- Blessing Assignment -->
-                    <details style="margin-bottom:4px;">
-                        <summary style="cursor:pointer; font-weight:bold;">Blessing Assignment (added as items)</summary>
-                        <div style="color:gray; font-size:11px; margin:4px;">Blessings are added as items to this loadout.</div>
-                        <div style="display:flex; flex-wrap:wrap; padding:4px;">
-                            @foreach (var blessing in _blessingEntries)
-                            {
-                                var entry = blessing;
-                                <label style="width:185px; margin:2px 4px; display:flex; align-items:center; gap:4px;">
-                                    <input type="checkbox" checked="@entry.IsChecked"
-                                           @onchange="e => OnBlessingToggled(entry, e)" />
-                                    @entry.DisplayText
-                                </label>
-                            }
-                        </div>
-                    </details>
+                    </div>
                 }
                 else
                 {
-                    <div style="color:gray; font-style:italic; padding:8px;">Select a loadout to edit.</div>
+                    <div class="col-header" style="color:var(--muted);">No Loadout Selected</div>
+                    <div class="col-body" style="display:flex; align-items:center; justify-content:center;">
+                        <span style="color:var(--muted); font-size:0.75rem;">Select a loadout to edit.</span>
+                    </div>
                 }
+            </div>
+
+            <!-- Col 3: Add Item + Modifiers -->
+            <div class="col" style="border-right:none;">
+                <div class="col-header">Add Item</div>
+                <div style="flex:1; overflow-y:auto;">
+                    <!-- Search Input -->
+                    <div class="block">
+                        <div class="block-label">Search</div>
+                        <input type="text" class="ctrl-text" value="@_searchText"
+                               @oninput="OnSearchChanged"
+                               placeholder="Type to search items..." />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_searchText))
+                    {
+                        <div style="max-height:120px; overflow-y:auto; border-bottom:1px solid var(--light-border);">
+                            @if (_searchResults.Count == 0)
+                            {
+                                <div style="padding:0.5rem 1.25rem; color:var(--muted); font-size:0.72rem;">(no matches)</div>
+                            }
+                            else
+                            {
+                                @for (int i = 0; i < _searchResults.Count; i++)
+                                {
+                                    var srIdx = i;
+                                    var sr = _searchResults[srIdx];
+                                    <div style="padding:0.35rem 1.25rem; font-size:0.72rem; cursor:pointer; border-bottom:1px solid var(--light-border); transition:all 0.1s; background:@(_selectedSearchIndex == srIdx ? "var(--fg)" : "transparent"); color:@(_selectedSearchIndex == srIdx ? "var(--bg)" : "inherit");"
+                                         @onclick="() => _selectedSearchIndex = srIdx"
+                                         @ondblclick="() => AddFromSearch(srIdx)">
+                                        @sr.DisplayText
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (string.IsNullOrEmpty(_searchText))
+                    {
+                        <!-- Category Browse -->
+                        <div class="block">
+                            <div class="block-label">Category</div>
+                            <select class="ctrl-select" value="@_selectedCategory"
+                                    @onchange="OnCategoryChanged">
+                                @foreach (var cat in ItemDatabase.Categories)
+                                {
+                                    <option value="@cat">@cat</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="block">
+                            <div class="block-label">Item</div>
+                            <select class="ctrl-select" @bind="_selectedItemDisplay">
+                                @foreach (var item in _categoryItems)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <!-- Qty + Add Row -->
+                    <div class="block">
+                        <div class="block-row">
+                            <span style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted);">Qty</span>
+                            <input type="text" class="ctrl-text narrow" style="width:50px;" @bind="_quantityText" />
+                            <button class="bottom-btn" style="height:28px; font-size:0.58rem; padding:0 0.75rem; border-right:none;" @onclick="AddItem">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Curses Section -->
+                    @if (SelectedLoadout != null)
+                    {
+                        <div style="border-top:2px solid var(--fg);">
+                            <div style="padding:0.5rem 1.25rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:500; border-bottom:1px solid var(--light-border); background:rgba(0,0,0,0.02);">
+                                Curses
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; padding:0.5rem 1rem; gap:0.25rem;">
+                                @foreach (var curse in _curseEntries)
+                                {
+                                    var entry = curse;
+                                    <div style="display:flex; align-items:center; gap:0.35rem;">
+                                        <input type="checkbox" class="ctrl-checkbox" checked="@entry.IsChecked"
+                                               @onchange="e => OnCurseToggled(entry, e)" />
+                                        <span style="font-size:0.68rem;">@entry.DisplayText</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Blessings Section -->
+                        <div style="border-top:2px solid var(--fg);">
+                            <div style="padding:0.5rem 1.25rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:500; border-bottom:1px solid var(--light-border); background:rgba(0,0,0,0.02);">
+                                Blessings
+                            </div>
+                            <div style="padding:0.25rem 1.25rem; font-size:0.55rem; color:var(--muted); border-bottom:1px solid var(--light-border);">
+                                Added as items to this loadout
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; padding:0.5rem 1rem; gap:0.25rem;">
+                                @foreach (var blessing in _blessingEntries)
+                                {
+                                    var entry = blessing;
+                                    <div style="display:flex; align-items:center; gap:0.35rem;">
+                                        <input type="checkbox" class="ctrl-checkbox" checked="@entry.IsChecked"
+                                               @onchange="e => OnBlessingToggled(entry, e)" />
+                                        <span style="font-size:0.68rem;">@entry.DisplayText</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
 
         <!-- Bottom Bar -->
-        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
-            <button style="width:100px;" @onclick="Save">Save</button>
-            <span class="status-text @_statusCss">@_statusText</span>
+        <div class="bottom-bar">
+            <button class="bottom-btn" @onclick="Save">Save</button>
+            <button class="bottom-btn ghost" @onclick="ImportRaw">Import Raw</button>
+            <button class="bottom-btn ghost" @onclick="ExportRaw">Export Raw</button>
+            <span class="bottom-status">@_statusText</span>
         </div>
     }
 </div>
@@ -218,11 +242,11 @@
     <div class="dialog-overlay" @onclick="() => _showImportDialog = false">
         <div class="dialog-box" style="width:560px;" @onclick:stopPropagation>
             <div class="dialog-title">Import Raw Loadouts</div>
-            <div style="margin-bottom:4px;">Paste the raw loadout string (including optional GunGame/ prefix):</div>
-            <textarea style="width:100%; height:180px;" @bind="_importText"></textarea>
-            <div class="dialog-buttons" style="margin-top:8px;">
+            <div class="dialog-message" style="margin-bottom:0.5rem;">Paste the raw loadout string (including optional GunGame/ prefix):</div>
+            <textarea class="ctrl-textarea" style="width:100%; height:180px; border:1.5px solid var(--light-border);" @bind="_importText"></textarea>
+            <div class="dialog-buttons" style="margin-top:1rem;">
                 <button @onclick="DoImport">Import</button>
-                <button @onclick="() => _showImportDialog = false">Cancel</button>
+                <button class="ghost" @onclick="() => _showImportDialog = false">Cancel</button>
             </div>
         </div>
     </div>
@@ -234,9 +258,9 @@
     <div class="dialog-overlay" @onclick="() => _showExportDialog = false">
         <div class="dialog-box" style="width:560px;" @onclick:stopPropagation>
             <div class="dialog-title">Export Raw Loadouts</div>
-            <div style="margin-bottom:4px;">Raw loadout string (copy this):</div>
-            <textarea style="width:100%; height:180px;" readonly>@_exportText</textarea>
-            <div class="dialog-buttons" style="margin-top:8px;">
+            <div class="dialog-message" style="margin-bottom:0.5rem;">Raw loadout string (copy this):</div>
+            <textarea class="ctrl-textarea" style="width:100%; height:180px; border:1.5px solid var(--light-border);" readonly>@_exportText</textarea>
+            <div class="dialog-buttons" style="margin-top:1rem;">
                 <button @onclick="() => _showExportDialog = false">Close</button>
             </div>
         </div>

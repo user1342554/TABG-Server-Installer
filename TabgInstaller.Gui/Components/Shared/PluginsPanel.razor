@@ -4,35 +4,68 @@
 <div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to manage plugins.</span>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                Configure a server directory to manage plugins.
+            </span>
         </div>
     }
     else
     {
-        <label style="margin-bottom:4px;">Installed plugins (BepInEx/plugins):</label>
+        <div style="flex:1; display:grid; grid-template-columns:1fr 220px; overflow:hidden;">
 
-        <div class="list-view" style="height:280px; overflow-y:auto;">
-            @foreach (var plugin in _plugins)
-            {
-                <div class="list-view-item @(plugin == _selectedPlugin ? "selected" : "")"
-                     @onclick="() => _selectedPlugin = plugin">
-                    <div class="checkbox-row">
-                        <input type="checkbox" checked="@plugin.IsEnabled"
-                               @onchange="e => TogglePlugin(plugin, (bool)(e.Value ?? false))" />
-                        <span>@plugin.Name</span>
+            <!-- Left: Plugin List -->
+            <div class="col">
+                <div class="col-header">
+                    Plugins
+                    <span class="col-meta">BepInEx/plugins</span>
+                </div>
+                <div class="col-body">
+                    @foreach (var plugin in _plugins)
+                    {
+                        <div class="plugin-row" style="display:flex; align-items:center; gap:0.75rem; padding:0.45rem 1.25rem; border-bottom:1px solid var(--light-border); transition:all 0.1s;"
+                             onmouseover="this.style.background='rgba(0,0,0,0.03)'"
+                             onmouseout="this.style.background='transparent'">
+                            <input type="checkbox" class="ctrl-checkbox plugin-toggle"
+                                   checked="@plugin.IsEnabled"
+                                   @onchange="e => TogglePlugin(plugin, (bool)(e.Value ?? false))" />
+                            <span class="plugin-name" style="flex:1; font-size:0.82rem; opacity:@(plugin.IsEnabled ? "1" : "0.5");">@plugin.Name</span>
+                            <button style="font-size:0.55rem; text-transform:uppercase; letter-spacing:0.08em; padding:0.2rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;"
+                                    @onclick="() => { _selectedPlugin = plugin; RemovePlugin(); }">Del</button>
+                        </div>
+                    }
+                    @if (_plugins.Count == 0)
+                    {
+                        <div style="padding:2rem; text-align:center; color:var(--muted); font-size:0.75rem;">No plugins installed</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Actions Sidebar -->
+            <div style="display:flex; flex-direction:column; padding:1.25rem; gap:0.5rem;">
+                <button class="btn-primary" style="font-size:0.75rem; padding:0.8rem 1rem; letter-spacing:0.1em;" @onclick="AddPlugin">Add Plugin</button>
+                <button class="btn-secondary" style="font-size:0.65rem; padding:0.6rem 1rem;" @onclick="OpenPluginsFolder">Open Folder</button>
+
+                <div style="flex:1;"></div>
+
+                <!-- Stats -->
+                <div style="border-top:1px solid var(--light-border); padding-top:1rem;">
+                    <div style="margin-bottom:0.75rem; text-align:center;">
+                        <div style="font-family:var(--display); font-weight:800; font-size:1.5rem; line-height:1;">@(_plugins.Count(p => p.IsEnabled))</div>
+                        <div style="font-size:0.5rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin-top:0.3rem;">Active</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-family:var(--display); font-weight:800; font-size:1.5rem; line-height:1; color:var(--muted);">@(_plugins.Count(p => !p.IsEnabled))</div>
+                        <div style="font-size:0.5rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin-top:0.3rem;">Disabled</div>
                     </div>
                 </div>
-            }
-        </div>
 
-        <div class="hstack" style="margin-top:10px;">
-            <button style="width:100px;" @onclick="AddPlugin">Add DLL...</button>
-            <button style="width:120px; margin-left:5px;" @onclick="RemovePlugin">Remove Selected</button>
-            <button style="width:100px; margin-left:5px;" @onclick="OpenPluginsFolder">Open Folder</button>
+                @if (!string.IsNullOrEmpty(_statusText))
+                {
+                    <div style="font-size:0.6rem; color:var(--muted); text-align:center; margin-top:0.5rem;">@_statusText</div>
+                }
+            </div>
         </div>
-
-        <span class="status-text @_statusCss" style="margin-top:6px;">@_statusText</span>
     }
 </div>
 

@@ -1,53 +1,78 @@
 @inject AppState State
 @implements IDisposable
 
-<div class="pad-10 vstack" style="height: 100%;">
-    <!-- Header -->
-    <div style="margin-bottom: 8px;">
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">Backups</div>
-        <div>Manage server backups</div>
-    </div>
-
+<div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <p>No server configured. Use the Installer tab first.</p>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                No server configured. Use the Installer tab first.
+            </span>
+        </div>
     }
     else
     {
-        <!-- Backup List -->
-        <div style="flex: 1; overflow-y: auto; margin-bottom: 8px;">
-            @if (_backups.Count == 0)
-            {
-                <div style="text-align: center; margin-top: 20px;">No backups found</div>
-            }
-            else
-            {
-                @foreach (var backup in _backups)
-                {
-                    <div class="hstack" style="margin-bottom: 4px; padding: 6px; border: 1px solid #444; border-radius: 4px; align-items: center;">
-                        <!-- Left: backup info -->
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: bold;">@backup.Name</div>
-                            <div style="font-size: 0.9em; opacity: 0.8;">
-                                @backup.CreatedDate.ToString("yyyy-MM-dd HH:mm") (@_backupService.FormatFileSize(backup.SizeInBytes))
-                            </div>
-                        </div>
-                        <!-- Right: action buttons -->
-                        <div class="hstack" style="margin-left: 8px; gap: 4px;">
-                            <button style="width: 70px;" @onclick="() => RestoreBackup(backup)" disabled="@_isBusy">Restore</button>
-                            <button style="width: 70px;" @onclick="() => DeleteBackup(backup)" disabled="@_isBusy">Delete</button>
-                        </div>
-                    </div>
-                }
-            }
-        </div>
+        <div style="flex:1; display:grid; grid-template-columns:1fr 220px; overflow:hidden;">
 
-        <!-- Bottom bar -->
-        <div class="hstack" style="justify-content: flex-end; gap: 8px;">
-            <button style="width: 80px;" @onclick="RefreshBackups" disabled="@_isBusy">Refresh</button>
-            <button style="width: 120px;" @onclick="CreateBackup" disabled="@_isBusy">
-                @(_isCreating ? "Creating..." : "Create Backup")
-            </button>
+            <!-- Left: Backup List -->
+            <div class="col">
+                <!-- Table Header -->
+                <div style="display:grid; grid-template-columns:1fr 160px 80px 140px; border-bottom:2px solid var(--fg); background:rgba(0,0,0,0.02); flex-shrink:0;">
+                    <div style="padding:0.5rem 1.25rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:500;">Backup</div>
+                    <div style="padding:0.5rem 1.25rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:500;">Date</div>
+                    <div style="padding:0.5rem 1.25rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); font-weight:500;">Size</div>
+                    <div style="padding:0.5rem 1.25rem;"></div>
+                </div>
+
+                <!-- Backup Rows -->
+                <div class="col-body">
+                    @if (_backups.Count == 0)
+                    {
+                        <div style="padding:2rem; text-align:center; color:var(--muted); font-size:0.75rem;">No backups found</div>
+                    }
+                    else
+                    {
+                        @foreach (var backup in _backups)
+                        {
+                            <div style="display:grid; grid-template-columns:1fr 160px 80px 140px; border-bottom:1px solid var(--light-border); transition:all 0.1s;"
+                                 onmouseover="this.style.background='rgba(0,0,0,0.03)'"
+                                 onmouseout="this.style.background='transparent'">
+                                <div style="padding:0.55rem 1.25rem; font-size:0.82rem; font-weight:500;">@backup.Name</div>
+                                <div style="padding:0.55rem 1.25rem; font-size:0.75rem; color:var(--muted);">@backup.CreatedDate.ToString("yyyy-MM-dd HH:mm")</div>
+                                <div style="padding:0.55rem 1.25rem; font-size:0.75rem; color:var(--muted);">@_backupService.FormatFileSize(backup.SizeInBytes)</div>
+                                <div style="padding:0.4rem 1.25rem; display:flex; gap:0.35rem;">
+                                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.2rem 0.5rem; background:var(--fg); color:var(--bg); border:none; cursor:pointer; transition:all 0.1s;"
+                                            @onclick="() => RestoreBackup(backup)" disabled="@_isBusy">Restore</button>
+                                    <button style="font-family:var(--mono); font-size:0.55rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.2rem 0.5rem; background:transparent; border:1px solid var(--light-border); color:var(--muted); cursor:pointer; transition:all 0.1s;"
+                                            @onclick="() => DeleteBackup(backup)" disabled="@_isBusy">Delete</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Actions Sidebar -->
+            <div style="display:flex; flex-direction:column; padding:1.25rem; gap:0.5rem;">
+                <button class="btn-secondary" style="width:100%; font-size:0.65rem; padding:0.6rem 1rem;" @onclick="RefreshBackups" disabled="@_isBusy">Refresh</button>
+                <button class="btn-primary" style="width:100%; font-size:0.75rem; padding:0.8rem 1rem; letter-spacing:0.1em;" @onclick="CreateBackup" disabled="@_isBusy">
+                    @(_isCreating ? "Creating..." : "Create Backup")
+                </button>
+
+                <div style="flex:1;"></div>
+
+                <!-- Stats -->
+                <div style="border-top:1px solid var(--light-border); padding-top:1rem;">
+                    <div style="margin-bottom:0.75rem; text-align:center;">
+                        <div style="font-family:var(--display); font-weight:800; font-size:1.5rem; line-height:1;">@_backups.Count</div>
+                        <div style="font-size:0.5rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin-top:0.3rem;">Backups</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-family:var(--display); font-weight:800; font-size:1.5rem; line-height:1; color:var(--muted);">@((_backups.Sum(b => b.SizeInBytes) / 1048576.0).ToString("F1"))</div>
+                        <div style="font-size:0.5rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin-top:0.3rem;">Total MB</div>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 </div>

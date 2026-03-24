@@ -2,20 +2,25 @@
 @implements IDisposable
 
 <CascadingValue Value="_dialog">
-    <div class="tab-control">
-        <div class="tab-headers">
-            @foreach (var tab in _tabs)
-            {
-                <button class="tab-header @(tab == _activeTab ? "active" : "") @(!tab.Enabled ? "disabled" : "")"
-                        @onclick="() => SelectTab(tab)"
-                        disabled="@(!tab.Enabled)">
-                    @tab.Title
-                </button>
-            }
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">TABG Manager</div>
+            <nav class="nav">
+                @foreach (var tab in _tabs)
+                {
+                    <button class="nav-item @(tab == _activeTab ? "active" : "") @(!tab.Enabled ? "disabled" : "")"
+                            @onclick="() => SelectTab(tab)"
+                            disabled="@(!tab.Enabled)">
+                        @tab.Title
+                    </button>
+                }
+            </nav>
+            <div class="header-meta">v@(_version)</div>
         </div>
-        <div class="tab-content">
-            @_activeTab?.Content
-        </div>
+
+        <!-- Content -->
+        @_activeTab?.Content
     </div>
     <ConfirmDialog @ref="_dialog" />
 </CascadingValue>
@@ -24,6 +29,7 @@
     private ConfirmDialog _dialog = null!;
     private List<TabDef> _tabs = new();
     private TabDef? _activeTab;
+    private string _version = "3.1.1";
 
     private class TabDef
     {
@@ -35,7 +41,7 @@
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
-            StateHasChanged(); // Re-render so CascadingValue propagates the @ref-set _dialog to children
+            StateHasChanged();
     }
 
     protected override void OnInitialized()
@@ -46,9 +52,13 @@
             new() { Title = "Client", Enabled = true, Content = RenderClient() },
             new() { Title = "Config", Enabled = false, Content = RenderConfig() },
             new() { Title = "Backups", Enabled = false, Content = RenderBackups() },
-            new() { Title = "Super Secret Settings", Enabled = false, Content = RenderSuperSecret() },
+            new() { Title = "Settings", Enabled = false, Content = RenderSuperSecret() },
         };
         _activeTab = _tabs[0];
+
+        var asm = System.Reflection.Assembly.GetExecutingAssembly().GetName();
+        if (asm.Version is not null)
+            _version = $"{asm.Version.Major}.{asm.Version.Minor}.{asm.Version.Build}";
 
         State.OnServerConfigured += OnServerConfigured;
     }

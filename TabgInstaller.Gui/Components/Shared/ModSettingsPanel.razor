@@ -4,131 +4,132 @@
 <div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to edit mod settings.</span>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                Configure a server directory to edit mod settings.
+            </span>
         </div>
     }
     else
     {
-        <div class="scroll-area" style="flex:1; padding:4px;">
+        <div style="flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; overflow:hidden;">
 
-            <!-- StarterPack Fixes -->
-            <GroupBox Header="StarterPack Fixes" Style="margin-top:10px;">
-                <div style="padding:4px;">
-                    <label data-tooltip="When enabled, items drop from loot containers. Disable for loadout-only modes.">
-                        <input type="checkbox" @bind="_enableLootDrops" />
-                        Enable Loot Drops
-                    </label>
-                </div>
-            </GroupBox>
+            <!-- Col 1: Grenades On Death -->
+            <div class="col">
+                <div class="col-header">Grenades On Death</div>
+                <div class="col-body">
 
-            <!-- Grenades On Death - Attacker -->
-            <GroupBox Header="Grenades On Death - Attacker" Style="margin-top:12px;">
-                <div style="padding:4px;">
-                    <div style="margin-bottom:6px;">
-                        <label>
-                            <input type="checkbox" @bind="_attackerEnabled" />
-                            Enabled
-                        </label>
+                    <!-- Attacker -->
+                    <div class="block">
+                        <div class="block-label">Attacker</div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <input type="checkbox" class="ctrl-checkbox" @bind="_attackerEnabled" />
+                            <span style="font-size:0.82rem;">Enabled</span>
+                        </div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Chance</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_attackerChanceText" />
+                        </div>
+                        <div class="block-row">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Grenade</span>
+                            <select class="ctrl-select" @bind="_attackerGrenadeIndex">
+                                <option value="-1">(none)</option>
+                                @for (int i = 0; i < _grenades.Count; i++)
+                                {
+                                    var g = _grenades[i];
+                                    <option value="@i">@g.Name (@g.Id)</option>
+                                }
+                            </select>
+                        </div>
                     </div>
-                    <div class="grid-2col" style="grid-template-columns:130px 1fr;">
-                        <label>Chance (0.0 - 1.0):</label>
-                        <input type="text" style="width:80px;" @bind="_attackerChanceText" />
 
-                        <label>Grenade:</label>
-                        <select style="width:220px;" @bind="_attackerGrenadeIndex">
-                            <option value="-1">(none)</option>
-                            @for (int i = 0; i < _grenades.Count; i++)
-                            {
-                                var g = _grenades[i];
-                                <option value="@i">@g.Name (@g.Id)</option>
-                            }
-                        </select>
-                    </div>
-                </div>
-            </GroupBox>
-
-            <!-- Grenades On Death - Corpse -->
-            <GroupBox Header="Grenades On Death - Corpse" Style="margin-top:12px;">
-                <div style="padding:4px;">
-                    <div style="margin-bottom:6px;">
-                        <label>
-                            <input type="checkbox" @bind="_corpseEnabled" />
-                            Enabled
-                        </label>
-                    </div>
-                    <div class="grid-2col" style="grid-template-columns:130px 1fr;">
-                        <label>Chance (0.0 - 1.0):</label>
-                        <input type="text" style="width:80px;" @bind="_corpseChanceText" />
-
-                        <label>Grenade:</label>
-                        <select style="width:220px;" @bind="_corpseGrenadeIndex">
-                            <option value="-1">(none)</option>
-                            @for (int i = 0; i < _grenades.Count; i++)
-                            {
-                                var g = _grenades[i];
-                                <option value="@i">@g.Name (@g.Id)</option>
-                            }
-                        </select>
+                    <!-- Corpse -->
+                    <div class="block">
+                        <div class="block-label">Corpse</div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <input type="checkbox" class="ctrl-checkbox" @bind="_corpseEnabled" />
+                            <span style="font-size:0.82rem;">Enabled</span>
+                        </div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Chance</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_corpseChanceText" />
+                        </div>
+                        <div class="block-row">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Grenade</span>
+                            <select class="ctrl-select" @bind="_corpseGrenadeIndex">
+                                <option value="-1">(none)</option>
+                                @for (int i = 0; i < _grenades.Count; i++)
+                                {
+                                    var g = _grenades[i];
+                                    <option value="@i">@g.Name (@g.Id)</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </GroupBox>
+            </div>
 
-            <!-- Lives & Advanced -->
-            <GroupBox Header="Lives &amp; Advanced" Style="margin-top:12px;">
-                <div class="grid-2col" style="grid-template-columns:130px 1fr; padding:4px;">
-                    <label>Lives:</label>
-                    <div class="hstack">
-                        <input type="text" style="width:80px;" @bind="_livesText" />
-                        <span style="color:gray;">(256 = infinite)</span>
+            <!-- Col 2: Loot & Lives + Proximity Chat -->
+            <div class="col">
+                <div class="col-header">Loot &amp; Lives</div>
+                <div class="col-body">
+                    <div class="block">
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <input type="checkbox" class="ctrl-checkbox" @bind="_enableLootDrops" />
+                            <span style="font-size:0.82rem;">Enable Loot Drops</span>
+                        </div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Lives</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_livesText" />
+                            <span class="ctrl-hint">256 = infinite</span>
+                        </div>
+                        <div class="block-row">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Streaming Dist</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_streamingDistanceText" />
+                            <span class="ctrl-hint">-1 = normal</span>
+                        </div>
                     </div>
 
-                    <label>Streaming Distance:</label>
-                    <div class="hstack">
-                        <input type="text" style="width:80px;" @bind="_streamingDistanceText" />
-                        <span style="color:gray;">(-1 = normal)</span>
+                    <div class="block">
+                        <div class="block-label">Proximity Chat</div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Max Range</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_proxChatMaxRangeText" />
+                            <span class="ctrl-hint">default 50</span>
+                        </div>
+                        <div class="block-row" style="margin-bottom:0.35rem;">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Min Range</span>
+                            <input type="text" class="ctrl-text narrow" @bind="_proxChatMinRangeText" />
+                            <span class="ctrl-hint">default 5</span>
+                        </div>
+                        <div class="block-row">
+                            <span class="field-name" style="min-width:auto; font-size:0.75rem;">Falloff Curve</span>
+                            <select class="ctrl-select" @bind="_proxChatFalloff">
+                                <option value="Linear">Linear</option>
+                                <option value="Logarithmic">Logarithmic</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </GroupBox>
+            </div>
 
-            <!-- Ban List -->
-            <GroupBox Header="Ban List" Style="margin-top:12px;">
-                <div style="padding:4px;">
-                    <div style="color:gray; margin-bottom:4px;">One Epic ID per line</div>
-                    <textarea class="monospace" style="width:100%; height:120px;"
+            <!-- Col 3: Ban List -->
+            <div class="col" style="border-right:none;">
+                <div class="col-header">
+                    Ban List
+                    <span class="col-meta">One Epic ID per line</span>
+                </div>
+                <div class="col-body" style="display:flex; flex-direction:column;">
+                    <textarea class="ctrl-textarea" style="flex:1;"
                               @bind="_banListText"></textarea>
                 </div>
-            </GroupBox>
-
-            <!-- Proximity Chat -->
-            <GroupBox Header="Proximity Chat" Style="margin-top:12px;">
-                <div class="grid-2col" style="grid-template-columns:130px 1fr; padding:4px;">
-                    <label>Max Range (m):</label>
-                    <div class="hstack">
-                        <input type="text" style="width:80px;" @bind="_proxChatMaxRangeText" />
-                        <span style="color:gray;">(default 50)</span>
-                    </div>
-
-                    <label>Min Range (m):</label>
-                    <div class="hstack">
-                        <input type="text" style="width:80px;" @bind="_proxChatMinRangeText" />
-                        <span style="color:gray;">(default 5)</span>
-                    </div>
-
-                    <label>Falloff Curve:</label>
-                    <select style="width:140px;" @bind="_proxChatFalloff">
-                        <option value="Linear">Linear</option>
-                        <option value="Logarithmic">Logarithmic</option>
-                    </select>
-                </div>
-            </GroupBox>
-
+            </div>
         </div>
 
         <!-- Bottom bar -->
-        <div class="hstack" style="padding:4px 8px; flex-shrink:0;">
-            <button style="width:100px;" @onclick="Save">Save</button>
-            <span class="status-text @_statusCss">@_statusText</span>
+        <div class="bottom-bar">
+            <button class="bottom-btn" @onclick="Save">Save</button>
+            <span class="bottom-status">@_statusText</span>
         </div>
     }
 </div>

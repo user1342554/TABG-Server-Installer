@@ -3,91 +3,82 @@
 @inject AppState State
 @implements IDisposable
 
-<div class="pad-10 vstack" style="height: 100%;">
-    @if (!State.IsServerConfigured)
-    {
-        <p>No server configured. Use the Installer tab first.</p>
-    }
-    else
-    {
-        <!-- Quick Actions -->
-        <div class="hstack" style="margin-bottom: 6px;">
-            <button style="margin: 2px;" @onclick="HardReset_Click">Hard Reset</button>
-            <button style="margin: 2px;" @onclick="OpenServerFolder_Click">Open Server Folder</button>
-            <button style="margin: 2px;" @onclick="OpenLogs_Click">Open Logs</button>
-            <button style="margin: 2px;" @onclick="OpenConfigs_Click">Open Config Files</button>
-            <button style="margin: 2px;" @onclick="QuickSaveRestart_Click">Quick-save &amp; Restart</button>
-        </div>
-
-        <!-- Sub-tab control -->
-        <div class="sub-tab-control">
-            <div class="sub-tab-headers">
-                @for (int i = 0; i < _tabNames.Length; i++)
-                {
-                    var idx = i;
-                    <div class="sub-tab-header @(idx == _activeTab ? "active" : "")"
-                         @onclick="() => _activeTab = idx">
-                        @_tabNames[idx]
-                    </div>
-                }
+@if (!State.IsServerConfigured)
+{
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        <p style="color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.1em;">No server configured. Use the Installer tab first.</p>
+    </div>
+}
+else
+{
+    <!-- Sub-nav -->
+    <div class="sub-nav">
+        @for (int i = 0; i < _tabNames.Length; i++)
+        {
+            var idx = i;
+            <div class="sub-tab @(idx == _activeTab ? "active" : "")"
+                 @onclick="() => _activeTab = idx">
+                @_tabNames[idx]
             </div>
+        }
+        <div class="sub-nav-spacer"></div>
+        <button class="quick-btn" @onclick="OpenServerFolder_Click">Folder</button>
+        <button class="quick-btn" @onclick="OpenLogs_Click">Logs</button>
+        <button class="quick-btn danger" @onclick="HardReset_Click">Reset</button>
+    </div>
 
-            <div class="sub-tab-content">
-                @switch (_activeTab)
-                {
-                    case 0: <!-- Server Settings -->
-                        <div class="vstack" style="height: 100%;">
-                            <div style="flex: 1; overflow: auto;">
-                                <GameSettingsGrid ViewModel="_vm" />
-                            </div>
-                            <div class="hstack" style="margin: 5px;">
-                                <button style="width: 100px;" @onclick="SaveButton_Click">Save</button>
-                                <button style="width: 140px; margin-left: 5px;" @onclick="OpenGameSettings_Click">Open in Notepad</button>
-                                <span style="margin-left: 10px; align-self: center;">@_statusText</span>
-                            </div>
-                        </div>
-                        break;
-
-                    case 1:
-                        <MatchSettingsPanel />
-                        break;
-
-                    case 2:
-                        <RingSpawnsPanel />
-                        break;
-
-                    case 3:
-                        <LoadoutEditorPanel />
-                        break;
-
-                    case 4:
-                        <ModSettingsPanel />
-                        break;
-
-                    case 5:
-                        <AdminPanel />
-                        break;
-
-                    case 6:
-                        <PluginsPanel />
-                        break;
-
-                    case 7:
-                        <PresetsGrid />
-                        break;
-
-                    case 8:
-                        <ReferencePanel />
-                        break;
-
-                    case 9:
-                        <ConsolePanel />
-                        break;
-                }
+    <!-- Content -->
+    @switch (_activeTab)
+    {
+        case 0:
+            <div class="card-grid">
+                <GameSettingsGrid ViewModel="_vm" />
             </div>
-        </div>
+            <div class="bottom-bar">
+                <button class="bottom-btn" @onclick="SaveButton_Click">Save</button>
+                <button class="bottom-btn ghost" @onclick="OpenGameSettings_Click">Open in Notepad</button>
+                <button class="bottom-btn ghost" @onclick="QuickSaveRestart_Click">Quick-save & Restart</button>
+                <span class="bottom-status">@(_statusText == "" ? "Settings loaded from game_settings.txt" : _statusText)</span>
+            </div>
+            break;
+
+        case 1:
+            <MatchSettingsPanel />
+            break;
+
+        case 2:
+            <RingSpawnsPanel />
+            break;
+
+        case 3:
+            <LoadoutEditorPanel />
+            break;
+
+        case 4:
+            <ModSettingsPanel />
+            break;
+
+        case 5:
+            <AdminPanel />
+            break;
+
+        case 6:
+            <PluginsPanel />
+            break;
+
+        case 7:
+            <PresetsGrid />
+            break;
+
+        case 8:
+            <ReferencePanel />
+            break;
+
+        case 9:
+            <ConsolePanel />
+            break;
     }
-</div>
+}
 
 <ConfirmDialog @ref="_dialog" />
 
@@ -182,7 +173,6 @@
         ConfigIO.WriteGameSettings(_vm.ToModel(), path);
         _statusText = "Settings saved to file";
 
-        // Re-enable watcher after a short delay
         _statusClearTimer?.Dispose();
         _statusClearTimer = new System.Timers.Timer(1000);
         _statusClearTimer.AutoReset = false;

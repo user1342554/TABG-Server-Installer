@@ -2,90 +2,106 @@
 @inject AppState State
 @implements IDisposable
 
-<div style="display:flex; flex-direction:column; height:100%; padding:10px;">
+<div style="display:flex; flex-direction:column; height:100%;">
     @if (!State.IsServerConfigured)
     {
-        <div class="pad-5">
-            <span class="status-text info">Configure a server directory to manage presets.</span>
+        <div style="padding:2rem; text-align:center;">
+            <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-size:0.72rem;">
+                Configure a server directory to manage presets.
+            </span>
         </div>
     }
     else
     {
-        <!-- Built-in Server Templates -->
-        <GroupBox Header="Server Templates" Style="margin-bottom:10px;">
-            <div style="display:flex; gap:10px;">
-                <!-- Template List -->
-                <div style="width:200px; flex-shrink:0;">
-                    <div class="scroll-area" style="height:120px; border:1px solid #ACACAC; background:white; overflow-y:auto;">
-                        @foreach (var preset in BuiltInPresets.All)
-                        {
-                            var p = preset;
-                            <div class="@(p == _selectedTemplate ? "list-view-item selected" : "list-view-item")"
-                                 style="font-weight:600; cursor:pointer;"
-                                 @onclick="() => SelectTemplate(p)">
-                                @p.Name
-                            </div>
-                        }
-                    </div>
-                </div>
+        <div style="flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; overflow:hidden;">
 
-                <!-- Template Details -->
-                <div style="flex:1; display:flex; flex-direction:column;">
-                    <div style="margin-bottom:6px; white-space:pre-wrap;">@_templateDesc</div>
-                    @if (!string.IsNullOrEmpty(_templateNotes))
+            <!-- Col 1: Templates (Built-in) -->
+            <div class="col">
+                <div class="col-header">
+                    Templates
+                    <span class="col-meta">Built-in</span>
+                </div>
+                <div class="col-body">
+                    @foreach (var preset in BuiltInPresets.All)
                     {
-                        <div style="font-size:11px; color:gray; margin-bottom:8px;">@_templateNotes</div>
+                        var p = preset;
+                        <div style="padding:0.5rem 1.25rem; border-bottom:1px solid var(--light-border); cursor:pointer; font-size:0.82rem; font-weight:500; transition:all 0.1s; background:@(p == _selectedTemplate ? "var(--fg)" : "transparent"); color:@(p == _selectedTemplate ? "var(--bg)" : "inherit");"
+                             @onclick="() => SelectTemplate(p)">
+                            @p.Name
+                        </div>
                     }
-                    <button style="width:200px;" @onclick="ApplyTemplate_Click">Apply Template to Server</button>
+
+                    @if (_selectedTemplate != null)
+                    {
+                        <div style="padding:0.75rem 1.25rem; border-top:1px solid var(--light-border);">
+                            <div style="font-size:0.78rem; margin-bottom:0.35rem; white-space:pre-wrap;">@_templateDesc</div>
+                            @if (!string.IsNullOrEmpty(_templateNotes))
+                            {
+                                <div style="font-size:0.6rem; color:var(--muted); margin-bottom:0.5rem;">@_templateNotes</div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div style="padding:0.75rem 1.25rem; border-top:2px solid var(--fg); flex-shrink:0;">
+                    <button class="btn-primary" style="width:100%; font-size:0.72rem; padding:0.7rem 1rem; letter-spacing:0.1em;" @onclick="ApplyTemplate_Click">Apply Template</button>
                 </div>
             </div>
-        </GroupBox>
 
-        <!-- User Presets -->
-        <div style="display:flex; gap:10px; flex:1; min-height:0;">
-            <!-- Preset List -->
-            <div style="width:200px; flex-shrink:0; display:flex; flex-direction:column;">
-                <div style="font-weight:bold;">Saved Presets:</div>
-                <div class="scroll-area" style="height:200px; border:1px solid #ACACAC; background:white; overflow-y:auto; margin-top:4px;">
+            <!-- Col 2: Saved Presets (User) -->
+            <div class="col">
+                <div class="col-header">
+                    Saved Presets
+                    <span class="col-meta">User</span>
+                </div>
+                <div class="col-body">
                     @foreach (var preset in _presets)
                     {
                         var pName = preset;
-                        <div class="@(pName == _selectedPreset ? "list-view-item selected" : "list-view-item")"
-                             style="cursor:pointer;"
+                        <div style="padding:0.5rem 1.25rem; border-bottom:1px solid var(--light-border); cursor:pointer; font-size:0.82rem; font-weight:500; transition:all 0.1s; background:@(pName == _selectedPreset ? "var(--fg)" : "transparent"); color:@(pName == _selectedPreset ? "var(--bg)" : "inherit");"
                              @onclick="() => _selectedPreset = pName">
                             @pName
                         </div>
                     }
+                    @if (_presets.Count == 0)
+                    {
+                        <div style="padding:2rem; text-align:center; color:var(--muted); font-size:0.72rem;">No saved presets</div>
+                    }
                 </div>
-                <div class="hstack" style="margin-top:6px;">
-                    <button style="width:60px;" @onclick="LoadPreset_Click">Load</button>
-                    <button style="width:60px; margin-left:6px;" @onclick="DeletePreset_Click">Delete</button>
+                <div style="display:flex; gap:0.5rem; padding:0.75rem 1.25rem; border-top:2px solid var(--fg); flex-shrink:0;">
+                    <button class="btn-primary" style="flex:1; font-size:0.68rem; padding:0.6rem 0.75rem; letter-spacing:0.08em;" @onclick="LoadPreset_Click">Load Preset</button>
+                    <button class="btn-secondary" style="flex:1; font-size:0.68rem; padding:0.6rem 0.75rem;" @onclick="DeletePreset_Click">Delete</button>
                 </div>
             </div>
 
-            <!-- Files Selection and Save -->
-            <div style="flex:1; display:flex; flex-direction:column;">
-                <div style="font-weight:bold;">Files to include when saving:</div>
-                <div style="margin-top:4px;">
+            <!-- Col 3: Save Current Config -->
+            <div class="col" style="border-right:none;">
+                <div class="col-header">Save Current Config</div>
+                <div class="col-body" style="padding:1.25rem;">
+                    <div class="block-label">Preset Name</div>
+                    <input type="text" class="ctrl-text" style="margin-bottom:1rem;" @bind="_savePresetName" />
+
+                    <div class="block-label">Files to Include</div>
                     @foreach (var entry in _fileEntries)
                     {
                         var fe = entry;
-                        <label style="display:flex; align-items:center; gap:4px; margin:2px 0;">
-                            <input type="checkbox" checked="@fe.IsSelected"
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+                            <input type="checkbox" class="ctrl-checkbox" checked="@fe.IsSelected"
                                    @onchange="e => OnFileToggled(fe, e)" />
-                            @fe.Display
-                        </label>
+                            <span style="font-size:0.78rem;">@fe.Display</span>
+                        </div>
                     }
                 </div>
-                <button style="width:220px; margin-top:10px;" @onclick="SavePreset_Click">Save current as new preset...</button>
+                <div style="padding:0.75rem 1.25rem; border-top:2px solid var(--fg); flex-shrink:0;">
+                    <button class="btn-primary" style="width:100%; font-size:0.72rem; padding:0.7rem 1rem; letter-spacing:0.1em;" @onclick="SavePreset_Click">Save Preset</button>
+                </div>
             </div>
         </div>
 
         <!-- Status -->
         @if (!string.IsNullOrEmpty(_statusText))
         {
-            <div style="margin-top:8px;">
-                <span class="status-text @_statusCss">@_statusText</span>
+            <div class="bottom-bar">
+                <span class="bottom-status" style="margin-left:1.5rem;">@_statusText</span>
             </div>
         }
     }
@@ -97,11 +113,11 @@
     <div class="dialog-overlay" @onclick="() => _showSaveDialog = false">
         <div class="dialog-box" style="width:360px;" @onclick:stopPropagation>
             <div class="dialog-title">Save Preset</div>
-            <div style="margin-bottom:8px;">Enter a name for the preset:</div>
-            <input type="text" style="width:100%;" @bind="_savePresetName" />
-            <div class="dialog-buttons" style="margin-top:8px;">
+            <div class="dialog-message">Enter a name for the preset:</div>
+            <input type="text" class="ctrl-text" @bind="_savePresetName" />
+            <div class="dialog-buttons" style="margin-top:1rem;">
                 <button @onclick="DoSavePreset">Save</button>
-                <button @onclick="() => _showSaveDialog = false">Cancel</button>
+                <button class="ghost" @onclick="() => _showSaveDialog = false">Cancel</button>
             </div>
         </div>
     </div>
