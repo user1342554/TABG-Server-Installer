@@ -1,47 +1,62 @@
-using System;
-using System.IO;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System.Configuration;
+using System.Data;
 using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
+using System.IO;
 
-namespace TabgInstaller.Gui;
-
-public partial class App : Application
+namespace TabgInstaller.Gui
 {
-    public static IServiceProvider Services { get; private set; } = null!;
-
-    public App() { }
-
-    private void Application_Startup(object sender, StartupEventArgs e)
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App : System.Windows.Application
     {
-        try
+        //private readonly ILogger<App> _logger;
+        //private readonly IHost _host;
+
+        public App()
         {
-            var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-            Directory.CreateDirectory(logDir);
-            var logFile = Path.Combine(logDir, "startup.log");
-            File.AppendAllText(logFile, $"Starting {DateTime.Now}\n");
-
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddWpfBlazorWebView();
-            serviceCollection.AddSingleton<Services.AppState>();
-
-            Services = serviceCollection.BuildServiceProvider();
-
-            var mw = new MainWindow();
-            mw.Show();
-
-            File.AppendAllText(logFile, "MainWindow shown\n");
+            DispatcherUnhandledException += (s, args) =>
+            {
+                try
+                {
+                    var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    Directory.CreateDirectory(logDir);
+                    File.AppendAllText(Path.Combine(logDir, "startup.log"), "UNHANDLED: " + args.Exception.ToString() + "\n");
+                }
+                catch { }
+                MessageBox.Show("Error: " + args.Exception.ToString(), "TABG Manager Error");
+                args.Handled = true;
+            };
         }
-        catch (Exception ex)
+
+        private void Application_Startup(object sender, StartupEventArgs e)
         {
             try
             {
-                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
                 Directory.CreateDirectory(logDir);
-                File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
+                var logFile = Path.Combine(logDir, "startup.log");
+                File.AppendAllText(logFile, $"Starting {System.DateTime.Now}\n");
+
+                var mw = new MainWindow();
+                mw.Show();
+
+                File.AppendAllText(logFile, "MainWindow shown\n");
             }
-            catch { }
-            MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
-            Shutdown(-1);
+            catch (System.Exception ex)
+            {
+                try
+                {
+                    var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    Directory.CreateDirectory(logDir);
+                    File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
+                }
+                catch { }
+                MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown(-1);
+            }
         }
     }
 }

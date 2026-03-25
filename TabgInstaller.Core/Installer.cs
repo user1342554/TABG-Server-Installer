@@ -473,8 +473,45 @@ namespace TabgInstaller.Core
                 File.Copy(localSetupPath, targetSetupPath, true);
                 _log.Report($"  → Copied {StarterPackSetupAssetName} to server root from local source.");
 
-            _log.Report($"  → StarterPackSetup.exe is available at: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
-            _log.Report("    (Run it later to customize your StarterPack configuration)");
+            _log.Report("• Launching StarterPackSetup.exe to generate default configuration...");
+
+            try
+            {
+                var setupProcess = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = Path.Combine(serverDir, StarterPackSetupAssetName),
+                        WorkingDirectory = serverDir,
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    },
+                    EnableRaisingEvents = true
+                };
+                setupProcess.Start();
+                _log.Report("  → StarterPackSetup.exe launched. Waiting for it to finish...");
+                // Wait up to 30 seconds for the process to exit on its own
+                var exited = await Task.Run(() => setupProcess.WaitForExit(30_000), ct);
+                if (!exited && !setupProcess.HasExited)
+                {
+                    _log.Report("  → StarterPackSetup.exe still running after 30s, closing it...");
+                    setupProcess.Kill();
+                }
+                _log.Report("  → StarterPackSetup.exe finished.");
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                // User cancelled UAC prompt
+                _log.Report("  ⚠️ StarterPackSetup.exe launch was cancelled (UAC prompt declined or blocked by security software).");
+                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
+                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
+            }
+            catch (Exception ex)
+            {
+                _log.Report($"  ⚠️ Failed to launch StarterPackSetup.exe: {ex.Message}");
+                _log.Report("  → You can manually run StarterPackSetup.exe from the server directory later.");
+                _log.Report($"  → Location: {Path.Combine(serverDir, StarterPackSetupAssetName)}");
+            }
 
                 // Sanitize TheStarterPack.txt to ensure StarterPack can parse numeric fields correctly
                 try
@@ -1096,7 +1133,7 @@ namespace TabgInstaller.Core
                 "TABG.exe", "TABG_Data", "UnityPlayer.dll", "UnityCrashHandler64.exe",
                 "steam_appid.txt", "doorstop_config.ini", "libdoorstop.so", "run_bepinex.cmd", "run_bepinex.sh",
                 "MonoBleedingEdge", "TheStarterPack.json", "TheStarterPack.txt", "game_settings.txt",
-                "winhttp.dll", "backup"
+                "winhttp.dll", "backup", "PlayerPerms.json"
             };
         if (fileExisted)
         {
@@ -1129,7 +1166,7 @@ namespace TabgInstaller.Core
             ensureEntry("TheStarterPack.txt", "TheStarterPack.txt");
             ensureEntry("game_settings.txt", "game_settings.txt");
             ensureEntry("backup", "backup folder");
-
+            ensureEntry("PlayerPerms.json", "PlayerPerms.json");
             ensureEntry("winhttp.dll", "winhttp.dll");
 
             if (madeChanges || !fileExisted)
@@ -1166,21 +1203,19 @@ namespace TabgInstaller.Core
 
         private void EnsurePlayerPerms(string serverDir, IProgress<string> log)
         {
-            var citrusConfigDir = Path.Combine(serverDir, "BepInEx", "config", "CitrusLib");
-            Directory.CreateDirectory(citrusConfigDir);
-            var filePath = Path.Combine(citrusConfigDir, "PlayerPerms.json");
-            log.Report($"• Ensuring CitrusLib config: PlayerPerms.json at {filePath}");
+            var filePath = Path.Combine(serverDir, "PlayerPerms.json");
+            log.Report($"• Ensuring PlayerPerms.json at {filePath}");
             try
             {
                 if (!File.Exists(filePath))
                 {
-                    var defaultJson = "[\n  { \"playerName\": \"*\", \"permLevel\": 5 }\n]";
+                    var defaultJson = "[\n  {\n    \"name\": \"players\",\n    \"description\": \"List of players with modified permission level. Default permission level is 0.\",\n    \"players\": []\n  }\n]";
                     File.WriteAllText(filePath, defaultJson);
-                    log.Report("  → Created default PlayerPerms.json with wildcard permLevel 5 (everyone)." );
+                    log.Report("  → Created default PlayerPerms.json (empty player list).");
                 }
-                else 
+                else
                 {
-                    log.Report("  → PlayerPerms.json already exists (no overwrite)." );
+                    log.Report("  → PlayerPerms.json already exists (no overwrite).");
                 }
             }
             catch (Exception ex)
