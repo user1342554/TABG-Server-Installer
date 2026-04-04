@@ -1,0 +1,50 @@
+<UserControl x:Class="TabgInstaller.Gui.Tabs.ServerModsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Server Plugins" FontSize="18" FontWeight="SemiBold"/>
+            <TextBlock Text="Add, remove, or toggle server plugins — no reinstall needed." Foreground="#888" FontSize="12"/>
+        </StackPanel>
+        <GroupBox Grid.Row="1" Header="Installed Plugins (BepInEx/plugins)">
+            <ListView x:Name="LstPlugins" SelectionMode="Single">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" Checked="PluginToggle" Unchecked="PluginToggle"/>
+                            <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </GroupBox>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+            <Button Content="Add from bundled..." Width="140" Click="AddBundled_Click"/>
+            <Button Content="Add DLL file..." Width="110" Margin="5,0,0,0" Click="AddDll_Click"/>
+            <Button Content="Remove Selected" Width="120" Margin="5,0,0,0" Click="RemovePlugin_Click"/>
+            <Button Content="Refresh" Width="80" Margin="5,0,0,0" Click="Refresh_Click"/>
+            <Button Content="Open Folder" Width="100" Margin="5,0,0,0" Click="OpenFolder_Click"/>
+        </StackPanel>
+        <GroupBox x:Name="BundledGroup" Grid.Row="3" Header="Available Bundled Plugins" Margin="0,10,0,0" Visibility="Collapsed">
+            <StackPanel>
+                <ListView x:Name="LstBundled" MaxHeight="200" SelectionMode="Extended">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <Button Content="Install Selected" Width="120" Click="InstallBundled_Click"/>
+                    <Button Content="Cancel" Width="80" Margin="5,0,0,0" Click="CancelBundled_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+    </Grid>
+</UserControl>

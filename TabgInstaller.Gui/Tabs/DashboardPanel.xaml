@@ -1,0 +1,45 @@
+<UserControl x:Class="TabgInstaller.Gui.Tabs.DashboardPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <GroupBox Grid.Row="0" Margin="0,0,0,10">
+            <GroupBox.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Server Status" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="TxtStatus" Text="  STOPPED" Foreground="#CC0000" FontWeight="Bold" Margin="8,0,0,0"/>
+                </StackPanel>
+            </GroupBox.Header>
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Button x:Name="BtnStartStop" Content="Start Server" Width="120" Height="36" Click="BtnStartStop_Click"/>
+                    <Button x:Name="BtnLaunchClient" Content="Launch Modded TABG" Width="160" Height="36" Margin="10,0,0,0" Click="BtnLaunchClient_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="TxtServerPath" Foreground="#888" FontSize="11" Margin="5,5,5,0"/>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Grid.Row="1" Header="Quick Actions" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Button Content="Open Server Folder" Width="130" Margin="2" Click="OpenServerFolder_Click"/>
+                <Button Content="Open Logs" Width="90" Margin="2" Click="OpenLogs_Click"/>
+                <Button Content="Open Config Files" Width="120" Margin="2" Click="OpenConfigs_Click"/>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Grid.Row="2" Header="Console Preview (last 20 lines)">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ScrollViewer x:Name="PreviewScrollViewer" Grid.Row="0">
+                    <TextBox x:Name="TxtConsolePreview" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
+                </ScrollViewer>
+                <Button Grid.Row="1" Content="Open Full Console" HorizontalAlignment="Right" Margin="5" Click="OpenFullConsole_Click"/>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</UserControl>

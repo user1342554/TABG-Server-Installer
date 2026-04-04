@@ -7,30 +7,41 @@
         Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
 
     <Grid>
-        <!-- Tab Control -->
         <TabControl x:Name="MainTabs">
-            <TabItem Header="Installer">
-                <tabs:InstallerPanel x:Name="InstallerTab"/>
+            <TabItem Header="Dashboard">
+                <tabs:DashboardPanel x:Name="DashboardTab"/>
             </TabItem>
 
-            <TabItem Header="Client">
-                <tabs:ClientPanel x:Name="ClientTab"/>
+            <TabItem Header="Server Mods">
+                <tabs:ServerModsPanel x:Name="ServerModsTab"/>
             </TabItem>
 
-            <TabItem Header="Config" x:Name="ConfigTabItem" IsEnabled="False">
+            <TabItem Header="Client Mods">
+                <tabs:ClientPanel x:Name="ClientModsTab"/>
+            </TabItem>
+
+            <TabItem Header="Config">
                 <tabs:ConfigPanel x:Name="ConfigTab"/>
             </TabItem>
 
-            <TabItem Header="Backups" x:Name="BackupsTab" IsEnabled="False">
-                <tabs:BackupsPanel/>
+            <TabItem Header="Console">
+                <tabs:ConsolePanel x:Name="ConsoleTab"/>
             </TabItem>
-            <TabItem Header="Super Secret Settings" x:Name="SuperSecretTab" IsEnabled="False">
-                <tabs:SuperSecretSettingsPanel/>
+
+            <TabItem Header="Backups" x:Name="BackupsTabItem">
+                <tabs:BackupsPanel x:Name="BackupsTab"/>
+            </TabItem>
+
+            <TabItem Header="Reference">
+                <tabs:ReferencePanel/>
+            </TabItem>
+
+            <TabItem Header="Settings">
+                <tabs:SettingsPanel x:Name="SettingsTab"/>
             </TabItem>
         </TabControl>
 
         <!-- Toast notification overlay -->
         <controls:ToastNotification x:Name="ToastControl" VerticalAlignment="Top" Panel.ZIndex="100"/>
-
     </Grid>
 </Window>
