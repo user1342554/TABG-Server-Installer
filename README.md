@@ -79,41 +79,11 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 
 ### Server Plugins
 
-| Plugin | Status |
-|--------|--------|
-| Citruslib | Working |
-| StarterPack | Working |
-| StarterPackFixes | Working |
-| CustomSpawnpoints | Working |
-| FreddoTABGCommission | Working |
-| MatchAndPreMatchTimeout | Working |
-| ServerLogger | Working |
-| VoteToStart | Working |
-| UnusedVehicles | Working |
-| BigSmokeGrenade | Working |
-| MGLFlashbang | Working |
-| ProximityChat | Working |
-| HuntMode | Buggy |
-| JuggernautMode | Buggy |
-| TABGVR Server | Buggy |
-| FakePlayers | Buggy |
-| SoloTesting | Working |
+Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission, MatchAndPreMatchTimeout, ServerLogger, VoteToStart, UnusedVehicles, BigSmokeGrenade, MGLFlashbang, ProximityChat, HuntMode, JuggernautMode, TABGVR Server, FakePlayers, SoloTesting
 
 ### Client Plugins
 
-| Plugin | Status |
-|--------|--------|
-| FlyingControls | Working |
-| Enhanced TABG | Working |
-| BigSmokeGrenade | Working |
-| MGLFlashbang | Working |
-| CoordsDisplay | Working |
-| ModSettings | Working |
-| Pop-up Blocker | Working |
-| ProximityChat | Working |
-| HuntMode Client | Buggy |
-| JuggernautMode Client | Buggy |
-| TABGVR | Buggy |
+FlyingControls, Enhanced TABG, BigSmokeGrenade, MGLFlashbang, CoordsDisplay, ModSettings, Pop-up Blocker, ProximityChat, HuntMode Client, JuggernautMode Client, TABGVR
 
 ## Proximity Voice Chat
 
@@ -185,19 +155,19 @@ This project would not exist without the work of these developers and communitie
 
 - **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, and all the glue code tying everything together
 
-| Plugin | Author | Description |
-|--------|--------|-------------|
-| UnusedVehicles | anonymer_hase | Spawns cut/unused vehicles on the map |
-| FlyingControls | anonymer_hase | Client-side flying vehicle steering |
-| BigSmokeGrenade | anonymer_hase | Giant purple smoke grenades |
-| MGLFlashbang | anonymer_hase | MGL flashbang rounds |
-| CoordsDisplay | anonymer_hase | In-game coordinate display |
-| ModSettings | anonymer_hase | In-game settings menu for all mods |
-| SoloTesting | anonymer_hase | Solo testing mode |
-| ProximityChat | anonymer_hase | Proximity voice chat (server + client) |
-| HuntMode | anonymer_hase | 4v1 survival game mode (server + client) |
-| JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) |
-| FakePlayers | anonymer_hase | Spawn dummy players for testing |
+| Plugin | Author | Description | Status |
+|--------|--------|-------------|--------|
+| UnusedVehicles | anonymer_hase | Spawns cut/unused vehicles on the map | Working |
+| FlyingControls | anonymer_hase | Client-side flying vehicle steering | Working |
+| BigSmokeGrenade | anonymer_hase | Giant purple smoke grenades | Working |
+| MGLFlashbang | anonymer_hase | MGL flashbang rounds | Working |
+| CoordsDisplay | anonymer_hase | In-game coordinate display | Working |
+| ModSettings | anonymer_hase | In-game settings menu for all mods | Working |
+| SoloTesting | anonymer_hase | Solo testing mode | Working |
+| ProximityChat | anonymer_hase | Proximity voice chat (server + client) | Working |
+| HuntMode | anonymer_hase | 4v1 survival game mode (server + client) | Buggy |
+| JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) | Buggy |
+| FakePlayers | anonymer_hase | Spawn dummy players for testing | Buggy |
 
 ### Third-Party Libraries
 
