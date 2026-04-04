@@ -110,18 +110,17 @@ namespace TabgInstaller.Gui.Tabs
             LstClientMods.ItemsSource = mods;
         }
 
+        // All known client mod DLLs
+        private static readonly string[] KnownClientMods = new[]
+        {
+            "TabgInstaller.FlyingControls.dll", "Enhanced TABG.dll", "TabgInstaller.CustomGrenades.dll",
+            "TabgInstaller.CoordsDisplay.dll", "TabgInstaller.ModSettings.dll", "Pop-up Blocker.dll",
+            "TabgInstaller.ProximityChat.Client.dll", "TabgInstaller.HuntMode.Client.dll",
+            "TabgInstaller.HuntMode.Shared.dll", "JuggernautMode.Client.dll", "TABGVR.dll",
+        };
+
         private void LoadAvailableList()
         {
-            var bundledDir = FindClientPluginsDir();
-            if (bundledDir == null)
-            {
-                TxtAllInstalled.Text = "Bundled client plugins directory not found.";
-                TxtAllInstalled.Visibility = Visibility.Visible;
-                LstBundled.Visibility = Visibility.Collapsed;
-                BtnInstallBundled.IsEnabled = false;
-                return;
-            }
-
             var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(_pluginsDir) && Directory.Exists(_pluginsDir))
                 foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll"))
@@ -131,14 +130,29 @@ namespace TabgInstaller.Gui.Tabs
                 foreach (var f in Directory.GetFiles(disabledDir, "*.dll"))
                     installed.Add(Path.GetFileName(f));
 
-            var available = Directory.GetFiles(bundledDir, "*.dll")
-                .Select(Path.GetFileName)
-                .Where(n => !installed.Contains(n!))
-                .ToList();
+            // Show known mods that aren't installed yet and can be found
+            var available = new List<string>();
+            foreach (var dll in KnownClientMods)
+            {
+                if (!installed.Contains(dll) && FindDllPath(dll) != null)
+                    available.Add(dll);
+            }
+
+            // Also add any DLLs from bundled dir not in the known list
+            var bundledDir = FindClientPluginsDir();
+            if (bundledDir != null)
+            {
+                foreach (var f in Directory.GetFiles(bundledDir, "*.dll"))
+                {
+                    var name = Path.GetFileName(f);
+                    if (!installed.Contains(name) && !available.Contains(name))
+                        available.Add(name);
+                }
+            }
 
             if (available.Count == 0)
             {
-                TxtAllInstalled.Text = "All bundled client mods are already installed.";
+                TxtAllInstalled.Text = "All client mods are already installed.";
                 TxtAllInstalled.Visibility = Visibility.Visible;
                 LstBundled.Visibility = Visibility.Collapsed;
                 BtnInstallBundled.IsEnabled = false;
@@ -251,19 +265,17 @@ namespace TabgInstaller.Gui.Tabs
                 return;
             }
 
-            var bundledDir = FindClientPluginsDir();
-            if (bundledDir == null) return;
-
             int count = 0;
             foreach (string name in LstBundled.SelectedItems)
             {
-                var src = Path.Combine(bundledDir, name);
+                var srcPath = FindDllPath(name);
+                if (srcPath == null) continue;
                 var dst = Path.Combine(_pluginsDir, name);
                 try
                 {
-                    if (File.Exists(src))
+                    if (File.Exists(srcPath))
                     {
-                        File.Copy(src, dst, true);
+                        File.Copy(srcPath, dst, true);
                         count++;
                     }
                 }
@@ -340,6 +352,20 @@ namespace TabgInstaller.Gui.Tabs
                 Path.Combine(baseDir, "..", "..", "..", "client-plugins"),
             };
             return candidates.FirstOrDefault(d => Directory.Exists(d) && Directory.GetFiles(d, "*.dll").Length > 0);
+        }
+
+        /// <summary>Search multiple directories for a specific DLL file.</summary>
+        private string? FindDllPath(string dllName)
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var candidates = new[]
+            {
+                Path.Combine(baseDir, "client-plugins", dllName),
+                Path.Combine(baseDir, "..", "client-plugins", dllName),
+                Path.Combine(baseDir, "..", "..", "client-plugins", dllName),
+                Path.Combine(baseDir, "..", "..", "..", "client-plugins", dllName),
+            };
+            return candidates.FirstOrDefault(File.Exists);
         }
     }
 }

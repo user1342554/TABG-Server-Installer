@@ -61,18 +61,19 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
+        // All known server plugin DLLs
+        private static readonly string[] KnownServerPlugins = new[]
+        {
+            "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll",
+            "FreddoTABGCommission.dll", "MatchAndPreMatchTimeout.dll", "ServerLogger.dll",
+            "VoteToStart.dll", "TabgInstaller.UnusedVehicles.dll", "TabgInstaller.CustomGrenades.dll",
+            "TabgInstaller.SoloTesting.dll", "TabgInstaller.ProximityChat.Server.dll",
+            "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll",
+            "JuggernautMode.Server.dll", "TABGVR.Server.CitrusLib.dll", "TabgInstaller.FakePlayers.dll",
+        };
+
         private void LoadAvailableList()
         {
-            var bundledDir = FindBundledPluginsDir();
-            if (bundledDir == null)
-            {
-                TxtAllInstalled.Text = "Bundled plugins directory not found.";
-                TxtAllInstalled.Visibility = Visibility.Visible;
-                LstBundled.Visibility = Visibility.Collapsed;
-                BtnInstallBundled.IsEnabled = false;
-                return;
-            }
-
             var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (Directory.Exists(_pluginsDir))
                 foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll"))
@@ -82,14 +83,29 @@ namespace TabgInstaller.Gui.Tabs
                 foreach (var f in Directory.GetFiles(disabledDir, "*.dll"))
                     installed.Add(Path.GetFileName(f));
 
-            var available = Directory.GetFiles(bundledDir, "*.dll")
-                .Select(Path.GetFileName)
-                .Where(n => !installed.Contains(n!))
-                .ToList();
+            // Show known plugins that aren't installed yet and can be found in bundled dirs
+            var available = new List<string>();
+            foreach (var dll in KnownServerPlugins)
+            {
+                if (!installed.Contains(dll) && FindDllPath(dll, "plugins") != null)
+                    available.Add(dll);
+            }
+
+            // Also add any DLLs from bundled dir that aren't in the known list
+            var bundledDir = FindBundledPluginsDir("plugins");
+            if (bundledDir != null)
+            {
+                foreach (var f in Directory.GetFiles(bundledDir, "*.dll"))
+                {
+                    var name = Path.GetFileName(f);
+                    if (!installed.Contains(name) && !available.Contains(name))
+                        available.Add(name);
+                }
+            }
 
             if (available.Count == 0)
             {
-                TxtAllInstalled.Text = "All bundled plugins are already installed.";
+                TxtAllInstalled.Text = "All plugins are already installed.";
                 TxtAllInstalled.Visibility = Visibility.Visible;
                 LstBundled.Visibility = Visibility.Collapsed;
                 BtnInstallBundled.IsEnabled = false;
@@ -140,21 +156,16 @@ namespace TabgInstaller.Gui.Tabs
 
         private void InstallBundled_Click(object sender, RoutedEventArgs e)
         {
-            var bundledDir = FindBundledPluginsDir();
-            if (bundledDir == null) return;
-
             int count = 0;
             foreach (string name in LstBundled.SelectedItems)
             {
-                var src = Path.Combine(bundledDir, name);
+                var srcPath = FindDllPath(name, "plugins");
+                if (srcPath == null) continue;
                 var dst = Path.Combine(_pluginsDir, name);
                 try
                 {
-                    if (File.Exists(src))
-                    {
-                        File.Copy(src, dst, true);
-                        count++;
-                    }
+                    File.Copy(srcPath, dst, true);
+                    count++;
                 }
                 catch (Exception ex)
                 {
@@ -222,17 +233,31 @@ namespace TabgInstaller.Gui.Tabs
                 Process.Start("explorer", _pluginsDir);
         }
 
-        private string? FindBundledPluginsDir()
+        private string? FindBundledPluginsDir(string folderName)
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var candidates = new[]
             {
-                Path.Combine(baseDir, "plugins"),
-                Path.Combine(baseDir, "..", "plugins"),
-                Path.Combine(baseDir, "..", "..", "plugins"),
-                Path.Combine(baseDir, "..", "..", "..", "plugins"),
+                Path.Combine(baseDir, folderName),
+                Path.Combine(baseDir, "..", folderName),
+                Path.Combine(baseDir, "..", "..", folderName),
+                Path.Combine(baseDir, "..", "..", "..", folderName),
             };
             return candidates.FirstOrDefault(d => Directory.Exists(d) && Directory.GetFiles(d, "*.dll").Length > 0);
+        }
+
+        /// <summary>Search multiple bundled directories for a specific DLL file.</summary>
+        private string? FindDllPath(string dllName, string folderName)
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var candidates = new[]
+            {
+                Path.Combine(baseDir, folderName, dllName),
+                Path.Combine(baseDir, "..", folderName, dllName),
+                Path.Combine(baseDir, "..", "..", folderName, dllName),
+                Path.Combine(baseDir, "..", "..", "..", folderName, dllName),
+            };
+            return candidates.FirstOrDefault(File.Exists);
         }
     }
 }
