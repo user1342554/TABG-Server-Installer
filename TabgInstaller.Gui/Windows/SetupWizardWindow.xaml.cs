@@ -251,6 +251,21 @@ namespace TabgInstaller.Gui.Windows
                 // TABGCommunityServer is at index 12 (after adding MGLFlashbang)
                 bool installCommunityServer = _pluginCheckboxes[12].IsChecked == true;
 
+                // Collect client mod selections NOW on the UI thread (before any await)
+                var selectedClientMods = new List<string>();
+                string clientPath = ClientPath;
+                string clientModdedPath = ClientModdedPath;
+                for (int i = 0; i < _clientModCheckboxes.Count; i++)
+                {
+                    if (_clientModCheckboxes[i].IsChecked == true)
+                    {
+                        var dllName = ClientModDefs[i].DllName;
+                        if (dllName == "TabgInstaller.HuntMode.Client.dll")
+                            selectedClientMods.Add("TabgInstaller.HuntMode.Shared.dll");
+                        selectedClientMods.Add(dllName);
+                    }
+                }
+
                 int exitCode = await Task.Run(async () =>
                 {
                     var backupService = new TabgInstaller.Core.Services.BackupService(progress);
@@ -281,41 +296,23 @@ namespace TabgInstaller.Gui.Windows
                     TxtInstallStage.Text = "Server done, installing client mods...";
 
                     // Install client mods if client path was set
-                    if (!string.IsNullOrEmpty(ClientPath) && Directory.Exists(ClientPath) && !string.IsNullOrEmpty(ClientModdedPath))
+                    if (!string.IsNullOrEmpty(clientPath) && Directory.Exists(clientPath)
+                        && !string.IsNullOrEmpty(clientModdedPath) && selectedClientMods.Count > 0)
                     {
-                        var selectedClientMods = new List<string>();
-                        for (int i = 0; i < _clientModCheckboxes.Count; i++)
-                        {
-                            if (_clientModCheckboxes[i].IsChecked == true)
-                            {
-                                var dllName = ClientModDefs[i].DllName;
-                                // Hunt Mode needs shared DLL too
-                                if (dllName == "TabgInstaller.HuntMode.Client.dll")
-                                    selectedClientMods.Add("TabgInstaller.HuntMode.Shared.dll");
-                                selectedClientMods.Add(dllName);
-                            }
-                        }
-
-                        if (selectedClientMods.Count > 0)
-                        {
-                            ((IProgress<string>)progress).Report("Installing client mods...");
-                            await Task.Run(() =>
-                                ClientModInstaller.InstallAsync(ClientPath, ClientModdedPath, selectedClientMods, progress));
-                        }
+                        ((IProgress<string>)progress).Report("Installing client mods...");
+                        await Task.Run(() =>
+                            ClientModInstaller.InstallAsync(clientPath, clientModdedPath, selectedClientMods, progress));
                     }
 
                     InstallProgress.Value = 100;
                     TxtInstallStage.Text = "Complete!";
 
-                    AppSettingsService.MarkSetupComplete(serverDir, ClientPath, ClientModdedPath);
+                    AppSettingsService.MarkSetupComplete(serverDir, clientPath, clientModdedPath);
                     SetupCompleted = true;
 
                     // Brief pause so user sees "Complete!", then close
                     await Task.Delay(800);
-                    Dispatcher.Invoke(() =>
-                    {
-                        DialogResult = true;
-                    });
+                    DialogResult = true;
                 }
                 else
                 {
