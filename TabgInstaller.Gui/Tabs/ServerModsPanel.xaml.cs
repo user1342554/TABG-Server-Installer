@@ -162,9 +162,6 @@ namespace TabgInstaller.Gui.Tabs
                 }
             }
 
-            if (count > 0)
-                ToastService.Instance.Success($"Installed {count} plugin(s).");
-
             RefreshAll();
         }
 
@@ -183,7 +180,6 @@ namespace TabgInstaller.Gui.Tabs
                     var dst = Path.Combine(_pluginsDir, Path.GetFileName(dialog.FileName));
                     File.Copy(dialog.FileName, dst, true);
                     RefreshAll();
-                    ToastService.Instance.Success($"Added {Path.GetFileName(dialog.FileName)}");
                 }
                 catch (Exception ex)
                 {
@@ -208,7 +204,6 @@ namespace TabgInstaller.Gui.Tabs
                         {
                             File.Delete(path);
                             RefreshAll();
-                            ToastService.Instance.Success($"Removed {pe.Name}");
                         }
                     }
                     catch (Exception ex)

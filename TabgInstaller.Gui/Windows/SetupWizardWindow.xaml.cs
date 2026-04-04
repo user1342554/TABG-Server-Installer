@@ -47,7 +47,12 @@ namespace TabgInstaller.Gui.Windows
         // Client mod definitions ��� matches the old ClientPanel exactly
         private static readonly (string Label, string DllName, bool DefaultChecked)[] ClientModDefs = new[]
         {
-            ("CustomGrenades — BigSmoke + MGLFlashbang grenade effects", "TabgInstaller.CustomGrenades.dll", true),
+            ("FlyingControls — Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)", "TabgInstaller.FlyingControls.dll", true),
+            ("Enhanced TABG — Infinite LOD (F1), HUD toggle (F2), fog removal (F3)", "Enhanced TABG.dll", true),
+            ("BigSmokeGrenade + MGLFlashbang — Custom grenade effects", "TabgInstaller.CustomGrenades.dll", true),
+            ("Coords Display — Press F5 to show your X/Y/Z position", "TabgInstaller.CoordsDisplay.dll", true),
+            ("Mod Settings — In-game settings menu for all mods (press #)", "TabgInstaller.ModSettings.dll", true),
+            ("Pop-up Blocker — Disable anti-cheat popups for custom servers", "Pop-up Blocker.dll", true),
             ("Proximity Chat — Proximity voice chat for custom servers", "TabgInstaller.ProximityChat.Client.dll", true),
             ("Hunt Mode Client — HUD and perk selection UI", "TabgInstaller.HuntMode.Client.dll", false),
             ("Juggernaut Mode Client — Boss bar, loadout picker, scoreboard", "JuggernautMode.Client.dll", false),

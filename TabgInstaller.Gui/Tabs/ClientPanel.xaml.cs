@@ -226,7 +226,6 @@ namespace TabgInstaller.Gui.Tabs
                     settings.ClientModdedPath = _moddedDir;
                     AppSettingsService.Save(settings);
 
-                    ToastService.Instance.Success("Client setup complete! Now add mods from the available list below.");
                     RefreshAll();
                 }
                 else
@@ -274,9 +273,6 @@ namespace TabgInstaller.Gui.Tabs
                 }
             }
 
-            if (count > 0)
-                ToastService.Instance.Success($"Installed {count} client mod(s).");
-
             RefreshAll();
         }
 
@@ -295,7 +291,6 @@ namespace TabgInstaller.Gui.Tabs
                 {
                     File.Copy(dialog.FileName, Path.Combine(_pluginsDir, Path.GetFileName(dialog.FileName)), true);
                     RefreshAll();
-                    ToastService.Instance.Success($"Added {Path.GetFileName(dialog.FileName)}");
                 }
                 catch (Exception ex)
                 {
