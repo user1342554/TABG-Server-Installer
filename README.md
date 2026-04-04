@@ -79,11 +79,41 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 
 ### Server Plugins
 
-Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission, MatchAndPreMatchTimeout, ServerLogger, VoteToStart, UnusedVehicles, BigSmokeGrenade, MGLFlashbang, ProximityChat, HuntMode, JuggernautMode, TABGVR Server, FakePlayers, SoloTesting
+| Plugin | Status |
+|--------|--------|
+| Citruslib | Working |
+| StarterPack | Working |
+| StarterPackFixes | Working |
+| CustomSpawnpoints | Working |
+| FreddoTABGCommission | Working |
+| MatchAndPreMatchTimeout | Working |
+| ServerLogger | Working |
+| VoteToStart | Working |
+| UnusedVehicles | Working |
+| BigSmokeGrenade | Working |
+| MGLFlashbang | Working |
+| ProximityChat | Working |
+| HuntMode | Buggy |
+| JuggernautMode | Buggy |
+| TABGVR Server | Buggy |
+| FakePlayers | Buggy |
+| SoloTesting | Working |
 
 ### Client Plugins
 
-FlyingControls, Enhanced TABG, BigSmokeGrenade, MGLFlashbang, CoordsDisplay, ModSettings, Pop-up Blocker, ProximityChat, HuntMode Client, JuggernautMode Client, TABGVR
+| Plugin | Status |
+|--------|--------|
+| FlyingControls | Working |
+| Enhanced TABG | Working |
+| BigSmokeGrenade | Working |
+| MGLFlashbang | Working |
+| CoordsDisplay | Working |
+| ModSettings | Working |
+| Pop-up Blocker | Working |
+| ProximityChat | Working |
+| HuntMode Client | Buggy |
+| JuggernautMode Client | Buggy |
+| TABGVR | Buggy |
 
 ## Proximity Voice Chat
 
@@ -132,6 +162,7 @@ This project would not exist without the work of these developers and communitie
 | Enhanced TABG | **Freddo** | Client-side enhancements *(no public repo)* |
 | Pop-up Blocker | **Freddo** | Disables anti-cheat pop-ups on client *(no public repo)* |
 | [TASM](https://github.com/RedBigz/TASM) | [**RedBigz**](https://github.com/RedBigz) | Totally Accurate Server Mod — plugin support and command system |
+| [TABGVR](https://github.com/RedBigz/TABGVR) | [**RedBigz**](https://github.com/RedBigz) | VR support for TABG (server + client) |
 | [ComputeryLib](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Core server library — CLI handler, chat commands, message logging, visitor tracking, config improvements |
 | [LandfallPlzFixServer](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Server-side game fixes |
 | [LandfallPlzFixClient](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Client-side game fixes |
@@ -166,7 +197,6 @@ This project would not exist without the work of these developers and communitie
 | ProximityChat | anonymer_hase | Proximity voice chat (server + client) |
 | HuntMode | anonymer_hase | 4v1 survival game mode (server + client) |
 | JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) |
-| TABGVR | anonymer_hase | VR support for TABG (server + client) |
 | FakePlayers | anonymer_hase | Spawn dummy players for testing |
 
 ### Third-Party Libraries
