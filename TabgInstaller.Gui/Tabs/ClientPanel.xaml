@@ -8,6 +8,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -58,17 +60,36 @@
             </Grid>
         </GroupBox>
 
-        <!-- Actions -->
+        <!-- Actions for installed -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnSetup" Content="Initial Setup (copy TABG + BepInEx)" Width="260" Click="BtnSetup_Click"/>
-            <Button Content="Add from bundled..." Width="140" Margin="5,0,0,0" Click="AddBundled_Click"/>
             <Button Content="Add DLL file..." Width="110" Margin="5,0,0,0" Click="AddDll_Click"/>
             <Button Content="Remove Selected" Width="120" Margin="5,0,0,0" Click="RemoveMod_Click"/>
             <Button Content="Refresh" Width="80" Margin="5,0,0,0" Click="Refresh_Click"/>
         </StackPanel>
 
+        <!-- Available bundled client mods (always visible) -->
+        <GroupBox Grid.Row="4" Header="Available to Install (bundled client mods not yet installed)" Margin="0,10,0,0">
+            <Grid>
+                <ListView x:Name="LstBundled" MaxHeight="200" SelectionMode="Extended">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <TextBlock x:Name="TxtAllInstalled" Text="All bundled client mods are already installed."
+                           Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Install bundled button -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,6,0,0">
+            <Button x:Name="BtnInstallBundled" Content="Install Selected" Width="120" Click="InstallBundled_Click"/>
+        </StackPanel>
+
         <!-- Launch -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="BtnLaunch" Content="LAUNCH MODDED TABG" Height="36" Width="200" Click="BtnLaunch_Click"/>
             <Button Content="Open Modded Folder" Height="36" Width="150" Margin="10,0,0,0" Click="OpenModdedFolder_Click"/>
         </StackPanel>

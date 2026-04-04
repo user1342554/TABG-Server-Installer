@@ -75,13 +75,13 @@ namespace TabgInstaller.Gui
 
         private void RunSetupWizard()
         {
-            var wizard = new SetupWizardWindow();
-            wizard.Owner = this;
             this.Visibility = Visibility.Hidden;
 
+            var wizard = new SetupWizardWindow();
             var result = wizard.ShowDialog();
 
             this.Visibility = Visibility.Visible;
+            this.Activate();
 
             if (result == true && wizard.SetupCompleted)
             {

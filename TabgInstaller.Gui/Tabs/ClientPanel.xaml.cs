@@ -51,7 +51,13 @@ namespace TabgInstaller.Gui.Tabs
             _moddedDir = ClientModdedPathBox.Text;
             _pluginsDir = string.IsNullOrEmpty(_moddedDir) ? "" : Path.Combine(_moddedDir, "BepInEx", "plugins");
 
+            RefreshAll();
+        }
+
+        private void RefreshAll()
+        {
             LoadModsList();
+            LoadAvailableList();
         }
 
         private void BrowseClient_Click(object sender, RoutedEventArgs e)
@@ -74,7 +80,7 @@ namespace TabgInstaller.Gui.Tabs
                 settings.ClientModdedPath = _moddedDir;
                 AppSettingsService.Save(settings);
 
-                LoadModsList();
+                RefreshAll();
             }
         }
 
@@ -102,6 +108,48 @@ namespace TabgInstaller.Gui.Tabs
             }
 
             LstClientMods.ItemsSource = mods;
+        }
+
+        private void LoadAvailableList()
+        {
+            var bundledDir = FindClientPluginsDir();
+            if (bundledDir == null)
+            {
+                TxtAllInstalled.Text = "Bundled client plugins directory not found.";
+                TxtAllInstalled.Visibility = Visibility.Visible;
+                LstBundled.Visibility = Visibility.Collapsed;
+                BtnInstallBundled.IsEnabled = false;
+                return;
+            }
+
+            var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(_pluginsDir) && Directory.Exists(_pluginsDir))
+                foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll"))
+                    installed.Add(Path.GetFileName(f));
+            var disabledDir = string.IsNullOrEmpty(_pluginsDir) ? "" : Path.Combine(_pluginsDir, "disabled");
+            if (!string.IsNullOrEmpty(disabledDir) && Directory.Exists(disabledDir))
+                foreach (var f in Directory.GetFiles(disabledDir, "*.dll"))
+                    installed.Add(Path.GetFileName(f));
+
+            var available = Directory.GetFiles(bundledDir, "*.dll")
+                .Select(Path.GetFileName)
+                .Where(n => !installed.Contains(n!))
+                .ToList();
+
+            if (available.Count == 0)
+            {
+                TxtAllInstalled.Text = "All bundled client mods are already installed.";
+                TxtAllInstalled.Visibility = Visibility.Visible;
+                LstBundled.Visibility = Visibility.Collapsed;
+                BtnInstallBundled.IsEnabled = false;
+            }
+            else
+            {
+                TxtAllInstalled.Visibility = Visibility.Collapsed;
+                LstBundled.Visibility = Visibility.Visible;
+                LstBundled.ItemsSource = available;
+                BtnInstallBundled.IsEnabled = true;
+            }
         }
 
         private void ModToggle(object sender, RoutedEventArgs e)
@@ -178,8 +226,8 @@ namespace TabgInstaller.Gui.Tabs
                     settings.ClientModdedPath = _moddedDir;
                     AppSettingsService.Save(settings);
 
-                    ToastService.Instance.Success("Client setup complete! Now add mods using the buttons below.");
-                    LoadModsList();
+                    ToastService.Instance.Success("Client setup complete! Now add mods from the available list below.");
+                    RefreshAll();
                 }
                 else
                 {
@@ -196,7 +244,7 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
-        private void AddBundled_Click(object sender, RoutedEventArgs e)
+        private void InstallBundled_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_pluginsDir) || !Directory.Exists(_pluginsDir))
             {
@@ -205,57 +253,31 @@ namespace TabgInstaller.Gui.Tabs
             }
 
             var bundledDir = FindClientPluginsDir();
-            if (bundledDir == null)
-            {
-                ToastService.Instance.Warning("Bundled client plugins directory not found.");
-                return;
-            }
+            if (bundledDir == null) return;
 
-            var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll")) installed.Add(Path.GetFileName(f));
-            var disDir = Path.Combine(_pluginsDir, "disabled");
-            if (Directory.Exists(disDir))
-                foreach (var f in Directory.GetFiles(disDir, "*.dll")) installed.Add(Path.GetFileName(f));
-
-            var available = Directory.GetFiles(bundledDir, "*.dll")
-                .Select(Path.GetFileName)
-                .Where(n => !installed.Contains(n!))
-                .ToList();
-
-            if (available.Count == 0)
+            int count = 0;
+            foreach (string name in LstBundled.SelectedItems)
             {
-                ToastService.Instance.Info("All bundled client mods are already installed.");
-                return;
-            }
-
-            var win = new Window
-            {
-                Title = "Add Client Mods",
-                Width = 400, Height = 350,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Owner = Window.GetWindow(this)
-            };
-            var sp = new StackPanel { Margin = new Thickness(10) };
-            sp.Children.Add(new TextBlock { Text = "Select mods to install:", Margin = new Thickness(0, 0, 0, 8) });
-            var lb = new ListBox { SelectionMode = SelectionMode.Extended, Height = 220, ItemsSource = available };
-            sp.Children.Add(lb);
-            var btn = new Button { Content = "Install Selected", Width = 120, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            btn.Click += (_, _) =>
-            {
-                int count = 0;
-                foreach (string name in lb.SelectedItems)
+                var src = Path.Combine(bundledDir, name);
+                var dst = Path.Combine(_pluginsDir, name);
+                try
                 {
-                    var src = Path.Combine(bundledDir, name);
-                    var dst = Path.Combine(_pluginsDir, name);
-                    try { File.Copy(src, dst, true); count++; } catch { }
+                    if (File.Exists(src))
+                    {
+                        File.Copy(src, dst, true);
+                        count++;
+                    }
                 }
-                if (count > 0) ToastService.Instance.Success($"Installed {count} client mod(s).");
-                win.Close();
-                LoadModsList();
-            };
-            sp.Children.Add(btn);
-            win.Content = sp;
-            win.ShowDialog();
+                catch (Exception ex)
+                {
+                    ToastService.Instance.Error($"Failed to install {name}: {ex.Message}");
+                }
+            }
+
+            if (count > 0)
+                ToastService.Instance.Success($"Installed {count} client mod(s).");
+
+            RefreshAll();
         }
 
         private void AddDll_Click(object sender, RoutedEventArgs e)
@@ -272,7 +294,7 @@ namespace TabgInstaller.Gui.Tabs
                 try
                 {
                     File.Copy(dialog.FileName, Path.Combine(_pluginsDir, Path.GetFileName(dialog.FileName)), true);
-                    LoadModsList();
+                    RefreshAll();
                     ToastService.Instance.Success($"Added {Path.GetFileName(dialog.FileName)}");
                 }
                 catch (Exception ex)
@@ -291,13 +313,13 @@ namespace TabgInstaller.Gui.Tabs
                     var path = me.IsEnabled
                         ? Path.Combine(_pluginsDir, me.Name)
                         : Path.Combine(_pluginsDir, "disabled", me.Name);
-                    try { if (File.Exists(path)) { File.Delete(path); LoadModsList(); } }
+                    try { if (File.Exists(path)) { File.Delete(path); RefreshAll(); } }
                     catch (Exception ex) { ToastService.Instance.Error($"Failed: {ex.Message}"); }
                 }
             }
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e) => LoadModsList();
+        private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshAll();
 
         private void BtnLaunch_Click(object sender, RoutedEventArgs e)
         {

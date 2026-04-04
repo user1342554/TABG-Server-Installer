@@ -7,11 +7,16 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
+        <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Server Plugins" FontSize="18" FontWeight="SemiBold"/>
             <TextBlock Text="Add, remove, or toggle server plugins — no reinstall needed." Foreground="#888" FontSize="12"/>
         </StackPanel>
+
+        <!-- Installed plugins -->
         <GroupBox Grid.Row="1" Header="Installed Plugins (BepInEx/plugins)">
             <ListView x:Name="LstPlugins" SelectionMode="Single">
                 <ListView.ItemTemplate>
@@ -24,15 +29,18 @@
                 </ListView.ItemTemplate>
             </ListView>
         </GroupBox>
+
+        <!-- Actions for installed -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button Content="Add from bundled..." Width="140" Click="AddBundled_Click"/>
-            <Button Content="Add DLL file..." Width="110" Margin="5,0,0,0" Click="AddDll_Click"/>
+            <Button Content="Add DLL file..." Width="110" Click="AddDll_Click"/>
             <Button Content="Remove Selected" Width="120" Margin="5,0,0,0" Click="RemovePlugin_Click"/>
             <Button Content="Refresh" Width="80" Margin="5,0,0,0" Click="Refresh_Click"/>
             <Button Content="Open Folder" Width="100" Margin="5,0,0,0" Click="OpenFolder_Click"/>
         </StackPanel>
-        <GroupBox x:Name="BundledGroup" Grid.Row="3" Header="Available Bundled Plugins" Margin="0,10,0,0" Visibility="Collapsed">
-            <StackPanel>
+
+        <!-- Available bundled plugins (always visible) -->
+        <GroupBox Grid.Row="3" Header="Available to Install (bundled plugins not yet installed)" Margin="0,10,0,0">
+            <Grid>
                 <ListView x:Name="LstBundled" MaxHeight="200" SelectionMode="Extended">
                     <ListView.ItemTemplate>
                         <DataTemplate>
@@ -40,11 +48,14 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                    <Button Content="Install Selected" Width="120" Click="InstallBundled_Click"/>
-                    <Button Content="Cancel" Width="80" Margin="5,0,0,0" Click="CancelBundled_Click"/>
-                </StackPanel>
-            </StackPanel>
+                <TextBlock x:Name="TxtAllInstalled" Text="All bundled plugins are already installed."
+                           Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Grid>
         </GroupBox>
+
+        <!-- Install bundled button -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,6,0,0">
+            <Button x:Name="BtnInstallBundled" Content="Install Selected" Width="120" Click="InstallBundled_Click"/>
+        </StackPanel>
     </Grid>
 </UserControl>

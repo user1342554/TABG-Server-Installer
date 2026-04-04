@@ -25,7 +25,13 @@ namespace TabgInstaller.Gui.Tabs
         {
             _serverDir = serverDir;
             _pluginsDir = Path.Combine(serverDir, "BepInEx", "plugins");
+            RefreshAll();
+        }
+
+        private void RefreshAll()
+        {
             LoadPluginsList();
+            LoadAvailableList();
         }
 
         private void LoadPluginsList()
@@ -52,6 +58,48 @@ namespace TabgInstaller.Gui.Tabs
             catch (Exception ex)
             {
                 ToastService.Instance.Error($"Error loading plugins: {ex.Message}");
+            }
+        }
+
+        private void LoadAvailableList()
+        {
+            var bundledDir = FindBundledPluginsDir();
+            if (bundledDir == null)
+            {
+                TxtAllInstalled.Text = "Bundled plugins directory not found.";
+                TxtAllInstalled.Visibility = Visibility.Visible;
+                LstBundled.Visibility = Visibility.Collapsed;
+                BtnInstallBundled.IsEnabled = false;
+                return;
+            }
+
+            var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (Directory.Exists(_pluginsDir))
+                foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll"))
+                    installed.Add(Path.GetFileName(f));
+            var disabledDir = Path.Combine(_pluginsDir, "disabled");
+            if (Directory.Exists(disabledDir))
+                foreach (var f in Directory.GetFiles(disabledDir, "*.dll"))
+                    installed.Add(Path.GetFileName(f));
+
+            var available = Directory.GetFiles(bundledDir, "*.dll")
+                .Select(Path.GetFileName)
+                .Where(n => !installed.Contains(n!))
+                .ToList();
+
+            if (available.Count == 0)
+            {
+                TxtAllInstalled.Text = "All bundled plugins are already installed.";
+                TxtAllInstalled.Visibility = Visibility.Visible;
+                LstBundled.Visibility = Visibility.Collapsed;
+                BtnInstallBundled.IsEnabled = false;
+            }
+            else
+            {
+                TxtAllInstalled.Visibility = Visibility.Collapsed;
+                LstBundled.Visibility = Visibility.Visible;
+                LstBundled.ItemsSource = available;
+                BtnInstallBundled.IsEnabled = true;
             }
         }
 
@@ -90,39 +138,6 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
-        private void AddBundled_Click(object sender, RoutedEventArgs e)
-        {
-            var bundledDir = FindBundledPluginsDir();
-            if (bundledDir == null)
-            {
-                ToastService.Instance.Warning("Bundled plugins directory not found.");
-                return;
-            }
-
-            var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (Directory.Exists(_pluginsDir))
-                foreach (var f in Directory.GetFiles(_pluginsDir, "*.dll"))
-                    installed.Add(Path.GetFileName(f));
-            var disabledDir = Path.Combine(_pluginsDir, "disabled");
-            if (Directory.Exists(disabledDir))
-                foreach (var f in Directory.GetFiles(disabledDir, "*.dll"))
-                    installed.Add(Path.GetFileName(f));
-
-            var available = Directory.GetFiles(bundledDir, "*.dll")
-                .Select(Path.GetFileName)
-                .Where(n => !installed.Contains(n!))
-                .ToList();
-
-            if (available.Count == 0)
-            {
-                ToastService.Instance.Info("All bundled plugins are already installed.");
-                return;
-            }
-
-            LstBundled.ItemsSource = available;
-            BundledGroup.Visibility = Visibility.Visible;
-        }
-
         private void InstallBundled_Click(object sender, RoutedEventArgs e)
         {
             var bundledDir = FindBundledPluginsDir();
@@ -150,13 +165,7 @@ namespace TabgInstaller.Gui.Tabs
             if (count > 0)
                 ToastService.Instance.Success($"Installed {count} plugin(s).");
 
-            BundledGroup.Visibility = Visibility.Collapsed;
-            LoadPluginsList();
-        }
-
-        private void CancelBundled_Click(object sender, RoutedEventArgs e)
-        {
-            BundledGroup.Visibility = Visibility.Collapsed;
+            RefreshAll();
         }
 
         private void AddDll_Click(object sender, RoutedEventArgs e)
@@ -173,7 +182,7 @@ namespace TabgInstaller.Gui.Tabs
                 {
                     var dst = Path.Combine(_pluginsDir, Path.GetFileName(dialog.FileName));
                     File.Copy(dialog.FileName, dst, true);
-                    LoadPluginsList();
+                    RefreshAll();
                     ToastService.Instance.Success($"Added {Path.GetFileName(dialog.FileName)}");
                 }
                 catch (Exception ex)
@@ -198,7 +207,7 @@ namespace TabgInstaller.Gui.Tabs
                         if (File.Exists(path))
                         {
                             File.Delete(path);
-                            LoadPluginsList();
+                            RefreshAll();
                             ToastService.Instance.Success($"Removed {pe.Name}");
                         }
                     }
@@ -210,7 +219,7 @@ namespace TabgInstaller.Gui.Tabs
             }
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e) => LoadPluginsList();
+        private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshAll();
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {

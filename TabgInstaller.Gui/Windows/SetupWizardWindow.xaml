@@ -72,6 +72,24 @@
                 </Grid>
             </TabItem>
 
+            <!-- Step 4: Client Mods -->
+            <TabItem>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Step 4: Choose Starting Client Mods (optional)" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,10"
+                               Text="Pick client-side mods for your modded TABG copy. You can add or remove mods anytime later from the Client Mods tab. Skip if you didn't set a client path."/>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ClientModCheckboxes"/>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- Step 5: Installing -->
             <TabItem>
                 <StackPanel Margin="0,10" VerticalAlignment="Center">
                     <TextBlock Text="Installing..." FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10"/>
