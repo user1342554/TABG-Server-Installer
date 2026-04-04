@@ -28,7 +28,7 @@
 
 This project is **not** an original creation from scratch. It is a **collection and wrapper** around several existing community-made mods, tools, and libraries for TABG, bundled together into a single installer with a configuration GUI. The goal is to make setting up a modded TABG dedicated server as painless as possible, without having to manually download and configure each component separately.
 
-I (anonymer_hase) wrote the installer GUI and the glue code that ties everything together. The actual mods and core libraries that make the server work are the hard work of other developers listed in the [Credits](#credits) section below.
+I (anonymer_hase) wrote the installer GUI and the glue code that ties everything together. The actual mods and core libraries that make the server work are mostly the hard work of other developers listed in the [Credits](#credits) section below.
 
 ## Features
 
@@ -79,41 +79,11 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 
 ### Server Plugins
 
-| Plugin | Default | Description |
-|--------|---------|-------------|
-| Citruslib | ON | Core server library — admin commands, permissions, loot tables |
-| StarterPack | ON | Match mechanics, loadouts, win conditions |
-| StarterPackFixes | ON | Loot drop control |
-| CustomSpawnpoints | ON | Custom spawn locations |
-| FreddoTABGCommission | ON | Curses, grenades on kill, bans |
-| MatchAndPreMatchTimeout | ON | Match timing and auto-start |
-| ServerLogger | ON | Player logging |
-| VoteToStart | ON | Vote-to-start command |
-| UnusedVehicles | ON | Spawns cut vehicles (Heli, UFO, Mustang, VW, etc.) |
-| BigSmokeGrenade | ON | Giant purple smoke grenades |
-| MGLFlashbang | ON | MGL shoots flashbang rounds |
-| ProximityChat | ON | Proximity voice chat server relay |
-| HuntMode | OFF | 4v1 survival — 1 Killer vs 4 Survivors |
-| JuggernautMode | OFF | One massive player vs everyone, score-based |
-| TABGVR Server | OFF | VR hand sync for VR players (requires client mod) |
-| FakePlayers | OFF | Spawn dummy players via admin commands |
-| SoloTesting | OFF | Solo play without instant win |
+Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission, MatchAndPreMatchTimeout, ServerLogger, VoteToStart, UnusedVehicles, BigSmokeGrenade, MGLFlashbang, ProximityChat, HuntMode, JuggernautMode, TABGVR Server, FakePlayers, SoloTesting
 
 ### Client Plugins
 
-| Plugin | Default | Description |
-|--------|---------|-------------|
-| FlyingControls | ON | Steer helicopters, UFOs, hover vehicles |
-| Enhanced TABG | ON | Infinite LOD (F1), HUD toggle (F2), fog removal (F3) |
-| BigSmokeGrenade | ON | See the purple smoke effect client-side |
-| MGLFlashbang | ON | See the flashbang effect client-side |
-| CoordsDisplay | ON | F5 to show X/Y/Z coordinates |
-| ModSettings | ON | In-game settings menu (press #) |
-| Pop-up Blocker | ON | Disable anti-cheat popups |
-| ProximityChat | ON | Proximity voice chat — mic capture + playback |
-| HuntMode Client | OFF | HUD and perk selection UI for Hunt Mode |
-| JuggernautMode Client | OFF | Boss bar, loadout picker, scoreboard |
-| TABGVR | OFF | Play TABG in Virtual Reality (requires VR headset) |
+FlyingControls, Enhanced TABG, BigSmokeGrenade, MGLFlashbang, CoordsDisplay, ModSettings, Pop-up Blocker, ProximityChat, HuntMode Client, JuggernautMode Client, TABGVR
 
 ## Proximity Voice Chat
 
