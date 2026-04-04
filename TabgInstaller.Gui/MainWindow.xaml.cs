@@ -52,8 +52,7 @@ namespace TabgInstaller.Gui
                         }
                         else
                         {
-                            MessageBox.Show("Update failed. You can download manually from GitHub.",
-                                "Update Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            ToastService.Instance.Error("Update failed. You can download manually from GitHub.");
                             Title = "TABG Manager";
                         }
                     }
@@ -97,8 +96,7 @@ namespace TabgInstaller.Gui
                 }
                 else
                 {
-                    MessageBox.Show("Setup was not completed. The app needs a server path to function.\n\nThe app will close.",
-                        "Setup Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastService.Instance.Error("Setup was not completed. The app needs a server path to function.");
                     Application.Current.Shutdown();
                 }
             }

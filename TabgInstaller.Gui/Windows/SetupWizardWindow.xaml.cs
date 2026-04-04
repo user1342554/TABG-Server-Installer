@@ -161,7 +161,7 @@ namespace TabgInstaller.Gui.Windows
                 var path = TxtServerPath.Text.Trim();
                 if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
                 {
-                    MessageBox.Show("Please select a valid TABG server folder.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastService.Instance.Warning("Please select a valid TABG server folder.");
                     return;
                 }
                 WizardSteps.SelectedIndex = 1;
@@ -317,7 +317,7 @@ namespace TabgInstaller.Gui.Windows
                 else
                 {
                     TxtInstallStage.Text = "Failed";
-                    MessageBox.Show("Installation failed. Check the log for details.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Instance.Error("Installation failed. Check the log for details.");
                     BtnBack.IsEnabled = true;
                     BtnBack.Visibility = Visibility.Visible;
                 }
@@ -325,7 +325,7 @@ namespace TabgInstaller.Gui.Windows
             catch (Exception ex)
             {
                 TxtInstallStage.Text = "Failed";
-                MessageBox.Show($"Installation error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastService.Instance.Error($"Installation error: {ex.Message}");
                 BtnBack.IsEnabled = true;
                 BtnBack.Visibility = Visibility.Visible;
             }
