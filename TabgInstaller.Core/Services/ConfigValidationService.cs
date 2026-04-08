@@ -168,7 +168,7 @@ namespace TabgInstaller.Core.Services
         {
             var roundsToWin = GetDouble(values, "RoundsToWin", 3);
             var gameMode = GetString(values, "GameMode", "BattleRoyale");
-            if (roundsToWin != 0 && roundsToWin != 3 && gameMode != "Bomb")
+            if (roundsToWin != 3 && gameMode != "Bomb")
             {
                 AddWarning(warnings, "RoundsToWin",
                     "RoundsToWin has no effect unless GameMode is Bomb");
