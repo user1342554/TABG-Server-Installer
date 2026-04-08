@@ -37,6 +37,13 @@ namespace TabgInstaller.Gui
                     }
                     else
                     {
+                        // Clear stale skip if a newer version superseded the skipped one
+                        if (updateSettings.SkippedUpdateVersion != null)
+                        {
+                            updateSettings.SkippedUpdateVersion = null;
+                            AppSettingsService.Save(updateSettings);
+                        }
+
                         var current = UpdateService.GetCurrentVersion();
                         var dialog = new ChangelogWindow(current, updateInfo.Version, updateInfo.ReleaseNotes, updateInfo.TagName);
                         dialog.Owner = this;

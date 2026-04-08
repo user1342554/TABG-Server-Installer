@@ -10,9 +10,19 @@ namespace TabgInstaller.Gui.Converters;
 
 public static class MarkdownRenderer
 {
+    // Pre-frozen brushes to avoid per-render allocation and enable cross-thread use
+    private static readonly SolidColorBrush CodeBlockBg = Freeze(new SolidColorBrush(Color.FromRgb(0xF5, 0xF5, 0xF5)));
+    private static readonly SolidColorBrush CodeBlockBorder = Freeze(new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD)));
+    private static readonly SolidColorBrush InlineCodeBg = Freeze(new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0)));
+
+    private static SolidColorBrush Freeze(SolidColorBrush brush) { brush.Freeze(); return brush; }
+
     public static IEnumerable<UIElement> RenderMarkdown(string markdown)
     {
         var elements = new List<UIElement>();
+        if (string.IsNullOrEmpty(markdown))
+            return elements;
+
         try
         {
             var lines = markdown.Replace("\r\n", "\n").Split('\n');
@@ -136,10 +146,10 @@ public static class MarkdownRenderer
             Text = code,
             IsReadOnly = true,
             FontFamily = new FontFamily("Consolas"),
-            Background = new SolidColorBrush(Color.FromRgb(0xF5, 0xF5, 0xF5)),
+            Background = CodeBlockBg,
             Foreground = Brushes.Black,
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD)),
+            BorderBrush = CodeBlockBorder,
             Padding = new Thickness(8),
             Margin = new Thickness(0, 4, 0, 4),
             TextWrapping = TextWrapping.Wrap,
@@ -174,7 +184,7 @@ public static class MarkdownRenderer
                     var run = new Run(match.Groups[4].Value)
                     {
                         FontFamily = new FontFamily("Consolas"),
-                        Background = new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0))
+                        Background = InlineCodeBg
                     };
                     inlines.Add(run);
                 }
