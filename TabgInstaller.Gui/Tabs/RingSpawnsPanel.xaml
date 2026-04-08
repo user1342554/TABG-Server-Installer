@@ -20,14 +20,16 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Location" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="CmbLocation" Grid.Column="1"
-                                      DisplayMemberPath="Name"
-                                      SelectionChanged="CmbLocation_SelectionChanged"/>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding SpawnLocations}"
+                                      SelectedItem="{Binding SelectedSpawnLocation, Mode=TwoWay}"
+                                      DisplayMemberPath="Name"/>
                             <Button Content="Apply Location" Grid.Column="2" Margin="8,0,0,0"
-                                    Width="120" Click="ApplyLocation_Click"/>
+                                    Width="120" Command="{Binding ApplyLocationCommand}"/>
                         </Grid>
-                        <TextBlock x:Name="TxtLocationInfo" Margin="0,4,0,0" Foreground="Gray" FontSize="11"
-                                   TextWrapping="Wrap"/>
+                        <TextBlock Margin="0,4,0,0" Foreground="Gray" FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding LocationInfo}"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -40,7 +42,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Ring Sizes (3 values)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtRingSizes" Grid.Column="1"/>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding RingSizes, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -48,11 +51,14 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Ring Speeds (3 values)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtRingSpeeds" Grid.Column="1"/>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding RingSpeeds, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                            <Button Content="No Closing (Deathmatch)" Width="180" Click="PresetDeathmatch_Click"/>
-                            <Button Content="Standard BR" Width="120" Margin="8,0,0,0" Click="PresetStandardBR_Click"/>
+                            <Button Content="No Closing (Deathmatch)" Width="180"
+                                    Command="{Binding PresetDeathmatchCommand}"/>
+                            <Button Content="Standard BR" Width="120" Margin="8,0,0,0"
+                                    Command="{Binding PresetStandardBRCommand}"/>
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>
@@ -66,7 +72,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Custom Spawn Point (x,y,z)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtCustomSpawnPoint" Grid.Column="1"/>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding SelectedLocation, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -74,11 +81,11 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Use Custom Spawn" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="ChkUseCustomSpawn" Grid.Column="1" VerticalAlignment="Center"
-                                      Checked="ChkUseCustomSpawn_Changed" Unchecked="ChkUseCustomSpawn_Changed"/>
+                            <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                                      IsChecked="{Binding UseCustomSpawn}"/>
                         </Grid>
-                        <TextBlock x:Name="TxtSpawnInfo" Margin="0,4,0,0" Foreground="Gray" FontSize="11"
-                                   Text="When checked, ValidSpawnPoints is set to 6 (custom)."/>
+                        <TextBlock Margin="0,4,0,0" Foreground="Gray" FontSize="11"
+                                   Text="{Binding SpawnInfo}"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -86,10 +93,11 @@
                 <GroupBox Header="Match Spawns" Margin="0,12,0,0" Padding="8">
                     <StackPanel>
                         <TextBlock Text="Spawn Coordinates (one x,z per line):" Margin="0,0,0,4"/>
-                        <TextBox x:Name="TxtMatchSpawns" Height="160" AcceptsReturn="True"
+                        <TextBox Height="160" AcceptsReturn="True"
                                  VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
-                                 TextChanged="TxtMatchSpawns_TextChanged"/>
-                        <TextBlock x:Name="TxtSpawnCount" Margin="0,4,0,0" Foreground="Gray" FontSize="11"/>
+                                 Text="{Binding MatchSpawns, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Margin="0,4,0,0" Foreground="Gray" FontSize="11"
+                                   Text="{Binding SpawnCountText}"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -98,8 +106,8 @@
 
         <!-- Bottom bar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,8,4,4">
-            <Button Content="Save" Width="100" Click="SaveButton_Click"/>
-            <TextBlock x:Name="StatusText" Margin="12,0,0,0" VerticalAlignment="Center"/>
+            <Button Content="Save" Width="100" Command="{Binding SaveCommand}"/>
+            <TextBlock Text="{Binding StatusText}" Margin="12,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </UserControl>

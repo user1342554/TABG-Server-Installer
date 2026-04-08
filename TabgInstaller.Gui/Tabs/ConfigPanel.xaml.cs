@@ -1,14 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using TabgInstaller.Core;
-using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
@@ -47,8 +42,7 @@ namespace TabgInstaller.Gui.Tabs
             SetupFileWatchers();
 
             // Initialize config sub-panels
-            // MatchSettingsControl is initialized via its ViewModel (PathChanged event)
-            RingSpawnsControl.Initialize(_serverDir);
+            // MatchSettingsControl and RingSpawnsControl are initialized via their ViewModels (PathChanged event)
             LoadoutEditorControl.Initialize(_serverDir);
             ModSettingsControl.Initialize(_serverDir);
             // AdminPanelControl DataContext is set in MainWindow; ViewModel subscribes to PathChanged
