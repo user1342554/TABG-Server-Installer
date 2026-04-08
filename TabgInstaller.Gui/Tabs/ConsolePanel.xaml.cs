@@ -1,10 +1,16 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
+using Microsoft.Win32;
 using TabgInstaller.Core;
+using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
 
@@ -14,6 +20,15 @@ namespace TabgInstaller.Gui.Tabs
     {
         private string _serverDir = "";
         private ServerProcessService? _procSvc;
+        private CollectionViewSource? _logViewSource;
+        private bool _autoScroll = true;
+        private DispatcherTimer? _searchDebounceTimer;
+        private string _searchText = "";
+
+        // Severity filter state
+        private bool _showInfo = true;
+        private bool _showWarning = true;
+        private bool _showError = true;
 
         public bool IsServerRunning => _procSvc?.IsRunning == true;
 
@@ -27,20 +42,143 @@ namespace TabgInstaller.Gui.Tabs
             _serverDir = serverDir;
 
             _procSvc = new ServerProcessService(_serverDir);
-            _procSvc.OutputReceived += line => Dispatcher.Invoke(() =>
+
+            // Enable cross-thread access to the ObservableCollection
+            BindingOperations.EnableCollectionSynchronization(_procSvc.LogEntries, _procSvc.LogLock);
+
+            // Set up CollectionViewSource
+            _logViewSource = (CollectionViewSource)FindResource("LogViewSource");
+            _logViewSource.Source = _procSvc.LogEntries;
+
+            // Subscribe to LogEntryReceived for auto-scroll
+            _procSvc.LogEntryReceived += entry => Dispatcher.Invoke(() =>
             {
-                ConsoleTextBox.AppendText(line + Environment.NewLine);
-                ConsoleScrollViewer.ScrollToEnd();
+                try
+                {
+                    if (_autoScroll)
+                        ScrollToBottom();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[WARN] Auto-scroll failed: {ex.Message}");
+                }
             });
+
+            // Set up search debounce timer
+            _searchDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(300)
+            };
+            _searchDebounceTimer.Tick += (_, _) =>
+            {
+                _searchDebounceTimer.Stop();
+                _searchText = SearchBox.Text ?? "";
+                RefreshFilter();
+            };
+
+            // Hook into ListBox scroll events for auto-scroll detection
+            LogListBox.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(OnLogListScrollChanged));
         }
 
         public string GetRecentOutput(int maxLines = 20)
         {
-            var text = ConsoleTextBox.Text;
-            if (string.IsNullOrEmpty(text)) return "";
-            var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            var start = Math.Max(0, lines.Length - maxLines);
-            return string.Join(Environment.NewLine, lines[start..]);
+            if (_procSvc == null) return "";
+
+            try
+            {
+                var entries = _procSvc.LogEntries;
+                var count = entries.Count;
+                if (count == 0) return "";
+
+                var start = Math.Max(0, count - maxLines);
+                var sb = new StringBuilder();
+                for (int i = start; i < count; i++)
+                {
+                    if (sb.Length > 0) sb.Append(Environment.NewLine);
+                    sb.Append(entries[i].RawText);
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] GetRecentOutput failed: {ex.Message}");
+                return "";
+            }
+        }
+
+        private void LogViewSource_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is not LogEntry entry)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            // Severity filter
+            bool accepted = entry.Severity switch
+            {
+                LogSeverity.Info => _showInfo,
+                LogSeverity.Warning => _showWarning,
+                LogSeverity.Error => _showError,
+                _ => true
+            };
+
+            // Search filter
+            if (accepted && !string.IsNullOrEmpty(_searchText))
+            {
+                accepted = entry.RawText.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            }
+
+            e.Accepted = accepted;
+        }
+
+        private void RefreshFilter()
+        {
+            try
+            {
+                _logViewSource?.View?.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Filter refresh failed: {ex.Message}");
+            }
+        }
+
+        private void SeverityToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _showInfo = ToggleInfo.IsChecked == true;
+            _showWarning = ToggleWarn.IsChecked == true;
+            _showError = ToggleError.IsChecked == true;
+            RefreshFilter();
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Update placeholder visibility
+            SearchPlaceholder.Visibility = string.IsNullOrEmpty(SearchBox.Text)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            // Debounce the search
+            _searchDebounceTimer?.Stop();
+            _searchDebounceTimer?.Start();
+        }
+
+        private void OnLogListScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (e.OriginalSource is ScrollViewer sv)
+            {
+                // Re-engage auto-scroll when user scrolls to bottom
+                _autoScroll = sv.VerticalOffset >= sv.ScrollableHeight - 10;
+            }
+        }
+
+        private void ScrollToBottom()
+        {
+            if (LogListBox.Items.Count > 0)
+            {
+                LogListBox.ScrollIntoView(LogListBox.Items[LogListBox.Items.Count - 1]);
+            }
         }
 
         public void StartButton_Click(object sender, RoutedEventArgs e)
@@ -70,7 +208,10 @@ namespace TabgInstaller.Gui.Tabs
 
         private void ClearConsole_Click(object sender, RoutedEventArgs e)
         {
-            ConsoleTextBox.Clear();
+            if (_procSvc != null)
+            {
+                _procSvc.LogEntries.Clear();
+            }
         }
 
         private void QuickSaveRestart_Click(object sender, RoutedEventArgs e)
@@ -83,7 +224,10 @@ namespace TabgInstaller.Gui.Tabs
                     var gs = ConfigIO.ReadGameSettings(gsPath);
                     ConfigIO.WriteGameSettings(gs, gsPath);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[WARN] Failed to re-save game_settings.txt before restart: {ex.Message}");
+                }
             }
 
             if (_procSvc?.IsRunning == true)
@@ -115,9 +259,59 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (_procSvc?.IsRunning == true && !string.IsNullOrWhiteSpace(TxtCommand.Text))
             {
-                ConsoleTextBox.AppendText($"> {TxtCommand.Text}{Environment.NewLine}");
-                ConsoleTextBox.AppendText($"Command sending not implemented yet{Environment.NewLine}");
+                // Add command echo and info message as log entries
+                var echoEntry = LogLineParser.Parse($"> {TxtCommand.Text}");
+                var infoEntry = LogLineParser.Parse("[INFO] Server does not accept stdin commands. Use RCON or a BepInEx console plugin.");
+                _procSvc.LogEntries.Add(echoEntry);
+                _procSvc.LogEntries.Add(infoEntry);
+
+                if (_autoScroll)
+                    ScrollToBottom();
+
                 TxtCommand.Clear();
+            }
+        }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    FileName = $"TABG-Server-Log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt",
+                    DefaultExt = ".txt",
+                    Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    var view = _logViewSource?.View;
+                    if (view != null)
+                    {
+                        foreach (var item in view)
+                        {
+                            if (item is LogEntry entry)
+                            {
+                                var severity = entry.Severity switch
+                                {
+                                    LogSeverity.Info => "INFO",
+                                    LogSeverity.Warning => "WARNING",
+                                    LogSeverity.Error => "ERROR",
+                                    _ => "INFO"
+                                };
+                                sb.AppendLine($"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss}] [{severity}] {entry.Message}");
+                            }
+                        }
+                    }
+
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
+                    ToastService.Instance.Success($"Log exported to {dialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.Instance.Error($"Failed to export log: {ex.Message}");
             }
         }
     }

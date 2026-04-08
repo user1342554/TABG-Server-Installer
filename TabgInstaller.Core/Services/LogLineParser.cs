@@ -1,0 +1,61 @@
+using System;
+using System.Text.RegularExpressions;
+using TabgInstaller.Core.Model;
+
+namespace TabgInstaller.Core.Services
+{
+    public static class LogLineParser
+    {
+        // Prefix patterns to strip from Message
+        private static readonly Regex PrefixPattern = new(
+            @"^\s*\[(INFO|ERROR|WARNING|WARN)\]\s*",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        // Error detection patterns (case-insensitive)
+        private static readonly Regex ErrorPattern = new(
+            @"\[error\]|exception|nullreference|stacktrace|fatal|^ERROR:",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        // Warning detection patterns (case-insensitive)
+        private static readonly Regex WarningPattern = new(
+            @"\[warn|warning|^WARNING:",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        public static LogEntry Parse(string rawLine, bool isStderr = false, DateTime? timestamp = null)
+        {
+            var ts = timestamp ?? DateTime.Now;
+            var line = rawLine ?? "";
+
+            var severity = DetectSeverity(line, isStderr);
+            var message = StripPrefix(line);
+
+            return new LogEntry
+            {
+                Timestamp = ts,
+                Severity = severity,
+                RawText = line,
+                Message = message
+            };
+        }
+
+        private static LogSeverity DetectSeverity(string line, bool isStderr)
+        {
+            if (isStderr || ErrorPattern.IsMatch(line))
+                return LogSeverity.Error;
+
+            if (WarningPattern.IsMatch(line))
+                return LogSeverity.Warning;
+
+            return LogSeverity.Info;
+        }
+
+        private static string StripPrefix(string line)
+        {
+            var match = PrefixPattern.Match(line);
+            if (match.Success)
+                return line.Substring(match.Length);
+
+            return line;
+        }
+    }
+}
