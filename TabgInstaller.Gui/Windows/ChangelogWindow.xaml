@@ -28,8 +28,8 @@
         <!-- Footer buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Update Now" Width="100" Height="32" Margin="0,0,8,0" Click="UpdateNow_Click" IsDefault="True"/>
-            <Button Content="Skip Version" Width="100" Height="32" Margin="0,0,8,0" Click="SkipVersion_Click"/>
-            <Button Content="Later" Width="80" Height="32" Click="Later_Click" IsCancel="True"/>
+            <Button Content="Skip This Version" Width="120" Height="32" Margin="0,0,8,0" Click="SkipVersion_Click"/>
+            <Button Content="Remind Me Later" Width="110" Height="32" Click="Later_Click" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>
