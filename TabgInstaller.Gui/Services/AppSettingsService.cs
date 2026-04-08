@@ -10,6 +10,7 @@ public class AppSettings
     public string ServerPath { get; set; } = "";
     public string ClientPath { get; set; } = "";
     public string ClientModdedPath { get; set; } = "";
+    public string? SkippedUpdateVersion { get; set; }
 }
 
 public static class AppSettingsService
