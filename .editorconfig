@@ -62,3 +62,7 @@ dotnet_diagnostic.SA1009.severity = none
 dotnet_diagnostic.SA1111.severity = none
 dotnet_diagnostic.SA1503.severity = none
 dotnet_diagnostic.SA1122.severity = none
+
+# Test project naming convention (underscores in test method names are standard)
+[*Tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
