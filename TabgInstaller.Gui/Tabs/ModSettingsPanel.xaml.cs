@@ -56,7 +56,7 @@ namespace TabgInstaller.Gui.Tabs
             {
                 if (_saving) return;
                 _debounce?.Dispose();
-                _debounce = new Timer(_ => Dispatcher.Invoke(() => { try { LoadSettings(); } catch { } }), null, 500, Timeout.Infinite);
+                _debounce = new Timer(_ => Dispatcher.Invoke(() => { try { LoadSettings(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ModSettings] Operation failed: {ex.Message}"); } }), null, 500, Timeout.Infinite);
             };
         }
 
@@ -143,7 +143,7 @@ namespace TabgInstaller.Gui.Tabs
                     TxtJuggMinPlayers.Text = "3";
                 }
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ModSettings] Operation failed: {ex.Message}"); }
 
             try
             {
@@ -172,7 +172,7 @@ namespace TabgInstaller.Gui.Tabs
                     CmbProxChatFalloff.SelectedIndex = 0;
                 }
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ModSettings] Operation failed: {ex.Message}"); }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -247,7 +247,7 @@ FalloffCurve = {falloff}
 ";
                     File.WriteAllText(proxCfgPath, content);
                 }
-                catch { }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ModSettings] Operation failed: {ex.Message}"); }
 
                 // Juggernaut Mode
                 try
@@ -319,7 +319,7 @@ MinPlayers = {TxtJuggMinPlayers.Text.Trim()}
 ";
                     File.WriteAllText(juggCfgPath, juggContent);
                 }
-                catch { }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ModSettings] Operation failed: {ex.Message}"); }
             }
             catch (Exception ex)
             {

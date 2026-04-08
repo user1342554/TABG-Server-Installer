@@ -46,7 +46,7 @@ namespace TabgInstaller.Gui.Tabs
             {
                 if (_saving) return;
                 _debounce?.Dispose();
-                _debounce = new Timer(_ => Dispatcher.Invoke(() => { try { LoadSettings(); } catch { } }), null, 500, Timeout.Infinite);
+                _debounce = new Timer(_ => Dispatcher.Invoke(() => { try { LoadSettings(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MatchSettings] Debounce reload failed: {ex.Message}"); } }), null, 500, Timeout.Infinite);
             };
         }
 

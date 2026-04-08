@@ -173,7 +173,7 @@ namespace TabgInstaller.Gui
         private void CopyConsole_Click(object sender, RoutedEventArgs e)
         {
             try { Clipboard.SetText(ConsoleTextBox.Text); }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ConfigWindow] Clipboard copy failed: {ex.Message}"); }
         }
 
 

@@ -223,7 +223,7 @@ namespace TabgInstaller.Gui.Tabs
                                     DataContext = _vm;
                                     StatusTextBlock.Text = "Settings reloaded from file";
                                 }
-                                catch { }
+                                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ConfigPanel] Operation failed: {ex.Message}"); }
                             });
                         }
                     };
@@ -231,7 +231,7 @@ namespace TabgInstaller.Gui.Tabs
                     _gameSettingsWatcher.EnableRaisingEvents = true;
                 }
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ConfigPanel] Operation failed: {ex.Message}"); }
         }
     }
 }
