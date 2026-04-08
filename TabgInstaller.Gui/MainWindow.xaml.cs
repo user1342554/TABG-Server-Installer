@@ -1,7 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.Windows;
@@ -10,8 +12,18 @@ namespace TabgInstaller.Gui
 {
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        private readonly IServiceProvider _services;
+        private readonly IAppSettingsService _appSettings;
+        private readonly IServerPathProvider _serverPath;
+
+        public MainWindow(
+            IServiceProvider services,
+            IAppSettingsService appSettings,
+            IServerPathProvider serverPath)
         {
+            _services = services;
+            _appSettings = appSettings;
+            _serverPath = serverPath;
             InitializeComponent();
             Loaded += OnLoaded;
         }
@@ -19,33 +31,47 @@ namespace TabgInstaller.Gui
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             // Initialize toast system
-            ToastServiceStatic.Instance.Initialize((msg, type, dur) =>
+            var toast = _services.GetRequiredService<ToastService>();
+            toast.Initialize((msg, type, dur) =>
                 Dispatcher.Invoke(() => ToastControl.Show(msg, type, dur)));
+
+            // Initialize navigation
+            var nav = _services.GetRequiredService<INavigationService>() as NavigationService;
+            nav?.Initialize(index => MainTabs.SelectedIndex = index);
+
+            // Wire hard reset
+            var navService = _services.GetRequiredService<INavigationService>();
+            navService.HardResetRequested += () =>
+            {
+                // Stop server if running
+                var procSvc = _services.GetRequiredService<ServerProcessService>();
+                if (procSvc.IsRunning) procSvc.Stop();
+                RunSetupWizard();
+            };
 
             // Run update check
             try
             {
-                var updater = new UpdateService();
+                var updater = _services.GetRequiredService<IUpdateService>();
                 var updateInfo = await updater.CheckForUpdateAsync();
                 if (updateInfo != null)
                 {
-                    // Check if user previously skipped this version
-                    var updateSettings = AppSettingsServiceStatic.Load();
+                    var updateSettings = _appSettings.Load();
                     if (updateInfo.TagName == updateSettings.SkippedUpdateVersion)
                     {
                         // Skipped — don't prompt
                     }
                     else
                     {
-                        // Clear stale skip if a newer version superseded the skipped one
                         if (updateSettings.SkippedUpdateVersion != null)
                         {
                             updateSettings.SkippedUpdateVersion = null;
-                            AppSettingsServiceStatic.Save(updateSettings);
+                            _appSettings.Save(updateSettings);
                         }
 
                         var current = UpdateService.GetCurrentVersion();
-                        var dialog = new ChangelogWindow(current, updateInfo.Version, updateInfo.ReleaseNotes, updateInfo.TagName);
+                        var dialog = new ChangelogWindow(current, updateInfo.Version,
+                            updateInfo.ReleaseNotes, updateInfo.TagName);
                         dialog.Owner = this;
 
                         if (dialog.ShowDialog() == true)
@@ -59,14 +85,15 @@ namespace TabgInstaller.Gui
                             }
                             else
                             {
-                                ToastServiceStatic.Instance.Error("Update failed. You can download manually from GitHub.");
+                                var toastSvc = _services.GetRequiredService<IToastService>();
+                                toastSvc.Error("Update failed. You can download manually from GitHub.");
                                 Title = "TABG Manager";
                             }
                         }
                         else if (dialog.SkippedVersion != null)
                         {
                             updateSettings.SkippedUpdateVersion = dialog.SkippedVersion;
-                            AppSettingsServiceStatic.Save(updateSettings);
+                            _appSettings.Save(updateSettings);
                         }
                     }
                 }
@@ -77,8 +104,9 @@ namespace TabgInstaller.Gui
             }
 
             // Check if setup is needed
-            var settings = AppSettingsServiceStatic.Load();
-            if (!settings.SetupCompleted || string.IsNullOrEmpty(settings.ServerPath) || !Directory.Exists(settings.ServerPath))
+            var settings = _appSettings.Load();
+            if (!settings.SetupCompleted || string.IsNullOrEmpty(settings.ServerPath)
+                || !Directory.Exists(settings.ServerPath))
             {
                 RunSetupWizard();
             }
@@ -100,19 +128,20 @@ namespace TabgInstaller.Gui
 
             if (result == true && wizard.SetupCompleted)
             {
-                var settings = AppSettingsServiceStatic.Load();
+                var settings = _appSettings.Load();
                 InitializeAllPanels(settings.ServerPath);
             }
             else
             {
-                var settings = AppSettingsServiceStatic.Load();
+                var settings = _appSettings.Load();
                 if (!string.IsNullOrEmpty(settings.ServerPath) && Directory.Exists(settings.ServerPath))
                 {
                     InitializeAllPanels(settings.ServerPath);
                 }
                 else
                 {
-                    ToastServiceStatic.Instance.Error("Setup was not completed. The app needs a server path to function.");
+                    var toast = _services.GetRequiredService<IToastService>();
+                    toast.Error("Setup was not completed. The app needs a server path to function.");
                     Application.Current.Shutdown();
                 }
             }
@@ -120,35 +149,24 @@ namespace TabgInstaller.Gui
 
         private void InitializeAllPanels(string serverDir)
         {
-            // Initialize Console first (Dashboard depends on it)
+            // Set the server path — triggers all ViewModel initialization via PathChanged
+            (_serverPath as ServerPathProvider)?.SetPath(serverDir);
+
+            // Initialize panels that haven't been migrated to MVVM yet
+            // (these calls are removed one by one as panels are migrated)
             ConsoleTab.Initialize(serverDir);
-
-            // Initialize Dashboard with reference to Console
             DashboardTab.Initialize(serverDir, ConsoleTab);
-            DashboardTab.RequestOpenConsole += () =>
-            {
-                MainTabs.SelectedIndex = 4; // Console tab
-            };
-
-            // Initialize Config
+            DashboardTab.RequestOpenConsole += () => MainTabs.SelectedIndex = 4;
             ConfigTab.Initialize(serverDir);
-
-            // Initialize Server Mods
             ServerModsTab.Initialize(serverDir);
-
-            // Initialize Backups
             BackupsTab.Initialize(serverDir);
-
-            // Initialize Settings
             SettingsTab.RequestHardReset += () =>
             {
                 if (ConsoleTab.IsServerRunning)
                     ConsoleTab.StopButton_Click(this, new RoutedEventArgs());
-
                 RunSetupWizard();
             };
 
-            // Select Dashboard
             MainTabs.SelectedIndex = 0;
         }
     }

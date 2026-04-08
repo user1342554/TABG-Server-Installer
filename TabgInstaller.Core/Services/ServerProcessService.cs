@@ -14,7 +14,8 @@ namespace TabgInstaller.Core.Services
         private const int MaxLogEntries = 50_000;
 
         private Process? _proc;
-        private readonly string _serverDir;
+        private readonly IServerPathProvider? _serverPathProvider;
+        private string _serverDir;
         private readonly object _logLock = new();
         public event Action<string>? OutputReceived;
         public event Action<LogEntry>? LogEntryReceived;
@@ -31,6 +32,15 @@ namespace TabgInstaller.Core.Services
             register(LogEntries, _logLock);
         }
 
+        /// <summary>DI constructor — path is resolved from IServerPathProvider at Start() time.</summary>
+        public ServerProcessService(IServerPathProvider serverPathProvider)
+        {
+            _serverPathProvider = serverPathProvider;
+            _serverDir = serverPathProvider.ServerPath;
+            serverPathProvider.PathChanged += () => _serverDir = serverPathProvider.ServerPath;
+        }
+
+        /// <summary>Legacy constructor for callers that supply serverDir directly.</summary>
         public ServerProcessService(string serverDir)
         {
             _serverDir = serverDir;
