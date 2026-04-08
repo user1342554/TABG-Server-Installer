@@ -7,9 +7,20 @@ namespace TabgInstaller.Core.Services
     /// <summary>
     /// Validates game-server configuration values and returns per-property warning messages.
     /// Operates on plain dictionaries so it stays free of any GUI dependency.
+    ///
+    /// NOTE: All rules currently produce Warning-level messages only. A ValidationSeverity
+    /// concept (Warning vs Error) is intentionally deferred — Error severity (red, blocking)
+    /// is planned for a future phase.
     /// </summary>
     public class ConfigValidationService
     {
+        // ── Shared ring-setting defaults (used by R5 and R6) ──
+        private static readonly string DefaultRingSizes = "4240.0,500.0,400.0,200.0,100.0,50.0";
+        private static readonly string DefaultRingSpeeds = "120,120,150,180,240,300";
+        private const double DefaultBaseRingTime = 200.0;
+        private const double DefaultTimeBeforeFirstRing = 70.0;
+        private static readonly string[] RingPropertyNames = { "RingSizes", "RingSpeeds", "BaseRingTime", "TimeBeforeFirstRing" };
+
         // Each rule targets zero or more property names and may produce warnings keyed by property name.
         private delegate void ValidationRule(
             Dictionary<string, object> values,
@@ -110,6 +121,15 @@ namespace TabgInstaller.Core.Services
             return fallback;
         }
 
+        /// <summary>Returns true if any ring-related setting differs from its default value.</summary>
+        private static bool AreRingSettingsChanged(Dictionary<string, object> values)
+        {
+            return GetString(values, "RingSizes", DefaultRingSizes) != DefaultRingSizes
+                || GetString(values, "RingSpeeds", DefaultRingSpeeds) != DefaultRingSpeeds
+                || GetDouble(values, "BaseRingTime", DefaultBaseRingTime) != DefaultBaseRingTime
+                || GetDouble(values, "TimeBeforeFirstRing", DefaultTimeBeforeFirstRing) != DefaultTimeBeforeFirstRing;
+        }
+
         // ──────────────────────────────────────────────
         // R1: Range violation
         // ──────────────────────────────────────────────
@@ -205,25 +225,9 @@ namespace TabgInstaller.Core.Services
             var gameMode = GetString(values, "GameMode", "BattleRoyale");
             if (gameMode == "BattleRoyale") return;
 
-            const string defaultRingSizes = "4240.0,500.0,400.0,200.0,100.0,50.0";
-            const string defaultRingSpeeds = "120,120,150,180,240,300";
-            const double defaultBaseRingTime = 200.0;
-            const double defaultTimeBeforeFirstRing = 70.0;
-
-            var ringSizes = GetString(values, "RingSizes", defaultRingSizes);
-            var ringSpeeds = GetString(values, "RingSpeeds", defaultRingSpeeds);
-            var baseRingTime = GetDouble(values, "BaseRingTime", defaultBaseRingTime);
-            var timeBeforeFirstRing = GetDouble(values, "TimeBeforeFirstRing", defaultTimeBeforeFirstRing);
-
-            bool changed = ringSizes != defaultRingSizes
-                        || ringSpeeds != defaultRingSpeeds
-                        || baseRingTime != defaultBaseRingTime
-                        || timeBeforeFirstRing != defaultTimeBeforeFirstRing;
-
-            if (changed)
+            if (AreRingSettingsChanged(values))
             {
-                var ringProps = new[] { "RingSizes", "RingSpeeds", "BaseRingTime", "TimeBeforeFirstRing" };
-                foreach (var prop in ringProps)
+                foreach (var prop in RingPropertyNames)
                 {
                     if (values.ContainsKey(prop))
                     {
@@ -245,25 +249,9 @@ namespace TabgInstaller.Core.Services
         {
             if (!GetBool(values, "NoRing", false)) return;
 
-            const string defaultRingSizes = "4240.0,500.0,400.0,200.0,100.0,50.0";
-            const string defaultRingSpeeds = "120,120,150,180,240,300";
-            const double defaultBaseRingTime = 200.0;
-            const double defaultTimeBeforeFirstRing = 70.0;
-
-            var ringSizes = GetString(values, "RingSizes", defaultRingSizes);
-            var ringSpeeds = GetString(values, "RingSpeeds", defaultRingSpeeds);
-            var baseRingTime = GetDouble(values, "BaseRingTime", defaultBaseRingTime);
-            var timeBeforeFirstRing = GetDouble(values, "TimeBeforeFirstRing", defaultTimeBeforeFirstRing);
-
-            bool tuned = ringSizes != defaultRingSizes
-                      || ringSpeeds != defaultRingSpeeds
-                      || baseRingTime != defaultBaseRingTime
-                      || timeBeforeFirstRing != defaultTimeBeforeFirstRing;
-
-            if (tuned)
+            if (AreRingSettingsChanged(values))
             {
-                var ringProps = new[] { "RingSizes", "RingSpeeds", "BaseRingTime", "TimeBeforeFirstRing" };
-                foreach (var prop in ringProps)
+                foreach (var prop in RingPropertyNames)
                 {
                     if (values.ContainsKey(prop))
                     {
