@@ -25,7 +25,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.HuntMode", "T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.HuntMode.Client", "TabgInstaller.HuntMode.Client\TabgInstaller.HuntMode.Client.csproj", "{89465A3B-8642-4CD3-A9F9-E4064771451E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.FakePlayers", "TabgInstaller.FakePlayers\TabgInstaller.FakePlayers.csproj", "{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.FakePlayers", "TabgInstaller.FakePlayers\TabgInstaller.FakePlayers.csproj", "{87BA3A4D-AA34-71EF-F50A-5BCC960F488D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.Tests", "TabgInstaller.Tests\TabgInstaller.Tests.csproj", "{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -169,18 +171,18 @@ Global
 		{89465A3B-8642-4CD3-A9F9-E4064771451E}.Release|x64.Build.0 = Release|Any CPU
 		{89465A3B-8642-4CD3-A9F9-E4064771451E}.Release|x86.ActiveCfg = Release|Any CPU
 		{89465A3B-8642-4CD3-A9F9-E4064771451E}.Release|x86.Build.0 = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|x64.Build.0 = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Debug|x86.Build.0 = Debug|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|x64.ActiveCfg = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|x64.Build.0 = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|x86.ActiveCfg = Release|Any CPU
-		{F1A2B3C4-D5E6-7890-ABCD-FAKEPLAYERS1}.Release|x86.Build.0 = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|x64.Build.0 = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Debug|x86.Build.0 = Debug|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|x64.ActiveCfg = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|x64.Build.0 = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|x86.ActiveCfg = Release|Any CPU
+		{75C74985-E9F9-4FF6-8013-D4C0F78FB58C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
