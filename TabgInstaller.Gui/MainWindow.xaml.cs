@@ -161,7 +161,7 @@ namespace TabgInstaller.Gui
             ConfigTab.AdminPanelControl.DataContext = _services.GetRequiredService<AdminPanelViewModel>();
             ConfigTab.MatchSettingsControl.SetViewModel(_services.GetRequiredService<MatchSettingsViewModel>());
             ServerModsTab.Initialize(serverDir);
-            BackupsTab.Initialize(serverDir);
+            BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
             SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();
 

@@ -1,6 +1,12 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.BackupsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="InverseVisibility" Inverse="True"/>
+        <conv:FileSizeConverter x:Key="FileSizeConverter"/>
+    </UserControl.Resources>
+
     <DockPanel>
         <!-- Header -->
         <StackPanel DockPanel.Dock="Top" Margin="8">
@@ -8,17 +14,85 @@
             <TextBlock Text="Manage server backups" Margin="0,0,0,8"/>
         </StackPanel>
 
+        <!-- Status bar -->
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusText}"
+                   Margin="8,4" Foreground="Gray" FontStyle="Italic"/>
+
         <!-- Bottom Actions -->
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="8" HorizontalAlignment="Right">
-            <Button Content="Refresh" Width="80" Margin="0,0,8,0" Click="RefreshBackups_Click"/>
-            <Button Content="Create Backup" Width="100" Click="CreateBackup_Click"/>
+            <Button Content="Refresh" Width="80" Margin="0,0,8,0"
+                    Command="{Binding RefreshBackupsCommand}"/>
+            <Button Width="110" Command="{Binding CreateBackupCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Content" Value="Create Backup"/>
+                        <Setter Property="IsEnabled" Value="True"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCreatingBackup}" Value="True">
+                                <Setter Property="Content" Value="Creating..."/>
+                                <Setter Property="IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
         </StackPanel>
 
         <!-- Backup List -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
-            <StackPanel x:Name="BackupsList">
-                <TextBlock x:Name="NoBackupsMessage" Text="No backups found" 
-                           HorizontalAlignment="Center" Margin="0,20,0,0" Visibility="Visible"/>
+            <StackPanel>
+                <!-- Empty state -->
+                <TextBlock Text="No backups found."
+                           HorizontalAlignment="Center" Margin="0,20,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Backups.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- Backup cards -->
+                <ItemsControl ItemsSource="{Binding Backups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,4" Padding="6"
+                                    BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3">
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Info -->
+                                    <StackPanel Orientation="Vertical" Width="300">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:yyyy-MM-dd HH:mm} ({1})">
+                                                    <Binding Path="CreatedDate"/>
+                                                    <Binding Path="SizeInBytes"
+                                                             Converter="{StaticResource FileSizeConverter}"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
+                                        <Button Content="Restore" Width="60" Margin="0,0,4,0"
+                                                Command="{Binding DataContext.RestoreBackupCommand,
+                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                        <Button Content="Delete" Width="60"
+                                                Command="{Binding DataContext.DeleteBackupCommand,
+                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

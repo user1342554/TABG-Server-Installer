@@ -246,11 +246,8 @@ namespace TabgInstaller.Gui.Tabs
                             if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                                 cfgItem.IsEnabled = true;
                             if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
-                            {
                                 backupsItem.IsEnabled = true;
-                                if (backupsItem.Content is BackupsPanel backupsPanel)
-                                    backupsPanel.Initialize(serverDir);
-                            }
+                            // BackupsPanel is MVVM — it loads via PathChanged subscription on its ViewModel
                             if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
                                 secretTab.IsEnabled = true;
                             if (mainWindow.FindName("MainTabs") is TabControl tabs)
@@ -311,11 +308,8 @@ namespace TabgInstaller.Gui.Tabs
                 if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                     cfgItem.IsEnabled = true;
                 if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
-                {
                     backupsItem.IsEnabled = true;
-                    if (backupsItem.Content is BackupsPanel backupsPanel)
-                        backupsPanel.Initialize(serverDir);
-                }
+                // BackupsPanel is MVVM — it loads via PathChanged subscription on its ViewModel
                 if (mainWindow.FindName("SuperSecretTab") is TabItem secretTab)
                     secretTab.IsEnabled = true;
                 if (mainWindow.FindName("MainTabs") is TabControl tabs)
