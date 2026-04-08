@@ -108,6 +108,7 @@ namespace TabgInstaller.Gui
             services.AddTransient<SettingsPanelViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<AdminPanelViewModel>();
+            services.AddTransient<SuperSecretSettingsViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

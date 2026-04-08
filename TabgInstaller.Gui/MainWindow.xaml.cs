@@ -162,6 +162,7 @@ namespace TabgInstaller.Gui
             ServerModsTab.Initialize(serverDir);
             BackupsTab.Initialize(serverDir);
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
+            SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();
 
             MainTabs.SelectedIndex = 0;
         }
