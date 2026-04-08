@@ -51,7 +51,7 @@ namespace TabgInstaller.Gui.Tabs
             RingSpawnsControl.Initialize(_serverDir);
             LoadoutEditorControl.Initialize(_serverDir);
             ModSettingsControl.Initialize(_serverDir);
-            AdminPanelControl.Initialize(_serverDir);
+            // AdminPanelControl DataContext is set in MainWindow; ViewModel subscribes to PathChanged
 
             // Setup auto-save
             SetupAutoSave();

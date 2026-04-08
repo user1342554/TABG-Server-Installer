@@ -158,6 +158,7 @@ namespace TabgInstaller.Gui
             ConsoleTab.Initialize(serverDir);
             DashboardTab.DataContext = _services.GetRequiredService<DashboardViewModel>();
             ConfigTab.Initialize(serverDir);
+            ConfigTab.AdminPanelControl.DataContext = _services.GetRequiredService<AdminPanelViewModel>();
             ServerModsTab.Initialize(serverDir);
             BackupsTab.Initialize(serverDir);
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
