@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Configuration;
 using System.Data;
 using System.Windows;
@@ -25,7 +26,7 @@ namespace TabgInstaller.Gui
                     Directory.CreateDirectory(logDir);
                     File.AppendAllText(Path.Combine(logDir, "startup.log"), "UNHANDLED: " + args.Exception.ToString() + "\n");
                 }
-                catch { }
+                catch (Exception logEx) { System.Diagnostics.Trace.TraceError($"[App] Failed to write crash log: {logEx}"); }
                 MessageBox.Show("Error: " + args.Exception.ToString(), "TABG Manager Error");
                 args.Handled = true;
             };
@@ -53,7 +54,7 @@ namespace TabgInstaller.Gui
                     Directory.CreateDirectory(logDir);
                     File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
                 }
-                catch { }
+                catch (Exception logEx) { System.Diagnostics.Trace.TraceError($"[App] Failed to write startup log: {logEx}"); }
                 MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown(-1);
             }

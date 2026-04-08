@@ -19,9 +19,9 @@ using Microsoft.Win32;
 namespace TabgInstaller.Core
 {
 /// <summary>
-/// Enthält die komplette Installations-Logik.
-/// Der Installer generiert (oder validiert) vorab eine TheStarterPack.txt,
-/// damit StarterPackSetup.exe keinen FormatException‐Fehler mehr wirft.
+/// Contains the complete installation logic.
+/// The installer generates (or validates) a TheStarterPack.txt up front
+/// so that StarterPackSetup.exe no longer throws a FormatException.
 /// </summary>
     public sealed partial class Installer : IDisposable
     {
@@ -107,9 +107,9 @@ namespace TabgInstaller.Core
                      }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Silently fail, this is a best-effort detection
+                System.Diagnostics.Debug.WriteLine($"[Installer] Steam path detection failed: {ex.Message}");
             }
             
             return null;
@@ -169,7 +169,7 @@ namespace TabgInstaller.Core
         CancellationToken ct = default
     )
     {
-            var newConfigManager = new NewServerConfigManager(_log);
+        var newConfigManager = new NewServerConfigManager(_log);
 
         try
         {
@@ -366,9 +366,9 @@ namespace TabgInstaller.Core
             string actualStarterPackTag = starterPackTag;
             string actualCitrusLibTag = citrusLibTag;
 
-        if (!skipStarterPack)
-        {
-            _log.Report("• Starting StarterPack installation (using local files)...");
+            if (!skipStarterPack)
+            {
+                _log.Report("• Starting StarterPack installation (using local files)...");
 
             // Get the installer's directory and navigate to solution root
             var installerDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -487,20 +487,20 @@ namespace TabgInstaller.Core
             }
             else
             {
-                 _log.Report("  → Skipping StarterPack installation (per user choice).");
+                _log.Report("  → Skipping StarterPack installation (per user choice).");
             }
-            
+
             _log.Report("\n✔ Fresh install complete. You can now start the server with your new configuration.");
             return 0;
         }
         catch (OperationCanceledException)
         {
-            _log.Report("\n⚠ Vorgang abgebrochen.");
+            _log.Report("\n⚠ Operation cancelled.");
             return 1;
         }
         catch (Exception ex)
         {
-            _log.Report($"\n❌ Installation fehlgeschlagen:\n{ex}");
+            _log.Report($"\n❌ Installation failed:\n{ex}");
             return 2;
         }
     }
@@ -602,7 +602,7 @@ namespace TabgInstaller.Core
             return false;
 
             static bool IsDirectoryRule(string rule) =>
-                rule.EndsWith("/") || rule.EndsWith("\\") || (!string.IsNullOrEmpty(rule) && rule.IndexOf('.') == -1);
+                rule.EndsWith("/") || rule.EndsWith("\\");
         }
 
         private static void KillRunningServers(IProgress<string> log)
@@ -619,9 +619,9 @@ namespace TabgInstaller.Core
                         p.Kill(true);
                         p.WaitForExit(5000);
                         log.Report($"    ↳ Process {p.ProcessName} (PID {p.Id}) killed.");
-        }
-        catch (Exception ex)
-        {
+                    }
+                    catch (Exception ex)
+                    {
                         log.Report($"[WARN] Could not kill process {p.ProcessName} (PID {p.Id}): {ex.Message}");
                     }
                 }
@@ -667,8 +667,8 @@ namespace TabgInstaller.Core
         }
 
         private async Task FirstRun(string serverDir, CancellationToken ct)
-    {
-        var exeName = "TABG-DS.exe";
+        {
+            var exeName = "TABG-DS.exe";
             var exePath = Path.Combine(serverDir, exeName);
             if (!File.Exists(exePath))
             {
@@ -843,7 +843,7 @@ namespace TabgInstaller.Core
 
         private async Task InstallBepInExAsync(string serverDir, CancellationToken ct)
         {
-            _log.Report("<<< NEUE InstallBepInExAsync STARTET >>>");
+            _log.Report("<<< InstallBepInExAsync starting >>>");
             // 1) Log that we're starting:
             _log.Report($"• Installing BepInEx (direct HTTP download of {BepInExReleaseTag})...");
 
@@ -1084,10 +1084,10 @@ namespace TabgInstaller.Core
 
 
         private void EnsureVanillaWhitelist(string serverDir, IProgress<string> log)
-    {
-        var wlPath = Path.Combine(serverDir, "VanillaFiles.txt");
-        List<string> lines;
-        bool fileExisted = File.Exists(wlPath);
+        {
+            var wlPath = Path.Combine(serverDir, "VanillaFiles.txt");
+            List<string> lines;
+            bool fileExisted = File.Exists(wlPath);
         string[] defaultEntries = new[] 
         {
             "# Auto-generated default vanilla whitelist by TabgInstaller",
@@ -1282,11 +1282,11 @@ namespace TabgInstaller.Core
             var coreDll = Path.Combine(serverDir, "BepInEx", "core", "BepInEx.Preloader.dll");
             if (File.Exists(coreDll))
             {
-                _log.Report("• BepInEx bereits vorhanden – überspringe Installation.");
+                _log.Report("• BepInEx already present — skipping installation.");
                 return;
             }
 
-            _log.Report("• Lade BepInEx " + BepInExVersion + " herunter und entpacke …");
+            _log.Report("• Downloading and extracting BepInEx " + BepInExVersion + "...");
 
             var tempZip = Path.Combine(Path.GetTempPath(), $"BepInEx_{BepInExVersion}.zip");
             if (!File.Exists(tempZip))
@@ -1314,7 +1314,7 @@ namespace TabgInstaller.Core
             var dstBep = Path.Combine(serverDir, "BepInEx");
             CopyDirectoryRecursive(srcBep, dstBep);
 
-            _log.Report("  → BepInEx entpackt.");
+            _log.Report("  → BepInEx extracted.");
         }
 
         private static void CopyDirectoryRecursive(string sourceDir, string destDir)

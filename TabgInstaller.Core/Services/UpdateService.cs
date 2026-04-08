@@ -54,9 +54,9 @@ namespace TabgInstaller.Core.Services
 
                 return (release.TagName, remoteVersion, zipAsset.BrowserDownloadUrl);
             }
-            catch
+            catch (Exception ex)
             {
-                // Network errors, rate limits, etc. — silently skip
+                System.Diagnostics.Debug.WriteLine($"[UpdateService] Update check failed: {ex.Message}");
                 return null;
             }
         }

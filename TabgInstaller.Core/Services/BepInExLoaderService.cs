@@ -46,7 +46,7 @@ namespace TabgInstaller.Core.Services
                         _log.Report("  → Removed legacy START_SERVER_WITH_MODS.bat");
                     }
                 }
-                catch { }
+                catch (Exception ex) { _log.Report($"[WARN] Legacy batch cleanup failed (non-fatal): {ex.Message}"); }
 
                 // Create a PowerShell script that sets environment variables persistently
                 var psScriptPath = Path.Combine(serverPath, "Configure_BepInEx_Environment.ps1");
@@ -89,9 +89,9 @@ Write-Host 'You may need to restart any open terminals for changes to take effec
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    _log.Report("  → Could not set system environment variables (may require manual configuration)");
+                    _log.Report($"  → Could not set system environment variables (may require manual configuration): {ex.Message}");
                 }
 
                 // Create a small executable wrapper using pre-compiled binary

@@ -46,9 +46,9 @@ namespace TabgInstaller.Core
                         p.SetValue(obj, converted);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignore malformed values – the default remains
+                    System.Diagnostics.Debug.WriteLine($"[ConfigIO] Malformed value for property '{p.Name}': {ex.Message}");
                 }
             }
             return obj;
@@ -222,8 +222,9 @@ namespace TabgInstaller.Core
                 var obj = JsonConvert.DeserializeObject<TheStarterPackConfig>(json);
                 return obj ?? new TheStarterPackConfig();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ConfigIO] Failed to parse StarterPack JSON from '{filePath}': {ex.Message}");
                 return new TheStarterPackConfig();
             }
         }
@@ -244,7 +245,7 @@ namespace TabgInstaller.Core
                 var dict = JsonConvert.DeserializeObject<Dictionary<string,string>>(json);
                 return dict ?? new Dictionary<string,string>();
             }
-            catch { return new Dictionary<string,string>(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ConfigIO] Failed to parse ExtraSettings from '{filePath}': {ex.Message}"); return new Dictionary<string,string>(); }
         }
 
         public static void WriteExtraSettings(Dictionary<string,string> dict, string filePath)
@@ -264,7 +265,7 @@ namespace TabgInstaller.Core
                 var list = JsonConvert.DeserializeObject<List<string>>(json);
                 return list ?? new List<string>();
             }
-            catch { return new List<string>(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ConfigIO] Failed to parse PlayerPerms from '{filePath}': {ex.Message}"); return new List<string>(); }
         }
 
         public static void WritePlayerPerms(List<string> list, string filePath)

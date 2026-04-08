@@ -35,7 +35,7 @@ public static class AppSettingsService
                 return _cached;
             }
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to load settings, using defaults: {ex.Message}"); }
 
         _cached = new AppSettings();
         return _cached;
@@ -52,7 +52,7 @@ public static class AppSettingsService
             File.WriteAllText(SettingsPath, json);
             _cached = settings;
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to save settings: {ex.Message}"); }
     }
 
     public static void MarkSetupComplete(string serverPath, string clientPath, string clientModdedPath)
@@ -68,6 +68,6 @@ public static class AppSettingsService
     public static void Reset()
     {
         _cached = null;
-        try { if (File.Exists(SettingsPath)) File.Delete(SettingsPath); } catch { }
+        try { if (File.Exists(SettingsPath)) File.Delete(SettingsPath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to delete settings file: {ex.Message}"); }
     }
 }
