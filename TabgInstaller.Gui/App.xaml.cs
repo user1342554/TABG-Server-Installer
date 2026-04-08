@@ -7,6 +7,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
+using TabgInstaller.Gui.ViewModels;
 
 namespace TabgInstaller.Gui
 {
@@ -104,7 +105,7 @@ namespace TabgInstaller.Gui
             services.AddSingleton<INavigationService, NavigationService>();
 
             // ViewModels — registered as each panel is migrated
-            // (added in subsequent tasks)
+            services.AddTransient<SettingsPanelViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

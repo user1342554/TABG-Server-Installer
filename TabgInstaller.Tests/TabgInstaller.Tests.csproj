@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -17,5 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
+    <ProjectReference Include="..\TabgInstaller.Gui\TabgInstaller.Gui.csproj" />
   </ItemGroup>
 </Project>

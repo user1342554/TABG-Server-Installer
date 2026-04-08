@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
+using TabgInstaller.Gui.ViewModels;
 using TabgInstaller.Gui.Windows;
 
 namespace TabgInstaller.Gui
@@ -160,12 +161,7 @@ namespace TabgInstaller.Gui
             ConfigTab.Initialize(serverDir);
             ServerModsTab.Initialize(serverDir);
             BackupsTab.Initialize(serverDir);
-            SettingsTab.RequestHardReset += () =>
-            {
-                if (ConsoleTab.IsServerRunning)
-                    ConsoleTab.StopButton_Click(this, new RoutedEventArgs());
-                RunSetupWizard();
-            };
+            SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
 
             MainTabs.SelectedIndex = 0;
         }
