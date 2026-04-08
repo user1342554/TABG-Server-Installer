@@ -109,7 +109,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (string.IsNullOrWhiteSpace(_serverDir) || _backupService == null)
             {
-                ToastService.Instance.Error("No server directory configured.");
+                ToastServiceStatic.Instance.Error("No server directory configured.");
                 return;
             }
 
@@ -132,12 +132,12 @@ namespace TabgInstaller.Gui.Tabs
 
                 if (success)
                 {
-                    ToastService.Instance.Success("Backup created successfully!");
+                    ToastServiceStatic.Instance.Success("Backup created successfully!");
                     LoadBackups(); // Refresh the list
                 }
                 else
                 {
-                    ToastService.Instance.Error("Failed to create backup. Check the log for details.");
+                    ToastServiceStatic.Instance.Error("Failed to create backup. Check the log for details.");
                 }
             }
             finally
@@ -184,11 +184,11 @@ namespace TabgInstaller.Gui.Tabs
 
                 if (success)
                 {
-                    ToastService.Instance.Success("Backup restored successfully!");
+                    ToastServiceStatic.Instance.Success("Backup restored successfully!");
                 }
                 else
                 {
-                    ToastService.Instance.Error("Failed to restore backup. Check the log for details.");
+                    ToastServiceStatic.Instance.Error("Failed to restore backup. Check the log for details.");
                 }
             }
             finally
@@ -220,12 +220,12 @@ namespace TabgInstaller.Gui.Tabs
 
             if (success)
             {
-                ToastService.Instance.Success("Backup deleted successfully!");
+                ToastServiceStatic.Instance.Success("Backup deleted successfully!");
                 LoadBackups(); // Refresh the list
             }
             else
             {
-                ToastService.Instance.Error("Failed to delete backup.");
+                ToastServiceStatic.Instance.Error("Failed to delete backup.");
             }
         }
 

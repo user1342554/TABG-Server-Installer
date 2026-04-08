@@ -13,7 +13,7 @@ namespace TabgInstaller.Core.Services
 {
     public record UpdateInfo(string TagName, Version Version, string DownloadUrl, string? ReleaseNotes);
 
-    public class UpdateService
+    public class UpdateService : IUpdateService
     {
         private const string Owner = "user1342554";
         private const string Repo = "TABG-Server-Installer";

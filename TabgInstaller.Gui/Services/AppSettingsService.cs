@@ -13,17 +13,22 @@ public class AppSettings
     public string? SkippedUpdateVersion { get; set; }
 }
 
-public static class AppSettingsService
+public class AppSettingsService : IAppSettingsService
 {
-    private static readonly string SettingsDir = Path.Combine(
+    private readonly string SettingsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "TabgInstaller");
 
-    private static readonly string SettingsPath = Path.Combine(SettingsDir, "settings.json");
+    private readonly string SettingsPath;
 
-    private static AppSettings? _cached;
+    private AppSettings? _cached;
 
-    public static AppSettings Load()
+    public AppSettingsService()
+    {
+        SettingsPath = Path.Combine(SettingsDir, "settings.json");
+    }
+
+    public AppSettings Load()
     {
         if (_cached != null) return _cached;
 
@@ -42,7 +47,7 @@ public static class AppSettingsService
         return _cached;
     }
 
-    public static void Save(AppSettings settings)
+    public void Save(AppSettings settings)
     {
         try
         {
@@ -56,7 +61,7 @@ public static class AppSettingsService
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to save settings: {ex.Message}"); }
     }
 
-    public static void MarkSetupComplete(string serverPath, string clientPath, string clientModdedPath)
+    public void MarkSetupComplete(string serverPath, string clientPath, string clientModdedPath)
     {
         var settings = Load();
         settings.SetupCompleted = true;
@@ -66,9 +71,19 @@ public static class AppSettingsService
         Save(settings);
     }
 
-    public static void Reset()
+    public void Reset()
     {
         _cached = null;
         try { if (File.Exists(SettingsPath)) File.Delete(SettingsPath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to delete settings file: {ex.Message}"); }
     }
+}
+
+// Temporary backward compatibility — remove when all panels are migrated
+public static class AppSettingsServiceStatic
+{
+    private static readonly AppSettingsService _instance = new();
+    public static AppSettings Load() => _instance.Load();
+    public static void Save(AppSettings settings) => _instance.Save(settings);
+    public static void MarkSetupComplete(string s, string c, string m) => _instance.MarkSetupComplete(s, c, m);
+    public static void Reset() => _instance.Reset();
 }

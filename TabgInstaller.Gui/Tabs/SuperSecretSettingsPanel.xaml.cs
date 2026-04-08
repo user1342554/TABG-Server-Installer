@@ -87,16 +87,16 @@ namespace TabgInstaller.Gui.Tabs
                         
                         if (success)
                         {
-                            ToastService.Instance.Success("Sigma Mode completed successfully!");
+                            ToastServiceStatic.Instance.Success("Sigma Mode completed successfully!");
                         }
                         else
                         {
-                            ToastService.Instance.Warning("Sigma Mode completed with issues. Check the log for details.");
+                            ToastServiceStatic.Instance.Warning("Sigma Mode completed with issues. Check the log for details.");
                         }
                     }
                     catch (System.Exception ex)
                     {
-                        ToastService.Instance.Error($"Sigma Mode error: {ex.Message}");
+                        ToastServiceStatic.Instance.Error($"Sigma Mode error: {ex.Message}");
                     }
                     finally
                     {

@@ -17,7 +17,7 @@ namespace TabgInstaller.Gui.Tabs
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            var settings = AppSettingsService.Load();
+            var settings = AppSettingsServiceStatic.Load();
             TxtServerPath.Text = settings.ServerPath;
             TxtClientPath.Text = string.IsNullOrEmpty(settings.ClientPath) ? "(not set)" : settings.ClientPath;
             TxtModdedPath.Text = string.IsNullOrEmpty(settings.ClientModdedPath) ? "(not set)" : settings.ClientModdedPath;
@@ -43,7 +43,7 @@ namespace TabgInstaller.Gui.Tabs
 
             if (result == MessageBoxResult.Yes)
             {
-                AppSettingsService.Reset();
+                AppSettingsServiceStatic.Reset();
                 RequestHardReset?.Invoke();
             }
         }

@@ -45,7 +45,7 @@ namespace TabgInstaller.Gui.Tabs
         private void RefreshPlayers_Click(object sender, RoutedEventArgs e)
         {
             RefreshKnownPlayers();
-            ToastService.Instance.Info($"Scanned Guestbooks — {_knownPlayers.Players.Count} players known");
+            ToastServiceStatic.Instance.Info($"Scanned Guestbooks — {_knownPlayers.Players.Count} players known");
         }
 
         private void LoadAdmins()
@@ -86,20 +86,20 @@ namespace TabgInstaller.Gui.Tabs
             var playerName = CmbPlayerName.Text?.Trim();
             if (string.IsNullOrEmpty(playerName))
             {
-                ToastService.Instance.Warning("Please select or type a player name.");
+                ToastServiceStatic.Instance.Warning("Please select or type a player name.");
                 return;
             }
 
             var epicId = _knownPlayers.ResolveEpicId(playerName);
             if (epicId == null)
             {
-                ToastService.Instance.Warning($"Player '{playerName}' not found in Guestbooks. Use manual entry below.");
+                ToastServiceStatic.Instance.Warning($"Player '{playerName}' not found in Guestbooks. Use manual entry below.");
                 return;
             }
 
             if (_admins.Any(a => a.EpicId.Equals(epicId, StringComparison.OrdinalIgnoreCase)))
             {
-                ToastService.Instance.Warning($"'{playerName}' is already an admin.");
+                ToastServiceStatic.Instance.Warning($"'{playerName}' is already an admin.");
                 return;
             }
 
@@ -117,13 +117,13 @@ namespace TabgInstaller.Gui.Tabs
 
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(epicId))
             {
-                ToastService.Instance.Warning("Please enter both a name and an Epic ID.");
+                ToastServiceStatic.Instance.Warning("Please enter both a name and an Epic ID.");
                 return;
             }
 
             if (_admins.Any(a => a.EpicId.Equals(epicId, StringComparison.OrdinalIgnoreCase)))
             {
-                ToastService.Instance.Warning($"'{name}' is already an admin.");
+                ToastServiceStatic.Instance.Warning($"'{name}' is already an admin.");
                 return;
             }
 
@@ -166,12 +166,12 @@ namespace TabgInstaller.Gui.Tabs
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 var json = JsonSerializer.Serialize(root, options);
                 File.WriteAllText(GetPermsPath(), json);
-                ToastService.Instance.Success("Admins saved. Restart server to apply changes.");
+                ToastServiceStatic.Instance.Success("Admins saved. Restart server to apply changes.");
                 TxtStatus.Text = $"Saved {_admins.Count} admin(s)";
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to save admins: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to save admins: {ex.Message}");
             }
         }
 

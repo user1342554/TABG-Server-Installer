@@ -9,7 +9,7 @@ using TabgInstaller.Core.Services;
 
 namespace TabgInstaller.Core.Services
 {
-    public class ServerProcessService : IDisposable
+    public class ServerProcessService : IServerProcessService, IDisposable
     {
         private const int MaxLogEntries = 50_000;
 

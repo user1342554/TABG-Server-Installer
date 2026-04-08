@@ -17,7 +17,7 @@ namespace TabgInstaller.Core.Services
         public string EpicId { get; set; } = "";
     }
 
-    public sealed class KnownPlayersService
+    public sealed class KnownPlayersService : IKnownPlayersService
     {
         private static readonly Regex GuestbookLineRegex = new(
             @"^([0-9a-fA-F]{32}):(.+?),\s*Playfab=",
@@ -46,7 +46,11 @@ namespace TabgInstaller.Core.Services
                 var json = File.ReadAllText(_persistPath);
                 _players = JsonSerializer.Deserialize<List<KnownPlayer>>(json) ?? new();
             }
-            catch { _players = new(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to load known players from '{_persistPath}': {ex.Message}");
+                _players = new();
+            }
         }
 
         private void Save()
@@ -70,7 +74,10 @@ namespace TabgInstaller.Core.Services
                 guestbooks = Directory.GetFiles(parent, "Guestbook.txt", SearchOption.AllDirectories)
                     .ToList();
             }
-            catch { /* permission errors */ }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to scan for Guestbook.txt files in '{parent}': {ex.Message}");
+            }
 
             // Also scan the current server dir itself
             var currentGb = Path.Combine(currentServerDir, "Guestbook.txt");
@@ -105,7 +112,10 @@ namespace TabgInstaller.Core.Services
                         }
                     }
                 }
-                catch { /* skip unreadable files */ }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[WARN] Failed to read guestbook '{gbPath}': {ex.Message}");
+                }
             }
 
             _players = _players.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList();

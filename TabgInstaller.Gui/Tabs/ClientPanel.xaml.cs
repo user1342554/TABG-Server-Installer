@@ -19,6 +19,7 @@ namespace TabgInstaller.Gui.Tabs
         private string _pluginsDir = "";
 
         private class ModEntry { public string Name { get; set; } = ""; public bool IsEnabled { get; set; } }
+        private class BundledEntry { public string Name { get; set; } = ""; public bool IsSelected { get; set; } }
 
         public ClientPanel()
         {
@@ -28,7 +29,7 @@ namespace TabgInstaller.Gui.Tabs
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            var settings = AppSettingsService.Load();
+            var settings = AppSettingsServiceStatic.Load();
             if (!string.IsNullOrEmpty(settings.ClientPath))
                 ClientPathBox.Text = settings.ClientPath;
             else
@@ -75,10 +76,10 @@ namespace TabgInstaller.Gui.Tabs
                     _pluginsDir = Path.Combine(_moddedDir, "BepInEx", "plugins");
                 }
 
-                var settings = AppSettingsService.Load();
+                var settings = AppSettingsServiceStatic.Load();
                 settings.ClientPath = _clientDir;
                 settings.ClientModdedPath = _moddedDir;
-                AppSettingsService.Save(settings);
+                AppSettingsServiceStatic.Save(settings);
 
                 RefreshAll();
             }
@@ -131,11 +132,15 @@ namespace TabgInstaller.Gui.Tabs
                     installed.Add(Path.GetFileName(f));
 
             // Show known mods that aren't installed yet and can be found
-            var available = new List<string>();
+            var available = new List<BundledEntry>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var dll in KnownClientMods)
             {
                 if (!installed.Contains(dll) && FindDllPath(dll) != null)
-                    available.Add(dll);
+                {
+                    available.Add(new BundledEntry { Name = dll });
+                    seen.Add(dll);
+                }
             }
 
             // Also add any DLLs from bundled dir not in the known list
@@ -145,8 +150,11 @@ namespace TabgInstaller.Gui.Tabs
                 foreach (var f in Directory.GetFiles(bundledDir, "*.dll"))
                 {
                     var name = Path.GetFileName(f);
-                    if (!installed.Contains(name) && !available.Contains(name))
-                        available.Add(name);
+                    if (!installed.Contains(name) && !seen.Contains(name))
+                    {
+                        available.Add(new BundledEntry { Name = name });
+                        seen.Add(name);
+                    }
                 }
             }
 
@@ -194,7 +202,7 @@ namespace TabgInstaller.Gui.Tabs
                 }
                 catch (Exception ex)
                 {
-                    ToastService.Instance.Error($"Failed to toggle mod: {ex.Message}");
+                    ToastServiceStatic.Instance.Error($"Failed to toggle mod: {ex.Message}");
                     me.IsEnabled = !me.IsEnabled;
                     cb.IsChecked = me.IsEnabled;
                 }
@@ -208,12 +216,12 @@ namespace TabgInstaller.Gui.Tabs
 
             if (string.IsNullOrWhiteSpace(_clientDir) || !Directory.Exists(_clientDir))
             {
-                ToastService.Instance.Warning("Please enter a valid TABG Steam folder path.");
+                ToastServiceStatic.Instance.Warning("Please enter a valid TABG Steam folder path.");
                 return;
             }
             if (string.IsNullOrWhiteSpace(_moddedDir))
             {
-                ToastService.Instance.Warning("No modded folder path set.");
+                ToastServiceStatic.Instance.Warning("No modded folder path set.");
                 return;
             }
 
@@ -235,21 +243,21 @@ namespace TabgInstaller.Gui.Tabs
                 if (success)
                 {
                     _pluginsDir = Path.Combine(_moddedDir, "BepInEx", "plugins");
-                    var settings = AppSettingsService.Load();
+                    var settings = AppSettingsServiceStatic.Load();
                     settings.ClientPath = _clientDir;
                     settings.ClientModdedPath = _moddedDir;
-                    AppSettingsService.Save(settings);
+                    AppSettingsServiceStatic.Save(settings);
 
                     RefreshAll();
                 }
                 else
                 {
-                    ToastService.Instance.Error("Client setup failed.");
+                    ToastServiceStatic.Instance.Error("Client setup failed.");
                 }
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Error: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Error: {ex.Message}");
             }
             finally
             {
@@ -261,27 +269,30 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (string.IsNullOrEmpty(_pluginsDir) || !Directory.Exists(_pluginsDir))
             {
-                ToastService.Instance.Warning("Run Initial Setup first to create the modded TABG copy.");
+                ToastServiceStatic.Instance.Warning("Run Initial Setup first to create the modded TABG copy.");
                 return;
             }
 
             int count = 0;
-            foreach (string name in LstBundled.SelectedItems)
+            if (LstBundled.ItemsSource is List<BundledEntry> entries)
             {
-                var srcPath = FindDllPath(name);
-                if (srcPath == null) continue;
-                var dst = Path.Combine(_pluginsDir, name);
-                try
+                foreach (var entry in entries.Where(x => x.IsSelected))
                 {
-                    if (File.Exists(srcPath))
+                    var srcPath = FindDllPath(entry.Name);
+                    if (srcPath == null) continue;
+                    var dst = Path.Combine(_pluginsDir, entry.Name);
+                    try
                     {
-                        File.Copy(srcPath, dst, true);
-                        count++;
+                        if (File.Exists(srcPath))
+                        {
+                            File.Copy(srcPath, dst, true);
+                            count++;
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    ToastService.Instance.Error($"Failed to install {name}: {ex.Message}");
+                    catch (Exception ex)
+                    {
+                        ToastServiceStatic.Instance.Error($"Failed to install {entry.Name}: {ex.Message}");
+                    }
                 }
             }
 
@@ -292,7 +303,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (string.IsNullOrEmpty(_pluginsDir) || !Directory.Exists(_pluginsDir))
             {
-                ToastService.Instance.Warning("Run Initial Setup first.");
+                ToastServiceStatic.Instance.Warning("Run Initial Setup first.");
                 return;
             }
 
@@ -306,7 +317,7 @@ namespace TabgInstaller.Gui.Tabs
                 }
                 catch (Exception ex)
                 {
-                    ToastService.Instance.Error($"Failed: {ex.Message}");
+                    ToastServiceStatic.Instance.Error($"Failed: {ex.Message}");
                 }
             }
         }
@@ -321,7 +332,7 @@ namespace TabgInstaller.Gui.Tabs
                         ? Path.Combine(_pluginsDir, me.Name)
                         : Path.Combine(_pluginsDir, "disabled", me.Name);
                     try { if (File.Exists(path)) { File.Delete(path); RefreshAll(); } }
-                    catch (Exception ex) { ToastService.Instance.Error($"Failed: {ex.Message}"); }
+                    catch (Exception ex) { ToastServiceStatic.Instance.Error($"Failed: {ex.Message}"); }
                 }
             }
         }
@@ -331,9 +342,9 @@ namespace TabgInstaller.Gui.Tabs
         private void BtnLaunch_Click(object sender, RoutedEventArgs e)
         {
             var exe = Path.Combine(_moddedDir, "TotallyAccurateBattlegrounds.exe");
-            if (!File.Exists(exe)) { ToastService.Instance.Warning("Modded TABG not found. Run Initial Setup first."); return; }
+            if (!File.Exists(exe)) { ToastServiceStatic.Instance.Warning("Modded TABG not found. Run Initial Setup first."); return; }
             try { Process.Start(new ProcessStartInfo { FileName = exe, WorkingDirectory = _moddedDir, UseShellExecute = true }); }
-            catch (Exception ex) { ToastService.Instance.Error($"Failed to launch: {ex.Message}"); }
+            catch (Exception ex) { ToastServiceStatic.Instance.Error($"Failed to launch: {ex.Message}"); }
         }
 
         private void OpenModdedFolder_Click(object sender, RoutedEventArgs e)

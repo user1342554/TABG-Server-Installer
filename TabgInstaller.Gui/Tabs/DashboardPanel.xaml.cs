@@ -66,17 +66,17 @@ namespace TabgInstaller.Gui.Tabs
 
         private void BtnLaunchClient_Click(object sender, RoutedEventArgs e)
         {
-            var settings = AppSettingsService.Load();
+            var settings = AppSettingsServiceStatic.Load();
             var moddedDir = settings.ClientModdedPath;
             if (string.IsNullOrEmpty(moddedDir))
             {
-                ToastService.Instance.Warning("Client mods not set up. Go to the Client Mods tab first.");
+                ToastServiceStatic.Instance.Warning("Client mods not set up. Go to the Client Mods tab first.");
                 return;
             }
             var exe = Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe");
             if (!File.Exists(exe))
             {
-                ToastService.Instance.Warning("Modded TABG not found. Install client mods first.");
+                ToastServiceStatic.Instance.Warning("Modded TABG not found. Install client mods first.");
                 return;
             }
             try
@@ -85,7 +85,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to launch: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to launch: {ex.Message}");
             }
         }
 

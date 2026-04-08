@@ -19,7 +19,7 @@ namespace TabgInstaller.Gui
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             // Initialize toast system
-            ToastService.Instance.Initialize((msg, type, dur) =>
+            ToastServiceStatic.Instance.Initialize((msg, type, dur) =>
                 Dispatcher.Invoke(() => ToastControl.Show(msg, type, dur)));
 
             // Run update check
@@ -30,7 +30,7 @@ namespace TabgInstaller.Gui
                 if (updateInfo != null)
                 {
                     // Check if user previously skipped this version
-                    var updateSettings = AppSettingsService.Load();
+                    var updateSettings = AppSettingsServiceStatic.Load();
                     if (updateInfo.TagName == updateSettings.SkippedUpdateVersion)
                     {
                         // Skipped — don't prompt
@@ -41,7 +41,7 @@ namespace TabgInstaller.Gui
                         if (updateSettings.SkippedUpdateVersion != null)
                         {
                             updateSettings.SkippedUpdateVersion = null;
-                            AppSettingsService.Save(updateSettings);
+                            AppSettingsServiceStatic.Save(updateSettings);
                         }
 
                         var current = UpdateService.GetCurrentVersion();
@@ -59,14 +59,14 @@ namespace TabgInstaller.Gui
                             }
                             else
                             {
-                                ToastService.Instance.Error("Update failed. You can download manually from GitHub.");
+                                ToastServiceStatic.Instance.Error("Update failed. You can download manually from GitHub.");
                                 Title = "TABG Manager";
                             }
                         }
                         else if (dialog.SkippedVersion != null)
                         {
                             updateSettings.SkippedUpdateVersion = dialog.SkippedVersion;
-                            AppSettingsService.Save(updateSettings);
+                            AppSettingsServiceStatic.Save(updateSettings);
                         }
                     }
                 }
@@ -77,7 +77,7 @@ namespace TabgInstaller.Gui
             }
 
             // Check if setup is needed
-            var settings = AppSettingsService.Load();
+            var settings = AppSettingsServiceStatic.Load();
             if (!settings.SetupCompleted || string.IsNullOrEmpty(settings.ServerPath) || !Directory.Exists(settings.ServerPath))
             {
                 RunSetupWizard();
@@ -100,19 +100,19 @@ namespace TabgInstaller.Gui
 
             if (result == true && wizard.SetupCompleted)
             {
-                var settings = AppSettingsService.Load();
+                var settings = AppSettingsServiceStatic.Load();
                 InitializeAllPanels(settings.ServerPath);
             }
             else
             {
-                var settings = AppSettingsService.Load();
+                var settings = AppSettingsServiceStatic.Load();
                 if (!string.IsNullOrEmpty(settings.ServerPath) && Directory.Exists(settings.ServerPath))
                 {
                     InitializeAllPanels(settings.ServerPath);
                 }
                 else
                 {
-                    ToastService.Instance.Error("Setup was not completed. The app needs a server path to function.");
+                    ToastServiceStatic.Instance.Error("Setup was not completed. The app needs a server path to function.");
                     Application.Current.Shutdown();
                 }
             }

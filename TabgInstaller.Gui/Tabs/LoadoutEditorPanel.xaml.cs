@@ -281,7 +281,7 @@ namespace TabgInstaller.Gui.Tabs
                 var raw = txt.Text.Trim();
                 if (string.IsNullOrEmpty(raw))
                 {
-                    ToastService.Instance.Warning("No text entered.");
+                    ToastServiceStatic.Instance.Warning("No text entered.");
                     return;
                 }
 

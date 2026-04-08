@@ -15,6 +15,7 @@ namespace TabgInstaller.Gui.Tabs
         private string _pluginsDir = "";
 
         private class PluginEntry { public string Name { get; set; } = ""; public bool IsEnabled { get; set; } }
+        private class BundledEntry { public string Name { get; set; } = ""; public bool IsSelected { get; set; } }
 
         public ServerModsPanel()
         {
@@ -57,7 +58,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Error loading plugins: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Error loading plugins: {ex.Message}");
             }
         }
 
@@ -84,11 +85,15 @@ namespace TabgInstaller.Gui.Tabs
                     installed.Add(Path.GetFileName(f));
 
             // Show known plugins that aren't installed yet and can be found in bundled dirs
-            var available = new List<string>();
+            var available = new List<BundledEntry>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var dll in KnownServerPlugins)
             {
                 if (!installed.Contains(dll) && FindDllPath(dll, "plugins") != null)
-                    available.Add(dll);
+                {
+                    available.Add(new BundledEntry { Name = dll });
+                    seen.Add(dll);
+                }
             }
 
             // Also add any DLLs from bundled dir that aren't in the known list
@@ -98,8 +103,11 @@ namespace TabgInstaller.Gui.Tabs
                 foreach (var f in Directory.GetFiles(bundledDir, "*.dll"))
                 {
                     var name = Path.GetFileName(f);
-                    if (!installed.Contains(name) && !available.Contains(name))
-                        available.Add(name);
+                    if (!installed.Contains(name) && !seen.Contains(name))
+                    {
+                        available.Add(new BundledEntry { Name = name });
+                        seen.Add(name);
+                    }
                 }
             }
 
@@ -147,7 +155,7 @@ namespace TabgInstaller.Gui.Tabs
                 }
                 catch (Exception ex)
                 {
-                    ToastService.Instance.Error($"Failed to toggle plugin: {ex.Message}");
+                    ToastServiceStatic.Instance.Error($"Failed to toggle plugin: {ex.Message}");
                     pe.IsEnabled = !pe.IsEnabled;
                     cb.IsChecked = pe.IsEnabled;
                 }
@@ -157,19 +165,22 @@ namespace TabgInstaller.Gui.Tabs
         private void InstallBundled_Click(object sender, RoutedEventArgs e)
         {
             int count = 0;
-            foreach (string name in LstBundled.SelectedItems)
+            if (LstBundled.ItemsSource is List<BundledEntry> entries)
             {
-                var srcPath = FindDllPath(name, "plugins");
-                if (srcPath == null) continue;
-                var dst = Path.Combine(_pluginsDir, name);
-                try
+                foreach (var entry in entries.Where(x => x.IsSelected))
                 {
-                    File.Copy(srcPath, dst, true);
-                    count++;
-                }
-                catch (Exception ex)
-                {
-                    ToastService.Instance.Error($"Failed to install {name}: {ex.Message}");
+                    var srcPath = FindDllPath(entry.Name, "plugins");
+                    if (srcPath == null) continue;
+                    var dst = Path.Combine(_pluginsDir, entry.Name);
+                    try
+                    {
+                        File.Copy(srcPath, dst, true);
+                        count++;
+                    }
+                    catch (Exception ex)
+                    {
+                        ToastServiceStatic.Instance.Error($"Failed to install {entry.Name}: {ex.Message}");
+                    }
                 }
             }
 
@@ -194,7 +205,7 @@ namespace TabgInstaller.Gui.Tabs
                 }
                 catch (Exception ex)
                 {
-                    ToastService.Instance.Error($"Failed to add plugin: {ex.Message}");
+                    ToastServiceStatic.Instance.Error($"Failed to add plugin: {ex.Message}");
                 }
             }
         }
@@ -219,7 +230,7 @@ namespace TabgInstaller.Gui.Tabs
                     }
                     catch (Exception ex)
                     {
-                        ToastService.Instance.Error($"Failed to remove plugin: {ex.Message}");
+                        ToastServiceStatic.Instance.Error($"Failed to remove plugin: {ex.Message}");
                     }
                 }
             }

@@ -173,7 +173,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to start: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to start: {ex.Message}");
             }
         }
 
@@ -220,7 +220,7 @@ namespace TabgInstaller.Gui.Tabs
                     }
                     catch (Exception ex)
                     {
-                        ToastService.Instance.Error($"Failed to restart: {ex.Message}");
+                        ToastServiceStatic.Instance.Error($"Failed to restart: {ex.Message}");
                     }
                 }));
             }
@@ -283,12 +283,12 @@ namespace TabgInstaller.Gui.Tabs
                     }
 
                     File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    ToastService.Instance.Success($"Log exported to {dialog.FileName}");
+                    ToastServiceStatic.Instance.Success($"Log exported to {dialog.FileName}");
                 }
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to export log: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to export log: {ex.Message}");
             }
         }
     }

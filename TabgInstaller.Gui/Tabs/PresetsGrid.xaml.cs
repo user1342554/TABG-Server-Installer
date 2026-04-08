@@ -77,13 +77,13 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (string.IsNullOrEmpty(_serverDir))
             {
-                ToastService.Instance.Warning("No server directory set. Please install/select a server first.");
+                ToastServiceStatic.Instance.Warning("No server directory set. Please install/select a server first.");
                 return;
             }
 
             if (LstTemplates.SelectedItem is not BuiltInPresets.BuiltInPreset preset)
             {
-                ToastService.Instance.Warning("Please select a template to apply.");
+                ToastServiceStatic.Instance.Warning("Please select a template to apply.");
                 return;
             }
 
@@ -108,11 +108,11 @@ namespace TabgInstaller.Gui.Tabs
                     mainWindow.ConfigTab.Initialize(_serverDir);
                 }
 
-                ToastService.Instance.Success($"Template '{preset.Name}' applied successfully. All settings have been reloaded.");
+                ToastServiceStatic.Instance.Success($"Template '{preset.Name}' applied successfully. All settings have been reloaded.");
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to apply template: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to apply template: {ex.Message}");
             }
         }
 
@@ -129,7 +129,7 @@ namespace TabgInstaller.Gui.Tabs
             var selectedPaths = _fileEntries.Where(f => f.IsSelected).Select(f => f.RelativePath).ToArray();
             if (selectedPaths.Length == 0)
             {
-                ToastService.Instance.Warning("Please select at least one file to include.");
+                ToastServiceStatic.Instance.Warning("Please select at least one file to include.");
                 return;
             }
 
@@ -137,11 +137,11 @@ namespace TabgInstaller.Gui.Tabs
             {
                 PresetManager.SavePreset(_serverDir, presetName, selectedPaths);
                 RefreshPresets();
-                ToastService.Instance.Success($"Preset '{presetName}' saved.");
+                ToastServiceStatic.Instance.Success($"Preset '{presetName}' saved.");
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to save preset: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to save preset: {ex.Message}");
             }
         }
 
@@ -149,7 +149,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (LstPresets.SelectedItem is not string presetName)
             {
-                ToastService.Instance.Warning("Please select a preset to load.");
+                ToastServiceStatic.Instance.Warning("Please select a preset to load.");
                 return;
             }
 
@@ -166,11 +166,11 @@ namespace TabgInstaller.Gui.Tabs
                     mainWindow.ConfigTab.Initialize(_serverDir);
                 }
 
-                ToastService.Instance.Success($"Preset '{presetName}' loaded.");
+                ToastServiceStatic.Instance.Success($"Preset '{presetName}' loaded.");
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to load preset: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to load preset: {ex.Message}");
             }
         }
 
@@ -178,7 +178,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (LstPresets.SelectedItem is not string presetName)
             {
-                ToastService.Instance.Warning("Please select a preset to delete.");
+                ToastServiceStatic.Instance.Warning("Please select a preset to delete.");
                 return;
             }
 
@@ -192,7 +192,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Failed to delete preset: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Failed to delete preset: {ex.Message}");
             }
         }
     }

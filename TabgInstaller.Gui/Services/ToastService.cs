@@ -4,7 +4,7 @@ namespace TabgInstaller.Gui.Services
 {
     public enum ToastType { Success, Error, Warning, Info }
 
-    public sealed class ToastService
+    public sealed class ToastService : IToastService
     {
         public static ToastService Instance { get; } = new();
 
@@ -24,5 +24,11 @@ namespace TabgInstaller.Gui.Services
         public void Error(string message) => Show(message, ToastType.Error);
         public void Warning(string message) => Show(message, ToastType.Warning);
         public void Info(string message) => Show(message, ToastType.Info);
+    }
+
+    // Temporary backward compatibility — remove when all panels are migrated
+    public static class ToastServiceStatic
+    {
+        public static ToastService Instance { get; } = new();
     }
 }

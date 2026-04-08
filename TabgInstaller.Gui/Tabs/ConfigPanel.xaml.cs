@@ -161,7 +161,7 @@ namespace TabgInstaller.Gui.Tabs
                 var path = Path.Combine(_serverDir, "game_settings.txt");
                 if (!File.Exists(path))
                 {
-                    ToastService.Instance.Warning("game_settings.txt not found. Save settings first to generate the file.");
+                    ToastServiceStatic.Instance.Warning("game_settings.txt not found. Save settings first to generate the file.");
                     return;
                 }
 
@@ -174,7 +174,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Could not open file: {ex.Message}");
+                ToastServiceStatic.Instance.Error($"Could not open file: {ex.Message}");
             }
         }
 
