@@ -28,58 +28,79 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:SettingPropertyVM}">
                             <Grid Margin="2" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="220"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                
-                                <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" 
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"
                                            ToolTip="{Binding Name, Converter={StaticResource SettingToTooltip}}"/>
-                                
+
                                 <!-- CheckBox for booleans -->
-                                <CheckBox Grid.Column="1"
+                                <CheckBox Grid.Row="0" Grid.Column="1"
                                           IsChecked="{Binding BoolValue, Mode=TwoWay}"
-                                          Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis}, 
+                                          Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis},
                                                        ConverterParameter=CheckBox}"/>
-                                
+
                                 <!-- ComboBox for dropdowns -->
-                                <ComboBox Grid.Column="1"
+                                <ComboBox Grid.Row="0" Grid.Column="1"
                                           ItemsSource="{Binding ComboBoxItems}"
                                           Text="{Binding ValueString, Mode=TwoWay}"
                                           IsEditable="True"
-                                          Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis}, 
+                                          Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis},
                                                        ConverterParameter=ComboBox}"/>
-                                
+
                                 <!-- Slider for percentages -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                            Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis}, 
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal"
+                                            Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis},
                                                          ConverterParameter=Slider}">
-                                    <Slider Width="150" 
-                                            Minimum="{Binding SliderMinimum}" 
+                                    <Slider Width="150"
+                                            Minimum="{Binding SliderMinimum}"
                                             Maximum="{Binding SliderMaximum}"
-                                            Value="{Binding ValueString, Mode=TwoWay, 
+                                            Value="{Binding ValueString, Mode=TwoWay,
                                                     Converter={StaticResource FloatConverter}}"
                                             TickFrequency="0.1" IsSnapToTickEnabled="True"/>
                                     <TextBlock Text="{Binding ValueString}" Margin="5,0" VerticalAlignment="Center" Width="40"/>
                                 </StackPanel>
-                                
+
                                 <!-- NumericUpDown for numbers -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                            Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis}, 
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal"
+                                            Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis},
                                                          ConverterParameter=NumericUpDown}">
-                                    <TextBox Width="100" 
+                                    <TextBox Width="100"
                                              Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                                    <TextBlock Text="{Binding NumericMinimum, StringFormat='(Min: {0})'}" 
+                                    <TextBlock Text="{Binding NumericMinimum, StringFormat='(Min: {0})'}"
                                                Margin="5,0" VerticalAlignment="Center" Foreground="Gray" FontSize="10"/>
-                                    <TextBlock Text="{Binding NumericMaximum, StringFormat='Max: {0})'}" 
+                                    <TextBlock Text="{Binding NumericMaximum, StringFormat='Max: {0})'}"
                                                VerticalAlignment="Center" Foreground="Gray" FontSize="10"/>
                                 </StackPanel>
-                                
+
                                 <!-- TextBox for everything else -->
-                                <TextBox Grid.Column="1"
+                                <TextBox Grid.Row="0" Grid.Column="1"
                                          Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                         Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis}, 
+                                         Visibility="{Binding ControlType, Converter={StaticResource ControlTypeToVis},
                                                       ConverterParameter=TextBox}"/>
+
+                                <!-- Validation warnings -->
+                                <ItemsControl Grid.Row="1" Grid.ColumnSpan="2"
+                                              ItemsSource="{Binding ValidationWarnings}"
+                                              Visibility="{Binding HasWarnings, Converter={StaticResource BoolToVis}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#FFF9E6" BorderBrush="#D4A017" BorderThickness="1,0,0,0"
+                                                    Padding="8,4" Margin="0,2,0,0" CornerRadius="3">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#x26A0; " Foreground="#8A6D00" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding}" Foreground="#8A6D00" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

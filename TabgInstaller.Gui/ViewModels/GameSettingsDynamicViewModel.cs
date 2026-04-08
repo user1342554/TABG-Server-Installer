@@ -1,7 +1,10 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using TabgInstaller.Core.Model;
+using TabgInstaller.Core.Services;
 using System.Reflection;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -9,9 +12,11 @@ namespace TabgInstaller.Gui.ViewModels
     public class GameSettingsDynamicViewModel : INotifyPropertyChanged
     {
         private readonly GameSettingsData _model;
+        private readonly ConfigValidationService _validationService = new();
         private bool _showAdvanced = false;
         private SettingPropertyVM? _gameModeProperty;
         private bool _suppressPropertyEvents = false;
+        private bool _isValidating = false;
         
         public ObservableCollection<SettingPropertyVM> Properties { get; }
 
@@ -146,10 +151,87 @@ namespace TabgInstaller.Gui.ViewModels
                     OnPropertyChanged(nameof(ShowGameModeWarning));
                     OnPropertyChanged(nameof(GameModeWarningText));
                 }
+
+                // Run validation on every property change
+                RunValidation();
             }
             catch
             {
                 // Ignore property change cascade errors
+            }
+        }
+
+        private void RunValidation()
+        {
+            if (_isValidating) return;
+            _isValidating = true;
+            try
+            {
+                // Build plain dictionaries from the VM properties for the core validation service
+                var values = new Dictionary<string, object>();
+                var numericMins = new Dictionary<string, double>();
+                var numericMaxes = new Dictionary<string, double>();
+
+                foreach (var prop in Properties)
+                {
+                    try
+                    {
+                        if (prop.IsBool)
+                        {
+                            values[prop.Name] = prop.BoolValue;
+                        }
+                        else if (prop.PropType == typeof(int))
+                        {
+                            if (int.TryParse(prop.ValueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var iv))
+                                values[prop.Name] = iv;
+                            else
+                                values[prop.Name] = prop.ValueString;
+                        }
+                        else if (prop.PropType == typeof(float))
+                        {
+                            if (float.TryParse(prop.ValueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var fv))
+                                values[prop.Name] = (double)fv;
+                            else
+                                values[prop.Name] = prop.ValueString;
+                        }
+                        else
+                        {
+                            values[prop.Name] = prop.ValueString;
+                        }
+
+                        numericMins[prop.Name] = prop.NumericMinimum;
+                        numericMaxes[prop.Name] = prop.NumericMaximum;
+                    }
+                    catch
+                    {
+                        // Skip properties that fail to read
+                    }
+                }
+
+                var warnings = _validationService.Validate(values, numericMins, numericMaxes);
+
+                foreach (var prop in Properties)
+                {
+                    try
+                    {
+                        if (warnings.TryGetValue(prop.Name, out var propWarnings))
+                            prop.SetWarnings(propWarnings);
+                        else
+                            prop.SetWarnings(new List<string>());
+                    }
+                    catch
+                    {
+                        // Continue with next property
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore validation errors entirely
+            }
+            finally
+            {
+                _isValidating = false;
             }
         }
 
