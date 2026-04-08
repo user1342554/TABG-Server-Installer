@@ -47,7 +47,7 @@ namespace TabgInstaller.Gui.Tabs
             SetupFileWatchers();
 
             // Initialize config sub-panels
-            MatchSettingsControl.Initialize(_serverDir);
+            // MatchSettingsControl is initialized via its ViewModel (PathChanged event)
             RingSpawnsControl.Initialize(_serverDir);
             LoadoutEditorControl.Initialize(_serverDir);
             ModSettingsControl.Initialize(_serverDir);
