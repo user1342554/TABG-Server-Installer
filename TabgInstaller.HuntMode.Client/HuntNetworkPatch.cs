@@ -110,14 +110,14 @@ namespace TabgInstaller.HuntMode.Client
                                 }
                             }
                         }
-                        catch { }
+                        catch (Exception ex) { HuntClientPlugin.Log?.LogDebug($"[HuntMode.Client] Network operation failed: {ex.Message}"); }
                     }
                 }
 
                 if (data != null)
                     HuntClientPlugin.HandleHuntEvent(eventCode, data);
             }
-            catch { }
+            catch (Exception ex) { HuntClientPlugin.Log?.LogDebug($"[HuntMode.Client] Network operation failed: {ex.Message}"); }
 
             return true; // Always run original
         }

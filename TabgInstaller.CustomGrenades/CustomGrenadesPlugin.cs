@@ -63,7 +63,7 @@ namespace TabgInstaller.CustomGrenades
                     grenade.transform.localScale *= 4f;
                     grenade.gameObject.AddComponent<BigSmokeMarker>();
                 }
-                catch { }
+                catch (Exception ex) { Debug.LogWarning($"[CustomGrenades] Giant smoke creation failed: {ex.Message}"); }
             }
         }
     }

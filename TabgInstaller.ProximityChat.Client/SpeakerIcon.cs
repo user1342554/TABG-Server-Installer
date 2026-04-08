@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -40,7 +41,7 @@ namespace TabgInstaller.ProximityChat.Client
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { Debug.LogWarning($"[SpeakerIcon] Player name lookup failed: {ex.Message}"); }
         }
 
         public void OnGUI()

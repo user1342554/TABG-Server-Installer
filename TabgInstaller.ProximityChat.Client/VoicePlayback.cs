@@ -117,7 +117,7 @@ namespace TabgInstaller.ProximityChat.Client
                         _playerTransformCache[(int)player.PlayerIndex] = player.PlayerObject.transform;
                 }
             }
-            catch { }
+            catch (Exception ex) { Debug.LogWarning($"[VoicePlayback] Player transform cache failed: {ex.Message}"); }
         }
 
         public Dictionary<int, Transform> GetPlayerTransformCache()

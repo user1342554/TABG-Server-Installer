@@ -106,7 +106,7 @@ namespace TabgInstaller.HuntMode
             if (_getPositionMethod != null)
             {
                 try { return (Vector3)_getPositionMethod.Invoke(player, null); }
-                catch { }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"Operation failed: {ex.Message}"); }
             }
             Component comp = player as Component;
             if (comp != null) return comp.transform.position;
@@ -391,14 +391,14 @@ namespace TabgInstaller.HuntMode
                 ConstructorInfo ctor1 = AccessTools.Constructor(spType, new System.Type[] { typeof(Vector3) });
                 if (ctor1 != null) return ctor1.Invoke(new object[] { position });
             }
-            catch { }
+            catch (Exception ex) { HuntModePlugin.LogWarning($"Operation failed: {ex.Message}"); }
 
             try
             {
                 ConstructorInfo ctor2 = AccessTools.Constructor(spType, new System.Type[] { typeof(Vector3), typeof(Quaternion) });
                 if (ctor2 != null) return ctor2.Invoke(new object[] { position, Quaternion.identity });
             }
-            catch { }
+            catch (Exception ex) { HuntModePlugin.LogWarning($"Operation failed: {ex.Message}"); }
 
             try
             {
@@ -419,7 +419,7 @@ namespace TabgInstaller.HuntMode
                     return sp;
                 }
             }
-            catch { }
+            catch (Exception ex) { HuntModePlugin.LogWarning($"Operation failed: {ex.Message}"); }
 
             HuntModePlugin.LogWarning("Could not construct SpawnPointWrapper -- using default spawn.");
             return null;

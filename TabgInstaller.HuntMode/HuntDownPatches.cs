@@ -208,7 +208,7 @@ namespace TabgInstaller.HuntMode
                         if (eject != null)
                         {
                             try { eject.Invoke(seat, new object[] { victimPlayer }); }
-                            catch { /* best-effort */ }
+                            catch (Exception ex) { HuntModePlugin.LogWarning($"Seat eject failed: {ex.Message}"); }
                         }
                     }
                 }

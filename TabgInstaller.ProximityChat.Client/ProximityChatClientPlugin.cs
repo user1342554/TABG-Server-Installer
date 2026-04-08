@@ -39,7 +39,7 @@ namespace TabgInstaller.ProximityChat.Client
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Mic Sensitivity", "VAD threshold", MicSensitivity);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Master Volume", "Voice chat volume", MasterVolume);
             }
-            catch { }
+            catch (Exception ex) { Logger.LogDebug($"[ProximityChat] ModSettings registration failed: {ex.Message}"); }
 
             _speakerIcon = new SpeakerIcon();
             _playback = new VoicePlayback(MasterVolume.Value);
@@ -91,7 +91,7 @@ namespace TabgInstaller.ProximityChat.Client
                 var handler = PhotonServerHandler.instance;
                 if (handler != null) return true;
             }
-            catch { }
+            catch (Exception ex) { Logger.LogDebug($"[ProximityChat] Server detection failed: {ex.Message}"); }
             return false;
         }
 
@@ -133,7 +133,7 @@ namespace TabgInstaller.ProximityChat.Client
                 if (_sendCount % 250 == 1)
                     Logger.LogInfo($"[ProximityChat] Sent voice frame #{_sendCount} ({opusLength} bytes)");
             }
-            catch { } // Silently drop on any error (Peer not created, etc.)
+            catch (Exception ex) { Logger.LogDebug($"[ProximityChat] Voice send failed: {ex.Message}"); }
         }
 
         /// <summary>

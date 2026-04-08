@@ -220,7 +220,7 @@ namespace TabgInstaller.FakePlayers
                 var field = type.GetField("Position", BindingFlags.Public | BindingFlags.Instance);
                 if (field != null) return (Vector3)field.GetValue(spawnPoint);
             }
-            catch { }
+            catch (Exception ex) { Log($"Error getting spawn position: {ex.Message}"); }
             return Vector3.zero;
         }
 

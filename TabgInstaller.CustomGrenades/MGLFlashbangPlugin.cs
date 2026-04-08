@@ -1,3 +1,4 @@
+using System;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
@@ -41,7 +42,7 @@ namespace TabgInstaller.CustomGrenades
                 if (pickup != null && pickup.m_itemIndex == 203)
                     LastMGLFireTime = Time.time;
             }
-            catch { }
+            catch (Exception ex) { Debug.LogWarning($"[MGLFlashbang] Operation failed: {ex.Message}"); }
         }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace TabgInstaller.CustomGrenades
                     if (vis != null)
                         vis.AddVisualEffect(1, rangeMult * 60f, 60f);
                 }
-                catch { }
+                catch (Exception ex) { Debug.LogWarning($"[MGLFlashbang] Operation failed: {ex.Message}"); }
             }
         }
     }

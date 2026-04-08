@@ -261,7 +261,7 @@ namespace TabgInstaller.UnusedVehicles
                                         nv?.Init(tabgCar);
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex) { Debug.LogWarning($"[UnusedVehicles] Vehicle visual init failed: {ex.Message}"); }
                             }
 
                             addedCount++;

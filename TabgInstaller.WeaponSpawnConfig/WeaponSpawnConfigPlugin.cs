@@ -330,7 +330,7 @@ namespace TabgInstaller.WeaponSpawnConfig
                                             postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(LootPoolGetterPostfix))));
                                         Logger.LogInfo($"[WeaponSpawnConfig] Patched property getter: {type.Name}.{property.Name}");
                                     }
-                                    catch { }
+                                    catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
                                 }
                             }
                         }
@@ -349,7 +349,7 @@ namespace TabgInstaller.WeaponSpawnConfig
                                         postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(UniversalLootPostfix))));
                                     Logger.LogInfo($"[WeaponSpawnConfig] Patched method: {type.Name}.{method.Name}");
                                 }
-                                catch { }
+                                catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
                             }
                         }
                     }
@@ -376,9 +376,9 @@ namespace TabgInstaller.WeaponSpawnConfig
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
         }
-        
+
         public static void UniversalLootPrefix(MethodBase __originalMethod)
         {
             if (Instance != null)

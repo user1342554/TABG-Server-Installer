@@ -90,7 +90,7 @@ namespace TabgInstaller.HuntMode
                     object val = _isDownedProp.GetValue(player, null);
                     if (val is bool b) return b;
                 }
-                catch { /* ignore */ }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"IsDowned check failed: {ex.Message}"); }
             }
             // Fall back to checking DownTimestamps
             byte idx = GetPlayerIndex(player);
@@ -106,7 +106,7 @@ namespace TabgInstaller.HuntMode
                 {
                     return (Vector3)_getPositionMethod.Invoke(player, null);
                 }
-                catch { /* fall through */ }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"GetPosition failed: {ex.Message}"); }
             }
             // Try transform via reflection
             FieldInfo tfField = AccessTools.Field(player.GetType(), "transform");

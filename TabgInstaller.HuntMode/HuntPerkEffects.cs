@@ -207,7 +207,7 @@ namespace TabgInstaller.HuntMode
             if (_healthBackingField != null)
             {
                 try { _healthBackingField.SetValue(player, hp); return; }
-                catch { /* fall through */ }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
             }
 
             // 2. Try property setter
@@ -217,7 +217,7 @@ namespace TabgInstaller.HuntMode
                 if (setter != null)
                 {
                     try { setter.Invoke(player, new object[] { hp }); return; }
-                    catch { /* fall through */ }
+                    catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
                 }
             }
 
@@ -225,7 +225,7 @@ namespace TabgInstaller.HuntMode
             if (_healthField != null)
             {
                 try { _healthField.SetValue(player, hp); return; }
-                catch { /* fall through */ }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
             }
 
             // 4. TakeDamage delta fallback
@@ -256,7 +256,7 @@ namespace TabgInstaller.HuntMode
             if (_moveSpeedField != null)
             {
                 try { _moveSpeedField.SetValue(player, speed); return; }
-                catch { /* fall through */ }
+                catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
             }
 
             // 2. Try property setter
@@ -266,7 +266,7 @@ namespace TabgInstaller.HuntMode
                 if (setter != null)
                 {
                     try { setter.Invoke(player, new object[] { speed }); return; }
-                    catch { /* fall through */ }
+                    catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
                 }
             }
 
@@ -294,7 +294,7 @@ namespace TabgInstaller.HuntMode
                     }
                 }
             }
-            catch { /* ignore */ }
+            catch (Exception ex) { HuntModePlugin.LogWarning($"Reflection operation failed (falling through): {ex.Message}"); }
 
             // 4. Store in game state for network sync (graceful degradation)
             HuntModePlugin.LogWarning($"SetSpeed: could not set speed={speed} on player — no valid reflection path. Speed will be tracked in game state only.");

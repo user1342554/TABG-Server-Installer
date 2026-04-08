@@ -53,7 +53,7 @@ namespace TabgInstaller.FlyingControls
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Max Speed", "Speed cap", MaxSpeed);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Stabilization", "Auto-leveling", Stabilization);
             }
-            catch { }
+            catch (Exception ex) { Debug.LogWarning($"[FlyingControls] ModSettings registration failed (non-fatal): {ex.Message}"); }
 
             var harmony = new Harmony("tabginstaller.flyingcontrols");
             harmony.PatchAll(typeof(FlyingPhysicsPatch));
@@ -166,10 +166,7 @@ namespace TabgInstaller.FlyingControls
 
                     return false; // SKIP original Car.FixedUpdate entirely
                 }
-                catch
-                {
-                    return true; // On error, run original
-                }
+                catch (Exception ex) { Debug.LogWarning($"[FlyingControls] Vehicle update error: {ex.Message}"); return true; }
             }
 
             static bool IsFlyingVehicle(Car car)
