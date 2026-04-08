@@ -6,9 +6,9 @@ namespace TabgInstaller.Core.Services
 {
     public static class LogLineParser
     {
-        // Prefix patterns to strip from Message
+        // Prefix patterns to strip from Message (bracket-style and colon-style)
         private static readonly Regex PrefixPattern = new(
-            @"^\s*\[(INFO|ERROR|WARNING|WARN)\]\s*",
+            @"^\s*(?:\[(INFO|ERROR|WARNING|WARN)\]|(?:ERROR|WARNING|WARN|INFO):)\s*",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Error detection patterns (case-insensitive)
