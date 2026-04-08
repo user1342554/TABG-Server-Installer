@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -368,6 +369,27 @@ namespace TabgInstaller.Gui.ViewModels
                 // Ignore errors during property access
             }
             return "BattleRoyale"; // default
+        }
+
+        public ObservableCollection<string> ValidationWarnings { get; } = new();
+        public bool HasWarnings => ValidationWarnings.Count > 0;
+
+        public void SetWarnings(List<string> warnings)
+        {
+            try
+            {
+                ValidationWarnings.Clear();
+                if (warnings != null)
+                {
+                    foreach (var w in warnings)
+                        ValidationWarnings.Add(w);
+                }
+                OnPropertyChanged(nameof(HasWarnings));
+            }
+            catch
+            {
+                // Ignore warning update errors
+            }
         }
 
         public void NotifyPropertyChanged(string propertyName)

@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace TabgInstaller.Core.Services
 {
+    public record UpdateInfo(string TagName, Version Version, string DownloadUrl, string? ReleaseNotes);
+
     public class UpdateService
     {
         private const string Owner = "user1342554";
@@ -30,8 +32,8 @@ namespace TabgInstaller.Core.Services
             return asm?.GetName().Version ?? new Version(0, 0, 0);
         }
 
-        /// <summary>Returns (tagName, version, downloadUrl) if a newer release exists, null otherwise.</summary>
-        public async Task<(string Tag, Version Version, string DownloadUrl)?> CheckForUpdateAsync()
+        /// <summary>Returns update info if a newer release exists, null otherwise.</summary>
+        public async Task<UpdateInfo?> CheckForUpdateAsync()
         {
             try
             {
@@ -52,7 +54,7 @@ namespace TabgInstaller.Core.Services
 
                 if (zipAsset?.BrowserDownloadUrl == null) return null;
 
-                return (release.TagName, remoteVersion, zipAsset.BrowserDownloadUrl);
+                return new UpdateInfo(release.TagName, remoteVersion, zipAsset.BrowserDownloadUrl, release.Body);
             }
             catch (Exception ex)
             {
@@ -159,6 +161,9 @@ del ""%~f0"" 2>nul
         {
             [JsonPropertyName("tag_name")]
             public string TagName { get; set; } = "";
+
+            [JsonPropertyName("body")]
+            public string? Body { get; set; }
 
             [JsonPropertyName("assets")]
             public GitHubAssetDto[]? Assets { get; set; }

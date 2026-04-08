@@ -26,39 +26,55 @@ namespace TabgInstaller.Gui
             try
             {
                 var updater = new UpdateService();
-                var update = await updater.CheckForUpdateAsync();
-                if (update != null)
+                var updateInfo = await updater.CheckForUpdateAsync();
+                if (updateInfo != null)
                 {
-                    var (tag, version, url) = update.Value;
-                    var current = UpdateService.GetCurrentVersion();
-
-                    var result = MessageBox.Show(
-                        $"A new version is available!\n\n" +
-                        $"Current: {current.Major}.{current.Minor}.{current.Build}\n" +
-                        $"New: {version.Major}.{version.Minor}.{version.Build} ({tag})\n\n" +
-                        "Download and install now?",
-                        "Update Available",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
-
-                    if (result == MessageBoxResult.Yes)
+                    // Check if user previously skipped this version
+                    var updateSettings = AppSettingsService.Load();
+                    if (updateInfo.TagName == updateSettings.SkippedUpdateVersion)
                     {
-                        Title = "TABG Manager — Updating...";
-                        bool ok = await updater.ApplyUpdateAsync(url);
-                        if (ok)
+                        // Skipped — don't prompt
+                    }
+                    else
+                    {
+                        // Clear stale skip if a newer version superseded the skipped one
+                        if (updateSettings.SkippedUpdateVersion != null)
                         {
-                            Application.Current.Shutdown();
-                            return;
+                            updateSettings.SkippedUpdateVersion = null;
+                            AppSettingsService.Save(updateSettings);
                         }
-                        else
+
+                        var current = UpdateService.GetCurrentVersion();
+                        var dialog = new ChangelogWindow(current, updateInfo.Version, updateInfo.ReleaseNotes, updateInfo.TagName);
+                        dialog.Owner = this;
+
+                        if (dialog.ShowDialog() == true)
                         {
-                            ToastService.Instance.Error("Update failed. You can download manually from GitHub.");
-                            Title = "TABG Manager";
+                            Title = "TABG Manager — Updating...";
+                            bool ok = await updater.ApplyUpdateAsync(updateInfo.DownloadUrl);
+                            if (ok)
+                            {
+                                Application.Current.Shutdown();
+                                return;
+                            }
+                            else
+                            {
+                                ToastService.Instance.Error("Update failed. You can download manually from GitHub.");
+                                Title = "TABG Manager";
+                            }
+                        }
+                        else if (dialog.SkippedVersion != null)
+                        {
+                            updateSettings.SkippedUpdateVersion = dialog.SkippedVersion;
+                            AppSettingsService.Save(updateSettings);
                         }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to check for updates: {ex.Message}");
+            }
 
             // Check if setup is needed
             var settings = AppSettingsService.Load();
