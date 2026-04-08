@@ -19,8 +19,17 @@ namespace TabgInstaller.Core.Services
         public event Action<string>? OutputReceived;
         public event Action<LogEntry>? LogEntryReceived;
         public ObservableCollection<LogEntry> LogEntries { get; } = new();
-        public object LogLock => _logLock;
         public bool IsRunning => _proc != null && !_proc.HasExited;
+
+        /// <summary>
+        /// Calls the provided action with the internal lock object, allowing callers
+        /// (e.g., WPF's BindingOperations.EnableCollectionSynchronization) to register
+        /// the lock without exposing it as a public field.
+        /// </summary>
+        public void RegisterCollectionSynchronization(Action<object, object> register)
+        {
+            register(LogEntries, _logLock);
+        }
 
         public ServerProcessService(string serverDir)
         {
@@ -101,6 +110,54 @@ namespace TabgInstaller.Core.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[WARN] Failed to add log entry: {ex.Message}");
+            }
+        }
+
+        /// <summary>Thread-safe: adds a LogEntry from any thread (e.g., UI thread for echo commands).</summary>
+        public void AddEntry(LogEntry entry)
+        {
+            AddLogEntry(entry);
+        }
+
+        /// <summary>Thread-safe: clears all log entries.</summary>
+        public void ClearEntries()
+        {
+            try
+            {
+                lock (_logLock)
+                {
+                    LogEntries.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to clear log entries: {ex.Message}");
+            }
+        }
+
+        /// <summary>Thread-safe: returns a snapshot of recent entries for reading without holding the lock.</summary>
+        public string GetRecentText(int maxLines = 20)
+        {
+            try
+            {
+                lock (_logLock)
+                {
+                    var count = LogEntries.Count;
+                    if (count == 0) return "";
+                    var start = Math.Max(0, count - maxLines);
+                    var sb = new System.Text.StringBuilder();
+                    for (int i = start; i < count; i++)
+                    {
+                        if (sb.Length > 0) sb.Append(Environment.NewLine);
+                        sb.Append(LogEntries[i].RawText);
+                    }
+                    return sb.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] GetRecentText failed: {ex.Message}");
+                return "";
             }
         }
 

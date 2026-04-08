@@ -40,13 +40,16 @@ namespace TabgInstaller.Core.Services
 
         private static LogSeverity DetectSeverity(string line, bool isStderr)
         {
-            if (isStderr || ErrorPattern.IsMatch(line))
+            // Explicit prefixes take precedence over isStderr, so an [INFO] line
+            // on stderr is still classified as Info (per spec).
+            if (ErrorPattern.IsMatch(line))
                 return LogSeverity.Error;
 
             if (WarningPattern.IsMatch(line))
                 return LogSeverity.Warning;
 
-            return LogSeverity.Info;
+            // Stderr lines without an explicit marker default to Error
+            return isStderr ? LogSeverity.Error : LogSeverity.Info;
         }
 
         private static string StripPrefix(string line)

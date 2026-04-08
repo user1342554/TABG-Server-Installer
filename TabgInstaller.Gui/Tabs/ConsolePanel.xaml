@@ -50,6 +50,7 @@
                  ItemsSource="{Binding Source={StaticResource LogViewSource}}"
                  VirtualizingStackPanel.IsVirtualizing="True"
                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                 VirtualizingStackPanel.ScrollUnit="Pixel"
                  ScrollViewer.CanContentScroll="True"
                  Background="#1E1E1E" BorderThickness="1" BorderBrush="#333"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"

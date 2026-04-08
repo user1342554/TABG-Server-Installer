@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -44,7 +43,8 @@ namespace TabgInstaller.Gui.Tabs
             _procSvc = new ServerProcessService(_serverDir);
 
             // Enable cross-thread access to the ObservableCollection
-            BindingOperations.EnableCollectionSynchronization(_procSvc.LogEntries, _procSvc.LogLock);
+            _procSvc.RegisterCollectionSynchronization((collection, lockObj) =>
+                BindingOperations.EnableCollectionSynchronization((System.Collections.IEnumerable)collection, lockObj));
 
             // Set up CollectionViewSource
             _logViewSource = (CollectionViewSource)FindResource("LogViewSource");
@@ -83,27 +83,7 @@ namespace TabgInstaller.Gui.Tabs
         public string GetRecentOutput(int maxLines = 20)
         {
             if (_procSvc == null) return "";
-
-            try
-            {
-                var entries = _procSvc.LogEntries;
-                var count = entries.Count;
-                if (count == 0) return "";
-
-                var start = Math.Max(0, count - maxLines);
-                var sb = new StringBuilder();
-                for (int i = start; i < count; i++)
-                {
-                    if (sb.Length > 0) sb.Append(Environment.NewLine);
-                    sb.Append(entries[i].RawText);
-                }
-                return sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[WARN] GetRecentOutput failed: {ex.Message}");
-                return "";
-            }
+            return _procSvc.GetRecentText(maxLines);
         }
 
         private void LogViewSource_Filter(object sender, FilterEventArgs e)
@@ -208,10 +188,7 @@ namespace TabgInstaller.Gui.Tabs
 
         private void ClearConsole_Click(object sender, RoutedEventArgs e)
         {
-            if (_procSvc != null)
-            {
-                _procSvc.LogEntries.Clear();
-            }
+            _procSvc?.ClearEntries();
         }
 
         private void QuickSaveRestart_Click(object sender, RoutedEventArgs e)
@@ -259,11 +236,11 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (_procSvc?.IsRunning == true && !string.IsNullOrWhiteSpace(TxtCommand.Text))
             {
-                // Add command echo and info message as log entries
+                // Add command echo and info message as log entries (thread-safe)
                 var echoEntry = LogLineParser.Parse($"> {TxtCommand.Text}");
                 var infoEntry = LogLineParser.Parse("[INFO] Server does not accept stdin commands. Use RCON or a BepInEx console plugin.");
-                _procSvc.LogEntries.Add(echoEntry);
-                _procSvc.LogEntries.Add(infoEntry);
+                _procSvc.AddEntry(echoEntry);
+                _procSvc.AddEntry(infoEntry);
 
                 if (_autoScroll)
                     ScrollToBottom();
