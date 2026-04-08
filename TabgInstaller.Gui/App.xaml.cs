@@ -106,6 +106,7 @@ namespace TabgInstaller.Gui
 
             // ViewModels — registered as each panel is migrated
             services.AddTransient<SettingsPanelViewModel>();
+            services.AddTransient<DashboardViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

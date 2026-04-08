@@ -11,22 +11,40 @@
             <GroupBox.Header>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Server Status" FontWeight="SemiBold"/>
-                    <TextBlock x:Name="TxtStatus" Text="  STOPPED" Foreground="#CC0000" FontWeight="Bold" Margin="8,0,0,0"/>
+                    <TextBlock FontWeight="Bold" Margin="8,0,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="  STOPPED"/>
+                                <Setter Property="Foreground" Value="#CC0000"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsServerRunning}" Value="True">
+                                        <Setter Property="Text" Value="  RUNNING"/>
+                                        <Setter Property="Foreground" Value="#00AA44"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </GroupBox.Header>
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5">
-                    <Button x:Name="BtnStartStop" Content="Start Server" Width="120" Height="36" Click="BtnStartStop_Click"/>
-                    <Button x:Name="BtnLaunchClient" Content="Launch Modded TABG" Width="160" Height="36" Margin="10,0,0,0" Click="BtnLaunchClient_Click"/>
+                    <Button Content="{Binding StartStopButtonText}" Width="120" Height="36"
+                            Command="{Binding StartStopCommand}"/>
+                    <Button Content="Launch Modded TABG" Width="160" Height="36" Margin="10,0,0,0"
+                            Command="{Binding LaunchClientCommand}"/>
                 </StackPanel>
-                <TextBlock x:Name="TxtServerPath" Foreground="#888" FontSize="11" Margin="5,5,5,0"/>
+                <TextBlock Text="{Binding ServerPath}" Foreground="#888" FontSize="11" Margin="5,5,5,0"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Grid.Row="1" Header="Quick Actions" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="5">
-                <Button Content="Open Server Folder" Width="130" Margin="2" Click="OpenServerFolder_Click"/>
-                <Button Content="Open Logs" Width="90" Margin="2" Click="OpenLogs_Click"/>
-                <Button Content="Open Config Files" Width="120" Margin="2" Click="OpenConfigs_Click"/>
+                <Button Content="Open Server Folder" Width="130" Margin="2"
+                        Command="{Binding OpenServerFolderCommand}"/>
+                <Button Content="Open Logs" Width="90" Margin="2"
+                        Command="{Binding OpenLogsCommand}"/>
+                <Button Content="Open Config Files" Width="120" Margin="2"
+                        Command="{Binding OpenConfigsCommand}"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Grid.Row="2" Header="Console Preview (last 20 lines)">
@@ -35,10 +53,12 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ScrollViewer x:Name="PreviewScrollViewer" Grid.Row="0">
-                    <TextBox x:Name="TxtConsolePreview" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
+                <ScrollViewer Grid.Row="0">
+                    <TextBox Text="{Binding PreviewText, Mode=OneWay}" IsReadOnly="True"
+                             TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
                 </ScrollViewer>
-                <Button Grid.Row="1" Content="Open Full Console" HorizontalAlignment="Right" Margin="5" Click="OpenFullConsole_Click"/>
+                <Button Grid.Row="1" Content="Open Full Console" HorizontalAlignment="Right" Margin="5"
+                        Command="{Binding OpenFullConsoleCommand}"/>
             </Grid>
         </GroupBox>
     </Grid>
