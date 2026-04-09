@@ -19,6 +19,8 @@ namespace TabgInstaller.Core.Services
         private readonly object _logLock = new();
         public event Action<string>? OutputReceived;
         public event Action<LogEntry>? LogEntryReceived;
+        public event Action<int>? ProcessExited;
+        public int ProcessId => _proc?.Id ?? 0;
         public ObservableCollection<LogEntry> LogEntries { get; } = new();
         public bool IsRunning => _proc != null && !_proc.HasExited;
 
@@ -74,10 +76,13 @@ namespace TabgInstaller.Core.Services
             _proc.ErrorDataReceived += OnStderrLine;
             _proc.Exited += (s, e) =>
             {
+                var exitCode = -1;
+                try { exitCode = _proc?.ExitCode ?? -1; } catch { }
                 var line = "<process exited>";
                 OutputReceived?.Invoke(line);
                 var entry = LogLineParser.Parse(line);
                 AddLogEntry(entry);
+                ProcessExited?.Invoke(exitCode);
             };
             if (_proc.Start())
             {

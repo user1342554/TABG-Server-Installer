@@ -10,6 +10,8 @@ namespace TabgInstaller.Core.Services
         ObservableCollection<LogEntry> LogEntries { get; }
         event Action<LogEntry>? LogEntryReceived;
         event Action<string>? OutputReceived;
+        event Action<int>? ProcessExited; // exit code
+        int ProcessId { get; }
 
         bool Start(string additionalArgs = "-batchmode -nographics -nolog");
         void Stop();
