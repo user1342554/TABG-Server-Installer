@@ -148,6 +148,9 @@ namespace TabgInstaller.Gui
             }
         }
 
+        // Called externally (e.g. InstallerPanel, PresetsGrid) when the server path changes.
+        public void ReloadFromPath(string serverDir) => InitializeAllPanels(serverDir);
+
         private void InitializeAllPanels(string serverDir)
         {
             // Set the server path — triggers all ViewModel initialization via PathChanged
@@ -157,11 +160,13 @@ namespace TabgInstaller.Gui
             // (these calls are removed one by one as panels are migrated)
             ConsoleTab.Initialize(serverDir);
             DashboardTab.DataContext = _services.GetRequiredService<DashboardViewModel>();
-            ConfigTab.Initialize(serverDir);
+            ConfigTab.DataContext = _services.GetRequiredService<ConfigViewModel>();
+            ConfigTab.InitializeSubPanels(serverDir);
             ConfigTab.AdminPanelControl.DataContext = _services.GetRequiredService<AdminPanelViewModel>();
             ConfigTab.MatchSettingsControl.SetViewModel(_services.GetRequiredService<MatchSettingsViewModel>());
             ConfigTab.RingSpawnsControl.SetViewModel(_services.GetRequiredService<RingSpawnsViewModel>());
-            ServerModsTab.Initialize(serverDir);
+            ConfigTab.PresetsGridControl.SetServerPath(serverDir);
+            ServerModsTab.DataContext = _services.GetRequiredService<ServerModsViewModel>();
             BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
             SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();

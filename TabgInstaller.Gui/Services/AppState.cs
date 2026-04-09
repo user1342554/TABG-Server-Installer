@@ -31,7 +31,7 @@ public class AppState
         if (System.IO.File.Exists(gsPath))
         {
             var gs = ConfigIO.ReadGameSettings(gsPath);
-            GameSettingsVm = new GameSettingsDynamicViewModel(gs);
+            GameSettingsVm = new GameSettingsDynamicViewModel(gs, new ConfigValidationService());
         }
 
         ServerProcess = new ServerProcessService(serverDir);

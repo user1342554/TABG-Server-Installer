@@ -242,7 +242,7 @@ namespace TabgInstaller.Gui.Tabs
 
                         if (Window.GetWindow(this) is MainWindow mainWindow)
                         {
-                            mainWindow.ConfigTab.Initialize(serverDir);
+                            mainWindow.ReloadFromPath(serverDir);
                             if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                                 cfgItem.IsEnabled = true;
                             if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)
@@ -304,7 +304,7 @@ namespace TabgInstaller.Gui.Tabs
 
             if (Window.GetWindow(this) is MainWindow mainWindow)
             {
-                mainWindow.ConfigTab.Initialize(serverDir);
+                mainWindow.ReloadFromPath(serverDir);
                 if (mainWindow.FindName("ConfigTabItem") is TabItem cfgItem)
                     cfgItem.IsEnabled = true;
                 if (mainWindow.FindName("BackupsTab") is TabItem backupsItem)

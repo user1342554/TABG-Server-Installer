@@ -35,7 +35,7 @@ namespace TabgInstaller.Gui
             _pluginsDir = Path.Combine(_serverDir, "BepInEx", "plugins");
             var gsPath = Path.Combine(serverDir, "game_settings.txt");
             var gs = ConfigIO.ReadGameSettings(gsPath);
-            _vm = new GameSettingsDynamicViewModel(gs);
+            _vm = new GameSettingsDynamicViewModel(gs, new ConfigValidationService());
             DataContext = _vm;
             InitializeComponent();
 

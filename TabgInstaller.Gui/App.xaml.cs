@@ -112,6 +112,9 @@ namespace TabgInstaller.Gui
             services.AddTransient<MatchSettingsViewModel>();
             services.AddTransient<RingSpawnsViewModel>();
             services.AddTransient<BackupsPanelViewModel>();
+            services.AddTransient<ConfigViewModel>();
+            services.AddTransient<PresetsViewModel>();
+            services.AddTransient<ServerModsViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();
