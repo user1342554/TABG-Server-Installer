@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace TabgInstaller.Core
@@ -15,6 +16,13 @@ namespace TabgInstaller.Core
     /// </summary>
     public static class ClientModInstaller
     {
+        private static readonly HttpClient s_httpClient = new HttpClient();
+
+        static ClientModInstaller()
+        {
+            s_httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("TabgInstaller/1.0");
+        }
+
         private const string BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip";
         private const string SteamAppId = "823130";
 
@@ -56,7 +64,11 @@ namespace TabgInstaller.Core
                 string eacDir = Path.Combine(moddedDir, "EasyAntiCheat");
                 if (Directory.Exists(eacDir))
                 {
-                    try { Directory.Delete(eacDir, true); } catch { }
+                    try { Directory.Delete(eacDir, true); }
+                    catch (Exception ex)
+                    {
+                        log.Report($"[WARN] Could not remove EasyAntiCheat directory: {ex.Message}");
+                    }
                     log.Report("Removed EasyAntiCheat from modded copy.");
                 }
 
@@ -72,11 +84,8 @@ namespace TabgInstaller.Core
                     log.Report("Downloading BepInEx 5.4.22...");
                     string zipPath = Path.Combine(moddedDir, "bepinex_temp.zip");
 
-                    using (var http = new HttpClient())
-                    {
-                        var data = await http.GetByteArrayAsync(BepInExUrl);
-                        File.WriteAllBytes(zipPath, data);
-                    }
+                    var data = await s_httpClient.GetByteArrayAsync(BepInExUrl);
+                    File.WriteAllBytes(zipPath, data);
 
                     log.Report("Extracting BepInEx...");
                     ZipFile.ExtractToDirectory(zipPath, moddedDir, overwriteFiles: true);
@@ -160,22 +169,28 @@ namespace TabgInstaller.Core
             }
         }
 
-        private static string FindClientPluginsDir()
+        /// <summary>
+        /// Searches for the client-plugins directory near the application.
+        /// Checks the app directory first, then walks up parent directories as a fallback
+        /// for development environments where the exe is nested inside bin/Debug/etc.
+        /// </summary>
+        private static string? FindClientPluginsDir()
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var candidates = new[]
-            {
-                Path.Combine(baseDir, "client-plugins"),
-                Path.Combine(baseDir, "..", "client-plugins"),
-                Path.Combine(baseDir, "..", "..", "client-plugins"),
-                Path.Combine(baseDir, "..", "..", "..", "client-plugins"),
-            };
 
-            foreach (var c in candidates)
+            // Walk up from the app directory looking for a client-plugins folder with DLLs
+            var current = baseDir;
+            for (int i = 0; i < 5; i++)
             {
-                if (Directory.Exists(c) && Directory.GetFiles(c, "*.dll").Length > 0)
-                    return Path.GetFullPath(c);
+                var candidate = Path.Combine(current, "client-plugins");
+                if (Directory.Exists(candidate) && Directory.GetFiles(candidate, "*.dll").Length > 0)
+                    return Path.GetFullPath(candidate);
+
+                var parent = Directory.GetParent(current)?.FullName;
+                if (parent == null || parent == current) break;
+                current = parent;
             }
+
             return null;
         }
     }

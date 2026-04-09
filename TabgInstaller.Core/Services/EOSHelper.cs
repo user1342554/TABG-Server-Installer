@@ -63,7 +63,7 @@ namespace TabgInstaller.Core.Services
                     try {
                         Directory.CreateDirectory(Path.GetDirectoryName(dp)!);
                         File.Copy(bestSource, dp, true);
-                    } catch { /* ignore individual copy errors */ }
+                    } catch (Exception ex) { log?.Report($"[WARN] Failed to copy {DllName} to '{dp}': {ex.Message}"); }
                 }
                 log?.Report($"[EOS] Copied/Updated {DllName} to {destPaths.Length} locations.");
             }

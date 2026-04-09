@@ -50,7 +50,10 @@ namespace TabgInstaller.Core.Services
                     GameSettings = ParseGameSettings(text);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to load game settings knowledge from '{gameSettingsPath}': {ex.Message}");
+            }
 
             try
             {
@@ -60,7 +63,10 @@ namespace TabgInstaller.Core.Services
                     StarterPackSettings = ParseStarterPack(text);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to load starter pack knowledge from '{starterPackPath}': {ex.Message}");
+            }
 
             try
             {
@@ -70,9 +76,16 @@ namespace TabgInstaller.Core.Services
                     WeaponsById = ParseWeapons(text);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to load weapons knowledge from '{weaponsPath}': {ex.Message}");
+            }
 
-            try { KnowledgeReloaded?.Invoke(this, EventArgs.Empty); } catch { }
+            try { KnowledgeReloaded?.Invoke(this, EventArgs.Empty); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Error invoking KnowledgeReloaded event: {ex.Message}");
+            }
         }
 
         public IEnumerable<SearchResult> Search(string query)
