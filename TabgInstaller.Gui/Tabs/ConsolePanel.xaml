@@ -14,10 +14,16 @@
 
         <!-- Row 0: Toolbar -->
         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-            <Button x:Name="StartButton" Content="Start Server" Width="100" Margin="2" Click="StartButton_Click"/>
-            <Button x:Name="StopButton" Content="Stop Server" Width="100" Margin="2" Click="StopButton_Click" IsEnabled="False"/>
-            <Button Content="Clear Console" Width="100" Margin="2" Click="ClearConsole_Click"/>
-            <Button Content="Quick-save &amp; Restart" Width="140" Margin="2" Click="QuickSaveRestart_Click"/>
+            <Button Content="Start Server" Width="100" Margin="2"
+                    Command="{Binding StartCommand}"
+                    IsEnabled="{Binding IsServerNotRunning}"/>
+            <Button Content="Stop Server" Width="100" Margin="2"
+                    Command="{Binding StopCommand}"
+                    IsEnabled="{Binding IsServerRunning}"/>
+            <Button Content="Clear Console" Width="100" Margin="2"
+                    Command="{Binding ClearConsoleCommand}"/>
+            <Button Content="Quick-save &amp; Restart" Width="140" Margin="2"
+                    Command="{Binding QuickSaveRestartCommand}"/>
 
             <!-- Separator -->
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="6,2,6,2"/>
@@ -94,8 +100,11 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="TxtCommand" Grid.Column="0" KeyDown="TxtCommand_KeyDown" VerticalContentAlignment="Center"/>
-            <Button Content="Send" Grid.Column="1" Width="60" Margin="5,0,0,0" Click="SendCommand_Click"/>
+            <TextBox x:Name="TxtCommand" Grid.Column="0" KeyDown="TxtCommand_KeyDown"
+                     Text="{Binding CommandText, UpdateSourceTrigger=PropertyChanged}"
+                     VerticalContentAlignment="Center"/>
+            <Button Content="Send" Grid.Column="1" Width="60" Margin="5,0,0,0"
+                    Command="{Binding SendCommandCommand}"/>
         </Grid>
     </Grid>
 </UserControl>

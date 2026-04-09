@@ -158,7 +158,7 @@ namespace TabgInstaller.Gui
 
             // Initialize panels that haven't been migrated to MVVM yet
             // (these calls are removed one by one as panels are migrated)
-            ConsoleTab.Initialize(serverDir);
+            ConsoleTab.DataContext = _services.GetRequiredService<ConsolePanelViewModel>();
             DashboardTab.DataContext = _services.GetRequiredService<DashboardViewModel>();
             ConfigTab.DataContext = _services.GetRequiredService<ConfigViewModel>();
             ConfigTab.InitializeSubPanels(serverDir);
