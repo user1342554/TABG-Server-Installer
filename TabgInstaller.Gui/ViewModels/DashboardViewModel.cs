@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Timers;
-using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
 
@@ -12,8 +11,7 @@ namespace TabgInstaller.Gui.ViewModels
 {
     public partial class DashboardViewModel : ObservableObject
     {
-        private readonly IServerProcessService _procSvc;
-        private readonly IServerPathProvider _serverPathProvider;
+        private readonly IActiveInstanceService _activeInstance;
         private readonly IAppSettingsService _appSettings;
         private readonly INavigationService _navigation;
         private readonly IToastService _toast;
@@ -23,27 +21,32 @@ namespace TabgInstaller.Gui.ViewModels
         [ObservableProperty] private string _startStopButtonText = "Start Server";
         [ObservableProperty] private string _serverPath = "";
 
-        public bool IsServerRunning => _procSvc.IsRunning;
+        public bool IsServerRunning
+        {
+            get
+            {
+                try { return _activeInstance.ProcessService.IsRunning; }
+                catch { return false; }
+            }
+        }
 
         public DashboardViewModel(
-            IServerProcessService procSvc,
-            IServerPathProvider serverPathProvider,
+            IActiveInstanceService activeInstance,
             IAppSettingsService appSettings,
             INavigationService navigation,
             IToastService toast)
         {
-            _procSvc = procSvc;
-            _serverPathProvider = serverPathProvider;
+            _activeInstance = activeInstance;
             _appSettings = appSettings;
             _navigation = navigation;
             _toast = toast;
 
-            _serverPathProvider.PathChanged += OnServerPathChanged;
+            _activeInstance.PathChanged += OnServerPathChanged;
         }
 
         private void OnServerPathChanged()
         {
-            ServerPath = _serverPathProvider.ServerPath;
+            ServerPath = _activeInstance.ServerPath;
             StartRefreshTimer();
             RefreshPreview();
         }
@@ -61,18 +64,18 @@ namespace TabgInstaller.Gui.ViewModels
 
         private void RefreshPreview()
         {
-            PreviewText = _procSvc.GetRecentText(20);
-            StartStopButtonText = _procSvc.IsRunning ? "Stop Server" : "Start Server";
+            PreviewText = _activeInstance.ProcessService.GetRecentText(20);
+            StartStopButtonText = _activeInstance.ProcessService.IsRunning ? "Stop Server" : "Start Server";
             OnPropertyChanged(nameof(IsServerRunning));
         }
 
         [RelayCommand]
         private void StartStop()
         {
-            if (_procSvc.IsRunning)
-                _procSvc.Stop();
+            if (_activeInstance.ProcessService.IsRunning)
+                _activeInstance.ProcessService.Stop();
             else
-                _procSvc.Start();
+                _activeInstance.ProcessService.Start();
 
             RefreshPreview();
         }
@@ -110,20 +113,20 @@ namespace TabgInstaller.Gui.ViewModels
 
         [RelayCommand]
         private void OpenServerFolder() =>
-            Process.Start("explorer", _serverPathProvider.ServerPath);
+            Process.Start("explorer", _activeInstance.ServerPath);
 
         [RelayCommand]
         private void OpenLogs()
         {
-            var logDir = Path.Combine(_serverPathProvider.ServerPath, "BepInEx");
+            var logDir = Path.Combine(_activeInstance.ServerPath, "BepInEx");
             if (!Directory.Exists(logDir))
-                logDir = _serverPathProvider.ServerPath;
+                logDir = _activeInstance.ServerPath;
             Process.Start("explorer", logDir);
         }
 
         [RelayCommand]
         private void OpenConfigs() =>
-            Process.Start("explorer", _serverPathProvider.ServerPath);
+            Process.Start("explorer", _activeInstance.ServerPath);
 
         [RelayCommand]
         private void OpenFullConsole() =>

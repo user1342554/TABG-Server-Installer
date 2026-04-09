@@ -3,7 +3,6 @@ using Moq;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
@@ -15,18 +14,19 @@ namespace TabgInstaller.Tests.ViewModels
     public class ConsolePanelViewModelTests
     {
         private readonly Mock<IServerProcessService> _procSvc = new();
-        private readonly Mock<IServerPathProvider> _serverPath = new();
+        private readonly Mock<IActiveInstanceService> _activeInstance = new();
         private readonly Mock<IToastService> _toast = new();
 
         public ConsolePanelViewModelTests()
         {
             _procSvc.SetupGet(p => p.IsRunning).Returns(false);
             _procSvc.SetupGet(p => p.LogEntries).Returns(new ObservableCollection<LogEntry>());
-            _serverPath.SetupGet(s => s.ServerPath).Returns(@"C:\Server");
+            _activeInstance.SetupGet(a => a.ServerPath).Returns(@"C:\Server");
+            _activeInstance.SetupGet(a => a.ProcessService).Returns(_procSvc.Object);
         }
 
         private ConsolePanelViewModel CreateSut() =>
-            new(_procSvc.Object, _serverPath.Object, _toast.Object);
+            new(_activeInstance.Object, _toast.Object);
 
         // ── Initial state ────────────────────────────────────────────────────────
 

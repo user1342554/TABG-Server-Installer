@@ -14,8 +14,7 @@ namespace TabgInstaller.Gui.ViewModels
 {
     public partial class ConsolePanelViewModel : ObservableObject
     {
-        private readonly IServerProcessService _procSvc;
-        private readonly IServerPathProvider _serverPathProvider;
+        private readonly IActiveInstanceService _activeInstance;
         private readonly IToastService _toast;
 
         [ObservableProperty] private bool _showInfo = true;
@@ -31,7 +30,7 @@ namespace TabgInstaller.Gui.ViewModels
         partial void OnIsServerRunningChanged(bool value) =>
             OnPropertyChanged(nameof(IsServerNotRunning));
 
-        public ObservableCollection<LogEntry> LogEntries => _procSvc.LogEntries;
+        public ObservableCollection<LogEntry> LogEntries => _activeInstance.ProcessService.LogEntries;
 
         /// <summary>
         /// Forwards to <see cref="IServerProcessService.LogEntryReceived"/> so the code-behind
@@ -39,8 +38,8 @@ namespace TabgInstaller.Gui.ViewModels
         /// </summary>
         public event Action<LogEntry>? LogEntryReceived
         {
-            add => _procSvc.LogEntryReceived += value;
-            remove => _procSvc.LogEntryReceived -= value;
+            add => _activeInstance.ProcessService.LogEntryReceived += value;
+            remove => _activeInstance.ProcessService.LogEntryReceived -= value;
         }
 
         /// <summary>
@@ -49,27 +48,26 @@ namespace TabgInstaller.Gui.ViewModels
         /// without a direct reference to the process service.
         /// </summary>
         public void RegisterCollectionSynchronization(Action<object, object> register) =>
-            _procSvc.RegisterCollectionSynchronization(register);
+            _activeInstance.ProcessService.RegisterCollectionSynchronization(register);
 
         public ConsolePanelViewModel(
-            IServerProcessService procSvc,
-            IServerPathProvider serverPathProvider,
+            IActiveInstanceService activeInstance,
             IToastService toast)
         {
-            _procSvc = procSvc;
-            _serverPathProvider = serverPathProvider;
+            _activeInstance = activeInstance;
             _toast = toast;
 
-            IsServerRunning = _procSvc.IsRunning;
+            try { IsServerRunning = _activeInstance.ProcessService.IsRunning; }
+            catch { IsServerRunning = false; }
         }
 
         [RelayCommand]
         private void Start()
         {
-            if (_procSvc.IsRunning) return;
+            if (_activeInstance.ProcessService.IsRunning) return;
             try
             {
-                _procSvc.Start();
+                _activeInstance.ProcessService.Start();
                 IsServerRunning = true;
             }
             catch (Exception ex)
@@ -81,21 +79,21 @@ namespace TabgInstaller.Gui.ViewModels
         [RelayCommand]
         private void Stop()
         {
-            if (!_procSvc.IsRunning) return;
-            _procSvc.Stop();
+            if (!_activeInstance.ProcessService.IsRunning) return;
+            _activeInstance.ProcessService.Stop();
             IsServerRunning = false;
         }
 
         [RelayCommand]
         private void ClearConsole()
         {
-            _procSvc.ClearEntries();
+            _activeInstance.ProcessService.ClearEntries();
         }
 
         [RelayCommand]
         private void QuickSaveRestart()
         {
-            var serverDir = _serverPathProvider.ServerPath;
+            var serverDir = _activeInstance.ServerPath;
             var gsPath = Path.Combine(serverDir, "game_settings.txt");
             if (File.Exists(gsPath))
             {
@@ -111,14 +109,14 @@ namespace TabgInstaller.Gui.ViewModels
                 }
             }
 
-            if (_procSvc.IsRunning)
+            if (_activeInstance.ProcessService.IsRunning)
             {
-                _procSvc.Stop();
+                _activeInstance.ProcessService.Stop();
                 Task.Delay(1000).ContinueWith(_ =>
                 {
                     try
                     {
-                        _procSvc.Start();
+                        _activeInstance.ProcessService.Start();
                         IsServerRunning = true;
                     }
                     catch (Exception ex)
@@ -132,13 +130,13 @@ namespace TabgInstaller.Gui.ViewModels
         [RelayCommand]
         private void SendCommand()
         {
-            if (_procSvc.IsRunning && !string.IsNullOrWhiteSpace(CommandText))
+            if (_activeInstance.ProcessService.IsRunning && !string.IsNullOrWhiteSpace(CommandText))
             {
                 var echoEntry = LogLineParser.Parse($"> {CommandText}");
                 var infoEntry = LogLineParser.Parse(
                     "[INFO] Server does not accept stdin commands. Use RCON or a BepInEx console plugin.");
-                _procSvc.AddEntry(echoEntry);
-                _procSvc.AddEntry(infoEntry);
+                _activeInstance.ProcessService.AddEntry(echoEntry);
+                _activeInstance.ProcessService.AddEntry(infoEntry);
                 CommandText = "";
             }
         }

@@ -11,20 +11,21 @@ namespace TabgInstaller.Tests.ViewModels
     public class DashboardViewModelTests
     {
         private readonly Mock<IServerProcessService> _procSvc = new();
-        private readonly Mock<IServerPathProvider> _serverPath = new();
+        private readonly Mock<IActiveInstanceService> _activeInstance = new();
         private readonly Mock<IAppSettingsService> _appSettings = new();
         private readonly Mock<INavigationService> _navigation = new();
         private readonly Mock<IToastService> _toast = new();
 
         public DashboardViewModelTests()
         {
-            _serverPath.SetupGet(s => s.ServerPath).Returns(@"C:\Server");
+            _activeInstance.SetupGet(a => a.ServerPath).Returns(@"C:\Server");
+            _activeInstance.SetupGet(a => a.ProcessService).Returns(_procSvc.Object);
             _procSvc.SetupGet(p => p.IsRunning).Returns(false);
             _procSvc.Setup(p => p.GetRecentText(It.IsAny<int>())).Returns("");
         }
 
         private DashboardViewModel CreateSut() =>
-            new(_procSvc.Object, _serverPath.Object, _appSettings.Object,
+            new(_activeInstance.Object, _appSettings.Object,
                 _navigation.Object, _toast.Object);
 
         [Fact]
@@ -89,7 +90,7 @@ namespace TabgInstaller.Tests.ViewModels
         [Fact]
         public void OpenServerFolderCommand_CanExecute_WhenServerPathSet()
         {
-            _serverPath.SetupGet(s => s.ServerPath).Returns(@"C:\Server");
+            _activeInstance.SetupGet(a => a.ServerPath).Returns(@"C:\Server");
             var sut = CreateSut();
             sut.OpenServerFolderCommand.CanExecute(null).Should().BeTrue();
         }
@@ -99,7 +100,7 @@ namespace TabgInstaller.Tests.ViewModels
         {
             _procSvc.Setup(p => p.GetRecentText(20)).Returns("some log text");
             var sut = CreateSut();
-            _serverPath.Raise(s => s.PathChanged += null);
+            _activeInstance.Raise(a => a.PathChanged += null);
             sut.PreviewText.Should().Be("some log text");
         }
 
@@ -109,7 +110,7 @@ namespace TabgInstaller.Tests.ViewModels
             _procSvc.SetupGet(p => p.IsRunning).Returns(true);
             _procSvc.Setup(p => p.GetRecentText(20)).Returns("");
             var sut = CreateSut();
-            _serverPath.Raise(s => s.PathChanged += null);
+            _activeInstance.Raise(a => a.PathChanged += null);
             sut.StartStopButtonText.Should().Be("Stop Server");
         }
     }
