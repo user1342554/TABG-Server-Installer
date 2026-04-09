@@ -7,41 +7,52 @@
         Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
 
     <Grid>
-        <TabControl x:Name="MainTabs">
-            <TabItem Header="Dashboard">
-                <tabs:DashboardPanel x:Name="DashboardTab"/>
-            </TabItem>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-            <TabItem Header="Server Mods">
-                <tabs:ServerModsPanel x:Name="ServerModsTab"/>
-            </TabItem>
+        <!-- Sidebar -->
+        <controls:ServerListControl x:Name="ServerListSidebar" Grid.Column="0"/>
 
-            <TabItem Header="Client Mods">
-                <tabs:ClientPanel x:Name="ClientModsTab"/>
-            </TabItem>
+        <!-- Content area -->
+        <Grid Grid.Column="1">
+            <TabControl x:Name="MainTabs">
+                <TabItem Header="Dashboard">
+                    <tabs:DashboardPanel x:Name="DashboardTab"/>
+                </TabItem>
 
-            <TabItem Header="Config">
-                <tabs:ConfigPanel x:Name="ConfigTab"/>
-            </TabItem>
+                <TabItem Header="Server Mods">
+                    <tabs:ServerModsPanel x:Name="ServerModsTab"/>
+                </TabItem>
 
-            <TabItem Header="Console">
-                <tabs:ConsolePanel x:Name="ConsoleTab"/>
-            </TabItem>
+                <TabItem Header="Client Mods">
+                    <tabs:ClientPanel x:Name="ClientModsTab"/>
+                </TabItem>
 
-            <TabItem Header="Backups" x:Name="BackupsTabItem">
-                <tabs:BackupsPanel x:Name="BackupsTab"/>
-            </TabItem>
+                <TabItem Header="Config">
+                    <tabs:ConfigPanel x:Name="ConfigTab"/>
+                </TabItem>
 
-            <TabItem Header="Reference">
-                <tabs:ReferencePanel x:Name="ReferenceTab"/>
-            </TabItem>
+                <TabItem Header="Console">
+                    <tabs:ConsolePanel x:Name="ConsoleTab"/>
+                </TabItem>
 
-            <TabItem Header="Settings">
-                <tabs:SettingsPanel x:Name="SettingsTab"/>
-            </TabItem>
-        </TabControl>
+                <TabItem Header="Backups" x:Name="BackupsTabItem">
+                    <tabs:BackupsPanel x:Name="BackupsTab"/>
+                </TabItem>
 
-        <!-- Toast notification overlay -->
-        <controls:ToastNotification x:Name="ToastControl" VerticalAlignment="Top" Panel.ZIndex="100"/>
+                <TabItem Header="Reference">
+                    <tabs:ReferencePanel x:Name="ReferenceTab"/>
+                </TabItem>
+
+                <TabItem Header="Settings">
+                    <tabs:SettingsPanel x:Name="SettingsTab"/>
+                </TabItem>
+            </TabControl>
+
+            <!-- Toast notification overlay -->
+            <controls:ToastNotification x:Name="ToastControl" VerticalAlignment="Top" Panel.ZIndex="100"/>
+        </Grid>
     </Grid>
 </Window>

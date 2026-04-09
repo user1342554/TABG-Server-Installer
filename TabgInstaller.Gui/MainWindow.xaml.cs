@@ -15,16 +15,19 @@ namespace TabgInstaller.Gui
     {
         private readonly IServiceProvider _services;
         private readonly IAppSettingsService _appSettings;
-        private readonly IServerPathProvider _serverPath;
+        private readonly IServerInstanceManager _instanceManager;
+        private readonly IActiveInstanceService _activeInstance;
 
         public MainWindow(
             IServiceProvider services,
             IAppSettingsService appSettings,
-            IServerPathProvider serverPath)
+            IServerInstanceManager instanceManager,
+            IActiveInstanceService activeInstance)
         {
             _services = services;
             _appSettings = appSettings;
-            _serverPath = serverPath;
+            _instanceManager = instanceManager;
+            _activeInstance = activeInstance;
             InitializeComponent();
             Loaded += OnLoaded;
         }
@@ -44,9 +47,15 @@ namespace TabgInstaller.Gui
             var navService = _services.GetRequiredService<INavigationService>();
             navService.HardResetRequested += () =>
             {
-                // Stop server if running
-                var procSvc = _services.GetRequiredService<ServerProcessService>();
-                if (procSvc.IsRunning) procSvc.Stop();
+                // Stop all running instances
+                if (_instanceManager is ServerInstanceManager mgr)
+                {
+                    foreach (var kvp in mgr.GetRuntimeInstances())
+                    {
+                        if (kvp.Value is Model.ServerInstance si && si.IsRunning)
+                            si.Stop();
+                    }
+                }
                 RunSetupWizard();
             };
 
@@ -104,17 +113,27 @@ namespace TabgInstaller.Gui
                 System.Diagnostics.Debug.WriteLine($"[WARN] Failed to check for updates: {ex.Message}");
             }
 
-            // Check if setup is needed
-            var settings = _appSettings.Load();
-            if (!settings.SetupCompleted || string.IsNullOrEmpty(settings.ServerPath)
-                || !Directory.Exists(settings.ServerPath))
+            // Load instances or migrate from single-server setup
+            _instanceManager.Load();
+
+            if (_instanceManager.InstanceDataList.Count == 0)
             {
-                RunSetupWizard();
+                // Try migration from legacy single-server settings
+                var settings = _appSettings.Load();
+                if (!string.IsNullOrEmpty(settings.ServerPath) && Directory.Exists(settings.ServerPath))
+                {
+                    MigrateFromSingleServer(settings.ServerPath);
+                }
+                else
+                {
+                    RunSetupWizard();
+                    return;
+                }
             }
-            else
-            {
-                InitializeAllPanels(settings.ServerPath);
-            }
+
+            // Initialize sidebar
+            ServerListSidebar.DataContext = _services.GetRequiredService<ServerListViewModel>();
+            InitializeAllPanels();
         }
 
         private void RunSetupWizard()
@@ -132,14 +151,18 @@ namespace TabgInstaller.Gui
             if (result == true && wizard.SetupCompleted)
             {
                 var settings = _appSettings.Load();
-                InitializeAllPanels(settings.ServerPath);
+                MigrateFromSingleServer(settings.ServerPath);
+                ServerListSidebar.DataContext = _services.GetRequiredService<ServerListViewModel>();
+                InitializeAllPanels();
             }
             else
             {
                 var settings = _appSettings.Load();
                 if (!string.IsNullOrEmpty(settings.ServerPath) && Directory.Exists(settings.ServerPath))
                 {
-                    InitializeAllPanels(settings.ServerPath);
+                    MigrateFromSingleServer(settings.ServerPath);
+                    ServerListSidebar.DataContext = _services.GetRequiredService<ServerListViewModel>();
+                    InitializeAllPanels();
                 }
                 else
                 {
@@ -150,13 +173,18 @@ namespace TabgInstaller.Gui
             }
         }
 
-        // Called externally (e.g. InstallerPanel, PresetsGrid) when the server path changes.
-        public void ReloadFromPath(string serverDir) => InitializeAllPanels(serverDir);
-
-        private void InitializeAllPanels(string serverDir)
+        private void MigrateFromSingleServer(string serverPath)
         {
-            // Set the server path — triggers all ViewModel initialization via PathChanged
-            (_serverPath as ServerPathProvider)?.SetPath(serverDir);
+            if (_instanceManager is ServerInstanceManager mgr)
+                mgr.MigrateFromSingleServer(serverPath);
+        }
+
+        // Called externally (e.g. InstallerPanel, PresetsGrid) when the server path changes.
+        public void ReloadFromPath(string serverDir) => InitializeAllPanels();
+
+        private void InitializeAllPanels()
+        {
+            var serverDir = _activeInstance.ServerPath;
 
             // Initialize panels that haven't been migrated to MVVM yet
             // (these calls are removed one by one as panels are migrated)

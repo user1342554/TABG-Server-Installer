@@ -6,6 +6,7 @@ using System.IO;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Model;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
 
@@ -82,16 +83,36 @@ namespace TabgInstaller.Gui
         private void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         {
             // Infrastructure
-            services.AddSingleton<IServerPathProvider, ServerPathProvider>();
+            var settingsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TabgInstaller");
             services.AddSingleton<IAppSettingsService, AppSettingsService>();
-            // Register the canonical singleton so DI and non-DI callers share one instance.
             services.AddSingleton<ToastService>(_ => ToastService.Instance);
             services.AddSingleton<IToastService>(_ => ToastService.Instance);
 
+            // Multi-server instance management
+            services.AddSingleton<IServerInstanceManager>(sp => new ServerInstanceManager(settingsDir));
+            services.AddSingleton<IActiveInstanceService, ActiveInstanceService>();
+            services.AddSingleton<ICredentialStorageService>(sp => new CredentialStorageService(settingsDir));
+
+            // Keep IServerPathProvider as adapter during migration
+            services.AddSingleton<IServerPathProvider>(sp =>
+            {
+                var adapter = new ServerPathProvider();
+                var active = sp.GetRequiredService<IActiveInstanceService>();
+                active.PathChanged += () => adapter.SetPath(active.ServerPath);
+                return adapter;
+            });
+            // IServerProcessService proxies through ActiveInstanceService
+            services.AddSingleton<IServerProcessService>(sp =>
+            {
+                var active = sp.GetRequiredService<IActiveInstanceService>();
+                try { return active.ProcessService; }
+                catch { return new ServerProcessService(""); }
+            });
+
             // Core services
             services.AddSingleton<IUpdateService, UpdateService>();
-            services.AddSingleton<ServerProcessService>();
-            services.AddSingleton<IServerProcessService>(sp => sp.GetRequiredService<ServerProcessService>());
             services.AddSingleton<KnownPlayersService>();
             services.AddSingleton<IKnownPlayersService>(sp => sp.GetRequiredService<KnownPlayersService>());
             services.AddSingleton<ConfigValidationService>();
@@ -122,6 +143,7 @@ namespace TabgInstaller.Gui
             services.AddTransient<ClientPanelViewModel>();
             services.AddTransient<ReferencePanelViewModel>();
             services.AddTransient<LoadoutEditorViewModel>();
+            services.AddTransient<ServerListViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();
