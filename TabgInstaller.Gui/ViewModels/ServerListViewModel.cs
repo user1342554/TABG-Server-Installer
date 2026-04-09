@@ -39,7 +39,24 @@ namespace TabgInstaller.Gui.ViewModels
         [RelayCommand]
         private void AddServer()
         {
-            // Will be wired to AddServerDialog in Task 13
+            var dialog = new Windows.AddServerDialog();
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+            dialog.ShowDialog();
+
+            if (dialog.ViewModel.DialogResult)
+            {
+                var vm = dialog.ViewModel;
+                if (vm.IsLocal)
+                {
+                    _manager.AddLocalInstance(vm.DisplayName, vm.ServerPath);
+                }
+                else
+                {
+                    var config = vm.BuildRemoteConfig();
+                    _manager.AddRemoteInstance(vm.DisplayName, config);
+                }
+                _toast.Success($"Added server: {vm.DisplayName}");
+            }
         }
 
         [RelayCommand]
