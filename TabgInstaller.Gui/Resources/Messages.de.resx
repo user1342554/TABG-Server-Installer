@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AdminsSaved" xml:space="preserve">
+    <value>Admins gespeichert. Server neustarten, um &#x00C4;nderungen zu &#x00FC;bernehmen.</value>
+  </data>
+  <data name="BackupCreatedSuccess" xml:space="preserve">
+    <value>Sicherung erfolgreich erstellt!</value>
+  </data>
+  <data name="BackupRestoredSuccess" xml:space="preserve">
+    <value>Sicherung erfolgreich wiederhergestellt!</value>
+  </data>
+  <data name="BackupDeletedSuccess" xml:space="preserve">
+    <value>Sicherung erfolgreich gel&#x00F6;scht!</value>
+  </data>
+  <data name="InstallationCompleted" xml:space="preserve">
+    <value>Installation abgeschlossen! &#x00C4;ndere Servername, Passwort und Beschreibung in den Servereinstellungen.</value>
+  </data>
+  <data name="SigmaModeCompleted" xml:space="preserve">
+    <value>Sigma-Modus erfolgreich abgeschlossen!</value>
+  </data>
+  <data name="LogExportedTo" xml:space="preserve">
+    <value>Log exportiert nach {0}</value>
+  </data>
+  <data name="AddedServer" xml:space="preserve">
+    <value>Server hinzugef&#x00FC;gt: {0}</value>
+  </data>
+  <data name="SelectOrTypePlayer" xml:space="preserve">
+    <value>Bitte w&#x00E4;hle oder tippe einen Spielernamen ein.</value>
+  </data>
+  <data name="EnterNameAndEpicId" xml:space="preserve">
+    <value>Bitte gib sowohl einen Namen als auch eine Epic ID ein.</value>
+  </data>
+  <data name="NoServerDirectory" xml:space="preserve">
+    <value>Kein Serververzeichnis konfiguriert.</value>
+  </data>
+  <data name="RunInitialSetupFirst" xml:space="preserve">
+    <value>F&#x00FC;hre zuerst die Ersteinrichtung aus.</value>
+  </data>
+  <data name="EnterValidTabgPath" xml:space="preserve">
+    <value>Bitte gib einen g&#x00FC;ltigen TABG Steam-Ordnerpfad ein.</value>
+  </data>
+  <data name="NoModdedFolderPath" xml:space="preserve">
+    <value>Kein Modded-Ordnerpfad gesetzt.</value>
+  </data>
+  <data name="ClientSetupFailed" xml:space="preserve">
+    <value>Client-Einrichtung fehlgeschlagen.</value>
+  </data>
+  <data name="RunInitialSetupCopy" xml:space="preserve">
+    <value>F&#x00FC;hre zuerst die Ersteinrichtung aus, um die modded TABG-Kopie zu erstellen.</value>
+  </data>
+  <data name="ModdedTabgNotFound" xml:space="preserve">
+    <value>Modded TABG nicht gefunden. F&#x00FC;hre zuerst die Ersteinrichtung aus.</value>
+  </data>
+  <data name="GameSettingsNotFound" xml:space="preserve">
+    <value>game_settings.txt nicht gefunden. Speichere zuerst die Einstellungen, um die Datei zu erstellen.</value>
+  </data>
+  <data name="ClientModsNotSetUp" xml:space="preserve">
+    <value>Client-Mods nicht eingerichtet. Gehe zuerst zum Client-Mods-Tab.</value>
+  </data>
+  <data name="ModdedTabgNotFoundClient" xml:space="preserve">
+    <value>Modded TABG nicht gefunden. Installiere zuerst Client-Mods.</value>
+  </data>
+  <data name="SelectValidTabgFolder" xml:space="preserve">
+    <value>Bitte w&#x00E4;hle einen g&#x00FC;ltigen TABG-Serverordner.</value>
+  </data>
+  <data name="CitruslibTagRequired" xml:space="preserve">
+    <value>CitrusLib-Tag ist erforderlich, wenn das Plugin nicht &#x00FC;bersprungen wird.</value>
+  </data>
+  <data name="InstallationCancelled" xml:space="preserve">
+    <value>Installation abgebrochen.</value>
+  </data>
+  <data name="ServerPathNotSet" xml:space="preserve">
+    <value>Serverpfad ist nicht gesetzt.</value>
+  </data>
+  <data name="NoTextEntered" xml:space="preserve">
+    <value>Kein Text eingegeben.</value>
+  </data>
+  <data name="NoServerDirectorySet" xml:space="preserve">
+    <value>Kein Serververzeichnis gesetzt. Bitte installiere/w&#x00E4;hle zuerst einen Server.</value>
+  </data>
+  <data name="SelectTemplate" xml:space="preserve">
+    <value>Bitte w&#x00E4;hle eine Vorlage zum Anwenden.</value>
+  </data>
+  <data name="SelectPresetToLoad" xml:space="preserve">
+    <value>Bitte w&#x00E4;hle eine Voreinstellung zum Laden.</value>
+  </data>
+  <data name="SelectPresetToDelete" xml:space="preserve">
+    <value>Bitte w&#x00E4;hle eine Voreinstellung zum L&#x00F6;schen.</value>
+  </data>
+  <data name="CannotRemoveLastServer" xml:space="preserve">
+    <value>Die letzte Serverinstanz kann nicht entfernt werden.</value>
+  </data>
+  <data name="SigmaModeIssues" xml:space="preserve">
+    <value>Sigma-Modus mit Problemen abgeschlossen. Pr&#x00FC;fe das Log f&#x00FC;r Details.</value>
+  </data>
+  <data name="FailedToCreateBackup" xml:space="preserve">
+    <value>Sicherung konnte nicht erstellt werden. Pr&#x00FC;fe das Log f&#x00FC;r Details.</value>
+  </data>
+  <data name="FailedToRestoreBackup" xml:space="preserve">
+    <value>Sicherung konnte nicht wiederhergestellt werden. Pr&#x00FC;fe das Log f&#x00FC;r Details.</value>
+  </data>
+  <data name="FailedToDeleteBackup" xml:space="preserve">
+    <value>Sicherung konnte nicht gel&#x00F6;scht werden.</value>
+  </data>
+  <data name="ErrorPrefix" xml:space="preserve">
+    <value>Fehler: {0}</value>
+  </data>
+  <data name="FailedToStart" xml:space="preserve">
+    <value>Start fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToRestart" xml:space="preserve">
+    <value>Neustart fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToExportLog" xml:space="preserve">
+    <value>Log-Export fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToTogglePlugin" xml:space="preserve">
+    <value>Plugin-Umschaltung fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToInstallPlugin" xml:space="preserve">
+    <value>Installation von {0} fehlgeschlagen: {1}</value>
+  </data>
+  <data name="FailedToRemovePlugin" xml:space="preserve">
+    <value>Plugin-Entfernung fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToAddPlugin" xml:space="preserve">
+    <value>Plugin konnte nicht hinzugef&#x00FC;gt werden: {0}</value>
+  </data>
+  <data name="FailedToToggleMod" xml:space="preserve">
+    <value>Mod-Umschaltung fehlgeschlagen: {0}</value>
+  </data>
+  <data name="FailedToLaunch" xml:space="preserve">
+    <value>Start fehlgeschlagen: {0}</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>Speichern fehlgeschlagen: {0}</value>
+  </data>
+  <data name="CouldNotOpenFile" xml:space="preserve">
+    <value>Datei konnte nicht ge&#x00F6;ffnet werden: {0}</value>
+  </data>
+  <data name="ErrorLoadingPlugins" xml:space="preserve">
+    <value>Fehler beim Laden der Plugins: {0}</value>
+  </data>
+  <data name="InstallationEndedWithCode" xml:space="preserve">
+    <value>Installation beendet mit Code {0}. Siehe Log-Ausgabe.</value>
+  </data>
+  <data name="InstallationError" xml:space="preserve">
+    <value>Installationsfehler: {0}</value>
+  </data>
+  <data name="SigmaModeError" xml:space="preserve">
+    <value>Sigma-Modus-Fehler: {0}</value>
+  </data>
+  <data name="PathDoesNotExist" xml:space="preserve">
+    <value>Der Pfad '{0}' existiert nicht.</value>
+  </data>
+  <data name="RestoreError" xml:space="preserve">
+    <value>Wiederherstellungsfehler: {0}</value>
+  </data>
+  <data name="AdminSaveFailed" xml:space="preserve">
+    <value>Admins konnten nicht gespeichert werden: {0}</value>
+  </data>
+  <data name="AllChangesSaved" xml:space="preserve">
+    <value>Alle &#x00C4;nderungen gespeichert</value>
+  </data>
+  <data name="SettingsReloaded" xml:space="preserve">
+    <value>Einstellungen aus Datei neu geladen</value>
+  </data>
+  <data name="SettingsSavedToFile" xml:space="preserve">
+    <value>Einstellungen in Datei gespeichert</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>Einstellungen gespeichert.</value>
+  </data>
+  <data name="SettingsLoaded" xml:space="preserve">
+    <value>Einstellungen geladen.</value>
+  </data>
+  <data name="CreatingBackup" xml:space="preserve">
+    <value>Sicherung wird erstellt...</value>
+  </data>
+  <data name="BackupFailed" xml:space="preserve">
+    <value>Sicherung fehlgeschlagen.</value>
+  </data>
+  <data name="RestoreFailed" xml:space="preserve">
+    <value>Wiederherstellung fehlgeschlagen.</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Wird vorbereitet...</value>
+  </data>
+  <data name="ConfirmRestore" xml:space="preserve">
+    <value>Bist du sicher, dass du die Sicherung '{0}' wiederherstellen m&#x00F6;chtest?
+
+Dadurch werden deine aktuellen Serverdateien durch die Sicherungsdateien ersetzt.
+
+Aktuelle Dateien werden mit der Endung '.pre-restore' gesichert.</value>
+  </data>
+  <data name="ConfirmRestoreTitle" xml:space="preserve">
+    <value>Wiederherstellung best&#x00E4;tigen</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Bist du sicher, dass du die Sicherung '{0}' l&#x00F6;schen m&#x00F6;chtest?
+
+Diese Aktion kann nicht r&#x00FC;ckg&#x00E4;ngig gemacht werden!</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>L&#x00F6;schen best&#x00E4;tigen</value>
+  </data>
+  <data name="ConfirmRemove" xml:space="preserve">
+    <value>{0} entfernen?</value>
+  </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>Best&#x00E4;tigen</value>
+  </data>
+  <data name="InstallationWarning" xml:space="preserve">
+    <value>WARNUNG: Die Installation wird Serverdateien ver&#x00E4;ndern!
+
+Eine Sicherung wird vor der Installation im 'backup'-Ordner erstellt.
+M&#x00F6;chtest du fortfahren?</value>
+  </data>
+  <data name="InstallationWarningTitle" xml:space="preserve">
+    <value>Installationswarnung</value>
+  </data>
+  <data name="InitialClientSetupExisting" xml:space="preserve">
+    <value>Modded-Kopie existiert bereits unter:
+{0}
+
+Spieldateien werden erneut kopiert und BepInEx wird neu installiert. Deine Plugins in BepInEx/plugins bleiben erhalten.
+
+Fortfahren?</value>
+  </data>
+  <data name="InitialClientSetupNew" xml:space="preserve">
+    <value>TABG wird kopiert nach:
+{0}
+
+Dann wird BepInEx installiert, damit du Client-Mods hinzuf&#x00FC;gen kannst.
+
+Fortfahren?</value>
+  </data>
+  <data name="InitialClientSetupTitle" xml:space="preserve">
+    <value>Client-Ersteinrichtung</value>
+  </data>
+  <data name="TabgManagerError" xml:space="preserve">
+    <value>TABG Manager Fehler</value>
+  </data>
+  <data name="TabgManager" xml:space="preserve">
+    <value>TABG Manager</value>
+  </data>
+  <data name="StartupError" xml:space="preserve">
+    <value>Startfehler: {0}</value>
+  </data>
+  <data name="FoundKnownPlayers" xml:space="preserve">
+    <value>{0} bekannte Spieler gefunden ({1} neu)</value>
+  </data>
+  <data name="LoadedAdmins" xml:space="preserve">
+    <value>{0} Admin(s) geladen</value>
+  </data>
+  <data name="ErrorLoading" xml:space="preserve">
+    <value>Fehler beim Laden: {0}</value>
+  </data>
+  <data name="PlayerNotFound" xml:space="preserve">
+    <value>Spieler '{0}' nicht in den Guestbooks gefunden. Verwende den manuellen Eintrag unten.</value>
+  </data>
+  <data name="AlreadyAdmin" xml:space="preserve">
+    <value>'{0}' ist bereits ein Admin.</value>
+  </data>
+  <data name="AddedPlayer" xml:space="preserve">
+    <value>{0} hinzugef&#x00FC;gt</value>
+  </data>
+  <data name="AddedManual" xml:space="preserve">
+    <value>{0} hinzugef&#x00FC;gt (manuell)</value>
+  </data>
+  <data name="RemovedPlayer" xml:space="preserve">
+    <value>{0} entfernt</value>
+  </data>
+  <data name="SavedAdmins" xml:space="preserve">
+    <value>{0} Admin(s) gespeichert</value>
+  </data>
+  <data name="ScannedGuestbooks" xml:space="preserve">
+    <value>Guestbooks durchsucht &#x2014; {0} Spieler bekannt</value>
+  </data>
+  <data name="AdminJsonDescription" xml:space="preserve">
+    <value>Liste der Spieler mit ge&#x00E4;nderter Berechtigungsstufe. Standard-Berechtigungsstufe ist 0.</value>
+  </data>
+  <data name="RestoringBackup" xml:space="preserve">
+    <value>'{0}' wird wiederhergestellt...</value>
+  </data>
+  <data name="RestoredBackup" xml:space="preserve">
+    <value>'{0}' wiederhergestellt.</value>
+  </data>
+  <data name="BackupCount" xml:space="preserve">
+    <value>{0} Sicherung(en)</value>
+  </data>
+  <data name="InstalledPluginCount" xml:space="preserve">
+    <value>{0} Plugin(s) installiert.</value>
+  </data>
+  <data name="InstalledModCount" xml:space="preserve">
+    <value>{0} Mod(s) installiert.</value>
+  </data>
+  <data name="InstallationCancelledByUser" xml:space="preserve">
+    <value>Installation vom Benutzer abgebrochen.</value>
+  </data>
+  <data name="BackupWarningContinuing" xml:space="preserve">
+    <value>Warnung: Sicherung fehlgeschlagen &#x2014; wird trotzdem fortgesetzt.</value>
+  </data>
+  <data name="AppliedLocation" xml:space="preserve">
+    <value>Ort angewendet: {0}</value>
+  </data>
+  <data name="AppliedDeathmatch" xml:space="preserve">
+    <value>Deathmatch-Ring-Voreinstellung angewendet.</value>
+  </data>
+  <data name="AppliedStandardBR" xml:space="preserve">
+    <value>Standard-BR-Ring-Voreinstellung angewendet.</value>
+  </data>
+  <data name="SpawnPointCount" xml:space="preserve">
+    <value>{0} Spawnpunkt(e)</value>
+  </data>
+  <data name="AutoSaveFailed" xml:space="preserve">
+    <value>Automatisches Speichern fehlgeschlagen: {0}</value>
+  </data>
+  <data name="ErrorSaving" xml:space="preserve">
+    <value>Fehler beim Speichern: {0}</value>
+  </data>
+  <data name="ServerNoStdin" xml:space="preserve">
+    <value>[INFO] Server akzeptiert keine stdin-Befehle. Verwende RCON oder ein BepInEx-Konsolen-Plugin.</value>
+  </data>
+  <data name="IncorrectPassword" xml:space="preserve">
+    <value>Falsches Passwort.</value>
+  </data>
+  <data name="PasswordCorrectPrompt" xml:space="preserve">
+    <value>Passwort korrekt. Sigma-Modus starten?</value>
+  </data>
+  <data name="SuperSecretTitle" xml:space="preserve">
+    <value>Supergeheim</value>
+  </data>
+  <data name="StartingSigma" xml:space="preserve">
+    <value>Sigma-Modus wird gestartet...</value>
+  </data>
+  <data name="PlayingMusic" xml:space="preserve">
+    <value>Musik wird abgespielt...</value>
+  </data>
+  <data name="LaunchingTabg" xml:space="preserve">
+    <value>TABG wird gestartet...</value>
+  </data>
+  <data name="SettingFans" xml:space="preserve">
+    <value>L&#x00FC;fter werden eingestellt...</value>
+  </data>
+  <data name="CreatingOverlays" xml:space="preserve">
+    <value>Overlays werden erstellt...</value>
+  </data>
+  <data name="ScanningForTabg" xml:space="preserve">
+    <value>Suche nach TABG...</value>
+  </data>
+  <data name="WaitingForMainMenu" xml:space="preserve">
+    <value>Musik und schwarzer Bildschirm aktiv. Warte auf TABG-Hauptmen&#x00FC;...</value>
+  </data>
+  <data name="TabgLoading" xml:space="preserve">
+    <value>TABG l&#x00E4;dt...</value>
+  </data>
+  <data name="TabgProcessStarted" xml:space="preserve">
+    <value>TABG-Prozess gestartet! Warte auf Hauptmen&#x00FC;...</value>
+  </data>
+  <data name="TabgWindowFound" xml:space="preserve">
+    <value>TABG-Fenster gefunden...</value>
+  </data>
+  <data name="TabgWindowVisible" xml:space="preserve">
+    <value>TABG-Fenster sichtbar! Warte auf Hauptmen&#x00FC;...</value>
+  </data>
+  <data name="MainMenuReady" xml:space="preserve">
+    <value>Hauptmen&#x00FC; bereit!</value>
+  </data>
+  <data name="TabgMainMenuLoaded" xml:space="preserve">
+    <value>TABG-Hauptmen&#x00FC; geladen! Sigma-Modus wird beendet...</value>
+  </data>
+  <data name="ForceStoppingLabel" xml:space="preserve">
+    <value>Wird erzwungen beendet...</value>
+  </data>
+  <data name="ForceStopping" xml:space="preserve">
+    <value>Sigma-Modus wird erzwungen beendet...</value>
+  </data>
+  <data name="CrashReportSent" xml:space="preserve">
+    <value>Absturzbericht gesendet. Vielen Dank!</value>
+  </data>
+  <data name="CrashReportFailed" xml:space="preserve">
+    <value>Absturzbericht konnte nicht gesendet werden.</value>
+  </data>
+</root>
