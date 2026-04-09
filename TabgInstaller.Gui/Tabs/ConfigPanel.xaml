@@ -10,23 +10,27 @@
 
         <!-- Quick Actions -->
         <StackPanel Orientation="Horizontal" Margin="5" Grid.Row="0">
-            <Button Content="Open Server Folder" Margin="2" Click="OpenServerFolder_Click"/>
-            <Button Content="Open Logs" Margin="2" Click="OpenLogs_Click"/>
-            <Button Content="Open Config Files" Margin="2" Click="OpenConfigs_Click"/>
+            <Button Content="Open Server Folder" Margin="2" Command="{Binding OpenServerFolderCommand}"/>
+            <Button Content="Open Logs" Margin="2" Command="{Binding OpenLogsCommand}"/>
+            <Button Content="Open Config Files" Margin="2" Command="{Binding OpenConfigsCommand}"/>
         </StackPanel>
 
         <TabControl Grid.Row="1">
             <TabItem Header="Server Settings">
-                <Grid>
+                <Grid DataContext="{Binding GameSettingsVm}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <local:GameSettingsGrid Grid.Row="0"/>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
-                        <Button Content="Save" Width="100" Click="SaveButton_Click"/>
-                        <Button Content="Open in Notepad" Width="140" Margin="5,0,0,0" Click="OpenGameSettings_Click"/>
-                        <TextBlock Name="StatusTextBlock" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5"
+                                DataContext="{Binding RelativeSource={RelativeSource AncestorType=UserControl}}">
+                        <Button Content="Save" Width="100"
+                                Command="{Binding DataContext.SaveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        <Button Content="Open in Notepad" Width="140" Margin="5,0,0,0"
+                                Command="{Binding DataContext.OpenGameSettingsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        <TextBlock Text="{Binding DataContext.StatusText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   Margin="10,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

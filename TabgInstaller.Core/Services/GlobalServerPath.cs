@@ -3,8 +3,11 @@ using System;
 namespace TabgInstaller.Core.Services
 {
     /// <summary>
-    /// Global singleton to store and access the current server path across the application
+    /// Legacy global singleton for the server path.
+    /// All new code should use <see cref="TabgInstaller.Core.IServerPathProvider"/> via DI instead.
+    /// TODO: Remove once AppState (the only remaining caller) is deleted.
     /// </summary>
+    [Obsolete("Use IServerPathProvider via DI instead.")]
     public static class GlobalServerPath
     {
         private static string? _serverPath;

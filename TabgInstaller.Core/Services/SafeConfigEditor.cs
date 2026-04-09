@@ -73,7 +73,10 @@ namespace TabgInstaller.Core.Services
                 }
                 File.Copy(path, backupPath, overwrite: true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to create backup of config file '{path}': {ex.Message}");
+            }
 
             // Atomic write via temp
             var tempPath = path + ".tmp";

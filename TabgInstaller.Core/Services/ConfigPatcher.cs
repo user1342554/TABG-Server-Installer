@@ -115,7 +115,10 @@ namespace TabgInstaller.Core.Services
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to read game setting '{settingName}' from '{configPath}': {ex.Message}");
+            }
 
             return "";
         }

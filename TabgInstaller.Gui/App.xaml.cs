@@ -1,20 +1,19 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Configuration;
-using System.Data;
-using System.Windows;
+using System.Diagnostics;
 using System.IO;
+using System.Windows;
+using TabgInstaller.Core;
+using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Services;
+using TabgInstaller.Gui.ViewModels;
 
 namespace TabgInstaller.Gui
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : System.Windows.Application
+    public partial class App : Application
     {
-        //private readonly ILogger<App> _logger;
-        //private readonly IHost _host;
+        private IHost _host = null!;
 
         public App()
         {
@@ -22,42 +21,116 @@ namespace TabgInstaller.Gui
             {
                 try
                 {
-                    var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                     Directory.CreateDirectory(logDir);
-                    File.AppendAllText(Path.Combine(logDir, "startup.log"), "UNHANDLED: " + args.Exception.ToString() + "\n");
+                    File.AppendAllText(Path.Combine(logDir, "startup.log"),
+                        "UNHANDLED: " + args.Exception.ToString() + "\n");
                 }
-                catch (Exception logEx) { System.Diagnostics.Trace.TraceError($"[App] Failed to write crash log: {logEx}"); }
+                catch (Exception logEx)
+                {
+                    Trace.TraceError($"[App] Failed to write crash log: {logEx}");
+                }
                 MessageBox.Show("Error: " + args.Exception.ToString(), "TABG Manager Error");
                 args.Handled = true;
             };
         }
 
-        private void Application_Startup(object sender, StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
+            base.OnStartup(e);
+
             try
             {
-                var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                 Directory.CreateDirectory(logDir);
-                var logFile = Path.Combine(logDir, "startup.log");
-                File.AppendAllText(logFile, $"Starting {System.DateTime.Now}\n");
-
-                var mw = new MainWindow();
-                mw.Show();
-
-                File.AppendAllText(logFile, "MainWindow shown\n");
+                File.AppendAllText(Path.Combine(logDir, "startup.log"),
+                    $"Starting {DateTime.Now}\n");
             }
-            catch (System.Exception ex)
+            catch (Exception logEx)
+            {
+                Trace.TraceError($"[App] Failed to write startup log: {logEx}");
+            }
+
+            _host = Host.CreateDefaultBuilder()
+                .ConfigureServices(ConfigureServices)
+                .Build();
+
+            try
+            {
+                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                mainWindow.Show();
+            }
+            catch (Exception ex)
             {
                 try
                 {
-                    var logDir = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
+                    var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                     Directory.CreateDirectory(logDir);
-                    File.AppendAllText(Path.Combine(logDir, "startup.log"), "ERROR: " + ex.ToString() + "\n");
+                    File.AppendAllText(Path.Combine(logDir, "startup.log"),
+                        "ERROR: " + ex.ToString() + "\n");
                 }
-                catch (Exception logEx) { System.Diagnostics.Trace.TraceError($"[App] Failed to write startup log: {logEx}"); }
-                MessageBox.Show("Startup error: " + ex.Message, "TABG Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+                catch (Exception logEx)
+                {
+                    Trace.TraceError($"[App] Failed to write startup log: {logEx}");
+                }
+                MessageBox.Show("Startup error: " + ex.Message, "TABG Manager",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown(-1);
             }
+        }
+
+        private void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        {
+            // Infrastructure
+            services.AddSingleton<IServerPathProvider, ServerPathProvider>();
+            services.AddSingleton<IAppSettingsService, AppSettingsService>();
+            // Register the canonical singleton so DI and non-DI callers share one instance.
+            services.AddSingleton<ToastService>(_ => ToastService.Instance);
+            services.AddSingleton<IToastService>(_ => ToastService.Instance);
+
+            // Core services
+            services.AddSingleton<IUpdateService, UpdateService>();
+            services.AddSingleton<ServerProcessService>();
+            services.AddSingleton<IServerProcessService>(sp => sp.GetRequiredService<ServerProcessService>());
+            services.AddSingleton<KnownPlayersService>();
+            services.AddSingleton<IKnownPlayersService>(sp => sp.GetRequiredService<KnownPlayersService>());
+            services.AddSingleton<ConfigValidationService>();
+            services.AddTransient<IBackupService>(sp =>
+                new BackupService(new Progress<string>(msg =>
+                    Debug.WriteLine($"[Backup] {msg}"))));
+            services.AddTransient<BepInExLoaderService>(sp =>
+                new BepInExLoaderService(new Progress<string>(msg =>
+                    Debug.WriteLine($"[BepInEx] {msg}"))));
+
+            // Navigation
+            services.AddSingleton<INavigationService, NavigationService>();
+
+            // ViewModels — registered as each panel is migrated
+            services.AddTransient<SettingsPanelViewModel>();
+            services.AddTransient<DashboardViewModel>();
+            services.AddTransient<AdminPanelViewModel>();
+            services.AddTransient<SuperSecretSettingsViewModel>();
+            services.AddTransient<MatchSettingsViewModel>();
+            services.AddTransient<RingSpawnsViewModel>();
+            services.AddTransient<BackupsPanelViewModel>();
+            services.AddTransient<ConfigViewModel>();
+            services.AddTransient<PresetsViewModel>();
+            services.AddTransient<ServerModsViewModel>();
+            services.AddTransient<ModSettingsViewModel>();
+            services.AddSingleton<ConsolePanelViewModel>();
+            services.AddTransient<InstallerPanelViewModel>();
+            services.AddTransient<ClientPanelViewModel>();
+            services.AddTransient<ReferencePanelViewModel>();
+            services.AddTransient<LoadoutEditorViewModel>();
+
+            // Windows
+            services.AddSingleton<MainWindow>();
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _host?.Dispose();
+            base.OnExit(e);
         }
     }
 }

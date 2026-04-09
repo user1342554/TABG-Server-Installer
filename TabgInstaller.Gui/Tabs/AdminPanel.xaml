@@ -10,7 +10,7 @@
 
         <!-- Admin List -->
         <GroupBox Grid.Row="0" Header="Server Admins" Margin="0,0,0,8">
-            <ListView x:Name="LstAdmins" SelectionMode="Single">
+            <ListView x:Name="AdminListView" ItemsSource="{Binding Admins}" SelectionMode="Single">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Name" Width="250" DisplayMemberBinding="{Binding Name}"/>
@@ -32,20 +32,26 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Label Grid.Column="0" Content="Player:"/>
-                    <ComboBox Grid.Column="1" x:Name="CmbPlayerName" IsEditable="True" Margin="2"
-                              IsTextSearchEnabled="True" StaysOpenOnEdit="True"/>
+                    <ComboBox Grid.Column="1" x:Name="CmbPlayerName"
+                              IsEditable="True" Margin="2"
+                              IsTextSearchEnabled="True" StaysOpenOnEdit="True"
+                              ItemsSource="{Binding KnownPlayerNames}"
+                              Text="{Binding SelectedPlayerName, UpdateSourceTrigger=PropertyChanged}"/>
                     <Label Grid.Column="2" Content="Level:"/>
-                    <ComboBox Grid.Column="3" x:Name="CmbPermLevel" Margin="2" SelectedIndex="3">
+                    <ComboBox Grid.Column="3" x:Name="CmbPermLevel" Margin="2"
+                              SelectedIndex="{Binding SelectedPermLevel}">
                         <ComboBoxItem Content="1"/>
                         <ComboBoxItem Content="2"/>
                         <ComboBoxItem Content="3"/>
                         <ComboBoxItem Content="4"/>
                         <ComboBoxItem Content="5"/>
                     </ComboBox>
-                    <Button Grid.Column="4" Content="Add" Width="60" Margin="4,2,2,2" Click="AddAdmin_Click"/>
+                    <Button Grid.Column="4" Content="Add" Width="60" Margin="4,2,2,2"
+                            Command="{Binding AddAdminCommand}"/>
                 </Grid>
                 <StackPanel Orientation="Horizontal" Margin="4,4,4,0">
-                    <Button Content="Refresh Players" Margin="0,0,8,0" Padding="8,2" Click="RefreshPlayers_Click"/>
+                    <Button Content="Refresh Players" Margin="0,0,8,0" Padding="8,2"
+                            Command="{Binding RefreshPlayersCommand}"/>
                     <TextBlock Foreground="Gray" FontSize="11" VerticalAlignment="Center"
                                Text="Scans all server Guestbooks for known players"/>
                 </StackPanel>
@@ -63,18 +69,22 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0" Content="Name:" FontSize="11"/>
-                        <TextBox Grid.Column="1" x:Name="TxtManualName" Margin="2" FontSize="11"/>
+                        <TextBox Grid.Column="1" Margin="2" FontSize="11"
+                                 Text="{Binding ManualName, UpdateSourceTrigger=PropertyChanged}"/>
                         <Label Grid.Column="2" Content="Epic ID:" FontSize="11"/>
-                        <TextBox Grid.Column="3" x:Name="TxtManualEpicId" Margin="2" FontSize="11"/>
+                        <TextBox Grid.Column="3" Margin="2" FontSize="11"
+                                 Text="{Binding ManualEpicId, UpdateSourceTrigger=PropertyChanged}"/>
                         <Label Grid.Column="4" Content="Level:" FontSize="11"/>
-                        <ComboBox Grid.Column="5" x:Name="CmbManualPermLevel" Margin="2" SelectedIndex="3" FontSize="11">
+                        <ComboBox Grid.Column="5" Margin="2" FontSize="11"
+                                  SelectedIndex="{Binding ManualPermLevel}">
                             <ComboBoxItem Content="1"/>
                             <ComboBoxItem Content="2"/>
                             <ComboBoxItem Content="3"/>
                             <ComboBoxItem Content="4"/>
                             <ComboBoxItem Content="5"/>
                         </ComboBox>
-                        <Button Grid.Column="6" Content="Add" Width="60" Margin="4,2,2,2" Click="AddManualAdmin_Click" FontSize="11"/>
+                        <Button Grid.Column="6" Content="Add" Width="60" Margin="4,2,2,2" FontSize="11"
+                                Command="{Binding AddManualAdminCommand}"/>
                     </Grid>
                 </Expander>
             </StackPanel>
@@ -82,9 +92,12 @@
 
         <!-- Actions -->
         <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <Button Content="Remove Selected" Width="120" Margin="2" Click="RemoveAdmin_Click"/>
-            <Button Content="Save" Width="80" Margin="2" Click="Save_Click"/>
-            <TextBlock x:Name="TxtStatus" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+            <Button Content="Remove Selected" Width="120" Margin="2"
+                    Command="{Binding RemoveAdminCommand}"
+                    CommandParameter="{Binding SelectedItem, ElementName=AdminListView}"/>
+            <Button Content="Save" Width="80" Margin="2" Command="{Binding SaveCommand}"/>
+            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Foreground="Gray"
+                       Text="{Binding StatusText}"/>
         </StackPanel>
     </Grid>
 </UserControl>

@@ -33,7 +33,7 @@
             </TabItem>
 
             <TabItem Header="Reference">
-                <tabs:ReferencePanel/>
+                <tabs:ReferencePanel x:Name="ReferenceTab"/>
             </TabItem>
 
             <TabItem Header="Settings">

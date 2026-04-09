@@ -3,26 +3,29 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using System.Reflection;
 
 namespace TabgInstaller.Gui.ViewModels
 {
-    public class GameSettingsDynamicViewModel : INotifyPropertyChanged
+    public partial class GameSettingsDynamicViewModel : ObservableObject
     {
         private readonly GameSettingsData _model;
-        private readonly ConfigValidationService _validationService = new();
+        private readonly ConfigValidationService _validationService;
         private bool _showAdvanced = false;
         private SettingPropertyVM? _gameModeProperty;
         private bool _suppressPropertyEvents = false;
         private bool _isValidating = false;
+        private bool _isRefreshingVisibility = false;
         
         public ObservableCollection<SettingPropertyVM> Properties { get; }
 
-        public GameSettingsDynamicViewModel(GameSettingsData model)
+        public GameSettingsDynamicViewModel(GameSettingsData model, ConfigValidationService validationService)
         {
             _model = model;
+            _validationService = validationService;
             var props = typeof(GameSettingsData).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             // Use a comprehensive order; remaining properties are appended alphabetically
@@ -237,6 +240,8 @@ namespace TabgInstaller.Gui.ViewModels
 
         private void RefreshAllVisibility()
         {
+            if (_isRefreshingVisibility) return;
+            _isRefreshingVisibility = true;
             try
             {
                 foreach (var prop in Properties)
@@ -257,6 +262,10 @@ namespace TabgInstaller.Gui.ViewModels
             catch
             {
                 // Ignore bulk refresh errors
+            }
+            finally
+            {
+                _isRefreshingVisibility = false;
             }
         }
 
@@ -283,17 +292,5 @@ namespace TabgInstaller.Gui.ViewModels
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
-        {
-            try
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-            catch
-            {
-                // Ignore PropertyChanged event errors
-            }
-        }
     }
 } 

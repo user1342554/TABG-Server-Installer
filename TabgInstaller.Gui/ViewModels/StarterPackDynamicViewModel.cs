@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using CommunityToolkit.Mvvm.ComponentModel;
 using TabgInstaller.Core.Model;
 
 namespace TabgInstaller.Gui.ViewModels
 {
-    public class StarterPackDynamicViewModel
+    public partial class StarterPackDynamicViewModel : ObservableObject
     {
         private readonly TheStarterPackConfig _model;
         public ObservableCollection<SettingPropertyVM> Properties { get; }

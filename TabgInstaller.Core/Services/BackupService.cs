@@ -14,7 +14,7 @@ namespace TabgInstaller.Core.Services
         public long SizeInBytes { get; set; }
     }
 
-    public class BackupService
+    public class BackupService : IBackupService
     {
         private readonly IProgress<string> _log;
 
@@ -207,8 +207,9 @@ namespace TabgInstaller.Core.Services
                 return Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
                     .Sum(file => new FileInfo(file).Length);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[WARN] Failed to calculate directory size for '{directory}': {ex.Message}");
                 return 0;
             }
         }

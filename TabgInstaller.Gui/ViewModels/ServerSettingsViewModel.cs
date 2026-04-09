@@ -1,9 +1,9 @@
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using TabgInstaller.Core.Model;
 
 namespace TabgInstaller.Gui.ViewModels
 {
-    public class ServerSettingsViewModel : INotifyPropertyChanged
+    public partial class ServerSettingsViewModel : ObservableObject
     {
         private readonly GameSettingsData _data;
         public ServerSettingsViewModel(GameSettingsData data)
@@ -28,11 +28,5 @@ namespace TabgInstaller.Gui.ViewModels
         }
 
         public GameSettingsData ToModel() => _data;
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 } 

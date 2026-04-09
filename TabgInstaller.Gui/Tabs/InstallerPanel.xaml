@@ -16,85 +16,77 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="PathBox" Grid.Column="0" Margin="5"/>
-                <Button x:Name="BrowseButton" Content="Browse" Grid.Column="1" Width="80" Margin="5" Click="Browse_Click"/>
+                <TextBox Grid.Column="0" Margin="5"
+                         Text="{Binding ServerPath, UpdateSourceTrigger=PropertyChanged}"
+                         IsEnabled="{Binding UiEnabled}"/>
+                <Button Content="Browse" Grid.Column="1" Width="80" Margin="5"
+                        Click="Browse_Click"
+                        IsEnabled="{Binding UiEnabled}"/>
             </Grid>
         </GroupBox>
 
         <!-- Plugins -->
         <GroupBox Grid.Row="1" Header="Plugins" Margin="0,0,0,10">
             <StackPanel>
-                <CheckBox x:Name="ChkCitruslib" Content="Citruslib — Core server library (admin, permissions, commands)"
-                          Margin="5,3" IsChecked="True"/>
-                <Grid Margin="20,0,5,2">
+                <ItemsControl ItemsSource="{Binding PluginSelections}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="5,3">
+                                <CheckBox Content="{Binding Name}"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          IsEnabled="{Binding IsEnabled}"/>
+                                <TextBlock Text=" [Client mod required]"
+                                           Foreground="#E65100" FontSize="11"
+                                           VerticalAlignment="Center" FontStyle="Italic"
+                                           ToolTip="Also requires the client-side mod installed via the Client tab">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RequiresClientMod}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- CitrusLib tag input — shown inline after the Citruslib entry -->
+                <Grid Margin="20,0,5,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Label Content="Tag:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtCitrusTag" Text="v0.7" Grid.Column="1" Width="80" HorizontalAlignment="Left"/>
+                    <Label Content="Citruslib Tag:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" Width="80" HorizontalAlignment="Left"
+                             Text="{Binding CitrusTag, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding UiEnabled}"/>
                 </Grid>
-                <CheckBox x:Name="ChkInstallStarterPack" Content="StarterPack — Match mechanics, loadouts, win conditions"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkStarterPackFixes" Content="StarterPackFixes — Loot drop control"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkCustomSpawnpoints" Content="CustomSpawnpoints — Custom spawn points"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkFreddoCommission" Content="FreddoTABGCommission — Curses, grenades on kill, bans"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkMatchTimeout" Content="MatchAndPreMatchTimeout — Match timing"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkServerLogger" Content="ServerLogger — Player logging"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkVoteToStart" Content="VoteToStart — Vote-to-start"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkUnusedVehicles" Content="UnusedVehicles — Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkBigSmoke" Content="BigSmokeGrenade — Giant purple smoke grenades (/give 208)"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkMGLFlashbang" Content="MGLFlashbang — MGL shoots flashbang rounds"
-                          Margin="5,3" IsChecked="True"/>
-                <CheckBox x:Name="ChkSoloTesting" Content="SoloTesting — Prevents 'You Win' when testing alone"
-                          Margin="5,3"/>
-                <CheckBox x:Name="ChkInstallCommunityServer" Content="TABGCommunityServer — Community server"
-                          Margin="5,3"/>
-
-                <!-- Plugins with client mod dependency -->
-                <StackPanel Orientation="Horizontal" Margin="5,3">
-                    <CheckBox x:Name="ChkProximityChat" Content="ProximityChat — Proximity voice chat"
-                              IsChecked="True" Checked="DependencyPlugin_Changed" Unchecked="DependencyPlugin_Changed"/>
-                    <TextBlock Text=" [Client mod required]" Foreground="#E65100" FontSize="11"
-                               VerticalAlignment="Center" FontStyle="Italic"
-                               ToolTip="Also requires the client-side mod installed via the Client tab"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5,3">
-                    <CheckBox x:Name="ChkHuntMode" Content="Hunt Mode (4v1) — 1 Killer vs 4 Survivors survival"
-                              IsChecked="False" Checked="DependencyPlugin_Changed" Unchecked="DependencyPlugin_Changed"/>
-                    <TextBlock Text=" [Client mod required]" Foreground="#E65100" FontSize="11"
-                               VerticalAlignment="Center" FontStyle="Italic"
-                               ToolTip="Also requires the client-side mod installed via the Client tab"/>
-                </StackPanel>
-                <CheckBox x:Name="ChkJuggernautMode" Content="Juggernaut Mode — One massive player vs everyone, score-based"
-                          Margin="5,3" IsChecked="False"/>
-                <StackPanel Orientation="Horizontal" Margin="5,3">
-                    <CheckBox x:Name="ChkTabgVR" Content="TABGVR Server — VR hand sync for VR players"
-                              IsChecked="False" Checked="DependencyPlugin_Changed" Unchecked="DependencyPlugin_Changed"/>
-                    <TextBlock Text=" [Client mod required]" Foreground="#E65100" FontSize="11"
-                               VerticalAlignment="Center" FontStyle="Italic"
-                               ToolTip="Also requires the client-side mod installed via the Client tab"/>
-                </StackPanel>
-                <CheckBox x:Name="ChkFakePlayers" Content="FakePlayers — Spawn dummy players for solo testing (/spawndummy, /removedummy)"
-                          Margin="5,3" IsChecked="False"/>
 
                 <!-- Dependency hint -->
-                <TextBlock x:Name="TxtDependencyHint" Margin="5,4,5,0" Foreground="#E65100" FontSize="11"
-                           TextWrapping="Wrap" Visibility="Collapsed"
-                           Text="Some selected plugins require matching client mods — install them in the Client tab after server setup."/>
+                <TextBlock Margin="5,4,5,0" Foreground="#E65100" FontSize="11"
+                           TextWrapping="Wrap"
+                           Text="Some selected plugins require matching client mods — install them in the Client tab after server setup.">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DependencyHintVisible}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
                 <StackPanel Orientation="Horizontal" Margin="5,6,5,2">
-                    <Button Content="Select All" Width="80" Click="SelectAllPlugins_Click" Margin="0,0,5,0"/>
-                    <Button Content="Select None" Width="80" Click="SelectNonePlugins_Click" Margin="0,0,5,0"/>
-                    <Button Content="Sigma Preset" Width="100" Click="SelectSigmaPlugins_Click"
+                    <Button Content="Select All" Width="80" Command="{Binding SelectAllCommand}" Margin="0,0,5,0"/>
+                    <Button Content="Select None" Width="80" Command="{Binding SelectNoneCommand}" Margin="0,0,5,0"/>
+                    <Button Content="Sigma Preset" Width="100" Command="{Binding SelectSigmaCommand}"
                             ToolTip="Select the plugins required for the CollinSigma preset"/>
                 </StackPanel>
             </StackPanel>
@@ -107,21 +99,51 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <DockPanel Grid.Row="0" Margin="4,4,4,8" x:Name="ProgressPanel" Visibility="Collapsed">
-                    <TextBlock x:Name="TxtStage" DockPanel.Dock="Right" Margin="8,0,0,0"
-                               VerticalAlignment="Center" FontSize="12" Foreground="#555555"/>
-                    <ProgressBar x:Name="InstallProgress" Height="20" Minimum="0" Maximum="100" Value="0"/>
+                <DockPanel Grid.Row="0" Margin="4,4,4,8">
+                    <DockPanel.Style>
+                        <Style TargetType="DockPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsProgressVisible}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DockPanel.Style>
+                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0"
+                               VerticalAlignment="Center" FontSize="12" Foreground="#555555"
+                               Text="{Binding StatusText}"/>
+                    <ProgressBar Height="20" Minimum="0" Maximum="100"
+                                 Value="{Binding Progress}"/>
                 </DockPanel>
-                <ScrollViewer x:Name="LogScrollViewer" Grid.Row="1">
-                    <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                <ScrollViewer Grid.Row="1" x:Name="LogScrollViewer">
+                    <TextBox IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                             Text="{Binding LogText, Mode=OneWay}"/>
                 </ScrollViewer>
             </Grid>
         </GroupBox>
 
         <!-- Actions -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button x:Name="BtnInstall" Content="INSTALL" Height="40" Width="140" Click="BtnInstall_Click"/>
-            <Button x:Name="BtnContinue" Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0" Click="BtnContinue_Click"/>
+            <Button Content="INSTALL" Height="40" Width="140"
+                    Command="{Binding InstallCommand}"
+                    IsEnabled="{Binding UiEnabled}"/>
+            <Button Height="40" Width="140" Margin="10,0,0,0"
+                    Content="{Binding CancelButtonText}"
+                    Command="{Binding CancelCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCancelVisible}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="Continue without install" Height="40" Width="200" Margin="10,0,0,0"
+                    Command="{Binding ContinueCommand}"/>
         </StackPanel>
     </Grid>
 </UserControl>

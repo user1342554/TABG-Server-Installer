@@ -19,7 +19,9 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Loadout Mode" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="CmbLoadoutMode" Grid.Column="1" Width="200" HorizontalAlignment="Left">
+                    <ComboBox Grid.Column="1" Width="200" HorizontalAlignment="Left"
+                              SelectedValue="{Binding LoadoutMode, Mode=TwoWay}"
+                              SelectedValuePath="Content">
                         <ComboBoxItem Content="Normal"/>
                         <ComboBoxItem Content="GunGame"/>
                         <ComboBoxItem Content="ReverseGunGame"/>
@@ -33,21 +35,23 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Win Condition" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="CmbWinCondition" Grid.Column="1" Width="200" HorizontalAlignment="Left"
-                              SelectionChanged="CmbWinCondition_SelectionChanged">
+                    <ComboBox Grid.Column="1" Width="200" HorizontalAlignment="Left"
+                              SelectedValue="{Binding WinCondition, Mode=TwoWay}"
+                              SelectedValuePath="Content">
                         <ComboBoxItem Content="Default"/>
                         <ComboBoxItem Content="KillsToWin"/>
                         <ComboBoxItem Content="Debug"/>
                     </ComboBox>
                 </Grid>
 
-                <Grid x:Name="KillsToWinRow" Margin="0,2" Visibility="Collapsed">
+                <Grid Margin="0,2" Visibility="{Binding ShowKillsToWin}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="180"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Kills To Win" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtKillsToWin" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                    <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                             Text="{Binding KillsToWin, UpdateSourceTrigger=PropertyChanged}"/>
                 </Grid>
 
                 <Grid Margin="0,2">
@@ -56,7 +60,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Force Kill At Start" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="ChkForceKillAtStart" Grid.Column="1" VerticalAlignment="Center"/>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                              IsChecked="{Binding ForceKillAtStart}"/>
                 </Grid>
 
                 <Grid Margin="0,2">
@@ -66,9 +71,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Heal On Kill" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <CheckBox x:Name="ChkHealOnKill" VerticalAlignment="Center"/>
+                        <CheckBox VerticalAlignment="Center"
+                                  IsChecked="{Binding HealOnKill}"/>
                         <TextBlock Text="Heal Amount %:" Margin="16,0,4,0" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtHealOnKillAmount" Width="60"/>
+                        <TextBox Width="60"
+                                 Text="{Binding HealOnKillAmount, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                 </Grid>
 
@@ -78,7 +85,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Drop Items On Death" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="ChkDropItemsOnDeath" Grid.Column="1" VerticalAlignment="Center"/>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                              IsChecked="{Binding DropItemsOnDeath}"/>
                 </Grid>
 
                 <Grid Margin="0,2">
@@ -87,7 +95,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Can Go Down" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="ChkCanGoDown" Grid.Column="1" VerticalAlignment="Center"/>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                              IsChecked="{Binding CanGoDown}"/>
                 </Grid>
 
                 <Grid Margin="0,2">
@@ -96,7 +105,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Can Lock Out" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="ChkCanLockOut" Grid.Column="1" VerticalAlignment="Center"/>
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                              IsChecked="{Binding CanLockOut}"/>
                 </Grid>
 
                 <!-- Vote Settings -->
@@ -108,7 +118,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Percent Of Votes" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtPercentOfVotes" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding PercentOfVotes, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -116,7 +127,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Min Players" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtMinPlayers" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding MinPlayers, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -124,7 +136,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Time To Start (seconds)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtTimeToStart" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding TimeToStart, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>
@@ -138,7 +151,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Enabled" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="ChkSpelldropEnabled" Grid.Column="1" VerticalAlignment="Center"/>
+                            <CheckBox Grid.Column="1" VerticalAlignment="Center"
+                                      IsChecked="{Binding SpelldropEnabled}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -146,7 +160,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Min Delay (seconds)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtMinSpellDropDelay" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding MinSpellDropDelay, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -154,7 +169,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Max Delay (seconds)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtMaxSpellDropDelay" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding MaxSpellDropDelay, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -162,7 +178,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="First Drop Offset (seconds)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtSpellDropOffset" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding SpellDropOffset, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>
@@ -176,7 +193,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Pre-Match Timeout (minutes)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtPreMatchTimeout" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding PreMatchTimeout, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                         <Grid Margin="0,2">
                             <Grid.ColumnDefinitions>
@@ -184,7 +202,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Match Timeout (minutes)" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtPeriMatchTimeout" Grid.Column="1" Width="100" HorizontalAlignment="Left"/>
+                            <TextBox Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding PeriMatchTimeout, UpdateSourceTrigger=PropertyChanged}"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>
@@ -194,8 +213,8 @@
 
         <!-- Bottom bar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,8,4,4">
-            <Button Content="Save" Width="100" Click="SaveButton_Click"/>
-            <TextBlock x:Name="StatusText" Margin="12,0,0,0" VerticalAlignment="Center"/>
+            <Button Content="Save" Width="100" Command="{Binding SaveCommand}"/>
+            <TextBlock Text="{Binding StatusText}" Margin="12,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </UserControl>

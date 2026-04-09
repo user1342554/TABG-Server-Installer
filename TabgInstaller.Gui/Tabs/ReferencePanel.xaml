@@ -7,14 +7,15 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="5">
-            <Button Content="Commands" Width="90" Margin="2" Click="RefCommands_Click"/>
-            <Button Content="Item IDs" Width="90" Margin="2" Click="RefItems_Click"/>
-            <Button Content="Loadouts" Width="90" Margin="2" Click="RefLoadouts_Click"/>
-            <Button Content="Spawn Locations" Width="110" Margin="2" Click="RefSpawns_Click"/>
-            <Button Content="Match Settings Guide" Width="130" Margin="2" Click="RefMatchSettings_Click"/>
+            <Button Content="Commands" Width="90" Margin="2" Command="{Binding ShowCommandsCommand}"/>
+            <Button Content="Item IDs" Width="90" Margin="2" Command="{Binding ShowItemsCommand}"/>
+            <Button Content="Loadouts" Width="90" Margin="2" Command="{Binding ShowLoadoutsCommand}"/>
+            <Button Content="Spawn Locations" Width="110" Margin="2" Command="{Binding ShowSpawnsCommand}"/>
+            <Button Content="Match Settings Guide" Width="130" Margin="2" Command="{Binding ShowMatchSettingsCommand}"/>
         </StackPanel>
-        <TextBox x:Name="ReferenceTextBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
+        <TextBox Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
                  VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
-                 Margin="5" AcceptsReturn="True"/>
+                 Margin="5" AcceptsReturn="True"
+                 Text="{Binding ReferenceText, Mode=OneWay}"/>
     </Grid>
 </UserControl>

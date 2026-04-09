@@ -7,26 +7,26 @@
             <GroupBox Header="Paths" Margin="0,0,0,10">
                 <StackPanel Margin="5">
                     <TextBlock Text="Server Path:" FontWeight="SemiBold"/>
-                    <TextBox x:Name="TxtServerPath" Margin="0,4,0,8" IsReadOnly="True"/>
+                    <TextBox Text="{Binding ServerPath, Mode=OneWay}" Margin="0,4,0,8" IsReadOnly="True"/>
                     <TextBlock Text="Client Path:" FontWeight="SemiBold"/>
-                    <TextBox x:Name="TxtClientPath" Margin="0,4,0,8" IsReadOnly="True"/>
+                    <TextBox Text="{Binding ClientPath, Mode=OneWay}" Margin="0,4,0,8" IsReadOnly="True"/>
                     <TextBlock Text="Modded TABG Path:" FontWeight="SemiBold"/>
-                    <TextBox x:Name="TxtModdedPath" Margin="0,4,0,0" IsReadOnly="True"/>
+                    <TextBox Text="{Binding ModdedPath, Mode=OneWay}" Margin="0,4,0,0" IsReadOnly="True"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Hard Reset" Margin="0,0,0,10">
                 <StackPanel Margin="5">
                     <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
                                Text="Completely reinstall the server from scratch. This will create a backup first, then run the full setup wizard again."/>
-                    <Button Content="Hard Reset (Full Reinstall)" Width="220" HorizontalAlignment="Left" Click="HardReset_Click"/>
+                    <Button Content="Hard Reset (Full Reinstall)" Width="220" HorizontalAlignment="Left" Command="{Binding HardResetCommand}"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Super Secret Settings" Margin="0,0,0,10">
-                <local:SuperSecretSettingsPanel/>
+                <local:SuperSecretSettingsPanel x:Name="SuperSecretControl"/>
             </GroupBox>
             <GroupBox Header="About" Margin="0,0,0,10">
                 <StackPanel Margin="5">
-                    <TextBlock x:Name="TxtVersion" FontSize="14"/>
+                    <TextBlock Text="{Binding AppVersion}" FontSize="14"/>
                     <TextBlock Text="TABG Server Installer" Foreground="#888" Margin="0,4,0,0"/>
                 </StackPanel>
             </GroupBox>

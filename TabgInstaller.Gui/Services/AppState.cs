@@ -7,6 +7,10 @@ using TabgInstaller.Gui.ViewModels;
 
 namespace TabgInstaller.Gui.Services;
 
+/// <summary>
+/// Legacy app-state bag — no longer registered in DI or referenced by any active code.
+/// TODO: Remove this class once the migration is verified clean.
+/// </summary>
 public class AppState
 {
     public string ServerDir { get; private set; } = "";
@@ -31,7 +35,7 @@ public class AppState
         if (System.IO.File.Exists(gsPath))
         {
             var gs = ConfigIO.ReadGameSettings(gsPath);
-            GameSettingsVm = new GameSettingsDynamicViewModel(gs);
+            GameSettingsVm = new GameSettingsDynamicViewModel(gs, new ConfigValidationService());
         }
 
         ServerProcess = new ServerProcessService(serverDir);

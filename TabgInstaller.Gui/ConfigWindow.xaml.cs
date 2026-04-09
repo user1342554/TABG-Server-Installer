@@ -22,6 +22,7 @@ namespace TabgInstaller.Gui
         private readonly string _serverDir;
         private readonly string _pluginsDir;
         private readonly GameSettingsDynamicViewModel _vm;
+        private readonly IToastService _toast;
         private ServerProcessService? _procSvc;
         private FileSystemWatcher? _gameSettingsWatcher;
         private FileSystemWatcher? _datapackWatcher;
@@ -29,13 +30,14 @@ namespace TabgInstaller.Gui
 
         private class PluginEntry { public string Name {get;set;} = ""; public bool IsEnabled {get;set;} }
 
-        public ConfigWindow(string serverDir)
+        public ConfigWindow(string serverDir, IToastService? toast = null)
         {
+            _toast = toast ?? ToastService.Instance;
             _serverDir = serverDir;
             _pluginsDir = Path.Combine(_serverDir, "BepInEx", "plugins");
             var gsPath = Path.Combine(serverDir, "game_settings.txt");
             var gs = ConfigIO.ReadGameSettings(gsPath);
-            _vm = new GameSettingsDynamicViewModel(gs);
+            _vm = new GameSettingsDynamicViewModel(gs, new ConfigValidationService());
             DataContext = _vm;
             InitializeComponent();
 
@@ -87,7 +89,7 @@ namespace TabgInstaller.Gui
                 var path = Path.Combine(_serverDir, "game_settings.txt");
                 if (!File.Exists(path))
                 {
-                    ToastService.Instance.Warning("game_settings.txt not found. Save settings first to generate the file.");
+                    _toast.Warning("game_settings.txt not found. Save settings first to generate the file.");
                     return;
                 }
 
@@ -100,7 +102,7 @@ namespace TabgInstaller.Gui
             }
             catch (Exception ex)
             {
-                ToastService.Instance.Error($"Could not open file: {ex.Message}");
+                _toast.Error($"Could not open file: {ex.Message}");
             }
         }
 
@@ -119,7 +121,7 @@ namespace TabgInstaller.Gui
             }
             catch(Exception ex)
             {
-                ToastService.Instance.Error($"Failed to start: {ex.Message}");
+                _toast.Error($"Failed to start: {ex.Message}");
             }
         }
 
@@ -149,7 +151,7 @@ namespace TabgInstaller.Gui
 
         private void HardReset_Click(object sender, RoutedEventArgs e)
         {
-            ToastService.Instance.Info("This feature has been temporarily disabled.");
+            _toast.Info("This feature has been temporarily disabled.");
         }
 
         public void QuickSaveRestart_Click(object sender, RoutedEventArgs e)
@@ -213,7 +215,7 @@ namespace TabgInstaller.Gui
                     }
                     catch (Exception ex)
                     {
-                        ToastService.Instance.Error($"Failed to copy {Path.GetFileName(src)}: {ex.Message}");
+                        _toast.Error($"Failed to copy {Path.GetFileName(src)}: {ex.Message}");
                     }
                 }
                 LoadPluginsList();
@@ -232,7 +234,7 @@ namespace TabgInstaller.Gui
                 }
                 catch (Exception ex)
                 {
-                    ToastService.Instance.Error($"Cannot delete {file}: {ex.Message}");
+                    _toast.Error($"Cannot delete {file}: {ex.Message}");
                 }
             }
         }
@@ -260,7 +262,7 @@ namespace TabgInstaller.Gui
                     if (src.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))
                     {
                         string dst = src.Substring(0, src.Length - 9); // remove .disabled
-                        try { File.Move(src, dst, true); entry.Name = Path.GetFileName(dst);} catch(Exception ex){ToastService.Instance.Error(ex.Message);}                    }
+                        try { File.Move(src, dst, true); entry.Name = Path.GetFileName(dst);} catch(Exception ex){_toast.Error(ex.Message);}                    }
                 }
                 else
                 {
@@ -268,7 +270,7 @@ namespace TabgInstaller.Gui
                     if (src.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                     {
                         string dst = src + ".disabled";
-                        try { File.Move(src, dst, true); entry.Name = Path.GetFileName(dst);} catch(Exception ex){ToastService.Instance.Error(ex.Message);}                    }
+                        try { File.Move(src, dst, true); entry.Name = Path.GetFileName(dst);} catch(Exception ex){_toast.Error(ex.Message);}                    }
                 }
                 LoadPluginsList();
             }

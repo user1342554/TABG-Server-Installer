@@ -105,7 +105,7 @@ namespace TabgInstaller.Gui.Tabs
                 // Reload all config panels to reflect the new template settings
                 if (Window.GetWindow(this) is MainWindow mainWindow)
                 {
-                    mainWindow.ConfigTab.Initialize(_serverDir);
+                    mainWindow.ReloadFromPath(_serverDir);
                 }
 
                 ToastService.Instance.Success($"Template '{preset.Name}' applied successfully. All settings have been reloaded.");
@@ -163,7 +163,7 @@ namespace TabgInstaller.Gui.Tabs
                 // Reload all config panels to reflect the loaded preset
                 if (Window.GetWindow(this) is MainWindow mainWindow)
                 {
-                    mainWindow.ConfigTab.Initialize(_serverDir);
+                    mainWindow.ReloadFromPath(_serverDir);
                 }
 
                 ToastService.Instance.Success($"Preset '{presetName}' loaded.");

@@ -20,47 +20,16 @@ namespace TabgInstaller.Gui.Windows
 
         private readonly List<CheckBox> _pluginCheckboxes = new();
         private readonly List<CheckBox> _clientModCheckboxes = new();
+        private CancellationTokenSource? _cts;
+        private readonly IToastService _toast;
+        private readonly IAppSettingsService _appSettings;
 
-        // Server plugin definitions — matches the old InstallerPanel exactly
-        private static readonly (string Label, string DllName, bool DefaultChecked)[] PluginDefs = new[]
-        {
-            ("Citruslib — Core server library (admin, permissions, commands)", "Citruslib", true),
-            ("StarterPack — Match mechanics, loadouts, win conditions", "StarterPack", true),
-            ("StarterPackFixes — Loot drop control", "StarterPackFixes.dll", true),
-            ("CustomSpawnpoints — Custom spawn points", "CustomSpawnpoints.dll", true),
-            ("FreddoTABGCommission — Curses, grenades on kill, bans", "FreddoTABGCommission.dll", true),
-            ("MatchAndPreMatchTimeout — Match timing", "MatchAndPreMatchTimeout.dll", true),
-            ("ServerLogger — Player logging", "ServerLogger.dll", true),
-            ("VoteToStart — Vote-to-start", "VoteToStart.dll", true),
-            ("UnusedVehicles — Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)", "TabgInstaller.UnusedVehicles.dll", true),
-            ("BigSmokeGrenade — Giant purple smoke grenades (/give 208)", "BigSmoke", true),
-            ("MGLFlashbang — MGL shoots flashbang rounds", "MGLFlashbang", true),
-            ("SoloTesting — Prevents 'You Win' when testing alone", "TabgInstaller.SoloTesting.dll", false),
-            ("TABGCommunityServer — Community server", "TABGCommunityServer", false),
-            ("ProximityChat — Proximity voice chat [Client mod required]", "TabgInstaller.ProximityChat.Server.dll", true),
-            ("Hunt Mode (4v1) — 1 Killer vs 4 Survivors survival [Client mod required]", "TabgInstaller.HuntMode.dll", false),
-            ("Juggernaut Mode — One massive player vs everyone, score-based", "JuggernautMode.Server.dll", false),
-            ("TABGVR Server — VR hand sync for VR players [Client mod required]", "TABGVR.Server.CitrusLib.dll", false),
-            ("FakePlayers — Spawn dummy players for solo testing (/spawndummy, /removedummy)", "TabgInstaller.FakePlayers.dll", false),
-        };
+        private const string DefaultCitrusTag = "v0.7";
 
-        // Client mod definitions ��� matches the old ClientPanel exactly
-        private static readonly (string Label, string DllName, bool DefaultChecked)[] ClientModDefs = new[]
+        public SetupWizardWindow(IToastService? toast = null, IAppSettingsService? appSettings = null)
         {
-            ("FlyingControls — Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)", "TabgInstaller.FlyingControls.dll", true),
-            ("Enhanced TABG — Infinite LOD (F1), HUD toggle (F2), fog removal (F3)", "Enhanced TABG.dll", true),
-            ("BigSmokeGrenade + MGLFlashbang — Custom grenade effects", "TabgInstaller.CustomGrenades.dll", true),
-            ("Coords Display — Press F5 to show your X/Y/Z position", "TabgInstaller.CoordsDisplay.dll", true),
-            ("Mod Settings — In-game settings menu for all mods (press #)", "TabgInstaller.ModSettings.dll", true),
-            ("Pop-up Blocker — Disable anti-cheat popups for custom servers", "Pop-up Blocker.dll", true),
-            ("Proximity Chat — Proximity voice chat for custom servers", "TabgInstaller.ProximityChat.Client.dll", true),
-            ("Hunt Mode Client — HUD and perk selection UI", "TabgInstaller.HuntMode.Client.dll", false),
-            ("Juggernaut Mode Client — Boss bar, loadout picker, scoreboard", "JuggernautMode.Client.dll", false),
-            ("TABGVR — Play TABG in Virtual Reality (requires VR headset)", "TABGVR.dll", false),
-        };
-
-        public SetupWizardWindow()
-        {
+            _toast = toast ?? ToastService.Instance;
+            _appSettings = appSettings ?? new AppSettingsService();
             InitializeComponent();
             BuildPluginCheckboxes();
             BuildClientModCheckboxes();
@@ -79,13 +48,14 @@ namespace TabgInstaller.Gui.Windows
 
         private void BuildPluginCheckboxes()
         {
-            foreach (var (label, _, defaultChecked) in PluginDefs)
+            foreach (var plugin in PluginRegistry.ServerPlugins)
             {
                 var cb = new CheckBox
                 {
-                    Content = label,
-                    IsChecked = defaultChecked,
-                    Margin = new Thickness(5, 3, 5, 3)
+                    Content = plugin.Label,
+                    IsChecked = plugin.DefaultChecked,
+                    Margin = new Thickness(5, 3, 5, 3),
+                    Tag = plugin.Id
                 };
                 _pluginCheckboxes.Add(cb);
                 PluginCheckboxes.Children.Add(cb);
@@ -94,13 +64,14 @@ namespace TabgInstaller.Gui.Windows
 
         private void BuildClientModCheckboxes()
         {
-            foreach (var (label, _, defaultChecked) in ClientModDefs)
+            foreach (var mod in PluginRegistry.ClientMods)
             {
                 var cb = new CheckBox
                 {
-                    Content = label,
-                    IsChecked = defaultChecked,
-                    Margin = new Thickness(5, 3, 5, 3)
+                    Content = mod.Label,
+                    IsChecked = mod.DefaultChecked,
+                    Margin = new Thickness(5, 3, 5, 3),
+                    Tag = mod.Id
                 };
                 _clientModCheckboxes.Add(cb);
                 ClientModCheckboxes.Children.Add(cb);
@@ -157,6 +128,13 @@ namespace TabgInstaller.Gui.Windows
             UpdateNavButtons();
         }
 
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            _cts?.Cancel();
+            BtnCancel.IsEnabled = false;
+            BtnCancel.Content = "Cancelling...";
+        }
+
         private async void BtnNext_Click(object sender, RoutedEventArgs e)
         {
             int step = WizardSteps.SelectedIndex;
@@ -166,7 +144,7 @@ namespace TabgInstaller.Gui.Windows
                 var path = TxtServerPath.Text.Trim();
                 if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
                 {
-                    ToastService.Instance.Warning("Please select a valid TABG server folder.");
+                    _toast.Warning("Please select a valid TABG server folder.");
                     return;
                 }
                 WizardSteps.SelectedIndex = 1;
@@ -198,6 +176,7 @@ namespace TabgInstaller.Gui.Windows
             BtnSkip.Visibility = step == 1 || step == 3 ? Visibility.Visible : Visibility.Collapsed;
             BtnNext.Content = step == 3 ? "Install" : "Next";
             BtnNext.Visibility = step == 4 ? Visibility.Collapsed : Visibility.Visible;
+            BtnCancel.Visibility = step == 4 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private async Task RunInstallation()
@@ -207,6 +186,8 @@ namespace TabgInstaller.Gui.Windows
             BtnBack.IsEnabled = false;
             BtnNext.IsEnabled = false;
 
+            _cts = new CancellationTokenSource();
+
             var progress = new Progress<string>(line =>
             {
                 Dispatcher.BeginInvoke(() =>
@@ -214,60 +195,55 @@ namespace TabgInstaller.Gui.Windows
                     TxtLog.AppendText(line + Environment.NewLine);
                     LogScrollViewer.ScrollToEnd();
 
-                    var pct = EstimateProgress(line);
+                    var pct = ProgressEstimator.Estimate(line);
                     if (pct >= 0 && pct > InstallProgress.Value)
                     {
                         InstallProgress.Value = pct;
-                        TxtInstallStage.Text = GetStageName(pct);
+                        TxtInstallStage.Text = ProgressEstimator.GetStageName(pct);
                     }
                 });
             });
 
-            var cts = new CancellationTokenSource();
-
             try
             {
                 var bundled = new List<string>();
-                bool needsCustomGrenades = false;
-                for (int i = 0; i < _pluginCheckboxes.Count; i++)
+                bool skipCitrus = true;
+                bool skipStarterPack = true;
+                bool installCommunityServer = false;
+
+                for (int i = 0; i < _pluginCheckboxes.Count && i < PluginRegistry.ServerPlugins.Length; i++)
                 {
-                    if (_pluginCheckboxes[i].IsChecked == true)
+                    if (_pluginCheckboxes[i].IsChecked != true) continue;
+                    var plugin = PluginRegistry.ServerPlugins[i];
+
+                    switch (plugin.Kind)
                     {
-                        var dllName = PluginDefs[i].DllName;
-                        // These are handled separately by the installer, not as bundled DLLs
-                        if (dllName == "Citruslib" || dllName == "StarterPack" || dllName == "TABGCommunityServer")
-                            continue;
-                        // BigSmoke and MGLFlashbang both share TabgInstaller.CustomGrenades.dll
-                        if (dllName == "BigSmoke" || dllName == "MGLFlashbang")
-                        {
-                            needsCustomGrenades = true;
-                            continue;
-                        }
-                        if (dllName == "TabgInstaller.HuntMode.dll")
-                            bundled.Add("TabgInstaller.HuntMode.Shared.dll");
-                        bundled.Add(dllName);
+                        case PluginKind.CoreDependency:
+                            if (plugin.Id == "Citruslib") skipCitrus = false;
+                            if (plugin.Id == "StarterPack") skipStarterPack = false;
+                            break;
+                        case PluginKind.CommunityServer:
+                            installCommunityServer = true;
+                            break;
+                        case PluginKind.Bundled:
+                            foreach (var dll in plugin.DllNames)
+                                if (!bundled.Contains(dll))
+                                    bundled.Add(dll);
+                            break;
                     }
                 }
-                if (needsCustomGrenades)
-                    bundled.Add("TabgInstaller.CustomGrenades.dll");
-
-                bool skipCitrus = !(_pluginCheckboxes[0].IsChecked == true);
-                bool skipStarterPack = !(_pluginCheckboxes[1].IsChecked == true);
-                // TABGCommunityServer is at index 12 (after adding MGLFlashbang)
-                bool installCommunityServer = _pluginCheckboxes[12].IsChecked == true;
 
                 // Collect client mod selections NOW on the UI thread (before any await)
                 var selectedClientMods = new List<string>();
                 string clientPath = ClientPath;
                 string clientModdedPath = ClientModdedPath;
-                for (int i = 0; i < _clientModCheckboxes.Count; i++)
+                for (int i = 0; i < _clientModCheckboxes.Count && i < PluginRegistry.ClientMods.Length; i++)
                 {
                     if (_clientModCheckboxes[i].IsChecked == true)
                     {
-                        var dllName = ClientModDefs[i].DllName;
-                        if (dllName == "TabgInstaller.HuntMode.Client.dll")
-                            selectedClientMods.Add("TabgInstaller.HuntMode.Shared.dll");
-                        selectedClientMods.Add(dllName);
+                        foreach (var dll in PluginRegistry.ClientMods[i].DllNames)
+                            if (!selectedClientMods.Contains(dll))
+                                selectedClientMods.Add(dll);
                     }
                 }
 
@@ -287,12 +263,12 @@ namespace TabgInstaller.Gui.Windows
                         serverPassword: "enormous",
                         serverDescription: "enormous",
                         starterPackTag: "",
-                        citrusLibTag: "v0.7",
+                        citrusLibTag: DefaultCitrusTag,
                         skipStarterPack: skipStarterPack,
                         skipCitruslib: skipCitrus,
                         installCommunityServer: installCommunityServer,
                         bundledPlugins: bundled,
-                        ct: cts.Token);
+                        ct: _cts.Token);
                 });
 
                 if (exitCode == 0)
@@ -312,7 +288,7 @@ namespace TabgInstaller.Gui.Windows
                     InstallProgress.Value = 100;
                     TxtInstallStage.Text = "Complete!";
 
-                    AppSettingsService.MarkSetupComplete(serverDir, clientPath, clientModdedPath);
+                    _appSettings.MarkSetupComplete(serverDir, clientPath, clientModdedPath);
                     SetupCompleted = true;
 
                     // Brief pause so user sees "Complete!", then close
@@ -322,7 +298,7 @@ namespace TabgInstaller.Gui.Windows
                 else
                 {
                     TxtInstallStage.Text = "Failed";
-                    ToastService.Instance.Error("Installation failed. Check the log for details.");
+                    _toast.Error("Installation failed. Check the log for details.");
                     BtnBack.IsEnabled = true;
                     BtnBack.Visibility = Visibility.Visible;
                 }
@@ -330,48 +306,16 @@ namespace TabgInstaller.Gui.Windows
             catch (Exception ex)
             {
                 TxtInstallStage.Text = "Failed";
-                ToastService.Instance.Error($"Installation error: {ex.Message}");
+                _toast.Error($"Installation error: {ex.Message}");
                 BtnBack.IsEnabled = true;
                 BtnBack.Visibility = Visibility.Visible;
             }
             finally
             {
-                cts.Dispose();
+                _cts.Dispose();
+                _cts = null;
+                BtnCancel.Visibility = Visibility.Collapsed;
             }
         }
-
-        private int EstimateProgress(string msg)
-        {
-            // Order matters: check most specific first, most generic last.
-            // "Installation completed" must be checked before generic "complete".
-            if (msg.Contains("Installation complete")) return 100;
-            if (msg.Contains("PlayerPerms.json")) return 95;
-            if (msg.Contains("ExtraSettings.json")) return 90;
-            if (msg.Contains("TheStarterPack.txt")) return 85;
-            if (msg.Contains("StarterPackSetup")) return 80;
-            if (msg.Contains("StarterPack.dll")) return 75;
-            if (msg.Contains("bundled plugins copied")) return 65;
-            if (msg.Contains("Copying bundled plugin") || msg.Contains("bundled plugin")) return 60;
-            if (msg.Contains("Citruslib.dll")) return 55;
-            if (msg.Contains("Downloading Citruslib") || msg.Contains("Installing Citruslib")) return 45;
-            if (msg.Contains("doorstop")) return 38;
-            if (msg.Contains("BepInEx installed") || msg.Contains("Extracting BepInEx")) return 32;
-            if (msg.Contains("Downloading BepInEx") || msg.Contains("Installing BepInEx")) return 20;
-            if (msg.Contains("game_settings.txt")) return 12;
-            if (msg.Contains("VanillaFiles.txt")) return 8;
-            if (msg.Contains("Killing running server")) return 3;
-            if (msg.Contains("Creating backup")) return 1;
-            return -1;
-        }
-
-        private string GetStageName(int pct) => pct switch
-        {
-            <= 5 => "Preparing...",
-            <= 30 => "Installing BepInEx...",
-            <= 55 => "Installing plugins...",
-            <= 75 => "Configuring StarterPack...",
-            <= 95 => "Finalizing...",
-            _ => "Complete!"
-        };
     }
 }
