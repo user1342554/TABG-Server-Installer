@@ -54,6 +54,14 @@ namespace TabgInstaller.Gui.ViewModels
                 {
                     var config = vm.BuildRemoteConfig();
                     _manager.AddRemoteInstance(vm.DisplayName, config);
+
+                    // Store SSH credentials via DPAPI
+                    var instanceData = _manager.ActiveInstanceData;
+                    if (instanceData != null)
+                    {
+                        if (vm.UsePassword && !string.IsNullOrEmpty(vm.Password))
+                            _credentials.Store(instanceData.Id, "password", vm.Password);
+                    }
                 }
                 _toast.Success($"Added server: {vm.DisplayName}");
             }
