@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="LootDropsTooltip" xml:space="preserve">
+    <value>When enabled, items drop from loot containers. Disable for loadout-only modes.</value>
+  </data>
+  <data name="ClientModRequiredTooltip" xml:space="preserve">
+    <value>Also requires the client-side mod installed via the Client tab</value>
+  </data>
+  <data name="SigmaPresetTooltip" xml:space="preserve">
+    <value>Select the plugins required for the CollinSigma preset</value>
+  </data>
+  <data name="CloneLoadoutTooltip" xml:space="preserve">
+    <value>Clone the selected loadout</value>
+  </data>
+  <data name="SearchItemsTooltip" xml:space="preserve">
+    <value>Type to search items across all categories</value>
+  </data>
+  <data name="DoubleClickAddTooltip" xml:space="preserve">
+    <value>Double-click to add item</value>
+  </data>
+  <data name="StartServerHelp" xml:space="preserve">
+    <value>Start the TABG dedicated server</value>
+  </data>
+  <data name="StopServerHelp" xml:space="preserve">
+    <value>Stop the running server</value>
+  </data>
+  <data name="LaunchModdedHelp" xml:space="preserve">
+    <value>Launch the modded TABG client</value>
+  </data>
+  <data name="OpenServerFolderHelp" xml:space="preserve">
+    <value>Open the server installation folder in Explorer</value>
+  </data>
+  <data name="OpenLogsHelp" xml:space="preserve">
+    <value>Open the server log files</value>
+  </data>
+  <data name="OpenConfigHelp" xml:space="preserve">
+    <value>Open the server configuration files</value>
+  </data>
+  <data name="ClearConsoleHelp" xml:space="preserve">
+    <value>Clear all console output</value>
+  </data>
+  <data name="QuickSaveRestartHelp" xml:space="preserve">
+    <value>Save current settings and restart the server</value>
+  </data>
+  <data name="SearchLogsHelp" xml:space="preserve">
+    <value>Filter console output by text</value>
+  </data>
+  <data name="ExportLogsHelp" xml:space="preserve">
+    <value>Export console output to a text file</value>
+  </data>
+  <data name="SendCommandHelp" xml:space="preserve">
+    <value>Send a command to the server console</value>
+  </data>
+  <data name="HardResetHelp" xml:space="preserve">
+    <value>Completely reinstall the server. Creates a backup first.</value>
+  </data>
+  <data name="CreateBackupHelp" xml:space="preserve">
+    <value>Create a new backup of the current server state</value>
+  </data>
+  <data name="RestoreBackupHelp" xml:space="preserve">
+    <value>Restore the selected backup to replace current server files</value>
+  </data>
+  <data name="DeleteBackupHelp" xml:space="preserve">
+    <value>Permanently delete the selected backup</value>
+  </data>
+  <data name="AddDllHelp" xml:space="preserve">
+    <value>Add a custom DLL plugin file</value>
+  </data>
+  <data name="RemoveSelectedHelp" xml:space="preserve">
+    <value>Remove the selected item from the list</value>
+  </data>
+  <data name="RefreshHelp" xml:space="preserve">
+    <value>Refresh the current list</value>
+  </data>
+  <data name="OpenFolderHelp" xml:space="preserve">
+    <value>Open the folder in Explorer</value>
+  </data>
+  <data name="InstallSelectedHelp" xml:space="preserve">
+    <value>Install selected plugins or mods</value>
+  </data>
+  <data name="SaveSettingsHelp" xml:space="preserve">
+    <value>Save current settings to file</value>
+  </data>
+  <data name="LanguageHelp" xml:space="preserve">
+    <value>Select the display language for the application</value>
+  </data>
+  <data name="HighContrastHelp" xml:space="preserve">
+    <value>Enable high contrast mode for better visibility</value>
+  </data>
+  <data name="CrashReportHelp" xml:space="preserve">
+    <value>Send anonymous crash reports to help improve the application</value>
+  </data>
+  <data name="BrowseServerPathHelp" xml:space="preserve">
+    <value>Browse for the TABG server folder</value>
+  </data>
+  <data name="BrowseClientPathHelp" xml:space="preserve">
+    <value>Browse for the TABG Steam folder</value>
+  </data>
+  <data name="AddServerHelp" xml:space="preserve">
+    <value>Add a new local or remote server instance</value>
+  </data>
+  <data name="AddAdminHelp" xml:space="preserve">
+    <value>Add the selected player as a server admin</value>
+  </data>
+  <data name="RefreshPlayersHelp" xml:space="preserve">
+    <value>Scan Guestbooks for known players</value>
+  </data>
+</root>

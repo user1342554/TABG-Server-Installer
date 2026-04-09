@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AdminsSaved" xml:space="preserve">
+    <value>Admins saved. Restart server to apply changes.</value>
+  </data>
+  <data name="BackupCreatedSuccess" xml:space="preserve">
+    <value>Backup created successfully!</value>
+  </data>
+  <data name="BackupRestoredSuccess" xml:space="preserve">
+    <value>Backup restored successfully!</value>
+  </data>
+  <data name="BackupDeletedSuccess" xml:space="preserve">
+    <value>Backup deleted successfully!</value>
+  </data>
+  <data name="InstallationCompleted" xml:space="preserve">
+    <value>Installation completed! Change Server Name, Password and Description in Server Settings.</value>
+  </data>
+  <data name="SigmaModeCompleted" xml:space="preserve">
+    <value>Sigma Mode completed successfully!</value>
+  </data>
+  <data name="LogExportedTo" xml:space="preserve">
+    <value>Log exported to {0}</value>
+  </data>
+  <data name="AddedServer" xml:space="preserve">
+    <value>Added server: {0}</value>
+  </data>
+  <data name="SelectOrTypePlayer" xml:space="preserve">
+    <value>Please select or type a player name.</value>
+  </data>
+  <data name="EnterNameAndEpicId" xml:space="preserve">
+    <value>Please enter both a name and an Epic ID.</value>
+  </data>
+  <data name="NoServerDirectory" xml:space="preserve">
+    <value>No server directory configured.</value>
+  </data>
+  <data name="RunInitialSetupFirst" xml:space="preserve">
+    <value>Run Initial Setup first.</value>
+  </data>
+  <data name="EnterValidTabgPath" xml:space="preserve">
+    <value>Please enter a valid TABG Steam folder path.</value>
+  </data>
+  <data name="NoModdedFolderPath" xml:space="preserve">
+    <value>No modded folder path set.</value>
+  </data>
+  <data name="ClientSetupFailed" xml:space="preserve">
+    <value>Client setup failed.</value>
+  </data>
+  <data name="RunInitialSetupCopy" xml:space="preserve">
+    <value>Run Initial Setup first to create the modded TABG copy.</value>
+  </data>
+  <data name="ModdedTabgNotFound" xml:space="preserve">
+    <value>Modded TABG not found. Run Initial Setup first.</value>
+  </data>
+  <data name="GameSettingsNotFound" xml:space="preserve">
+    <value>game_settings.txt not found. Save settings first to generate the file.</value>
+  </data>
+  <data name="ClientModsNotSetUp" xml:space="preserve">
+    <value>Client mods not set up. Go to the Client Mods tab first.</value>
+  </data>
+  <data name="ModdedTabgNotFoundClient" xml:space="preserve">
+    <value>Modded TABG not found. Install client mods first.</value>
+  </data>
+  <data name="SelectValidTabgFolder" xml:space="preserve">
+    <value>Please select a valid TABG server folder.</value>
+  </data>
+  <data name="CitruslibTagRequired" xml:space="preserve">
+    <value>CitrusLib tag is required if not skipping the plugin.</value>
+  </data>
+  <data name="InstallationCancelled" xml:space="preserve">
+    <value>Installation cancelled.</value>
+  </data>
+  <data name="ServerPathNotSet" xml:space="preserve">
+    <value>Server path is not set.</value>
+  </data>
+  <data name="NoTextEntered" xml:space="preserve">
+    <value>No text entered.</value>
+  </data>
+  <data name="NoServerDirectorySet" xml:space="preserve">
+    <value>No server directory set. Please install/select a server first.</value>
+  </data>
+  <data name="SelectTemplate" xml:space="preserve">
+    <value>Please select a template to apply.</value>
+  </data>
+  <data name="SelectPresetToLoad" xml:space="preserve">
+    <value>Please select a preset to load.</value>
+  </data>
+  <data name="SelectPresetToDelete" xml:space="preserve">
+    <value>Please select a preset to delete.</value>
+  </data>
+  <data name="CannotRemoveLastServer" xml:space="preserve">
+    <value>Cannot remove the last server instance.</value>
+  </data>
+  <data name="SigmaModeIssues" xml:space="preserve">
+    <value>Sigma Mode completed with issues. Check the log for details.</value>
+  </data>
+  <data name="FailedToCreateBackup" xml:space="preserve">
+    <value>Failed to create backup. Check the log for details.</value>
+  </data>
+  <data name="FailedToRestoreBackup" xml:space="preserve">
+    <value>Failed to restore backup. Check the log for details.</value>
+  </data>
+  <data name="FailedToDeleteBackup" xml:space="preserve">
+    <value>Failed to delete backup.</value>
+  </data>
+  <data name="ErrorPrefix" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+  <data name="FailedToStart" xml:space="preserve">
+    <value>Failed to start: {0}</value>
+  </data>
+  <data name="FailedToRestart" xml:space="preserve">
+    <value>Failed to restart: {0}</value>
+  </data>
+  <data name="FailedToExportLog" xml:space="preserve">
+    <value>Failed to export log: {0}</value>
+  </data>
+  <data name="FailedToTogglePlugin" xml:space="preserve">
+    <value>Failed to toggle plugin: {0}</value>
+  </data>
+  <data name="FailedToInstallPlugin" xml:space="preserve">
+    <value>Failed to install {0}: {1}</value>
+  </data>
+  <data name="FailedToRemovePlugin" xml:space="preserve">
+    <value>Failed to remove plugin: {0}</value>
+  </data>
+  <data name="FailedToAddPlugin" xml:space="preserve">
+    <value>Failed to add plugin: {0}</value>
+  </data>
+  <data name="FailedToToggleMod" xml:space="preserve">
+    <value>Failed to toggle mod: {0}</value>
+  </data>
+  <data name="FailedToLaunch" xml:space="preserve">
+    <value>Failed to launch: {0}</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="CouldNotOpenFile" xml:space="preserve">
+    <value>Could not open file: {0}</value>
+  </data>
+  <data name="ErrorLoadingPlugins" xml:space="preserve">
+    <value>Error loading plugins: {0}</value>
+  </data>
+  <data name="InstallationEndedWithCode" xml:space="preserve">
+    <value>Installation ended with code {0}. See log output.</value>
+  </data>
+  <data name="InstallationError" xml:space="preserve">
+    <value>Installation error: {0}</value>
+  </data>
+  <data name="SigmaModeError" xml:space="preserve">
+    <value>Sigma Mode error: {0}</value>
+  </data>
+  <data name="PathDoesNotExist" xml:space="preserve">
+    <value>The path '{0}' does not exist.</value>
+  </data>
+  <data name="RestoreError" xml:space="preserve">
+    <value>Restore error: {0}</value>
+  </data>
+  <data name="AdminSaveFailed" xml:space="preserve">
+    <value>Failed to save admins: {0}</value>
+  </data>
+  <data name="AllChangesSaved" xml:space="preserve">
+    <value>All changes saved</value>
+  </data>
+  <data name="SettingsReloaded" xml:space="preserve">
+    <value>Settings reloaded from file</value>
+  </data>
+  <data name="SettingsSavedToFile" xml:space="preserve">
+    <value>Settings saved to file</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>Settings saved.</value>
+  </data>
+  <data name="SettingsLoaded" xml:space="preserve">
+    <value>Settings loaded.</value>
+  </data>
+  <data name="CreatingBackup" xml:space="preserve">
+    <value>Creating backup...</value>
+  </data>
+  <data name="BackupFailed" xml:space="preserve">
+    <value>Backup failed.</value>
+  </data>
+  <data name="RestoreFailed" xml:space="preserve">
+    <value>Restore failed.</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Preparing...</value>
+  </data>
+  <data name="ConfirmRestore" xml:space="preserve">
+    <value>Are you sure you want to restore backup '{0}'?
+
+This will replace your current server files with the backup files.
+
+Current files will be backed up with '.pre-restore' extension.</value>
+  </data>
+  <data name="ConfirmRestoreTitle" xml:space="preserve">
+    <value>Confirm Restore</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Are you sure you want to delete backup '{0}'?
+
+This action cannot be undone!</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="ConfirmRemove" xml:space="preserve">
+    <value>Remove {0}?</value>
+  </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="InstallationWarning" xml:space="preserve">
+    <value>WARNING: Installation will modify server files!
+
+A backup will be created in the 'backup' folder before installation.
+Do you want to continue?</value>
+  </data>
+  <data name="InstallationWarningTitle" xml:space="preserve">
+    <value>Installation Warning</value>
+  </data>
+  <data name="InitialClientSetupExisting" xml:space="preserve">
+    <value>Modded copy already exists at:
+{0}
+
+This will re-copy game files and reinstall BepInEx. Your plugins in BepInEx/plugins will be kept.
+
+Continue?</value>
+  </data>
+  <data name="InitialClientSetupNew" xml:space="preserve">
+    <value>This will copy TABG to:
+{0}
+
+Then install BepInEx so you can add client mods.
+
+Continue?</value>
+  </data>
+  <data name="InitialClientSetupTitle" xml:space="preserve">
+    <value>Initial Client Setup</value>
+  </data>
+  <data name="TabgManagerError" xml:space="preserve">
+    <value>TABG Manager Error</value>
+  </data>
+  <data name="TabgManager" xml:space="preserve">
+    <value>TABG Manager</value>
+  </data>
+  <data name="StartupError" xml:space="preserve">
+    <value>Startup error: {0}</value>
+  </data>
+  <data name="FoundKnownPlayers" xml:space="preserve">
+    <value>Found {0} known players ({1} new)</value>
+  </data>
+  <data name="LoadedAdmins" xml:space="preserve">
+    <value>Loaded {0} admin(s)</value>
+  </data>
+  <data name="ErrorLoading" xml:space="preserve">
+    <value>Error loading: {0}</value>
+  </data>
+  <data name="PlayerNotFound" xml:space="preserve">
+    <value>Player '{0}' not found in Guestbooks. Use manual entry below.</value>
+  </data>
+  <data name="AlreadyAdmin" xml:space="preserve">
+    <value>'{0}' is already an admin.</value>
+  </data>
+  <data name="AddedPlayer" xml:space="preserve">
+    <value>Added {0}</value>
+  </data>
+  <data name="AddedManual" xml:space="preserve">
+    <value>Added {0} (manual)</value>
+  </data>
+  <data name="RemovedPlayer" xml:space="preserve">
+    <value>Removed {0}</value>
+  </data>
+  <data name="SavedAdmins" xml:space="preserve">
+    <value>Saved {0} admin(s)</value>
+  </data>
+  <data name="ScannedGuestbooks" xml:space="preserve">
+    <value>Scanned Guestbooks &#x2014; {0} players known</value>
+  </data>
+  <data name="AdminJsonDescription" xml:space="preserve">
+    <value>List of players with modified permission level. Default permission level is 0.</value>
+  </data>
+  <data name="RestoringBackup" xml:space="preserve">
+    <value>Restoring '{0}'...</value>
+  </data>
+  <data name="RestoredBackup" xml:space="preserve">
+    <value>Restored '{0}'.</value>
+  </data>
+  <data name="BackupCount" xml:space="preserve">
+    <value>{0} backup(s)</value>
+  </data>
+  <data name="InstalledPluginCount" xml:space="preserve">
+    <value>Installed {0} plugin(s).</value>
+  </data>
+  <data name="InstalledModCount" xml:space="preserve">
+    <value>Installed {0} mod(s).</value>
+  </data>
+  <data name="InstallationCancelledByUser" xml:space="preserve">
+    <value>Installation cancelled by user.</value>
+  </data>
+  <data name="BackupWarningContinuing" xml:space="preserve">
+    <value>Warning: Backup failed &#x2014; continuing anyway.</value>
+  </data>
+  <data name="AppliedLocation" xml:space="preserve">
+    <value>Applied location: {0}</value>
+  </data>
+  <data name="AppliedDeathmatch" xml:space="preserve">
+    <value>Applied deathmatch ring preset.</value>
+  </data>
+  <data name="AppliedStandardBR" xml:space="preserve">
+    <value>Applied standard BR ring preset.</value>
+  </data>
+  <data name="SpawnPointCount" xml:space="preserve">
+    <value>{0} spawn point(s)</value>
+  </data>
+  <data name="AutoSaveFailed" xml:space="preserve">
+    <value>Auto-save failed: {0}</value>
+  </data>
+  <data name="ErrorSaving" xml:space="preserve">
+    <value>Error saving: {0}</value>
+  </data>
+  <data name="ServerNoStdin" xml:space="preserve">
+    <value>[INFO] Server does not accept stdin commands. Use RCON or a BepInEx console plugin.</value>
+  </data>
+  <data name="IncorrectPassword" xml:space="preserve">
+    <value>Incorrect password.</value>
+  </data>
+  <data name="PasswordCorrectPrompt" xml:space="preserve">
+    <value>Password correct. Enter Sigma mode?</value>
+  </data>
+  <data name="SuperSecretTitle" xml:space="preserve">
+    <value>Super Secret</value>
+  </data>
+  <data name="StartingSigma" xml:space="preserve">
+    <value>Starting Sigma Mode...</value>
+  </data>
+  <data name="PlayingMusic" xml:space="preserve">
+    <value>Playing Music...</value>
+  </data>
+  <data name="LaunchingTabg" xml:space="preserve">
+    <value>Launching TABG...</value>
+  </data>
+  <data name="SettingFans" xml:space="preserve">
+    <value>Setting Fans...</value>
+  </data>
+  <data name="CreatingOverlays" xml:space="preserve">
+    <value>Creating Overlays...</value>
+  </data>
+  <data name="ScanningForTabg" xml:space="preserve">
+    <value>Scanning for TABG...</value>
+  </data>
+  <data name="WaitingForMainMenu" xml:space="preserve">
+    <value>Music and black screen active. Waiting for TABG to reach main menu...</value>
+  </data>
+  <data name="TabgLoading" xml:space="preserve">
+    <value>TABG Loading...</value>
+  </data>
+  <data name="TabgProcessStarted" xml:space="preserve">
+    <value>TABG process started! Waiting for main menu to load...</value>
+  </data>
+  <data name="TabgWindowFound" xml:space="preserve">
+    <value>TABG Window Found...</value>
+  </data>
+  <data name="TabgWindowVisible" xml:space="preserve">
+    <value>TABG window visible! Waiting for main menu...</value>
+  </data>
+  <data name="MainMenuReady" xml:space="preserve">
+    <value>Main Menu Ready!</value>
+  </data>
+  <data name="TabgMainMenuLoaded" xml:space="preserve">
+    <value>TABG main menu loaded! Stopping Sigma Mode...</value>
+  </data>
+  <data name="ForceStoppingLabel" xml:space="preserve">
+    <value>Force Stopping...</value>
+  </data>
+  <data name="ForceStopping" xml:space="preserve">
+    <value>Force stopping Sigma Mode...</value>
+  </data>
+  <data name="CrashReportSent" xml:space="preserve">
+    <value>Crash report sent. Thank you!</value>
+  </data>
+  <data name="CrashReportFailed" xml:space="preserve">
+    <value>Could not send crash report.</value>
+  </data>
+</root>

@@ -1,0 +1,877 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>TABG Manager</value>
+  </data>
+  <data name="AppName" xml:space="preserve">
+    <value>TABG Server Installer</value>
+  </data>
+  <data name="TabDashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="TabServerMods" xml:space="preserve">
+    <value>Server Mods</value>
+  </data>
+  <data name="TabClientMods" xml:space="preserve">
+    <value>Client Mods</value>
+  </data>
+  <data name="TabConfig" xml:space="preserve">
+    <value>Config</value>
+  </data>
+  <data name="TabConsole" xml:space="preserve">
+    <value>Console</value>
+  </data>
+  <data name="TabBackups" xml:space="preserve">
+    <value>Backups</value>
+  </data>
+  <data name="TabReference" xml:space="preserve">
+    <value>Reference</value>
+  </data>
+  <data name="TabSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>X</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Skip" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="Enter" xml:space="preserve">
+    <value>Enter</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>INSTALL</value>
+  </data>
+  <data name="Up" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="ServerStatus" xml:space="preserve">
+    <value>Server Status</value>
+  </data>
+  <data name="StatusStopped" xml:space="preserve">
+    <value>  STOPPED</value>
+  </data>
+  <data name="StatusRunning" xml:space="preserve">
+    <value>  RUNNING</value>
+  </data>
+  <data name="StartServer" xml:space="preserve">
+    <value>Start Server</value>
+  </data>
+  <data name="StopServer" xml:space="preserve">
+    <value>Stop Server</value>
+  </data>
+  <data name="LaunchModdedTabg" xml:space="preserve">
+    <value>Launch Modded TABG</value>
+  </data>
+  <data name="QuickActions" xml:space="preserve">
+    <value>Quick Actions</value>
+  </data>
+  <data name="OpenServerFolder" xml:space="preserve">
+    <value>Open Server Folder</value>
+  </data>
+  <data name="OpenLogs" xml:space="preserve">
+    <value>Open Logs</value>
+  </data>
+  <data name="OpenConfigFiles" xml:space="preserve">
+    <value>Open Config Files</value>
+  </data>
+  <data name="ConsolePreview" xml:space="preserve">
+    <value>Console Preview (last 20 lines)</value>
+  </data>
+  <data name="OpenFullConsole" xml:space="preserve">
+    <value>Open Full Console</value>
+  </data>
+  <data name="ClearConsole" xml:space="preserve">
+    <value>Clear Console</value>
+  </data>
+  <data name="QuickSaveRestart" xml:space="preserve">
+    <value>Quick-save &amp; Restart</value>
+  </data>
+  <data name="FilterInfo" xml:space="preserve">
+    <value>&#x2139; Info</value>
+  </data>
+  <data name="FilterWarn" xml:space="preserve">
+    <value>&#x26A0; Warn</value>
+  </data>
+  <data name="FilterError" xml:space="preserve">
+    <value>&#x2716; Error</value>
+  </data>
+  <data name="SearchLogs" xml:space="preserve">
+    <value>Search logs...</value>
+  </data>
+  <data name="ServerSettings" xml:space="preserve">
+    <value>Server Settings</value>
+  </data>
+  <data name="OpenInNotepad" xml:space="preserve">
+    <value>Open in Notepad</value>
+  </data>
+  <data name="MatchSettings" xml:space="preserve">
+    <value>Match Settings</value>
+  </data>
+  <data name="RingAndSpawns" xml:space="preserve">
+    <value>Ring &amp; Spawns</value>
+  </data>
+  <data name="Loadouts" xml:space="preserve">
+    <value>Loadouts</value>
+  </data>
+  <data name="ModSettings" xml:space="preserve">
+    <value>Mod Settings</value>
+  </data>
+  <data name="Admins" xml:space="preserve">
+    <value>Admins</value>
+  </data>
+  <data name="Presets" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="ServerPlugins" xml:space="preserve">
+    <value>Server Plugins</value>
+  </data>
+  <data name="ServerPluginsSubtitle" xml:space="preserve">
+    <value>Add, remove, or toggle server plugins &#x2014; no reinstall needed.</value>
+  </data>
+  <data name="InstalledPlugins" xml:space="preserve">
+    <value>Installed Plugins (BepInEx/plugins)</value>
+  </data>
+  <data name="AddDllFile" xml:space="preserve">
+    <value>Add DLL file...</value>
+  </data>
+  <data name="RemoveSelected" xml:space="preserve">
+    <value>Remove Selected</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="AvailablePlugins" xml:space="preserve">
+    <value>Available Plugins</value>
+  </data>
+  <data name="AllPluginsInstalled" xml:space="preserve">
+    <value>All plugins are already installed.</value>
+  </data>
+  <data name="InstallSelected" xml:space="preserve">
+    <value>Install Selected</value>
+  </data>
+  <data name="ClientModsSubtitle" xml:space="preserve">
+    <value>Add, remove, or toggle client mods &#x2014; same UX as server mods.</value>
+  </data>
+  <data name="Paths" xml:space="preserve">
+    <value>Paths</value>
+  </data>
+  <data name="TabgSteamFolder" xml:space="preserve">
+    <value>TABG Steam folder:</value>
+  </data>
+  <data name="ModdedCopyFolder" xml:space="preserve">
+    <value>Modded copy folder:</value>
+  </data>
+  <data name="InstalledClientMods" xml:space="preserve">
+    <value>Installed Client Mods</value>
+  </data>
+  <data name="NoModdedTabgFound" xml:space="preserve">
+    <value>No modded TABG found. Set up paths and click 'Initial Setup' first.</value>
+  </data>
+  <data name="InitialSetup" xml:space="preserve">
+    <value>Initial Setup (copy TABG + BepInEx)</value>
+  </data>
+  <data name="AvailableMods" xml:space="preserve">
+    <value>Available Mods</value>
+  </data>
+  <data name="AllClientModsInstalled" xml:space="preserve">
+    <value>All client mods are already installed.</value>
+  </data>
+  <data name="LaunchModdedTabgCaps" xml:space="preserve">
+    <value>LAUNCH MODDED TABG</value>
+  </data>
+  <data name="OpenModdedFolder" xml:space="preserve">
+    <value>Open Modded Folder</value>
+  </data>
+  <data name="ManageBackups" xml:space="preserve">
+    <value>Manage server backups</value>
+  </data>
+  <data name="CreateBackup" xml:space="preserve">
+    <value>Create Backup</value>
+  </data>
+  <data name="Creating" xml:space="preserve">
+    <value>Creating...</value>
+  </data>
+  <data name="NoBackupsFound" xml:space="preserve">
+    <value>No backups found.</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="ServerAdmins" xml:space="preserve">
+    <value>Server Admins</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="PermLevel" xml:space="preserve">
+    <value>Perm Level</value>
+  </data>
+  <data name="AddAdmin" xml:space="preserve">
+    <value>Add Admin</value>
+  </data>
+  <data name="Player" xml:space="preserve">
+    <value>Player:</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Level:</value>
+  </data>
+  <data name="RefreshPlayers" xml:space="preserve">
+    <value>Refresh Players</value>
+  </data>
+  <data name="ScanGuestbooks" xml:space="preserve">
+    <value>Scans all server Guestbooks for known players</value>
+  </data>
+  <data name="ManualEntry" xml:space="preserve">
+    <value>Manual entry (player not in list)</value>
+  </data>
+  <data name="NameLabel" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="EpicIdLabel" xml:space="preserve">
+    <value>Epic ID:</value>
+  </data>
+  <data name="MatchMode" xml:space="preserve">
+    <value>Match Mode</value>
+  </data>
+  <data name="LoadoutMode" xml:space="preserve">
+    <value>Loadout Mode</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="GunGame" xml:space="preserve">
+    <value>GunGame</value>
+  </data>
+  <data name="ReverseGunGame" xml:space="preserve">
+    <value>ReverseGunGame</value>
+  </data>
+  <data name="KeepInventory" xml:space="preserve">
+    <value>KeepInventory</value>
+  </data>
+  <data name="WinCondition" xml:space="preserve">
+    <value>Win Condition</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="KillsToWin" xml:space="preserve">
+    <value>KillsToWin</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="KillsToWinLabel" xml:space="preserve">
+    <value>Kills To Win</value>
+  </data>
+  <data name="ForceKillAtStart" xml:space="preserve">
+    <value>Force Kill At Start</value>
+  </data>
+  <data name="HealOnKill" xml:space="preserve">
+    <value>Heal On Kill</value>
+  </data>
+  <data name="HealAmountPercent" xml:space="preserve">
+    <value>Heal Amount %:</value>
+  </data>
+  <data name="DropItemsOnDeath" xml:space="preserve">
+    <value>Drop Items On Death</value>
+  </data>
+  <data name="CanGoDown" xml:space="preserve">
+    <value>Can Go Down</value>
+  </data>
+  <data name="CanLockOut" xml:space="preserve">
+    <value>Can Lock Out</value>
+  </data>
+  <data name="VoteSettings" xml:space="preserve">
+    <value>Vote Settings</value>
+  </data>
+  <data name="PercentOfVotes" xml:space="preserve">
+    <value>Percent Of Votes</value>
+  </data>
+  <data name="MinPlayers" xml:space="preserve">
+    <value>Min Players</value>
+  </data>
+  <data name="TimeToStartSeconds" xml:space="preserve">
+    <value>Time To Start (seconds)</value>
+  </data>
+  <data name="SpellDrops" xml:space="preserve">
+    <value>Spell Drops</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="MinDelaySeconds" xml:space="preserve">
+    <value>Min Delay (seconds)</value>
+  </data>
+  <data name="MaxDelaySeconds" xml:space="preserve">
+    <value>Max Delay (seconds)</value>
+  </data>
+  <data name="FirstDropOffsetSeconds" xml:space="preserve">
+    <value>First Drop Offset (seconds)</value>
+  </data>
+  <data name="Timeouts" xml:space="preserve">
+    <value>Timeouts</value>
+  </data>
+  <data name="PreMatchTimeoutMinutes" xml:space="preserve">
+    <value>Pre-Match Timeout (minutes)</value>
+  </data>
+  <data name="MatchTimeoutMinutes" xml:space="preserve">
+    <value>Match Timeout (minutes)</value>
+  </data>
+  <data name="LocationPicker" xml:space="preserve">
+    <value>Location Picker</value>
+  </data>
+  <data name="Location" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="ApplyLocation" xml:space="preserve">
+    <value>Apply Location</value>
+  </data>
+  <data name="RingSettings" xml:space="preserve">
+    <value>Ring Settings</value>
+  </data>
+  <data name="RingSizes" xml:space="preserve">
+    <value>Ring Sizes (3 values)</value>
+  </data>
+  <data name="RingSpeeds" xml:space="preserve">
+    <value>Ring Speeds (3 values)</value>
+  </data>
+  <data name="NoClosingDeathmatch" xml:space="preserve">
+    <value>No Closing (Deathmatch)</value>
+  </data>
+  <data name="StandardBR" xml:space="preserve">
+    <value>Standard BR</value>
+  </data>
+  <data name="LobbySpawn" xml:space="preserve">
+    <value>Lobby Spawn</value>
+  </data>
+  <data name="CustomSpawnPoint" xml:space="preserve">
+    <value>Custom Spawn Point (x,y,z)</value>
+  </data>
+  <data name="UseCustomSpawn" xml:space="preserve">
+    <value>Use Custom Spawn</value>
+  </data>
+  <data name="MatchSpawns" xml:space="preserve">
+    <value>Match Spawns</value>
+  </data>
+  <data name="SpawnCoordinates" xml:space="preserve">
+    <value>Spawn Coordinates (one x,z per line):</value>
+  </data>
+  <data name="StarterPackFixes" xml:space="preserve">
+    <value>StarterPack Fixes</value>
+  </data>
+  <data name="EnableLootDrops" xml:space="preserve">
+    <value>Enable Loot Drops</value>
+  </data>
+  <data name="GrenadesOnDeathAttacker" xml:space="preserve">
+    <value>Grenades On Death - Attacker</value>
+  </data>
+  <data name="ChanceLabel" xml:space="preserve">
+    <value>Chance (0.0 - 1.0):</value>
+  </data>
+  <data name="GrenadeLabel" xml:space="preserve">
+    <value>Grenade:</value>
+  </data>
+  <data name="GrenadesOnDeathCorpse" xml:space="preserve">
+    <value>Grenades On Death - Corpse</value>
+  </data>
+  <data name="LivesAndAdvanced" xml:space="preserve">
+    <value>Lives &amp; Advanced</value>
+  </data>
+  <data name="LivesLabel" xml:space="preserve">
+    <value>Lives:</value>
+  </data>
+  <data name="Lives256Infinite" xml:space="preserve">
+    <value>(256 = infinite)</value>
+  </data>
+  <data name="StreamingDistance" xml:space="preserve">
+    <value>Streaming Distance:</value>
+  </data>
+  <data name="StreamingDistanceDefault" xml:space="preserve">
+    <value>(-1 = normal)</value>
+  </data>
+  <data name="BanList" xml:space="preserve">
+    <value>Ban List</value>
+  </data>
+  <data name="OneEpicIdPerLine" xml:space="preserve">
+    <value>One Epic ID per line</value>
+  </data>
+  <data name="ProximityChat" xml:space="preserve">
+    <value>Proximity Chat</value>
+  </data>
+  <data name="MaxRangeM" xml:space="preserve">
+    <value>Max Range (m):</value>
+  </data>
+  <data name="DefaultFifty" xml:space="preserve">
+    <value>(default 50)</value>
+  </data>
+  <data name="MinRangeM" xml:space="preserve">
+    <value>Min Range (m):</value>
+  </data>
+  <data name="DefaultFive" xml:space="preserve">
+    <value>(default 5)</value>
+  </data>
+  <data name="FalloffCurve" xml:space="preserve">
+    <value>Falloff Curve:</value>
+  </data>
+  <data name="Linear" xml:space="preserve">
+    <value>Linear</value>
+  </data>
+  <data name="Logarithmic" xml:space="preserve">
+    <value>Logarithmic</value>
+  </data>
+  <data name="JuggernautMode" xml:space="preserve">
+    <value>Juggernaut Mode</value>
+  </data>
+  <data name="JuggernautDescription" xml:space="preserve">
+    <value>Score-based game mode: one massive Juggernaut vs everyone</value>
+  </data>
+  <data name="PointsToWin" xml:space="preserve">
+    <value>Points to Win:</value>
+  </data>
+  <data name="DefaultHundred" xml:space="preserve">
+    <value>(default 100)</value>
+  </data>
+  <data name="JuggernautHP" xml:space="preserve">
+    <value>Juggernaut HP:</value>
+  </data>
+  <data name="DefaultThousand" xml:space="preserve">
+    <value>(default 1000)</value>
+  </data>
+  <data name="JuggernautKillBonus" xml:space="preserve">
+    <value>Juggernaut Kill Bonus:</value>
+  </data>
+  <data name="JuggernautKillBonusHint" xml:space="preserve">
+    <value>(points for killing the Juggernaut)</value>
+  </data>
+  <data name="JuggKillPoints" xml:space="preserve">
+    <value>Jugg Kill Points:</value>
+  </data>
+  <data name="JuggKillPointsHint" xml:space="preserve">
+    <value>(points Juggernaut earns per kill)</value>
+  </data>
+  <data name="RegularKillPoints" xml:space="preserve">
+    <value>Regular Kill Points:</value>
+  </data>
+  <data name="RegularKillPointsHint" xml:space="preserve">
+    <value>(points for killing a regular player)</value>
+  </data>
+  <data name="DamagePerPoint" xml:space="preserve">
+    <value>Damage per Point:</value>
+  </data>
+  <data name="DamagePerPointHint" xml:space="preserve">
+    <value>(HP damage needed per score point)</value>
+  </data>
+  <data name="LoadoutChoices" xml:space="preserve">
+    <value>Loadout Choices:</value>
+  </data>
+  <data name="LoadoutChoicesHint" xml:space="preserve">
+    <value>(cards shown on respawn)</value>
+  </data>
+  <data name="LoadoutTimeoutS" xml:space="preserve">
+    <value>Loadout Timeout (s):</value>
+  </data>
+  <data name="LoadoutTimeoutHint" xml:space="preserve">
+    <value>(auto-pick after this)</value>
+  </data>
+  <data name="MinSpawnDistance" xml:space="preserve">
+    <value>Min Spawn Distance:</value>
+  </data>
+  <data name="MinSpawnDistanceHint" xml:space="preserve">
+    <value>(meters from Juggernaut)</value>
+  </data>
+  <data name="MinPlayersToStart" xml:space="preserve">
+    <value>Min Players:</value>
+  </data>
+  <data name="MinPlayersToStartHint" xml:space="preserve">
+    <value>(to start the match)</value>
+  </data>
+  <data name="LoadoutModeLabel" xml:space="preserve">
+    <value>Loadout Mode:</value>
+  </data>
+  <data name="ImportRaw" xml:space="preserve">
+    <value>Import Raw</value>
+  </data>
+  <data name="ExportRaw" xml:space="preserve">
+    <value>Export Raw</value>
+  </data>
+  <data name="LoadoutsHeader" xml:space="preserve">
+    <value>Loadouts</value>
+  </data>
+  <data name="Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="WeightLabel" xml:space="preserve">
+    <value>Weight:</value>
+  </data>
+  <data name="Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Items" xml:space="preserve">
+    <value>Items</value>
+  </data>
+  <data name="ItemName" xml:space="preserve">
+    <value>Item Name</value>
+  </data>
+  <data name="ID" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>Qty</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>Add Item</value>
+  </data>
+  <data name="SearchLabel" xml:space="preserve">
+    <value>Search:</value>
+  </data>
+  <data name="CategoryLabel" xml:space="preserve">
+    <value>Category:</value>
+  </data>
+  <data name="ItemLabel" xml:space="preserve">
+    <value>Item:</value>
+  </data>
+  <data name="QuantityLabel" xml:space="preserve">
+    <value>Quantity:</value>
+  </data>
+  <data name="CurseAssignment" xml:space="preserve">
+    <value>Curse Assignment</value>
+  </data>
+  <data name="BlessingAssignment" xml:space="preserve">
+    <value>Blessing Assignment (added as items)</value>
+  </data>
+  <data name="BlessingDescription" xml:space="preserve">
+    <value>Blessings are added as items to this loadout.</value>
+  </data>
+  <data name="ServerTemplates" xml:space="preserve">
+    <value>Server Templates</value>
+  </data>
+  <data name="ApplyTemplate" xml:space="preserve">
+    <value>Apply Template to Server</value>
+  </data>
+  <data name="SavedPresets" xml:space="preserve">
+    <value>Saved Presets:</value>
+  </data>
+  <data name="Load" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="FilesToInclude" xml:space="preserve">
+    <value>Files to include when saving:</value>
+  </data>
+  <data name="SaveCurrentPreset" xml:space="preserve">
+    <value>Save current as new preset...</value>
+  </data>
+  <data name="ServerPath" xml:space="preserve">
+    <value>Server Path</value>
+  </data>
+  <data name="Plugins" xml:space="preserve">
+    <value>Plugins</value>
+  </data>
+  <data name="ClientModRequired" xml:space="preserve">
+    <value> [Client mod required]</value>
+  </data>
+  <data name="CitruslibTag" xml:space="preserve">
+    <value>Citruslib Tag:</value>
+  </data>
+  <data name="ClientModsNeeded" xml:space="preserve">
+    <value>Some selected plugins require matching client mods &#x2014; install them in the Client tab after server setup.</value>
+  </data>
+  <data name="SelectAll" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+  <data name="SelectNone" xml:space="preserve">
+    <value>Select None</value>
+  </data>
+  <data name="SigmaPreset" xml:space="preserve">
+    <value>Sigma Preset</value>
+  </data>
+  <data name="InstallationLog" xml:space="preserve">
+    <value>Installation Log</value>
+  </data>
+  <data name="ContinueWithoutInstall" xml:space="preserve">
+    <value>Continue without install</value>
+  </data>
+  <data name="SetupTitle" xml:space="preserve">
+    <value>TABG Server Installer &#x2014; Setup</value>
+  </data>
+  <data name="WelcomeTitle" xml:space="preserve">
+    <value>Welcome to TABG Server Installer</value>
+  </data>
+  <data name="WelcomeSubtitle" xml:space="preserve">
+    <value>First-time setup &#x2014; this only runs once.</value>
+  </data>
+  <data name="Step1Title" xml:space="preserve">
+    <value>Step 1: Server Path</value>
+  </data>
+  <data name="Step1Description" xml:space="preserve">
+    <value>Select your TABG Dedicated Server folder. This is usually auto-detected from Steam.</value>
+  </data>
+  <data name="Step2Title" xml:space="preserve">
+    <value>Step 2: Client Path (optional)</value>
+  </data>
+  <data name="Step2Description" xml:space="preserve">
+    <value>Select your TABG Steam folder for client mods. You can skip this and set it up later.</value>
+  </data>
+  <data name="Step3Title" xml:space="preserve">
+    <value>Step 3: Choose Starting Plugins</value>
+  </data>
+  <data name="Step3Description" xml:space="preserve">
+    <value>Pick your initial server plugins. You can add or remove plugins anytime later from the Server Mods tab &#x2014; no reinstall needed!</value>
+  </data>
+  <data name="Step4Title" xml:space="preserve">
+    <value>Step 4: Choose Starting Client Mods (optional)</value>
+  </data>
+  <data name="Step4Description" xml:space="preserve">
+    <value>Pick client-side mods for your modded TABG copy. You can add or remove mods anytime later from the Client Mods tab. Skip if you didn't set a client path.</value>
+  </data>
+  <data name="Installing" xml:space="preserve">
+    <value>Installing...</value>
+  </data>
+  <data name="AddServerTitle" xml:space="preserve">
+    <value>Add Server</value>
+  </data>
+  <data name="DisplayName" xml:space="preserve">
+    <value>Display Name</value>
+  </data>
+  <data name="LocalServer" xml:space="preserve">
+    <value>Local Server</value>
+  </data>
+  <data name="RemoteServerSsh" xml:space="preserve">
+    <value>Remote Server (SSH)</value>
+  </data>
+  <data name="ServerDirectory" xml:space="preserve">
+    <value>Server Directory</value>
+  </data>
+  <data name="BrowseEllipsis" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="PrivateKey" xml:space="preserve">
+    <value>Private Key</value>
+  </data>
+  <data name="RemoteServerPath" xml:space="preserve">
+    <value>Remote Server Path</value>
+  </data>
+  <data name="ProcessMode" xml:space="preserve">
+    <value>Process Mode:</value>
+  </data>
+  <data name="Screen" xml:space="preserve">
+    <value>Screen</value>
+  </data>
+  <data name="Systemd" xml:space="preserve">
+    <value>Systemd</value>
+  </data>
+  <data name="AddServer" xml:space="preserve">
+    <value>Add Server</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="UpdateNow" xml:space="preserve">
+    <value>Update Now</value>
+  </data>
+  <data name="SkipThisVersion" xml:space="preserve">
+    <value>Skip This Version</value>
+  </data>
+  <data name="RemindMeLater" xml:space="preserve">
+    <value>Remind Me Later</value>
+  </data>
+  <data name="Servers" xml:space="preserve">
+    <value>Servers</value>
+  </data>
+  <data name="AddServerButton" xml:space="preserve">
+    <value>+ Add Server</value>
+  </data>
+  <data name="ServerPathLabel" xml:space="preserve">
+    <value>Server Path:</value>
+  </data>
+  <data name="ClientPathLabel" xml:space="preserve">
+    <value>Client Path:</value>
+  </data>
+  <data name="ModdedTabgPathLabel" xml:space="preserve">
+    <value>Modded TABG Path:</value>
+  </data>
+  <data name="HardReset" xml:space="preserve">
+    <value>Hard Reset</value>
+  </data>
+  <data name="HardResetDescription" xml:space="preserve">
+    <value>Completely reinstall the server from scratch. This will create a backup first, then run the full setup wizard again.</value>
+  </data>
+  <data name="HardResetButton" xml:space="preserve">
+    <value>Hard Reset (Full Reinstall)</value>
+  </data>
+  <data name="SuperSecretSettings" xml:space="preserve">
+    <value>Super Secret Settings</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Accessibility" xml:space="preserve">
+    <value>Accessibility</value>
+  </data>
+  <data name="HighContrastMode" xml:space="preserve">
+    <value>High contrast mode</value>
+  </data>
+  <data name="Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="SendCrashReports" xml:space="preserve">
+    <value>Send anonymous crash reports</value>
+  </data>
+  <data name="CrashReportDescription" xml:space="preserve">
+    <value>When enabled, anonymous error details (stack trace, app version) are sent to help improve the app. No personal data is collected.</value>
+  </data>
+  <data name="RestartRequired" xml:space="preserve">
+    <value>Restart the app to apply the language change.</value>
+  </data>
+  <data name="PasswordProtected" xml:space="preserve">
+    <value>This is password protected. Enter password to enter:</value>
+  </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Password:</value>
+  </data>
+  <data name="ForceStop" xml:space="preserve">
+    <value>Force Stop</value>
+  </data>
+  <data name="Commands" xml:space="preserve">
+    <value>Commands</value>
+  </data>
+  <data name="ItemIDs" xml:space="preserve">
+    <value>Item IDs</value>
+  </data>
+  <data name="SpawnLocations" xml:space="preserve">
+    <value>Spawn Locations</value>
+  </data>
+  <data name="MatchSettingsGuide" xml:space="preserve">
+    <value>Match Settings Guide</value>
+  </data>
+  <data name="CrashReportTitle" xml:space="preserve">
+    <value>Application Error</value>
+  </data>
+  <data name="CrashReportPrompt" xml:space="preserve">
+    <value>The app encountered an error. Would you like to send an anonymous crash report to help improve the app?</value>
+  </data>
+  <data name="CrashReportDetail" xml:space="preserve">
+    <value>Only the error details and app version are sent. No personal data is collected.</value>
+  </data>
+  <data name="YesSend" xml:space="preserve">
+    <value>Yes, Send Report</value>
+  </data>
+  <data name="NoThanks" xml:space="preserve">
+    <value>No Thanks</value>
+  </data>
+  <data name="AlwaysSend" xml:space="preserve">
+    <value>Always Send</value>
+  </data>
+  <data name="NeverAsk" xml:space="preserve">
+    <value>Never Ask</value>
+  </data>
+</root>
