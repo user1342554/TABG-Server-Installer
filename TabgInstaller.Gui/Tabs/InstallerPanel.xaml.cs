@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using TabgInstaller.Core;
+using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
 
 namespace TabgInstaller.Gui.Tabs
@@ -31,7 +32,7 @@ namespace TabgInstaller.Gui.Tabs
             {
                 var selectedPath = dialog.FolderName;
                 if (!File.Exists(Path.Combine(selectedPath, "TABG.exe")))
-                    TabgInstaller.Gui.Services.ToastServiceStatic.Instance.Warning(
+                    ToastService.Instance.Warning(
                         "Selected folder may not be a TABG server directory (no TABG.exe found).");
                 Vm?.SetServerPath(selectedPath);
             }

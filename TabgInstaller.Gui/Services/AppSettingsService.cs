@@ -77,13 +77,3 @@ public class AppSettingsService : IAppSettingsService
         try { if (File.Exists(SettingsPath)) File.Delete(SettingsPath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to delete settings file: {ex.Message}"); }
     }
 }
-
-// Temporary backward compatibility — remove when all panels are migrated
-public static class AppSettingsServiceStatic
-{
-    private static readonly AppSettingsService _instance = new();
-    public static AppSettings Load() => _instance.Load();
-    public static void Save(AppSettings settings) => _instance.Save(settings);
-    public static void MarkSetupComplete(string s, string c, string m) => _instance.MarkSetupComplete(s, c, m);
-    public static void Reset() => _instance.Reset();
-}

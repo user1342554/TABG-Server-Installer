@@ -6,6 +6,11 @@ namespace TabgInstaller.Gui.Services
 
     public sealed class ToastService : IToastService
     {
+        /// <summary>
+        /// Canonical singleton used by code that cannot receive DI injection (XAML UserControls,
+        /// standalone windows). DI is configured to return this same instance so all callers
+        /// share one initialized object.
+        /// </summary>
         public static ToastService Instance { get; } = new();
 
         private Action<string, ToastType, int>? _showCallback;
@@ -24,11 +29,5 @@ namespace TabgInstaller.Gui.Services
         public void Error(string message) => Show(message, ToastType.Error);
         public void Warning(string message) => Show(message, ToastType.Warning);
         public void Info(string message) => Show(message, ToastType.Info);
-    }
-
-    // Temporary backward compatibility — remove when all panels are migrated
-    public static class ToastServiceStatic
-    {
-        public static ToastService Instance { get; } = new();
     }
 }

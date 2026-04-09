@@ -121,7 +121,9 @@ namespace TabgInstaller.Gui
         {
             this.Visibility = Visibility.Hidden;
 
-            var wizard = new SetupWizardWindow();
+            var wizard = new SetupWizardWindow(
+                _services.GetRequiredService<IToastService>(),
+                _appSettings);
             var result = wizard.ShowDialog();
 
             this.Visibility = Visibility.Visible;

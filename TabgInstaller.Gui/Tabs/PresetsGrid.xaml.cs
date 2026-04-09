@@ -77,13 +77,13 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (string.IsNullOrEmpty(_serverDir))
             {
-                ToastServiceStatic.Instance.Warning("No server directory set. Please install/select a server first.");
+                ToastService.Instance.Warning("No server directory set. Please install/select a server first.");
                 return;
             }
 
             if (LstTemplates.SelectedItem is not BuiltInPresets.BuiltInPreset preset)
             {
-                ToastServiceStatic.Instance.Warning("Please select a template to apply.");
+                ToastService.Instance.Warning("Please select a template to apply.");
                 return;
             }
 
@@ -108,11 +108,11 @@ namespace TabgInstaller.Gui.Tabs
                     mainWindow.ReloadFromPath(_serverDir);
                 }
 
-                ToastServiceStatic.Instance.Success($"Template '{preset.Name}' applied successfully. All settings have been reloaded.");
+                ToastService.Instance.Success($"Template '{preset.Name}' applied successfully. All settings have been reloaded.");
             }
             catch (Exception ex)
             {
-                ToastServiceStatic.Instance.Error($"Failed to apply template: {ex.Message}");
+                ToastService.Instance.Error($"Failed to apply template: {ex.Message}");
             }
         }
 
@@ -129,7 +129,7 @@ namespace TabgInstaller.Gui.Tabs
             var selectedPaths = _fileEntries.Where(f => f.IsSelected).Select(f => f.RelativePath).ToArray();
             if (selectedPaths.Length == 0)
             {
-                ToastServiceStatic.Instance.Warning("Please select at least one file to include.");
+                ToastService.Instance.Warning("Please select at least one file to include.");
                 return;
             }
 
@@ -137,11 +137,11 @@ namespace TabgInstaller.Gui.Tabs
             {
                 PresetManager.SavePreset(_serverDir, presetName, selectedPaths);
                 RefreshPresets();
-                ToastServiceStatic.Instance.Success($"Preset '{presetName}' saved.");
+                ToastService.Instance.Success($"Preset '{presetName}' saved.");
             }
             catch (Exception ex)
             {
-                ToastServiceStatic.Instance.Error($"Failed to save preset: {ex.Message}");
+                ToastService.Instance.Error($"Failed to save preset: {ex.Message}");
             }
         }
 
@@ -149,7 +149,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (LstPresets.SelectedItem is not string presetName)
             {
-                ToastServiceStatic.Instance.Warning("Please select a preset to load.");
+                ToastService.Instance.Warning("Please select a preset to load.");
                 return;
             }
 
@@ -166,11 +166,11 @@ namespace TabgInstaller.Gui.Tabs
                     mainWindow.ReloadFromPath(_serverDir);
                 }
 
-                ToastServiceStatic.Instance.Success($"Preset '{presetName}' loaded.");
+                ToastService.Instance.Success($"Preset '{presetName}' loaded.");
             }
             catch (Exception ex)
             {
-                ToastServiceStatic.Instance.Error($"Failed to load preset: {ex.Message}");
+                ToastService.Instance.Error($"Failed to load preset: {ex.Message}");
             }
         }
 
@@ -178,7 +178,7 @@ namespace TabgInstaller.Gui.Tabs
         {
             if (LstPresets.SelectedItem is not string presetName)
             {
-                ToastServiceStatic.Instance.Warning("Please select a preset to delete.");
+                ToastService.Instance.Warning("Please select a preset to delete.");
                 return;
             }
 
@@ -192,7 +192,7 @@ namespace TabgInstaller.Gui.Tabs
             }
             catch (Exception ex)
             {
-                ToastServiceStatic.Instance.Error($"Failed to delete preset: {ex.Message}");
+                ToastService.Instance.Error($"Failed to delete preset: {ex.Message}");
             }
         }
     }

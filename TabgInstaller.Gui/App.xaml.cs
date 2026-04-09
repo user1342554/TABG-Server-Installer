@@ -84,8 +84,9 @@ namespace TabgInstaller.Gui
             // Infrastructure
             services.AddSingleton<IServerPathProvider, ServerPathProvider>();
             services.AddSingleton<IAppSettingsService, AppSettingsService>();
-            services.AddSingleton<ToastService>();
-            services.AddSingleton<IToastService>(sp => sp.GetRequiredService<ToastService>());
+            // Register the canonical singleton so DI and non-DI callers share one instance.
+            services.AddSingleton<ToastService>(_ => ToastService.Instance);
+            services.AddSingleton<IToastService>(_ => ToastService.Instance);
 
             // Core services
             services.AddSingleton<IUpdateService, UpdateService>();

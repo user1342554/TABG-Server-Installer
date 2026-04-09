@@ -21,11 +21,15 @@ namespace TabgInstaller.Gui.Windows
         private readonly List<CheckBox> _pluginCheckboxes = new();
         private readonly List<CheckBox> _clientModCheckboxes = new();
         private CancellationTokenSource? _cts;
+        private readonly IToastService _toast;
+        private readonly IAppSettingsService _appSettings;
 
         private const string DefaultCitrusTag = "v0.7";
 
-        public SetupWizardWindow()
+        public SetupWizardWindow(IToastService? toast = null, IAppSettingsService? appSettings = null)
         {
+            _toast = toast ?? ToastService.Instance;
+            _appSettings = appSettings ?? new AppSettingsService();
             InitializeComponent();
             BuildPluginCheckboxes();
             BuildClientModCheckboxes();
@@ -140,7 +144,7 @@ namespace TabgInstaller.Gui.Windows
                 var path = TxtServerPath.Text.Trim();
                 if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
                 {
-                    ToastServiceStatic.Instance.Warning("Please select a valid TABG server folder.");
+                    _toast.Warning("Please select a valid TABG server folder.");
                     return;
                 }
                 WizardSteps.SelectedIndex = 1;
@@ -284,7 +288,7 @@ namespace TabgInstaller.Gui.Windows
                     InstallProgress.Value = 100;
                     TxtInstallStage.Text = "Complete!";
 
-                    AppSettingsServiceStatic.MarkSetupComplete(serverDir, clientPath, clientModdedPath);
+                    _appSettings.MarkSetupComplete(serverDir, clientPath, clientModdedPath);
                     SetupCompleted = true;
 
                     // Brief pause so user sees "Complete!", then close
@@ -294,7 +298,7 @@ namespace TabgInstaller.Gui.Windows
                 else
                 {
                     TxtInstallStage.Text = "Failed";
-                    ToastServiceStatic.Instance.Error("Installation failed. Check the log for details.");
+                    _toast.Error("Installation failed. Check the log for details.");
                     BtnBack.IsEnabled = true;
                     BtnBack.Visibility = Visibility.Visible;
                 }
@@ -302,7 +306,7 @@ namespace TabgInstaller.Gui.Windows
             catch (Exception ex)
             {
                 TxtInstallStage.Text = "Failed";
-                ToastServiceStatic.Instance.Error($"Installation error: {ex.Message}");
+                _toast.Error($"Installation error: {ex.Message}");
                 BtnBack.IsEnabled = true;
                 BtnBack.Visibility = Visibility.Visible;
             }
