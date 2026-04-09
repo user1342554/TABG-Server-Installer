@@ -1,6 +1,10 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.LoadoutEditorPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -34,14 +38,16 @@
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="Loadouts" FontWeight="Bold" Margin="0,0,0,4"/>
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,4,0,0">
-                    <Button Content="Add" Width="50" Margin="0,0,4,0" Click="AddLoadout_Click"/>
-                    <Button Content="Duplicate" Width="68" Margin="0,0,4,0" Click="DuplicateLoadout_Click"
+                    <Button Content="Add" Width="50" Margin="0,0,4,0" Command="{Binding AddLoadoutCommand}"/>
+                    <Button Content="Duplicate" Width="68" Margin="0,0,4,0" Command="{Binding DuplicateLoadoutCommand}"
                             ToolTip="Clone the selected loadout"/>
-                    <Button Content="Remove" Width="58" Margin="0,0,4,0" Click="RemoveLoadout_Click"/>
-                    <Button Content="Up" Width="32" Margin="0,0,4,0" Click="MoveUp_Click"/>
-                    <Button Content="Down" Width="42" Click="MoveDown_Click"/>
+                    <Button Content="Remove" Width="58" Margin="0,0,4,0" Command="{Binding RemoveLoadoutCommand}"/>
+                    <Button Content="Up" Width="32" Margin="0,0,4,0" Command="{Binding MoveUpCommand}"/>
+                    <Button Content="Down" Width="42" Command="{Binding MoveDownCommand}"/>
                 </StackPanel>
                 <ListBox x:Name="LstLoadouts" DisplayMemberPath="DisplayName"
+                         ItemsSource="{Binding Loadouts}"
+                         SelectedItem="{Binding SelectedLoadout, Mode=TwoWay}"
                          SelectionChanged="LstLoadouts_SelectionChanged"/>
             </DockPanel>
 
@@ -67,6 +73,7 @@
                     <DataGrid x:Name="DgItems" AutoGenerateColumns="False" CanUserAddRows="False"
                               CanUserDeleteRows="False" HeadersVisibility="Column"
                               Height="180" Margin="0,0,0,4" SelectionMode="Single"
+                              ItemsSource="{Binding CurrentItems}"
                               CellEditEnding="DgItems_CellEditEnding">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Item Name" Binding="{Binding ItemName}" Width="*" IsReadOnly="True"/>
@@ -90,15 +97,18 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                 <Label Content="Search:" Width="70"/>
                                 <TextBox x:Name="TxtItemSearch" Width="250"
-                                         TextChanged="TxtItemSearch_TextChanged"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="Type to search items across all categories"/>
                             </StackPanel>
                             <ListBox x:Name="LstSearchResults" Height="120" Margin="0,0,0,4"
-                                     Visibility="Collapsed"
+                                     ItemsSource="{Binding SearchResults}"
+                                     DisplayMemberPath="DisplayText"
+                                     Visibility="{Binding SearchResultsVisible, Converter={StaticResource BoolToVisibility}}"
                                      MouseDoubleClick="LstSearchResults_MouseDoubleClick"
                                      ToolTip="Double-click to add item"/>
                             <!-- Category/Item dropdowns -->
-                            <StackPanel x:Name="PnlCategorySelect">
+                            <StackPanel x:Name="PnlCategorySelect"
+                                        Visibility="{Binding CategorySelectVisible, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <Label Content="Category:" Width="70"/>
                                     <ComboBox x:Name="CmbCategory" Width="160"
@@ -111,7 +121,8 @@
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <Label Content="Quantity:" Width="70"/>
-                                <TextBox x:Name="TxtQuantity" Width="60" Text="1"/>
+                                <TextBox x:Name="TxtQuantity" Width="60"
+                                         Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}"/>
                                 <Button Content="Add" Width="60" Margin="8,0,0,0" Click="AddItem_Click"/>
                             </StackPanel>
                         </StackPanel>
@@ -119,7 +130,7 @@
 
                     <!-- Curse Assignment Section -->
                     <Expander Header="Curse Assignment" IsExpanded="False" Margin="0,0,0,4">
-                        <ItemsControl x:Name="IcCurses" Margin="4">
+                        <ItemsControl x:Name="IcCurses" ItemsSource="{Binding CurrentCurses}" Margin="4">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -138,7 +149,7 @@
                     <Expander Header="Blessing Assignment (added as items)" IsExpanded="False" Margin="0,0,0,4">
                         <StackPanel>
                             <TextBlock Text="Blessings are added as items to this loadout." Foreground="Gray" FontSize="11" Margin="4,2,4,4"/>
-                            <ItemsControl x:Name="IcBlessings">
+                            <ItemsControl x:Name="IcBlessings" ItemsSource="{Binding CurrentBlessings}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <WrapPanel/>
@@ -159,8 +170,8 @@
 
         <!-- Bottom Bar -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Content="Save" Width="100" Click="Save_Click"/>
-            <TextBlock x:Name="TxtStatus" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            <Button Content="Save" Width="100" Command="{Binding SaveCommand}"/>
+            <TextBlock x:Name="TxtStatus" Text="{Binding StatusText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
     </Grid>
 </UserControl>

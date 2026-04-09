@@ -162,6 +162,7 @@ namespace TabgInstaller.Gui
             DashboardTab.DataContext = _services.GetRequiredService<DashboardViewModel>();
             ConfigTab.DataContext = _services.GetRequiredService<ConfigViewModel>();
             ConfigTab.InitializeSubPanels(serverDir);
+            ConfigTab.SetLoadoutEditorViewModel(_services.GetRequiredService<LoadoutEditorViewModel>());
             ConfigTab.AdminPanelControl.DataContext = _services.GetRequiredService<AdminPanelViewModel>();
             ConfigTab.MatchSettingsControl.SetViewModel(_services.GetRequiredService<MatchSettingsViewModel>());
             ConfigTab.RingSpawnsControl.SetViewModel(_services.GetRequiredService<RingSpawnsViewModel>());

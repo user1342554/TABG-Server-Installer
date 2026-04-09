@@ -120,6 +120,7 @@ namespace TabgInstaller.Gui
             services.AddTransient<InstallerPanelViewModel>();
             services.AddTransient<ClientPanelViewModel>();
             services.AddTransient<ReferencePanelViewModel>();
+            services.AddTransient<LoadoutEditorViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();
