@@ -173,6 +173,7 @@ namespace TabgInstaller.Gui
             ClientModsTab.DataContext = clientVm;
             clientVm.Initialize();
             BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
+            ReferenceTab.DataContext = _services.GetRequiredService<ReferencePanelViewModel>();
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
             SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();
 
