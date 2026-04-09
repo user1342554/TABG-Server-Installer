@@ -1,10 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Timers;
+using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Model;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -15,11 +18,13 @@ namespace TabgInstaller.Gui.ViewModels
         private readonly IAppSettingsService _appSettings;
         private readonly INavigationService _navigation;
         private readonly IToastService _toast;
+        private readonly IServerInstanceManager _instanceManager;
         private Timer? _refreshTimer;
 
         [ObservableProperty] private string _previewText = "";
         [ObservableProperty] private string _startStopButtonText = "Start Server";
         [ObservableProperty] private string _serverPath = "";
+        [ObservableProperty] private ObservableCollection<ServerHealthCardData> _healthCards = new();
 
         public bool IsServerRunning
         {
@@ -34,12 +39,14 @@ namespace TabgInstaller.Gui.ViewModels
             IActiveInstanceService activeInstance,
             IAppSettingsService appSettings,
             INavigationService navigation,
-            IToastService toast)
+            IToastService toast,
+            IServerInstanceManager instanceManager)
         {
             _activeInstance = activeInstance;
             _appSettings = appSettings;
             _navigation = navigation;
             _toast = toast;
+            _instanceManager = instanceManager;
 
             _activeInstance.PathChanged += OnServerPathChanged;
         }
@@ -49,6 +56,7 @@ namespace TabgInstaller.Gui.ViewModels
             ServerPath = _activeInstance.ServerPath;
             StartRefreshTimer();
             RefreshPreview();
+            RefreshHealthCards();
         }
 
         private void StartRefreshTimer()
@@ -67,6 +75,51 @@ namespace TabgInstaller.Gui.ViewModels
             PreviewText = _activeInstance.ProcessService.GetRecentText(20);
             StartStopButtonText = _activeInstance.ProcessService.IsRunning ? "Stop Server" : "Start Server";
             OnPropertyChanged(nameof(IsServerRunning));
+            RefreshHealthCards();
+        }
+
+        private void RefreshHealthCards()
+        {
+            var mgr = _instanceManager as ServerInstanceManager;
+            if (mgr == null) return;
+
+            var runtimes = mgr.GetRuntimeInstances();
+            HealthCards.Clear();
+            foreach (var data in _instanceManager.InstanceDataList)
+            {
+                if (runtimes.TryGetValue(data.Id, out var instance))
+                {
+                    HealthCards.Add(new ServerHealthCardData
+                    {
+                        DisplayName = data.DisplayName,
+                        IsRunning = instance.IsRunning,
+                        PlayerCountText = instance.IsRunning
+                            ? $"{instance.HealthMonitor.PlayerCount} players" : "",
+                        UptimeText = instance.IsRunning
+                            ? $"Uptime: {instance.HealthMonitor.Uptime:hh\\:mm}" : "",
+                        MemoryText = instance.IsRunning
+                            ? $"RAM: {instance.HealthMonitor.MemoryUsageMb} MB" : "",
+                        JoinCodeText = instance.HealthMonitor.JoinCode != null
+                            ? $"Join: {instance.HealthMonitor.JoinCode}" : "",
+                        StatusColor = instance.HealthMonitor.Status switch
+                        {
+                            ServerHealthStatus.Running => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green),
+                            ServerHealthStatus.Crashed => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red),
+                            ServerHealthStatus.Restarting => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Orange),
+                            ServerHealthStatus.Watchdog => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Orange),
+                            _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray)
+                        }
+                    });
+                }
+                else
+                {
+                    HealthCards.Add(new ServerHealthCardData
+                    {
+                        DisplayName = data.DisplayName,
+                        StatusColor = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray)
+                    });
+                }
+            }
         }
 
         [RelayCommand]
@@ -131,5 +184,17 @@ namespace TabgInstaller.Gui.ViewModels
         [RelayCommand]
         private void OpenFullConsole() =>
             _navigation.NavigateToTab(4);
+    }
+
+    public partial class ServerHealthCardData : ObservableObject
+    {
+        [ObservableProperty] private string _displayName = "";
+        [ObservableProperty] private bool _isRunning;
+        [ObservableProperty] private string _playerCountText = "";
+        [ObservableProperty] private string _uptimeText = "";
+        [ObservableProperty] private string _memoryText = "";
+        [ObservableProperty] private string _joinCodeText = "";
+        [ObservableProperty] private System.Windows.Media.Brush _statusColor
+            = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
     }
 }

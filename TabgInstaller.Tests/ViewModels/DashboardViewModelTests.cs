@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Moq;
+using System.Collections.ObjectModel;
 using TabgInstaller.Core;
+using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
@@ -15,6 +17,7 @@ namespace TabgInstaller.Tests.ViewModels
         private readonly Mock<IAppSettingsService> _appSettings = new();
         private readonly Mock<INavigationService> _navigation = new();
         private readonly Mock<IToastService> _toast = new();
+        private readonly Mock<IServerInstanceManager> _instanceManager = new();
 
         public DashboardViewModelTests()
         {
@@ -22,11 +25,13 @@ namespace TabgInstaller.Tests.ViewModels
             _activeInstance.SetupGet(a => a.ProcessService).Returns(_procSvc.Object);
             _procSvc.SetupGet(p => p.IsRunning).Returns(false);
             _procSvc.Setup(p => p.GetRecentText(It.IsAny<int>())).Returns("");
+            _instanceManager.SetupGet(m => m.InstanceDataList)
+                .Returns(new ObservableCollection<ServerInstanceData>());
         }
 
         private DashboardViewModel CreateSut() =>
             new(_activeInstance.Object, _appSettings.Object,
-                _navigation.Object, _toast.Object);
+                _navigation.Object, _toast.Object, _instanceManager.Object);
 
         [Fact]
         public void IsServerRunning_DelegatesToProcessService()
