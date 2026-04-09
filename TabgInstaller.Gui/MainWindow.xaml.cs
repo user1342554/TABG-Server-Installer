@@ -168,6 +168,10 @@ namespace TabgInstaller.Gui
             ConfigTab.ModSettingsControl.SetViewModel(_services.GetRequiredService<ModSettingsViewModel>());
             ConfigTab.PresetsGridControl.SetServerPath(serverDir);
             ServerModsTab.DataContext = _services.GetRequiredService<ServerModsViewModel>();
+
+            var clientVm = _services.GetRequiredService<ClientPanelViewModel>();
+            ClientModsTab.DataContext = clientVm;
+            clientVm.Initialize();
             BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
             SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();

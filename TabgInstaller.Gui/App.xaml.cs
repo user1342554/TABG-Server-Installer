@@ -118,6 +118,7 @@ namespace TabgInstaller.Gui
             services.AddTransient<ModSettingsViewModel>();
             services.AddSingleton<ConsolePanelViewModel>();
             services.AddTransient<InstallerPanelViewModel>();
+            services.AddTransient<ClientPanelViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

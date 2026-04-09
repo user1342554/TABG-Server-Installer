@@ -1,6 +1,11 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.ClientPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Inverse="True"/>
+    </UserControl.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -28,7 +33,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Label Content="TABG Steam folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="ClientPathBox" Grid.Column="1"/>
+                    <TextBox Grid.Column="1" Text="{Binding ClientPath, Mode=OneWay}" IsReadOnly="True"/>
                     <Button Content="Browse" Grid.Column="2" Width="70" Margin="5,0,0,0" Click="BrowseClient_Click"/>
                 </Grid>
                 <Grid>
@@ -37,7 +42,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Label Content="Modded copy folder:" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="ClientModdedPathBox" Grid.Column="1" IsReadOnly="True"/>
+                    <TextBox Grid.Column="1" Text="{Binding ModdedPath, Mode=OneWay}" IsReadOnly="True"/>
                 </Grid>
             </StackPanel>
         </GroupBox>
@@ -45,34 +50,44 @@
         <!-- Installed mods list -->
         <GroupBox Grid.Row="2" Header="Installed Client Mods">
             <Grid>
-                <ListView x:Name="LstClientMods" SelectionMode="Single">
+                <ListView x:Name="LstClientMods" ItemsSource="{Binding Mods}" SelectionMode="Single"
+                          Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" Checked="ModToggle" Unchecked="ModToggle"/>
+                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                          Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          CommandParameter="{Binding}"/>
                                 <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <TextBlock x:Name="TxtNoMods" Text="No modded TABG found. Set up paths and click 'Initial Setup' first."
-                           Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                <TextBlock Text="No modded TABG found. Set up paths and click 'Initial Setup' first."
+                           Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding AllClientModsInstalled, Converter={StaticResource BoolToVisibility}}"/>
             </Grid>
         </GroupBox>
 
         <!-- Actions for installed -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button x:Name="BtnSetup" Content="Initial Setup (copy TABG + BepInEx)" Width="260" Click="BtnSetup_Click"/>
+            <Button Content="Initial Setup (copy TABG + BepInEx)" Width="260"
+                    Command="{Binding SetupCommand}"
+                    IsEnabled="{Binding IsSettingUp, Converter={StaticResource InverseBoolToVisibility}}"/>
             <Button Content="Add DLL file..." Width="110" Margin="5,0,0,0" Click="AddDll_Click"/>
-            <Button Content="Remove Selected" Width="120" Margin="5,0,0,0" Click="RemoveMod_Click"/>
-            <Button Content="Refresh" Width="80" Margin="5,0,0,0" Click="Refresh_Click"/>
+            <Button Content="Remove Selected" Width="120" Margin="5,0,0,0"
+                    Command="{Binding RemoveModCommand}"
+                    CommandParameter="{Binding SelectedItem, ElementName=LstClientMods}"/>
+            <Button Content="Refresh" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"/>
         </StackPanel>
 
         <!-- Available bundled client mods -->
         <GroupBox Grid.Row="4" Header="Available Mods" Margin="0,10,0,0">
             <StackPanel>
                 <Grid>
-                    <ListView x:Name="LstBundled" MaxHeight="200" SelectionMode="Extended" BorderThickness="0">
+                    <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableClientMods}"
+                              MaxHeight="200" SelectionMode="Extended" BorderThickness="0"
+                              Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -82,10 +97,13 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <TextBlock x:Name="TxtAllInstalled" Text="All mods are already installed."
-                               Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                    <TextBlock Text="All client mods are already installed."
+                               Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding AllClientModsInstalled, Converter={StaticResource BoolToVisibility}}"/>
                 </Grid>
-                <Button x:Name="BtnInstallBundled" Content="Install Selected" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0" Click="InstallBundled_Click"/>
+                <Button Content="Install Selected" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0"
+                        Command="{Binding InstallBundledCommand}"
+                        IsEnabled="{Binding CanInstallBundled}"/>
             </StackPanel>
         </GroupBox>
 
@@ -94,8 +112,9 @@
 
         <!-- Launch -->
         <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button x:Name="BtnLaunch" Content="LAUNCH MODDED TABG" Height="36" Width="200" Click="BtnLaunch_Click"/>
-            <Button Content="Open Modded Folder" Height="36" Width="150" Margin="10,0,0,0" Click="OpenModdedFolder_Click"/>
+            <Button Content="LAUNCH MODDED TABG" Height="36" Width="200" Command="{Binding LaunchCommand}"/>
+            <Button Content="Open Modded Folder" Height="36" Width="150" Margin="10,0,0,0"
+                    Command="{Binding OpenModdedFolderCommand}"/>
         </StackPanel>
     </Grid>
 </UserControl>
