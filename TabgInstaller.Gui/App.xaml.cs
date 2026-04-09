@@ -8,6 +8,7 @@ using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Model;
 using TabgInstaller.Gui.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.ViewModels;
 
 namespace TabgInstaller.Gui
@@ -50,6 +51,18 @@ namespace TabgInstaller.Gui
             catch (Exception logEx)
             {
                 Trace.TraceError($"[App] Failed to write startup log: {logEx}");
+            }
+
+            // Apply saved language before any UI loads
+            try
+            {
+                var tempSettings = new AppSettingsService();
+                var settings = tempSettings.Load();
+                LocalizationHelper.ApplyLanguage(settings.Language);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"[App] Failed to apply language: {ex}");
             }
 
             _host = Host.CreateDefaultBuilder()

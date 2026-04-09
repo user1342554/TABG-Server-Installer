@@ -11,6 +11,9 @@ public class AppSettings
     public string ClientPath { get; set; } = "";
     public string ClientModdedPath { get; set; } = "";
     public string? SkippedUpdateVersion { get; set; }
+    public string Language { get; set; } = "en";
+    public bool HighContrastEnabled { get; set; } = false;
+    public bool? CrashReportingEnabled { get; set; } = null;
 }
 
 public class AppSettingsService : IAppSettingsService
