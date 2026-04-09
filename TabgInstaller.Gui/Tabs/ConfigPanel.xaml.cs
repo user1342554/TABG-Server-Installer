@@ -16,7 +16,6 @@ namespace TabgInstaller.Gui.Tabs
         public void InitializeSubPanels(string serverDir)
         {
             LoadoutEditorControl.Initialize(serverDir);
-            ModSettingsControl.Initialize(serverDir);
         }
     }
 }

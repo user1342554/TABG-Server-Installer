@@ -165,6 +165,7 @@ namespace TabgInstaller.Gui
             ConfigTab.AdminPanelControl.DataContext = _services.GetRequiredService<AdminPanelViewModel>();
             ConfigTab.MatchSettingsControl.SetViewModel(_services.GetRequiredService<MatchSettingsViewModel>());
             ConfigTab.RingSpawnsControl.SetViewModel(_services.GetRequiredService<RingSpawnsViewModel>());
+            ConfigTab.ModSettingsControl.SetViewModel(_services.GetRequiredService<ModSettingsViewModel>());
             ConfigTab.PresetsGridControl.SetServerPath(serverDir);
             ServerModsTab.DataContext = _services.GetRequiredService<ServerModsViewModel>();
             BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
