@@ -1,0 +1,38 @@
+<Window x:Class="TabgInstaller.Gui.Windows.CrashReportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:res="clr-namespace:TabgInstaller.Gui.Resources"
+        Title="{x:Static res:Strings.CrashReportTitle}"
+        Width="420" Height="260"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{x:Static res:Strings.CrashReportPrompt}"
+                   TextWrapping="Wrap" FontSize="13" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="{x:Static res:Strings.CrashReportDetail}"
+                   TextWrapping="Wrap" Foreground="Gray"
+                   FontSize="11" Margin="0,0,0,16"/>
+
+        <WrapPanel Grid.Row="3" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="{x:Static res:Strings.YesSend}" Margin="0,0,6,0" Padding="12,6"
+                    Click="YesSend_Click" IsDefault="True"/>
+            <Button Content="{x:Static res:Strings.NoThanks}" Margin="0,0,6,0" Padding="12,6"
+                    Click="NoThanks_Click" IsCancel="True"/>
+            <Button Content="{x:Static res:Strings.AlwaysSend}" Margin="0,0,6,0" Padding="12,6"
+                    Click="AlwaysSend_Click"/>
+            <Button Content="{x:Static res:Strings.NeverAsk}" Padding="12,6"
+                    Click="NeverAsk_Click"/>
+        </WrapPanel>
+    </Grid>
+</Window>

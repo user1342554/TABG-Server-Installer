@@ -32,6 +32,44 @@ namespace TabgInstaller.Gui
                 {
                     Trace.TraceError($"[App] Failed to write crash log: {logEx}");
                 }
+
+                // Crash reporting
+                try
+                {
+                    var settingsService = _host?.Services?.GetService<IAppSettingsService>();
+                    var settings = settingsService?.Load();
+
+                    if (settings?.CrashReportingEnabled == null)
+                    {
+                        // First crash — ask user
+                        var dialog = new Windows.CrashReportDialog();
+                        dialog.ShowDialog();
+
+                        if (dialog.RememberChoice.HasValue && settingsService != null)
+                        {
+                            settings!.CrashReportingEnabled = dialog.RememberChoice.Value;
+                            settingsService.Save(settings);
+                        }
+
+                        if (dialog.SendReport == true)
+                        {
+                            var crashService = _host?.Services?.GetService<TabgInstaller.Core.Services.ICrashReportService>();
+                            if (crashService != null)
+                                _ = crashService.ReportCrashAsync(args.Exception);
+                        }
+                    }
+                    else if (settings.CrashReportingEnabled == true)
+                    {
+                        var crashService = _host?.Services?.GetService<TabgInstaller.Core.Services.ICrashReportService>();
+                        if (crashService != null)
+                            _ = crashService.ReportCrashAsync(args.Exception);
+                    }
+                }
+                catch (Exception crashEx)
+                {
+                    Trace.TraceError($"[App] Failed to handle crash report: {crashEx}");
+                }
+
                 MessageBox.Show(string.Format(Messages.ErrorPrefix, args.Exception), Messages.TabgManagerError);
                 args.Handled = true;
             };
@@ -69,6 +107,11 @@ namespace TabgInstaller.Gui
                 .ConfigureServices(ConfigureServices)
                 .Build();
 
+            // Apply high contrast theme if enabled
+            var themeService = _host.Services.GetRequiredService<IThemeService>();
+            if (themeService.IsHighContrast)
+                themeService.SetHighContrast(true);
+
             try
             {
                 var mainWindow = _host.Services.GetRequiredService<MainWindow>();
@@ -100,6 +143,7 @@ namespace TabgInstaller.Gui
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TabgInstaller");
             services.AddSingleton<IAppSettingsService, AppSettingsService>();
+            services.AddSingleton<IThemeService, ThemeService>();
             services.AddSingleton<ToastService>(_ => ToastService.Instance);
             services.AddSingleton<IToastService>(_ => ToastService.Instance);
 
@@ -123,6 +167,10 @@ namespace TabgInstaller.Gui
                 try { return active.ProcessService; }
                 catch { return new ServerProcessService(""); }
             });
+
+            // Crash reporting
+            services.AddSingleton<TabgInstaller.Core.Services.ICrashReportService>(
+                _ => new TabgInstaller.Core.Services.CrashReportService());
 
             // Core services
             services.AddSingleton<IUpdateService, UpdateService>();
