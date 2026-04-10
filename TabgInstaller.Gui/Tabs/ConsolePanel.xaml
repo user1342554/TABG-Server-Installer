@@ -45,7 +45,7 @@
                 <TextBox x:Name="SearchBox" VerticalContentAlignment="Center" Padding="4,2"
                          TextChanged="SearchBox_TextChanged"/>
                 <TextBlock x:Name="SearchPlaceholder" Text="{x:Static res:Strings.SearchLogs}" IsHitTestVisible="False"
-                           VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#888"/>
+                           VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </Grid>
 
             <!-- Export -->
@@ -59,7 +59,7 @@
                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                  VirtualizingStackPanel.ScrollUnit="Pixel"
                  ScrollViewer.CanContentScroll="True"
-                 Background="#1E1E1E" BorderThickness="1" BorderBrush="#333"
+                 Background="{DynamicResource ConsoleBgBrush}" BorderThickness="1" BorderBrush="{DynamicResource ConsoleBorderBrush}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  HorizontalContentAlignment="Stretch">
             <ListBox.ItemTemplate>
@@ -67,7 +67,7 @@
                     <StackPanel Orientation="Horizontal" Margin="2,1">
                         <TextBlock Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
                                    FontFamily="Consolas" FontSize="12"
-                                   Foreground="#888" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,8,0"
                                    VerticalAlignment="Center"/>
                         <TextBlock x:Name="MessageText" Text="{Binding Message}"
                                    FontFamily="Consolas" FontSize="12"
@@ -75,7 +75,7 @@
                     </StackPanel>
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding Severity}" Value="Info">
-                            <Setter TargetName="MessageText" Property="Foreground" Value="#CCCCCC"/>
+                            <Setter TargetName="MessageText" Property="Foreground" Value="{DynamicResource ConsoleFgBrush}"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Severity}" Value="Warning">
                             <Setter TargetName="MessageText" Property="Foreground" Value="#D48806"/>

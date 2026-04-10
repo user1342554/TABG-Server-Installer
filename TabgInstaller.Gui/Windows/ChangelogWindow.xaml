@@ -16,7 +16,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <TextBlock Text="{x:Static res:Strings.UpdateAvailable}" FontSize="20" FontWeight="Bold"/>
-            <TextBlock x:Name="VersionLabel" FontSize="14" Foreground="#888" Margin="0,4,0,0"/>
+            <TextBlock x:Name="VersionLabel" FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
         </StackPanel>
 
         <!-- Scrollable release notes area -->

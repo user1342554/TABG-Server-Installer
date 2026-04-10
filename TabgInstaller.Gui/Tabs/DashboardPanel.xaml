@@ -25,11 +25,11 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Text" Value="{x:Static res:Strings.StatusStopped}"/>
-                                <Setter Property="Foreground" Value="#CC0000"/>
+                                <Setter Property="Foreground" Value="{DynamicResource StatusStoppedBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsServerRunning}" Value="True">
                                         <Setter Property="Text" Value="{x:Static res:Strings.StatusRunning}"/>
-                                        <Setter Property="Foreground" Value="#00AA44"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource StatusRunningBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -44,7 +44,7 @@
                     <Button Content="{x:Static res:Strings.LaunchModdedTabg}" Width="160" Height="36" Margin="10,0,0,0"
                             Command="{Binding LaunchClientCommand}"/>
                 </StackPanel>
-                <TextBlock Text="{Binding ServerPath}" Foreground="#888" FontSize="11" Margin="5,5,5,0"/>
+                <TextBlock Text="{Binding ServerPath}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="5,5,5,0"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Grid.Row="2" Header="{x:Static res:Strings.QuickActions}" Margin="0,0,0,10">

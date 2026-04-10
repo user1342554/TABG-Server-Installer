@@ -19,7 +19,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="{x:Static res:Strings.ServerPlugins}" FontSize="18" FontWeight="SemiBold"/>
-            <TextBlock Text="{x:Static res:Strings.ServerPluginsSubtitle}" Foreground="#888" FontSize="12"/>
+            <TextBlock Text="{x:Static res:Strings.ServerPluginsSubtitle}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
         </StackPanel>
 
         <!-- Installed plugins -->
@@ -65,7 +65,7 @@
                         </ListView.ItemTemplate>
                     </ListView>
                     <TextBlock Text="{x:Static res:Strings.AllPluginsInstalled}"
-                               Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                Visibility="{Binding AllPluginsInstalled, Converter={StaticResource BoolToVisibility}}"/>
                 </Grid>
                 <Button Content="{x:Static res:Strings.InstallSelected}" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0"

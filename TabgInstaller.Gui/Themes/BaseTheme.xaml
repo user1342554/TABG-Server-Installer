@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="ConsoleBgBrush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="ConsoleBorderBrush" Color="#333333"/>
+    <SolidColorBrush x:Key="ConsoleFgBrush" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="StatusRunningBrush" Color="#00AA44"/>
+    <SolidColorBrush x:Key="StatusStoppedBrush" Color="#CC0000"/>
+    <SolidColorBrush x:Key="ToastBgBrush" Color="#323232"/>
+    <SolidColorBrush x:Key="ToastFgBrush" Color="White"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#888888"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="LightTextBrush" Color="White"/>
+    <SolidColorBrush x:Key="DefaultBorderBrush" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="PanelBgBrush" Color="White"/>
+    <SolidColorBrush x:Key="AltPanelBgBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="HealthCardBgBrush" Color="#F8F8F8"/>
+    <SolidColorBrush x:Key="HealthCardBorderBrush" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="SigmaBgBrush" Color="#0a0f1c"/>
+    <SolidColorBrush x:Key="LogInfoBrush" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="LogWarningBrush" Color="#FFD700"/>
+    <SolidColorBrush x:Key="LogErrorBrush" Color="#FF4444"/>
+</ResourceDictionary>
