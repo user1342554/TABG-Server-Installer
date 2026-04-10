@@ -12,9 +12,10 @@ namespace TabgInstaller.Tests.ViewModels
         private readonly Mock<IAppSettingsService> _appSettings = new();
         private readonly Mock<INavigationService> _navigation = new();
         private readonly Mock<IServerPathProvider> _serverPath = new();
+        private readonly Mock<IThemeService> _themeService = new();
 
         private SettingsPanelViewModel CreateSut() =>
-            new(_appSettings.Object, _navigation.Object, _serverPath.Object);
+            new(_appSettings.Object, _navigation.Object, _serverPath.Object, _themeService.Object);
 
         [Fact]
         public void OnServerPathChanged_LoadsSettingsIntoPaths()
