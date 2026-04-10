@@ -9,23 +9,23 @@
         Background="Black"
         AllowsTransparency="False"
         IsHitTestVisible="False">
-    
+
     <Grid>
         <!-- Welcome Text - Only shown on primary monitor -->
-        <StackPanel x:Name="WelcomePanel" 
-                    HorizontalAlignment="Center" 
+        <StackPanel x:Name="WelcomePanel"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Visibility="Collapsed">
-            
-            <TextBlock x:Name="WelcomeText" 
+
+            <TextBlock x:Name="WelcomeText"
                        Text="Welcome, User"
                        Foreground="White"
                        FontSize="48"
                        FontWeight="Bold"
                        HorizontalAlignment="Center"
                        Margin="0,0,0,20"/>
-            
-            <StackPanel Orientation="Horizontal" 
+
+            <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Center">
                 <TextBlock Text="Loading in progress"
                            Foreground="White"

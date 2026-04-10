@@ -6,7 +6,7 @@
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
     </UserControl.Resources>
-    <Grid Margin="8">
+    <Grid Margin="8" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -15,16 +15,25 @@
 
         <!-- Top Bar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-            <Label Content="{x:Static res:Strings.LoadoutModeLabel}" VerticalAlignment="Center"/>
+            <Label x:Name="LoadoutModeSelectLabel" Content="{x:Static res:Strings.LoadoutModeLabel}" VerticalAlignment="Center"/>
             <ComboBox x:Name="CmbMode" Width="160" VerticalAlignment="Center" Margin="4,0,0,0"
-                      SelectionChanged="CmbMode_SelectionChanged">
+                      SelectionChanged="CmbMode_SelectionChanged"
+                      AutomationProperties.LabeledBy="{Binding ElementName=LoadoutModeSelectLabel}"
+                      AutomationProperties.AutomationId="LoadoutModeComboBox"
+                      TabIndex="0">
                 <ComboBoxItem Content="{x:Static res:Strings.Normal}"/>
                 <ComboBoxItem Content="{x:Static res:Strings.GunGame}"/>
                 <ComboBoxItem Content="{x:Static res:Strings.ReverseGunGame}"/>
                 <ComboBoxItem Content="{x:Static res:Strings.KeepInventory}"/>
             </ComboBox>
-            <Button Content="{x:Static res:Strings.ImportRaw}" Margin="16,0,4,0" Padding="8,2" Click="ImportRaw_Click"/>
-            <Button Content="{x:Static res:Strings.ExportRaw}" Padding="8,2" Click="ExportRaw_Click"/>
+            <Button Content="{x:Static res:Strings.ImportRaw}" Margin="16,0,4,0" Padding="8,2" Click="ImportRaw_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.ImportRaw}"
+                    AutomationProperties.AutomationId="ImportRawButton"
+                    TabIndex="1"/>
+            <Button Content="{x:Static res:Strings.ExportRaw}" Padding="8,2" Click="ExportRaw_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.ExportRaw}"
+                    AutomationProperties.AutomationId="ExportRawButton"
+                    TabIndex="2"/>
         </StackPanel>
 
         <!-- Main Area - Two Columns -->
@@ -39,17 +48,35 @@
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="{x:Static res:Strings.LoadoutsHeader}" FontWeight="Bold" Margin="0,0,0,4"/>
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,4,0,0">
-                    <Button Content="{x:Static res:Strings.Add}" Width="50" Margin="0,0,4,0" Command="{Binding AddLoadoutCommand}"/>
+                    <Button Content="{x:Static res:Strings.Add}" Width="50" Margin="0,0,4,0" Command="{Binding AddLoadoutCommand}"
+                            AutomationProperties.Name="{x:Static res:Strings.Add}"
+                            AutomationProperties.AutomationId="AddLoadoutButton"
+                            TabIndex="15"/>
                     <Button Content="{x:Static res:Strings.Duplicate}" Width="68" Margin="0,0,4,0" Command="{Binding DuplicateLoadoutCommand}"
-                            ToolTip="{x:Static res:Tooltips.CloneLoadoutTooltip}"/>
-                    <Button Content="{x:Static res:Strings.Remove}" Width="58" Margin="0,0,4,0" Command="{Binding RemoveLoadoutCommand}"/>
-                    <Button Content="{x:Static res:Strings.Up}" Width="32" Margin="0,0,4,0" Command="{Binding MoveUpCommand}"/>
-                    <Button Content="{x:Static res:Strings.Down}" Width="42" Command="{Binding MoveDownCommand}"/>
+                            ToolTip="{x:Static res:Tooltips.CloneLoadoutTooltip}"
+                            AutomationProperties.Name="{x:Static res:Strings.Duplicate}"
+                            AutomationProperties.AutomationId="DuplicateLoadoutButton"
+                            TabIndex="16"/>
+                    <Button Content="{x:Static res:Strings.Remove}" Width="58" Margin="0,0,4,0" Command="{Binding RemoveLoadoutCommand}"
+                            AutomationProperties.Name="{x:Static res:Strings.Remove}"
+                            AutomationProperties.AutomationId="RemoveLoadoutButton"
+                            TabIndex="17"/>
+                    <Button Content="{x:Static res:Strings.Up}" Width="32" Margin="0,0,4,0" Command="{Binding MoveUpCommand}"
+                            AutomationProperties.Name="{x:Static res:Strings.Up}"
+                            AutomationProperties.AutomationId="MoveLoadoutUpButton"
+                            TabIndex="18"/>
+                    <Button Content="{x:Static res:Strings.Down}" Width="42" Command="{Binding MoveDownCommand}"
+                            AutomationProperties.Name="{x:Static res:Strings.Down}"
+                            AutomationProperties.AutomationId="MoveLoadoutDownButton"
+                            TabIndex="19"/>
                 </StackPanel>
                 <ListBox x:Name="LstLoadouts" DisplayMemberPath="DisplayName"
                          ItemsSource="{Binding Loadouts}"
                          SelectedItem="{Binding SelectedLoadout, Mode=TwoWay}"
-                         SelectionChanged="LstLoadouts_SelectionChanged"/>
+                         SelectionChanged="LstLoadouts_SelectionChanged"
+                         AutomationProperties.Name="Loadout list"
+                         AutomationProperties.AutomationId="LoadoutListBox"
+                         TabIndex="10"/>
             </DockPanel>
 
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" VerticalAlignment="Stretch"
@@ -60,12 +87,18 @@
                 <StackPanel x:Name="PnlEditor" IsEnabled="False" Margin="4,0,0,0">
                     <!-- Name and Weight -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <Label Content="{x:Static res:Strings.NameLabel}" Width="60"/>
-                        <TextBox x:Name="TxtName" Width="200" TextChanged="TxtName_TextChanged"/>
+                        <Label x:Name="LoadoutNameLabel" Content="{x:Static res:Strings.NameLabel}" Width="60"/>
+                        <TextBox x:Name="TxtName" Width="200" TextChanged="TxtName_TextChanged"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=LoadoutNameLabel}"
+                                 AutomationProperties.AutomationId="LoadoutNameTextBox"
+                                 TabIndex="20"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <Label Content="{x:Static res:Strings.WeightLabel}" Width="60"/>
-                        <TextBox x:Name="TxtPercent" Width="60" TextChanged="TxtPercent_TextChanged"/>
+                        <Label x:Name="LoadoutWeightLabel" Content="{x:Static res:Strings.WeightLabel}" Width="60"/>
+                        <TextBox x:Name="TxtPercent" Width="60" TextChanged="TxtPercent_TextChanged"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=LoadoutWeightLabel}"
+                                 AutomationProperties.AutomationId="LoadoutWeightTextBox"
+                                 TabIndex="21"/>
                         <Label Content="{x:Static res:Strings.Percent}" Padding="2,5,0,5"/>
                     </StackPanel>
 
@@ -75,7 +108,10 @@
                               CanUserDeleteRows="False" HeadersVisibility="Column"
                               Height="180" Margin="0,0,0,4" SelectionMode="Single"
                               ItemsSource="{Binding CurrentItems}"
-                              CellEditEnding="DgItems_CellEditEnding">
+                              CellEditEnding="DgItems_CellEditEnding"
+                              AutomationProperties.Name="Loadout items"
+                              AutomationProperties.AutomationId="LoadoutItemsDataGrid"
+                              TabIndex="25">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{x:Static res:Strings.ItemName}" Binding="{Binding ItemName}" Width="*" IsReadOnly="True"/>
                             <DataGridTextColumn Header="{x:Static res:Strings.ID}" Binding="{Binding Id}" Width="50" IsReadOnly="True"/>
@@ -84,7 +120,9 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Content="Remove" Click="RemoveItem_Click" Tag="{Binding}"
-                                                Padding="2,0" FontSize="11"/>
+                                                Padding="2,0" FontSize="11"
+                                                AutomationProperties.Name="Remove item"
+                                                AutomationProperties.AutomationId="RemoveItemButton"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -96,42 +134,64 @@
                         <StackPanel Margin="4">
                             <!-- Search box -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Label Content="{x:Static res:Strings.SearchLabel}" Width="70"/>
+                                <Label x:Name="ItemSearchLabel" Content="{x:Static res:Strings.SearchLabel}" Width="70"/>
                                 <TextBox x:Name="TxtItemSearch" Width="250"
                                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="{x:Static res:Tooltips.SearchItemsTooltip}"/>
+                                         ToolTip="{x:Static res:Tooltips.SearchItemsTooltip}"
+                                         AutomationProperties.LabeledBy="{Binding ElementName=ItemSearchLabel}"
+                                         AutomationProperties.AutomationId="ItemSearchTextBox"
+                                         TabIndex="30"/>
                             </StackPanel>
                             <ListBox x:Name="LstSearchResults" Height="120" Margin="0,0,0,4"
                                      ItemsSource="{Binding SearchResults}"
                                      DisplayMemberPath="DisplayText"
                                      Visibility="{Binding SearchResultsVisible, Converter={StaticResource BoolToVisibility}}"
                                      MouseDoubleClick="LstSearchResults_MouseDoubleClick"
-                                     ToolTip="{x:Static res:Tooltips.DoubleClickAddTooltip}"/>
+                                     ToolTip="{x:Static res:Tooltips.DoubleClickAddTooltip}"
+                                     AutomationProperties.Name="Item search results"
+                                     AutomationProperties.AutomationId="ItemSearchResultsListBox"
+                                     TabIndex="31"/>
                             <!-- Category/Item dropdowns -->
                             <StackPanel x:Name="PnlCategorySelect"
                                         Visibility="{Binding CategorySelectVisible, Converter={StaticResource BoolToVisibility}}">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Label Content="{x:Static res:Strings.CategoryLabel}" Width="70"/>
+                                    <Label x:Name="CategorySelectLabel" Content="{x:Static res:Strings.CategoryLabel}" Width="70"/>
                                     <ComboBox x:Name="CmbCategory" Width="160"
-                                              SelectionChanged="CmbCategory_SelectionChanged"/>
+                                              SelectionChanged="CmbCategory_SelectionChanged"
+                                              AutomationProperties.LabeledBy="{Binding ElementName=CategorySelectLabel}"
+                                              AutomationProperties.AutomationId="ItemCategoryComboBox"
+                                              TabIndex="32"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Label Content="{x:Static res:Strings.ItemLabel}" Width="70"/>
-                                    <ComboBox x:Name="CmbItem" Width="250"/>
+                                    <Label x:Name="ItemSelectLabel" Content="{x:Static res:Strings.ItemLabel}" Width="70"/>
+                                    <ComboBox x:Name="CmbItem" Width="250"
+                                              AutomationProperties.LabeledBy="{Binding ElementName=ItemSelectLabel}"
+                                              AutomationProperties.AutomationId="ItemSelectComboBox"
+                                              TabIndex="33"/>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Label Content="{x:Static res:Strings.QuantityLabel}" Width="70"/>
+                                <Label x:Name="QuantitySelectLabel" Content="{x:Static res:Strings.QuantityLabel}" Width="70"/>
                                 <TextBox x:Name="TxtQuantity" Width="60"
-                                         Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}"/>
-                                <Button Content="{x:Static res:Strings.Add}" Width="60" Margin="8,0,0,0" Click="AddItem_Click"/>
+                                         Text="{Binding QuantityText, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.LabeledBy="{Binding ElementName=QuantitySelectLabel}"
+                                         AutomationProperties.AutomationId="ItemQuantityTextBox"
+                                         TabIndex="34"/>
+                                <Button Content="{x:Static res:Strings.Add}" Width="60" Margin="8,0,0,0" Click="AddItem_Click"
+                                        AutomationProperties.Name="{x:Static res:Strings.Add}"
+                                        AutomationProperties.AutomationId="AddItemButton"
+                                        TabIndex="35"/>
                             </StackPanel>
                         </StackPanel>
                     </GroupBox>
 
                     <!-- Curse Assignment Section -->
-                    <Expander Header="{x:Static res:Strings.CurseAssignment}" IsExpanded="False" Margin="0,0,0,4">
-                        <ItemsControl x:Name="IcCurses" ItemsSource="{Binding CurrentCurses}" Margin="4">
+                    <Expander Header="{x:Static res:Strings.CurseAssignment}" IsExpanded="False" Margin="0,0,0,4"
+                              AutomationProperties.AutomationId="CurseAssignmentExpander"
+                              TabIndex="50">
+                        <ItemsControl x:Name="IcCurses" ItemsSource="{Binding CurrentCurses}" Margin="4"
+                                      AutomationProperties.Name="Curse assignments"
+                                      AutomationProperties.AutomationId="CurseListItemsControl">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -140,17 +200,22 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox Content="{Binding DisplayText}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                              Margin="4,2" Width="185"/>
+                                              Margin="4,2" Width="185"
+                                              AutomationProperties.Name="{Binding DisplayText}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Expander>
 
                     <!-- Blessing Assignment Section -->
-                    <Expander Header="{x:Static res:Strings.BlessingAssignment}" IsExpanded="False" Margin="0,0,0,4">
+                    <Expander Header="{x:Static res:Strings.BlessingAssignment}" IsExpanded="False" Margin="0,0,0,4"
+                              AutomationProperties.AutomationId="BlessingAssignmentExpander"
+                              TabIndex="60">
                         <StackPanel>
                             <TextBlock Text="{x:Static res:Strings.BlessingDescription}" Foreground="Gray" FontSize="11" Margin="4,2,4,4"/>
-                            <ItemsControl x:Name="IcBlessings" ItemsSource="{Binding CurrentBlessings}">
+                            <ItemsControl x:Name="IcBlessings" ItemsSource="{Binding CurrentBlessings}"
+                                          AutomationProperties.Name="Blessing assignments"
+                                          AutomationProperties.AutomationId="BlessingListItemsControl">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <WrapPanel/>
@@ -159,7 +224,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <CheckBox Content="{Binding DisplayText}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                  Margin="4,2" Width="185"/>
+                                                  Margin="4,2" Width="185"
+                                                  AutomationProperties.Name="{Binding DisplayText}"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -171,7 +237,10 @@
 
         <!-- Bottom Bar -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Content="{x:Static res:Strings.Save}" Width="100" Command="{Binding SaveCommand}"/>
+            <Button Content="{x:Static res:Strings.Save}" Width="100" Command="{Binding SaveCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Save}"
+                    AutomationProperties.AutomationId="LoadoutSaveButton"
+                    TabIndex="90"/>
             <TextBlock x:Name="TxtStatus" Text="{Binding StatusText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
     </Grid>

@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
         MinHeight="300" MinWidth="350"
         Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
-    <Grid Margin="16">
+    <Grid Margin="16" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -22,15 +22,26 @@
         <!-- Scrollable release notes area -->
         <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Margin="0,0,0,12">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
-                <StackPanel x:Name="NotesPanel"/>
+                <StackPanel x:Name="NotesPanel"
+                            AutomationProperties.Name="Release notes"
+                            AutomationProperties.AutomationId="ReleaseNotesPanel"/>
             </ScrollViewer>
         </Border>
 
         <!-- Footer buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="{x:Static res:Strings.UpdateNow}" Width="100" Height="32" Margin="0,0,8,0" Click="UpdateNow_Click" IsDefault="True"/>
-            <Button Content="{x:Static res:Strings.SkipThisVersion}" Width="120" Height="32" Margin="0,0,8,0" Click="SkipVersion_Click"/>
-            <Button Content="{x:Static res:Strings.RemindMeLater}" Width="110" Height="32" Click="Later_Click" IsCancel="True"/>
+            <Button Content="{x:Static res:Strings.UpdateNow}" Width="100" Height="32" Margin="0,0,8,0" Click="UpdateNow_Click" IsDefault="True"
+                    AutomationProperties.Name="{x:Static res:Strings.UpdateNow}"
+                    AutomationProperties.AutomationId="UpdateNowButton"
+                    TabIndex="90"/>
+            <Button Content="{x:Static res:Strings.SkipThisVersion}" Width="120" Height="32" Margin="0,0,8,0" Click="SkipVersion_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.SkipThisVersion}"
+                    AutomationProperties.AutomationId="SkipVersionButton"
+                    TabIndex="91"/>
+            <Button Content="{x:Static res:Strings.RemindMeLater}" Width="110" Height="32" Click="Later_Click" IsCancel="True"
+                    AutomationProperties.Name="{x:Static res:Strings.RemindMeLater}"
+                    AutomationProperties.AutomationId="RemindLaterButton"
+                    TabIndex="92"/>
         </StackPanel>
     </Grid>
 </Window>

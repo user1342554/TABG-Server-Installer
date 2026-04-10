@@ -7,7 +7,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
-    <Grid Margin="16">
+    <Grid Margin="16" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -26,13 +26,25 @@
 
         <WrapPanel Grid.Row="3" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="{x:Static res:Strings.YesSend}" Margin="0,0,6,0" Padding="12,6"
-                    Click="YesSend_Click" IsDefault="True"/>
+                    Click="YesSend_Click" IsDefault="True"
+                    AutomationProperties.Name="{x:Static res:Strings.YesSend}"
+                    AutomationProperties.AutomationId="YesSendButton"
+                    TabIndex="0"/>
             <Button Content="{x:Static res:Strings.NoThanks}" Margin="0,0,6,0" Padding="12,6"
-                    Click="NoThanks_Click" IsCancel="True"/>
+                    Click="NoThanks_Click" IsCancel="True"
+                    AutomationProperties.Name="{x:Static res:Strings.NoThanks}"
+                    AutomationProperties.AutomationId="NoThanksButton"
+                    TabIndex="1"/>
             <Button Content="{x:Static res:Strings.AlwaysSend}" Margin="0,0,6,0" Padding="12,6"
-                    Click="AlwaysSend_Click"/>
+                    Click="AlwaysSend_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.AlwaysSend}"
+                    AutomationProperties.AutomationId="AlwaysSendButton"
+                    TabIndex="2"/>
             <Button Content="{x:Static res:Strings.NeverAsk}" Padding="12,6"
-                    Click="NeverAsk_Click"/>
+                    Click="NeverAsk_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.NeverAsk}"
+                    AutomationProperties.AutomationId="NeverAskButton"
+                    TabIndex="3"/>
         </WrapPanel>
     </Grid>
 </Window>

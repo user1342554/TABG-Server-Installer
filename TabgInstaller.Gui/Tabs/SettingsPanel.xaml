@@ -18,7 +18,8 @@
                               AutomationProperties.HelpText="{x:Static res:Tooltips.LanguageHelp}"
                               AutomationProperties.AutomationId="LanguageComboBox"/>
                     <TextBlock Text="{Binding RestartMessage}" Foreground="OrangeRed"
-                               Margin="0,4,0,0" FontStyle="Italic"/>
+                               Margin="0,4,0,0" FontStyle="Italic"
+                               AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>
             </GroupBox>
 

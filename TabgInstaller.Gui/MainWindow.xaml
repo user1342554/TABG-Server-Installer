@@ -7,47 +7,59 @@
         Title="{x:Static res:Strings.AppTitle}" Height="800" Width="1200"
         Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
 
-    <Grid>
+    <Grid KeyboardNavigation.TabNavigation="Cycle">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <controls:ServerListControl x:Name="ServerListSidebar" Grid.Column="0"/>
+        <controls:ServerListControl x:Name="ServerListSidebar" Grid.Column="0"
+                                    AutomationProperties.AutomationId="ServerListSidebar"/>
 
         <!-- Content area -->
         <Grid Grid.Column="1">
-            <TabControl x:Name="MainTabs">
-                <TabItem Header="{x:Static res:Strings.TabDashboard}">
+            <TabControl x:Name="MainTabs"
+                        AutomationProperties.AutomationId="MainTabControl"
+                        AutomationProperties.Name="Main navigation"
+                        TabIndex="1">
+                <TabItem Header="{x:Static res:Strings.TabDashboard}"
+                         AutomationProperties.AutomationId="DashboardTabItem">
                     <tabs:DashboardPanel x:Name="DashboardTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabServerMods}">
+                <TabItem Header="{x:Static res:Strings.TabServerMods}"
+                         AutomationProperties.AutomationId="ServerModsTabItem">
                     <tabs:ServerModsPanel x:Name="ServerModsTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabClientMods}">
+                <TabItem Header="{x:Static res:Strings.TabClientMods}"
+                         AutomationProperties.AutomationId="ClientModsTabItem">
                     <tabs:ClientPanel x:Name="ClientModsTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabConfig}">
+                <TabItem Header="{x:Static res:Strings.TabConfig}"
+                         AutomationProperties.AutomationId="ConfigTabItem">
                     <tabs:ConfigPanel x:Name="ConfigTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabConsole}">
+                <TabItem Header="{x:Static res:Strings.TabConsole}"
+                         AutomationProperties.AutomationId="ConsoleTabItem">
                     <tabs:ConsolePanel x:Name="ConsoleTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabBackups}" x:Name="BackupsTabItem">
+                <TabItem Header="{x:Static res:Strings.TabBackups}" x:Name="BackupsTabItem"
+                         AutomationProperties.AutomationId="BackupsTabItem">
                     <tabs:BackupsPanel x:Name="BackupsTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabReference}">
+                <TabItem Header="{x:Static res:Strings.TabReference}"
+                         AutomationProperties.AutomationId="ReferenceTabItem">
                     <tabs:ReferencePanel x:Name="ReferenceTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabSettings}">
+                <TabItem Header="{x:Static res:Strings.TabSettings}"
+                         AutomationProperties.AutomationId="SettingsTabItem">
                     <tabs:SettingsPanel x:Name="SettingsTab"/>
                 </TabItem>
             </TabControl>

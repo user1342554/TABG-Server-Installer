@@ -9,7 +9,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="16" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -20,23 +20,38 @@
 
         <!-- Display Name -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="{x:Static res:Strings.DisplayName}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-            <TextBox Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBlock x:Name="DisplayNameLabel" Text="{x:Static res:Strings.DisplayName}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBox Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}"
+                     AutomationProperties.LabeledBy="{Binding ElementName=DisplayNameLabel}"
+                     AutomationProperties.AutomationId="ServerDisplayNameTextBox"
+                     TabIndex="0"/>
         </StackPanel>
 
         <!-- Type selector -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
-            <RadioButton Content="{x:Static res:Strings.LocalServer}" IsChecked="{Binding IsLocal}" Margin="0,0,16,0"/>
-            <RadioButton Content="{x:Static res:Strings.RemoteServerSsh}" IsChecked="{Binding IsRemote}"/>
+            <RadioButton Content="{x:Static res:Strings.LocalServer}" IsChecked="{Binding IsLocal}" Margin="0,0,16,0"
+                         AutomationProperties.Name="{x:Static res:Strings.LocalServer}"
+                         AutomationProperties.AutomationId="LocalServerRadioButton"
+                         TabIndex="1"/>
+            <RadioButton Content="{x:Static res:Strings.RemoteServerSsh}" IsChecked="{Binding IsRemote}"
+                         AutomationProperties.Name="{x:Static res:Strings.RemoteServerSsh}"
+                         AutomationProperties.AutomationId="RemoteServerRadioButton"
+                         TabIndex="2"/>
         </StackPanel>
 
         <!-- Local panel -->
         <StackPanel Grid.Row="2" Visibility="{Binding IsLocal, Converter={StaticResource BoolToVisibility}}">
-            <TextBlock Text="{x:Static res:Strings.ServerDirectory}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="ServerDirectoryLabel" Text="{x:Static res:Strings.ServerDirectory}" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <DockPanel>
                 <Button Content="{x:Static res:Strings.BrowseEllipsis}" DockPanel.Dock="Right" Command="{Binding BrowseServerPathCommand}"
-                        Margin="8,0,0,0" Padding="12,4"/>
-                <TextBox Text="{Binding ServerPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        Margin="8,0,0,0" Padding="12,4"
+                        AutomationProperties.Name="{x:Static res:Strings.BrowseEllipsis}"
+                        AutomationProperties.AutomationId="BrowseServerPathButton"
+                        TabIndex="4"/>
+                <TextBox Text="{Binding ServerPath, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.LabeledBy="{Binding ElementName=ServerDirectoryLabel}"
+                         AutomationProperties.AutomationId="LocalServerPathTextBox"
+                         TabIndex="3"/>
             </DockPanel>
         </StackPanel>
 
@@ -44,8 +59,11 @@
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding IsRemote, Converter={StaticResource BoolToVisibility}}">
             <StackPanel>
-                <TextBlock Text="{x:Static res:Strings.Host}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                <TextBlock x:Name="HostLabel" Text="{x:Static res:Strings.Host}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
+                         AutomationProperties.LabeledBy="{Binding ElementName=HostLabel}"
+                         AutomationProperties.AutomationId="HostTextBox"
+                         TabIndex="10"/>
 
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -53,51 +71,88 @@
                         <ColumnDefinition Width="80"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                        <TextBlock Text="{x:Static res:Strings.Username}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock x:Name="UsernameLabel" Text="{x:Static res:Strings.Username}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=UsernameLabel}"
+                                 AutomationProperties.AutomationId="UsernameTextBox"
+                                 TabIndex="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="{x:Static res:Strings.Port}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock x:Name="PortLabel" Text="{x:Static res:Strings.Port}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=PortLabel}"
+                                 AutomationProperties.AutomationId="PortTextBox"
+                                 TabIndex="12"/>
                     </StackPanel>
                 </Grid>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <RadioButton Content="{x:Static res:Strings.Password}" IsChecked="{Binding UsePassword}" Margin="0,0,16,0"/>
-                    <RadioButton Content="{x:Static res:Strings.PrivateKey}" IsChecked="{Binding UsePrivateKey}"/>
+                    <RadioButton Content="{x:Static res:Strings.Password}" IsChecked="{Binding UsePassword}" Margin="0,0,16,0"
+                                 AutomationProperties.Name="{x:Static res:Strings.Password}"
+                                 AutomationProperties.AutomationId="UsePasswordRadioButton"
+                                 TabIndex="13"/>
+                    <RadioButton Content="{x:Static res:Strings.PrivateKey}" IsChecked="{Binding UsePrivateKey}"
+                                 AutomationProperties.Name="{x:Static res:Strings.PrivateKey}"
+                                 AutomationProperties.AutomationId="UsePrivateKeyRadioButton"
+                                 TabIndex="14"/>
                 </StackPanel>
 
                 <PasswordBox x:Name="PasswordField" Margin="0,0,0,8"
-                             Visibility="{Binding UsePassword, Converter={StaticResource BoolToVisibility}}"/>
+                             Visibility="{Binding UsePassword, Converter={StaticResource BoolToVisibility}}"
+                             AutomationProperties.Name="SSH password"
+                             AutomationProperties.AutomationId="SshPasswordBox"
+                             TabIndex="15"/>
 
                 <DockPanel Margin="0,0,0,8"
                            Visibility="{Binding UsePrivateKey, Converter={StaticResource BoolToVisibility}}">
                     <Button Content="{x:Static res:Strings.BrowseEllipsis}" DockPanel.Dock="Right" Command="{Binding BrowsePrivateKeyCommand}"
-                            Margin="8,0,0,0" Padding="12,4"/>
-                    <TextBox Text="{Binding PrivateKeyPath, UpdateSourceTrigger=PropertyChanged}"/>
+                            Margin="8,0,0,0" Padding="12,4"
+                            AutomationProperties.Name="{x:Static res:Strings.BrowseEllipsis}"
+                            AutomationProperties.AutomationId="BrowsePrivateKeyButton"
+                            TabIndex="17"/>
+                    <TextBox Text="{Binding PrivateKeyPath, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Private key file path"
+                             AutomationProperties.AutomationId="PrivateKeyPathTextBox"
+                             TabIndex="16"/>
                 </DockPanel>
 
-                <TextBlock Text="{x:Static res:Strings.RemoteServerPath}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                <TextBox Text="{Binding RemoteServerPath, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                <TextBlock x:Name="RemoteServerPathLabel" Text="{x:Static res:Strings.RemoteServerPath}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding RemoteServerPath, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
+                         AutomationProperties.LabeledBy="{Binding ElementName=RemoteServerPathLabel}"
+                         AutomationProperties.AutomationId="RemoteServerPathTextBox"
+                         TabIndex="18"/>
 
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static res:Strings.ProcessMode}" FontWeight="SemiBold" Margin="0,0,8,0"
                                VerticalAlignment="Center"/>
-                    <RadioButton Content="{x:Static res:Strings.Screen}" IsChecked="{Binding UseScreen}" Margin="0,0,16,0"/>
-                    <RadioButton Content="{x:Static res:Strings.Systemd}" IsChecked="{Binding UseSystemd}"/>
+                    <RadioButton Content="{x:Static res:Strings.Screen}" IsChecked="{Binding UseScreen}" Margin="0,0,16,0"
+                                 AutomationProperties.Name="{x:Static res:Strings.Screen}"
+                                 AutomationProperties.AutomationId="UseScreenRadioButton"
+                                 TabIndex="19"/>
+                    <RadioButton Content="{x:Static res:Strings.Systemd}" IsChecked="{Binding UseSystemd}"
+                                 AutomationProperties.Name="{x:Static res:Strings.Systemd}"
+                                 AutomationProperties.AutomationId="UseSystemdRadioButton"
+                                 TabIndex="20"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
         <!-- Validation error -->
         <TextBlock Grid.Row="3" Text="{Binding ValidationError}" Foreground="Red"
-                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                   Margin="0,8,0,0" TextWrapping="Wrap"
+                   AutomationProperties.LiveSetting="Assertive"/>
 
         <!-- Buttons -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="{x:Static res:Strings.Cancel}" Command="{Binding CancelCommand}" Padding="16,6" Margin="0,0,8,0"/>
+            <Button Content="{x:Static res:Strings.Cancel}" Command="{Binding CancelCommand}" Padding="16,6" Margin="0,0,8,0"
+                    AutomationProperties.Name="{x:Static res:Strings.Cancel}"
+                    AutomationProperties.AutomationId="CancelAddServerButton"
+                    TabIndex="90"/>
             <Button Content="{x:Static res:Strings.AddServer}" Command="{Binding ConfirmCommand}" Padding="16,6"
-                    FontWeight="SemiBold"/>
+                    FontWeight="SemiBold"
+                    AutomationProperties.Name="{x:Static res:Strings.AddServer}"
+                    AutomationProperties.AutomationId="ConfirmAddServerButton"
+                    TabIndex="91"/>
         </StackPanel>
     </Grid>
 </Window>

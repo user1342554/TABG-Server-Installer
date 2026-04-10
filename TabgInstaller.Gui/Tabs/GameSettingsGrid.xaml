@@ -19,9 +19,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
+
         <!-- Advanced Settings Toggle removed per user request to avoid crashes -->
-        
+
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Properties}">
@@ -108,4 +108,4 @@
             </StackPanel>
         </ScrollViewer>
     </Grid>
-</UserControl> 
+</UserControl>

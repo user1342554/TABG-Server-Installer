@@ -7,7 +7,7 @@
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Inverse="True"/>
     </UserControl.Resources>
-    <Grid Margin="10">
+    <Grid Margin="10" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -33,17 +33,26 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Label Content="{x:Static res:Strings.TabgSteamFolder}" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox Grid.Column="1" Text="{Binding ClientPath, Mode=OneWay}" IsReadOnly="True"/>
-                    <Button Content="{x:Static res:Strings.Browse}" Grid.Column="2" Width="70" Margin="5,0,0,0" Click="BrowseClient_Click"/>
+                    <Label x:Name="TabgSteamFolderLabel" Content="{x:Static res:Strings.TabgSteamFolder}" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" Text="{Binding ClientPath, Mode=OneWay}" IsReadOnly="True"
+                             AutomationProperties.LabeledBy="{Binding ElementName=TabgSteamFolderLabel}"
+                             AutomationProperties.AutomationId="ClientPathTextBox"
+                             TabIndex="10"/>
+                    <Button Content="{x:Static res:Strings.Browse}" Grid.Column="2" Width="70" Margin="5,0,0,0" Click="BrowseClient_Click"
+                            AutomationProperties.Name="{x:Static res:Strings.Browse}"
+                            AutomationProperties.AutomationId="BrowseClientButton"
+                            TabIndex="11"/>
                 </Grid>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Label Content="{x:Static res:Strings.ModdedCopyFolder}" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
-                    <TextBox Grid.Column="1" Text="{Binding ModdedPath, Mode=OneWay}" IsReadOnly="True"/>
+                    <Label x:Name="ModdedCopyFolderLabel" Content="{x:Static res:Strings.ModdedCopyFolder}" Grid.Column="0" Padding="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" Text="{Binding ModdedPath, Mode=OneWay}" IsReadOnly="True"
+                             AutomationProperties.LabeledBy="{Binding ElementName=ModdedCopyFolderLabel}"
+                             AutomationProperties.AutomationId="ModdedPathTextBox"
+                             TabIndex="12"/>
                 </Grid>
             </StackPanel>
         </GroupBox>
@@ -52,13 +61,17 @@
         <GroupBox Grid.Row="2" Header="{x:Static res:Strings.InstalledClientMods}">
             <Grid>
                 <ListView x:Name="LstClientMods" ItemsSource="{Binding Mods}" SelectionMode="Single"
-                          Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}">
+                          Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
+                          AutomationProperties.Name="Installed client mods"
+                          AutomationProperties.AutomationId="InstalledClientModsListView"
+                          TabIndex="20">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
                                           Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          CommandParameter="{Binding}"/>
+                                          CommandParameter="{Binding}"
+                                          AutomationProperties.Name="{Binding Name}"/>
                                 <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
@@ -74,12 +87,24 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button Content="{x:Static res:Strings.InitialSetup}" Width="260"
                     Command="{Binding SetupCommand}"
-                    IsEnabled="{Binding IsSettingUp, Converter={StaticResource InverseBoolToVisibility}}"/>
-            <Button Content="{x:Static res:Strings.AddDllFile}" Width="110" Margin="5,0,0,0" Click="AddDll_Click"/>
+                    IsEnabled="{Binding IsSettingUp, Converter={StaticResource InverseBoolToVisibility}}"
+                    AutomationProperties.Name="{x:Static res:Strings.InitialSetup}"
+                    AutomationProperties.AutomationId="InitialSetupButton"
+                    TabIndex="50"/>
+            <Button Content="{x:Static res:Strings.AddDllFile}" Width="110" Margin="5,0,0,0" Click="AddDll_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.AddDllFile}"
+                    AutomationProperties.AutomationId="ClientAddDllButton"
+                    TabIndex="51"/>
             <Button Content="{x:Static res:Strings.RemoveSelected}" Width="120" Margin="5,0,0,0"
                     Command="{Binding RemoveModCommand}"
-                    CommandParameter="{Binding SelectedItem, ElementName=LstClientMods}"/>
-            <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"/>
+                    CommandParameter="{Binding SelectedItem, ElementName=LstClientMods}"
+                    AutomationProperties.Name="{x:Static res:Strings.RemoveSelected}"
+                    AutomationProperties.AutomationId="RemoveClientModButton"
+                    TabIndex="52"/>
+            <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Refresh}"
+                    AutomationProperties.AutomationId="RefreshClientModsButton"
+                    TabIndex="53"/>
         </StackPanel>
 
         <!-- Available bundled client mods -->
@@ -88,11 +113,15 @@
                 <Grid>
                     <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableClientMods}"
                               MaxHeight="200" SelectionMode="Extended" BorderThickness="0"
-                              Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}">
+                              Visibility="{Binding AllClientModsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
+                              AutomationProperties.Name="Available bundled client mods"
+                              AutomationProperties.AutomationId="AvailableClientModsListView"
+                              TabIndex="60">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              AutomationProperties.Name="{Binding Name}"/>
                                     <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -104,7 +133,10 @@
                 </Grid>
                 <Button Content="{x:Static res:Strings.InstallSelected}" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0"
                         Command="{Binding InstallBundledCommand}"
-                        IsEnabled="{Binding CanInstallBundled}"/>
+                        IsEnabled="{Binding CanInstallBundled}"
+                        AutomationProperties.Name="{x:Static res:Strings.InstallSelected}"
+                        AutomationProperties.AutomationId="InstallClientModsButton"
+                        TabIndex="61"/>
             </StackPanel>
         </GroupBox>
 
@@ -113,9 +145,15 @@
 
         <!-- Launch -->
         <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button Content="{x:Static res:Strings.LaunchModdedTabgCaps}" Height="36" Width="200" Command="{Binding LaunchCommand}"/>
+            <Button Content="{x:Static res:Strings.LaunchModdedTabgCaps}" Height="36" Width="200" Command="{Binding LaunchCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.LaunchModdedTabgCaps}"
+                    AutomationProperties.AutomationId="LaunchModdedTabgButton"
+                    TabIndex="90"/>
             <Button Content="{x:Static res:Strings.OpenModdedFolder}" Height="36" Width="150" Margin="10,0,0,0"
-                    Command="{Binding OpenModdedFolderCommand}"/>
+                    Command="{Binding OpenModdedFolderCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.OpenModdedFolder}"
+                    AutomationProperties.AutomationId="OpenModdedFolderButton"
+                    TabIndex="91"/>
         </StackPanel>
     </Grid>
 </UserControl>

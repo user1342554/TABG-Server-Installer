@@ -6,7 +6,7 @@
     <UserControl.Resources>
         <CollectionViewSource x:Key="LogViewSource" Filter="LogViewSource_Filter"/>
     </UserControl.Resources>
-    <Grid>
+    <Grid KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -17,25 +17,46 @@
         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
             <Button Content="{x:Static res:Strings.StartServer}" Width="100" Margin="2"
                     Command="{Binding StartCommand}"
-                    IsEnabled="{Binding IsServerNotRunning}"/>
+                    IsEnabled="{Binding IsServerNotRunning}"
+                    AutomationProperties.Name="{x:Static res:Strings.StartServer}"
+                    AutomationProperties.AutomationId="ConsoleStartServerButton"
+                    TabIndex="0"/>
             <Button Content="{x:Static res:Strings.StopServer}" Width="100" Margin="2"
                     Command="{Binding StopCommand}"
-                    IsEnabled="{Binding IsServerRunning}"/>
+                    IsEnabled="{Binding IsServerRunning}"
+                    AutomationProperties.Name="{x:Static res:Strings.StopServer}"
+                    AutomationProperties.AutomationId="ConsoleStopServerButton"
+                    TabIndex="1"/>
             <Button Content="{x:Static res:Strings.ClearConsole}" Width="100" Margin="2"
-                    Command="{Binding ClearConsoleCommand}"/>
+                    Command="{Binding ClearConsoleCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.ClearConsole}"
+                    AutomationProperties.AutomationId="ClearConsoleButton"
+                    TabIndex="2"/>
             <Button Content="{x:Static res:Strings.QuickSaveRestart}" Width="140" Margin="2"
-                    Command="{Binding QuickSaveRestartCommand}"/>
+                    Command="{Binding QuickSaveRestartCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.QuickSaveRestart}"
+                    AutomationProperties.AutomationId="QuickSaveRestartButton"
+                    TabIndex="3"/>
 
             <!-- Separator -->
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="6,2,6,2"/>
 
             <!-- Severity filter toggles -->
             <ToggleButton x:Name="ToggleInfo" IsChecked="True" Margin="2" Padding="6,2"
-                          Click="SeverityToggle_Click"/>
+                          Click="SeverityToggle_Click"
+                          AutomationProperties.Name="Filter Info messages"
+                          AutomationProperties.AutomationId="ToggleInfoFilter"
+                          TabIndex="4"/>
             <ToggleButton x:Name="ToggleWarn" IsChecked="True" Margin="2" Padding="6,2"
-                          Click="SeverityToggle_Click"/>
+                          Click="SeverityToggle_Click"
+                          AutomationProperties.Name="Filter Warning messages"
+                          AutomationProperties.AutomationId="ToggleWarnFilter"
+                          TabIndex="5"/>
             <ToggleButton x:Name="ToggleError" IsChecked="True" Margin="2" Padding="6,2"
-                          Click="SeverityToggle_Click"/>
+                          Click="SeverityToggle_Click"
+                          AutomationProperties.Name="Filter Error messages"
+                          AutomationProperties.AutomationId="ToggleErrorFilter"
+                          TabIndex="6"/>
 
             <!-- Separator -->
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="6,2,6,2"/>
@@ -43,13 +64,19 @@
             <!-- Search -->
             <Grid Margin="2" Width="180">
                 <TextBox x:Name="SearchBox" VerticalContentAlignment="Center" Padding="4,2"
-                         TextChanged="SearchBox_TextChanged"/>
+                         TextChanged="SearchBox_TextChanged"
+                         AutomationProperties.Name="Search console logs"
+                         AutomationProperties.AutomationId="ConsoleSearchTextBox"
+                         TabIndex="7"/>
                 <TextBlock x:Name="SearchPlaceholder" Text="{x:Static res:Strings.SearchLogs}" IsHitTestVisible="False"
                            VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </Grid>
 
             <!-- Export -->
-            <Button Content="{x:Static res:Strings.Export}" Width="60" Margin="2" Padding="4,2" Click="ExportButton_Click"/>
+            <Button Content="{x:Static res:Strings.Export}" Width="60" Margin="2" Padding="4,2" Click="ExportButton_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.Export}"
+                    AutomationProperties.AutomationId="ExportConsoleButton"
+                    TabIndex="8"/>
         </WrapPanel>
 
         <!-- Row 1: Log list -->
@@ -61,7 +88,11 @@
                  ScrollViewer.CanContentScroll="True"
                  Background="{DynamicResource ConsoleBgBrush}" BorderThickness="1" BorderBrush="{DynamicResource ConsoleBorderBrush}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 HorizontalContentAlignment="Stretch">
+                 HorizontalContentAlignment="Stretch"
+                 AutomationProperties.Name="Console output"
+                 AutomationProperties.AutomationId="ConsoleLogListBox"
+                 AutomationProperties.LiveSetting="Polite"
+                 TabIndex="10">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type model:LogEntry}">
                     <StackPanel Orientation="Horizontal" Margin="2,1">
@@ -103,9 +134,15 @@
             </Grid.ColumnDefinitions>
             <TextBox x:Name="TxtCommand" Grid.Column="0" KeyDown="TxtCommand_KeyDown"
                      Text="{Binding CommandText, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalContentAlignment="Center"/>
+                     VerticalContentAlignment="Center"
+                     AutomationProperties.Name="Command input"
+                     AutomationProperties.AutomationId="ConsoleCommandTextBox"
+                     TabIndex="90"/>
             <Button Content="{x:Static res:Strings.Send}" Grid.Column="1" Width="60" Margin="5,0,0,0"
-                    Command="{Binding SendCommandCommand}"/>
+                    Command="{Binding SendCommandCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Send}"
+                    AutomationProperties.AutomationId="SendCommandButton"
+                    TabIndex="91"/>
         </Grid>
     </Grid>
 </UserControl>

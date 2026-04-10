@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="clr-namespace:TabgInstaller.Gui.Resources"
              HorizontalAlignment="Stretch" VerticalAlignment="Top"
-             Visibility="Collapsed" x:Name="ToastRoot">
+             Visibility="Collapsed" x:Name="ToastRoot"
+             AutomationProperties.LiveSetting="Assertive"
+             AutomationProperties.AutomationId="ToastNotificationControl">
     <Border x:Name="ToastBorder" Margin="20,10" Padding="12,8" CornerRadius="4"
             Background="{DynamicResource ToastBgBrush}" HorizontalAlignment="Center" MinWidth="300">
         <Border.Effect>
@@ -22,7 +24,10 @@
             <Button x:Name="BtnDismiss" Grid.Column="2" Content="{x:Static res:Strings.Close}" Margin="8,0,0,0"
                     Background="Transparent" Foreground="#999999" BorderThickness="0"
                     FontSize="11" Cursor="Hand" Click="Dismiss_Click"
-                    VerticalAlignment="Center" Padding="4,2"/>
+                    VerticalAlignment="Center" Padding="4,2"
+                    AutomationProperties.Name="{x:Static res:Strings.Close}"
+                    AutomationProperties.AutomationId="DismissToastButton"
+                    TabIndex="0"/>
         </Grid>
     </Border>
 </UserControl>

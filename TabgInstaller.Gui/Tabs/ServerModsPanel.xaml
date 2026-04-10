@@ -7,7 +7,7 @@
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Inverse="True"/>
     </UserControl.Resources>
-    <Grid Margin="10">
+    <Grid Margin="10" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -24,13 +24,17 @@
 
         <!-- Installed plugins -->
         <GroupBox Grid.Row="1" Header="{x:Static res:Strings.InstalledPlugins}">
-            <ListView x:Name="LstPlugins" ItemsSource="{Binding Plugins}" SelectionMode="Single">
+            <ListView x:Name="LstPlugins" ItemsSource="{Binding Plugins}" SelectionMode="Single"
+                      AutomationProperties.Name="Installed server plugins"
+                      AutomationProperties.AutomationId="InstalledPluginsListView"
+                      TabIndex="10">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
                                       Command="{Binding DataContext.TogglePluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                      CommandParameter="{Binding}"/>
+                                      CommandParameter="{Binding}"
+                                      AutomationProperties.Name="{Binding Name}"/>
                             <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </DataTemplate>
@@ -40,12 +44,24 @@
 
         <!-- Actions for installed -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button Content="{x:Static res:Strings.AddDllFile}" Width="110" Click="AddDll_Click"/>
+            <Button Content="{x:Static res:Strings.AddDllFile}" Width="110" Click="AddDll_Click"
+                    AutomationProperties.Name="{x:Static res:Strings.AddDllFile}"
+                    AutomationProperties.AutomationId="AddDllButton"
+                    TabIndex="50"/>
             <Button Content="{x:Static res:Strings.RemoveSelected}" Width="120" Margin="5,0,0,0"
                     Command="{Binding RemovePluginCommand}"
-                    CommandParameter="{Binding SelectedItem, ElementName=LstPlugins}"/>
-            <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"/>
-            <Button Content="{x:Static res:Strings.OpenFolder}" Width="100" Margin="5,0,0,0" Command="{Binding OpenFolderCommand}"/>
+                    CommandParameter="{Binding SelectedItem, ElementName=LstPlugins}"
+                    AutomationProperties.Name="{x:Static res:Strings.RemoveSelected}"
+                    AutomationProperties.AutomationId="RemovePluginButton"
+                    TabIndex="51"/>
+            <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Refresh}"
+                    AutomationProperties.AutomationId="RefreshPluginsButton"
+                    TabIndex="52"/>
+            <Button Content="{x:Static res:Strings.OpenFolder}" Width="100" Margin="5,0,0,0" Command="{Binding OpenFolderCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.OpenFolder}"
+                    AutomationProperties.AutomationId="OpenPluginsFolderButton"
+                    TabIndex="53"/>
         </StackPanel>
 
         <!-- Available bundled plugins -->
@@ -54,11 +70,15 @@
                 <Grid>
                     <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableMods}"
                               MaxHeight="200" SelectionMode="Extended" BorderThickness="0"
-                              Visibility="{Binding AllPluginsInstalled, Converter={StaticResource InverseBoolToVisibility}}">
+                              Visibility="{Binding AllPluginsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
+                              AutomationProperties.Name="Available bundled plugins"
+                              AutomationProperties.AutomationId="AvailablePluginsListView"
+                              TabIndex="60">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              AutomationProperties.Name="{Binding Name}"/>
                                     <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -70,7 +90,10 @@
                 </Grid>
                 <Button Content="{x:Static res:Strings.InstallSelected}" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0"
                         Command="{Binding InstallBundledCommand}"
-                        IsEnabled="{Binding CanInstallBundled}"/>
+                        IsEnabled="{Binding CanInstallBundled}"
+                        AutomationProperties.Name="{x:Static res:Strings.InstallSelected}"
+                        AutomationProperties.AutomationId="InstallSelectedPluginsButton"
+                        TabIndex="90"/>
             </StackPanel>
         </GroupBox>
 

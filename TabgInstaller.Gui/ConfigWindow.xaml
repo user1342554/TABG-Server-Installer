@@ -39,8 +39,8 @@
                             <Button Content="Save" Width="100" Click="SaveButton_Click"/>
                             <Button Content="Open in Notepad" Width="140" Margin="8,0,0,0" Click="OpenGameSettings_Click"/>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Name="StatusTextBlock" Margin="10,8,10,0" 
-                                   HorizontalAlignment="Right" VerticalAlignment="Center" 
+                        <TextBlock Grid.Column="1" Name="StatusTextBlock" Margin="10,8,10,0"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
                                     Foreground="#00FFC6" FontStyle="Italic"/>
                     </Grid>
                 </Grid>
@@ -98,4 +98,4 @@
             </TabItem>
         </TabControl>
     </Grid>
-</Window> 
+</Window>

@@ -3,14 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:TabgInstaller.Gui.Controls"
              xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
-    <Grid Margin="10">
+    <Grid Margin="10" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ItemsControl Grid.Row="0" ItemsSource="{Binding HealthCards}" Margin="0,0,0,12">
+        <ItemsControl Grid.Row="0" ItemsSource="{Binding HealthCards}" Margin="0,0,0,12"
+                      AutomationProperties.Name="Server health cards"
+                      AutomationProperties.AutomationId="HealthCardsItemsControl">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <controls:HealthCardControl/>
@@ -40,9 +42,15 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5">
                     <Button Content="{Binding StartStopButtonText}" Width="120" Height="36"
-                            Command="{Binding StartStopCommand}"/>
+                            Command="{Binding StartStopCommand}"
+                            AutomationProperties.Name="{Binding StartStopButtonText}"
+                            AutomationProperties.AutomationId="StartStopServerButton"
+                            TabIndex="0"/>
                     <Button Content="{x:Static res:Strings.LaunchModdedTabg}" Width="160" Height="36" Margin="10,0,0,0"
-                            Command="{Binding LaunchClientCommand}"/>
+                            Command="{Binding LaunchClientCommand}"
+                            AutomationProperties.Name="{x:Static res:Strings.LaunchModdedTabg}"
+                            AutomationProperties.AutomationId="LaunchModdedTabgButton"
+                            TabIndex="1"/>
                 </StackPanel>
                 <TextBlock Text="{Binding ServerPath}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="5,5,5,0"/>
             </StackPanel>
@@ -50,11 +58,20 @@
         <GroupBox Grid.Row="2" Header="{x:Static res:Strings.QuickActions}" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="5">
                 <Button Content="{x:Static res:Strings.OpenServerFolder}" Width="130" Margin="2"
-                        Command="{Binding OpenServerFolderCommand}"/>
+                        Command="{Binding OpenServerFolderCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.OpenServerFolder}"
+                        AutomationProperties.AutomationId="OpenServerFolderButton"
+                        TabIndex="10"/>
                 <Button Content="{x:Static res:Strings.OpenLogs}" Width="90" Margin="2"
-                        Command="{Binding OpenLogsCommand}"/>
+                        Command="{Binding OpenLogsCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.OpenLogs}"
+                        AutomationProperties.AutomationId="OpenLogsButton"
+                        TabIndex="11"/>
                 <Button Content="{x:Static res:Strings.OpenConfigFiles}" Width="120" Margin="2"
-                        Command="{Binding OpenConfigsCommand}"/>
+                        Command="{Binding OpenConfigsCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.OpenConfigFiles}"
+                        AutomationProperties.AutomationId="OpenConfigFilesButton"
+                        TabIndex="12"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Grid.Row="3" Header="{x:Static res:Strings.ConsolePreview}">
@@ -65,10 +82,17 @@
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0">
                     <TextBox Text="{Binding PreviewText, Mode=OneWay}" IsReadOnly="True"
-                             TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
+                             TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"
+                             AutomationProperties.Name="Console preview output"
+                             AutomationProperties.AutomationId="ConsolePreviewTextBox"
+                             AutomationProperties.LiveSetting="Polite"
+                             TabIndex="20"/>
                 </ScrollViewer>
                 <Button Grid.Row="1" Content="{x:Static res:Strings.OpenFullConsole}" HorizontalAlignment="Right" Margin="5"
-                        Command="{Binding OpenFullConsoleCommand}"/>
+                        Command="{Binding OpenFullConsoleCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.OpenFullConsole}"
+                        AutomationProperties.AutomationId="OpenFullConsoleButton"
+                        TabIndex="90"/>
             </Grid>
         </GroupBox>
     </Grid>

@@ -16,7 +16,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="#F0F0F0">
+    <Grid Background="#F0F0F0" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -31,7 +31,10 @@
                  SelectedItem="{Binding SelectedInstance, Mode=TwoWay}"
                  BorderThickness="0"
                  Background="Transparent"
-                 Margin="4,0">
+                 Margin="4,0"
+                 AutomationProperties.Name="Server instances"
+                 AutomationProperties.AutomationId="ServerInstancesListBox"
+                 TabIndex="0">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal" Margin="8,6">
@@ -53,6 +56,9 @@
                 Content="{x:Static res:Strings.AddServerButton}"
                 Command="{Binding AddServerCommand}"
                 Margin="8,4,8,8"
-                Padding="8,6"/>
+                Padding="8,6"
+                AutomationProperties.Name="{x:Static res:Strings.AddServerButton}"
+                AutomationProperties.AutomationId="AddServerButton"
+                TabIndex="1"/>
     </Grid>
 </UserControl>

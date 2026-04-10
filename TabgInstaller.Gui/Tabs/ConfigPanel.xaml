@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:TabgInstaller.Gui.Tabs"
              xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
-    <Grid>
+    <Grid KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -11,13 +11,26 @@
 
         <!-- Quick Actions -->
         <StackPanel Orientation="Horizontal" Margin="5" Grid.Row="0">
-            <Button Content="{x:Static res:Strings.OpenServerFolder}" Margin="2" Command="{Binding OpenServerFolderCommand}"/>
-            <Button Content="{x:Static res:Strings.OpenLogs}" Margin="2" Command="{Binding OpenLogsCommand}"/>
-            <Button Content="{x:Static res:Strings.OpenConfigFiles}" Margin="2" Command="{Binding OpenConfigsCommand}"/>
+            <Button Content="{x:Static res:Strings.OpenServerFolder}" Margin="2" Command="{Binding OpenServerFolderCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.OpenServerFolder}"
+                    AutomationProperties.AutomationId="ConfigOpenServerFolderButton"
+                    TabIndex="0"/>
+            <Button Content="{x:Static res:Strings.OpenLogs}" Margin="2" Command="{Binding OpenLogsCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.OpenLogs}"
+                    AutomationProperties.AutomationId="ConfigOpenLogsButton"
+                    TabIndex="1"/>
+            <Button Content="{x:Static res:Strings.OpenConfigFiles}" Margin="2" Command="{Binding OpenConfigsCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.OpenConfigFiles}"
+                    AutomationProperties.AutomationId="ConfigOpenConfigFilesButton"
+                    TabIndex="2"/>
         </StackPanel>
 
-        <TabControl Grid.Row="1">
-            <TabItem Header="{x:Static res:Strings.ServerSettings}">
+        <TabControl Grid.Row="1"
+                    AutomationProperties.AutomationId="ConfigTabControl"
+                    AutomationProperties.Name="Configuration sections"
+                    TabIndex="10">
+            <TabItem Header="{x:Static res:Strings.ServerSettings}"
+                     AutomationProperties.AutomationId="ServerSettingsTabItem">
                 <Grid DataContext="{Binding GameSettingsVm}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -27,36 +40,48 @@
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5"
                                 DataContext="{Binding RelativeSource={RelativeSource AncestorType=UserControl}}">
                         <Button Content="{x:Static res:Strings.Save}" Width="100"
-                                Command="{Binding DataContext.SaveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                Command="{Binding DataContext.SaveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                AutomationProperties.Name="{x:Static res:Strings.Save}"
+                                AutomationProperties.AutomationId="ConfigSaveButton"
+                                TabIndex="90"/>
                         <Button Content="{x:Static res:Strings.OpenInNotepad}" Width="140" Margin="5,0,0,0"
-                                Command="{Binding DataContext.OpenGameSettingsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                Command="{Binding DataContext.OpenGameSettingsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                AutomationProperties.Name="{x:Static res:Strings.OpenInNotepad}"
+                                AutomationProperties.AutomationId="OpenInNotepadButton"
+                                TabIndex="91"/>
                         <TextBlock Text="{Binding DataContext.StatusText, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                    Margin="10,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.MatchSettings}">
+            <TabItem Header="{x:Static res:Strings.MatchSettings}"
+                     AutomationProperties.AutomationId="MatchSettingsTabItem">
                 <local:MatchSettingsPanel x:Name="MatchSettingsControl"/>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.RingAndSpawns}">
+            <TabItem Header="{x:Static res:Strings.RingAndSpawns}"
+                     AutomationProperties.AutomationId="RingAndSpawnsTabItem">
                 <local:RingSpawnsPanel x:Name="RingSpawnsControl"/>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.Loadouts}">
+            <TabItem Header="{x:Static res:Strings.Loadouts}"
+                     AutomationProperties.AutomationId="LoadoutsTabItem">
                 <local:LoadoutEditorPanel x:Name="LoadoutEditorControl"/>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.ModSettings}">
+            <TabItem Header="{x:Static res:Strings.ModSettings}"
+                     AutomationProperties.AutomationId="ModSettingsTabItem">
                 <local:ModSettingsPanel x:Name="ModSettingsControl"/>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.Admins}">
+            <TabItem Header="{x:Static res:Strings.Admins}"
+                     AutomationProperties.AutomationId="AdminsTabItem">
                 <local:AdminPanel x:Name="AdminPanelControl"/>
             </TabItem>
 
-            <TabItem Header="{x:Static res:Strings.Presets}">
+            <TabItem Header="{x:Static res:Strings.Presets}"
+                     AutomationProperties.AutomationId="PresetsTabItem">
                 <local:PresetsGrid x:Name="PresetsGridControl"/>
             </TabItem>
 

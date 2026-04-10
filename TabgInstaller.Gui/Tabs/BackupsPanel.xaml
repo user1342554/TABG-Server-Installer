@@ -8,7 +8,7 @@
         <conv:FileSizeConverter x:Key="FileSizeConverter"/>
     </UserControl.Resources>
 
-    <DockPanel>
+    <DockPanel KeyboardNavigation.TabNavigation="Cycle">
         <!-- Header -->
         <StackPanel DockPanel.Dock="Top" Margin="8">
             <TextBlock Text="{x:Static res:Strings.TabBackups}" FontSize="16" FontWeight="Bold" Margin="0,0,0,4"/>
@@ -17,13 +17,21 @@
 
         <!-- Status bar -->
         <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusText}"
-                   Margin="8,4" Foreground="Gray" FontStyle="Italic"/>
+                   Margin="8,4" Foreground="Gray" FontStyle="Italic"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.AutomationId="BackupStatusText"/>
 
         <!-- Bottom Actions -->
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="8" HorizontalAlignment="Right">
             <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="0,0,8,0"
-                    Command="{Binding RefreshBackupsCommand}"/>
-            <Button Width="110" Command="{Binding CreateBackupCommand}">
+                    Command="{Binding RefreshBackupsCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Refresh}"
+                    AutomationProperties.AutomationId="RefreshBackupsButton"
+                    TabIndex="90"/>
+            <Button Width="110" Command="{Binding CreateBackupCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.CreateBackup}"
+                    AutomationProperties.AutomationId="CreateBackupButton"
+                    TabIndex="91">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Content" Value="{x:Static res:Strings.CreateBackup}"/>
@@ -58,7 +66,9 @@
                 </TextBlock>
 
                 <!-- Backup cards -->
-                <ItemsControl ItemsSource="{Binding Backups}">
+                <ItemsControl ItemsSource="{Binding Backups}"
+                              AutomationProperties.Name="Backup list"
+                              AutomationProperties.AutomationId="BackupListItemsControl">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,4" Padding="6"
@@ -83,11 +93,15 @@
                                         <Button Content="{x:Static res:Strings.Restore}" Width="60" Margin="0,0,4,0"
                                                 Command="{Binding DataContext.RestoreBackupCommand,
                                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"/>
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{x:Static res:Strings.Restore}"
+                                                AutomationProperties.AutomationId="RestoreBackupButton"/>
                                         <Button Content="{x:Static res:Strings.Delete}" Width="60"
                                                 Command="{Binding DataContext.DeleteBackupCommand,
                                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"/>
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{x:Static res:Strings.Delete}"
+                                                AutomationProperties.AutomationId="DeleteBackupButton"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>

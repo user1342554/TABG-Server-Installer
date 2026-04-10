@@ -3,14 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="5">
-        <StackPanel Margin="8">
+        <StackPanel Margin="8" KeyboardNavigation.TabNavigation="Cycle">
 
             <!-- StarterPack Fixes -->
             <GroupBox Header="{x:Static res:Strings.StarterPackFixes}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <CheckBox Content="{x:Static res:Strings.EnableLootDrops}"
                               IsChecked="{Binding EnableLootDrops}"
-                              ToolTip="{x:Static res:Tooltips.LootDropsTooltip}"/>
+                              ToolTip="{x:Static res:Tooltips.LootDropsTooltip}"
+                              AutomationProperties.Name="{x:Static res:Strings.EnableLootDrops}"
+                              AutomationProperties.AutomationId="EnableLootDropsCheckBox"
+                              TabIndex="10"/>
                 </StackPanel>
             </GroupBox>
 
@@ -18,15 +21,24 @@
             <GroupBox Header="{x:Static res:Strings.GrenadesOnDeathAttacker}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <CheckBox Content="{x:Static res:Strings.Enabled}" Margin="0,0,0,6"
-                              IsChecked="{Binding AttackerEnabled}"/>
+                              IsChecked="{Binding AttackerEnabled}"
+                              AutomationProperties.Name="Attacker grenades enabled"
+                              AutomationProperties.AutomationId="AttackerEnabledCheckBox"
+                              TabIndex="11"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding AttackerChance, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="AttackerChanceLabel" Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding AttackerChance, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=AttackerChanceLabel}"
+                                 AutomationProperties.AutomationId="AttackerChanceTextBox"
+                                 TabIndex="12"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
+                        <Label x:Name="AttackerGrenadeLabel" Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
                         <ComboBox x:Name="CmbAttackerGrenade" Width="220"
-                                  SelectedIndex="{Binding AttackerGrenadeIndex}"/>
+                                  SelectedIndex="{Binding AttackerGrenadeIndex}"
+                                  AutomationProperties.LabeledBy="{Binding ElementName=AttackerGrenadeLabel}"
+                                  AutomationProperties.AutomationId="AttackerGrenadeComboBox"
+                                  TabIndex="13"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
@@ -35,15 +47,24 @@
             <GroupBox Header="{x:Static res:Strings.GrenadesOnDeathCorpse}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <CheckBox Content="{x:Static res:Strings.Enabled}" Margin="0,0,0,6"
-                              IsChecked="{Binding CorpseEnabled}"/>
+                              IsChecked="{Binding CorpseEnabled}"
+                              AutomationProperties.Name="Corpse grenades enabled"
+                              AutomationProperties.AutomationId="CorpseEnabledCheckBox"
+                              TabIndex="14"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding CorpseChance, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="CorpseChanceLabel" Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding CorpseChance, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=CorpseChanceLabel}"
+                                 AutomationProperties.AutomationId="CorpseChanceTextBox"
+                                 TabIndex="15"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
+                        <Label x:Name="CorpseGrenadeLabel" Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
                         <ComboBox x:Name="CmbCorpseGrenade" Width="220"
-                                  SelectedIndex="{Binding CorpseGrenadeIndex}"/>
+                                  SelectedIndex="{Binding CorpseGrenadeIndex}"
+                                  AutomationProperties.LabeledBy="{Binding ElementName=CorpseGrenadeLabel}"
+                                  AutomationProperties.AutomationId="CorpseGrenadeComboBox"
+                                  TabIndex="16"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
@@ -52,13 +73,19 @@
             <GroupBox Header="{x:Static res:Strings.LivesAndAdvanced}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.LivesLabel}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding Lives, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="LivesLabel" Content="{x:Static res:Strings.LivesLabel}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding Lives, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=LivesLabel}"
+                                 AutomationProperties.AutomationId="LivesTextBox"
+                                 TabIndex="20"/>
                         <TextBlock Text="{x:Static res:Strings.Lives256Infinite}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{x:Static res:Strings.StreamingDistance}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding StreamingDistance, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="StreamingDistanceLabel" Content="{x:Static res:Strings.StreamingDistance}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding StreamingDistance, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=StreamingDistanceLabel}"
+                                 AutomationProperties.AutomationId="StreamingDistanceTextBox"
+                                 TabIndex="21"/>
                         <TextBlock Text="{x:Static res:Strings.StreamingDistanceDefault}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                 </StackPanel>
@@ -71,7 +98,10 @@
                     <TextBox Height="120" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                              FontFamily="Consolas" FontSize="12"
-                             Text="{Binding BanList, UpdateSourceTrigger=PropertyChanged}"/>
+                             Text="{Binding BanList, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Ban list"
+                             AutomationProperties.AutomationId="BanListTextBox"
+                             TabIndex="30"/>
                 </StackPanel>
             </GroupBox>
 
@@ -79,18 +109,27 @@
             <GroupBox Header="{x:Static res:Strings.ProximityChat}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.MaxRangeM}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding ProxChatMaxRange, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="MaxRangeLabel" Content="{x:Static res:Strings.MaxRangeM}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding ProxChatMaxRange, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=MaxRangeLabel}"
+                                 AutomationProperties.AutomationId="ProxChatMaxRangeTextBox"
+                                 TabIndex="40"/>
                         <TextBlock Text="{x:Static res:Strings.DefaultFifty}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.MinRangeM}" Width="130"/>
-                        <TextBox Width="80" Text="{Binding ProxChatMinRange, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="MinRangeLabel" Content="{x:Static res:Strings.MinRangeM}" Width="130"/>
+                        <TextBox Width="80" Text="{Binding ProxChatMinRange, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=MinRangeLabel}"
+                                 AutomationProperties.AutomationId="ProxChatMinRangeTextBox"
+                                 TabIndex="41"/>
                         <TextBlock Text="{x:Static res:Strings.DefaultFive}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{x:Static res:Strings.FalloffCurve}" Width="130"/>
-                        <ComboBox Width="140" SelectedIndex="{Binding ProxChatFalloffIndex}">
+                        <Label x:Name="FalloffCurveLabel" Content="{x:Static res:Strings.FalloffCurve}" Width="130"/>
+                        <ComboBox Width="140" SelectedIndex="{Binding ProxChatFalloffIndex}"
+                                  AutomationProperties.LabeledBy="{Binding ElementName=FalloffCurveLabel}"
+                                  AutomationProperties.AutomationId="ProxChatFalloffComboBox"
+                                  TabIndex="42">
                             <ComboBoxItem Content="{x:Static res:Strings.Linear}"/>
                             <ComboBoxItem Content="{x:Static res:Strings.Logarithmic}"/>
                         </ComboBox>
@@ -103,53 +142,83 @@
                 <StackPanel Margin="8">
                     <TextBlock Text="{x:Static res:Strings.JuggernautDescription}" Foreground="Gray" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.PointsToWin}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggPointsToWin, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="JuggPointsToWinLabel" Content="{x:Static res:Strings.PointsToWin}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggPointsToWin, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=JuggPointsToWinLabel}"
+                                 AutomationProperties.AutomationId="JuggPointsToWinTextBox"
+                                 TabIndex="50"/>
                         <TextBlock Text="{x:Static res:Strings.DefaultHundred}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.JuggernautHP}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggHP, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="JuggHPLabel" Content="{x:Static res:Strings.JuggernautHP}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggHP, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=JuggHPLabel}"
+                                 AutomationProperties.AutomationId="JuggHPTextBox"
+                                 TabIndex="51"/>
                         <TextBlock Text="{x:Static res:Strings.DefaultThousand}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.JuggernautKillBonus}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggKillBonus, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="JuggKillBonusLabel" Content="{x:Static res:Strings.JuggernautKillBonus}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggKillBonus, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=JuggKillBonusLabel}"
+                                 AutomationProperties.AutomationId="JuggKillBonusTextBox"
+                                 TabIndex="52"/>
                         <TextBlock Text="{x:Static res:Strings.JuggernautKillBonusHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.JuggKillPoints}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggKillPoints, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="JuggKillPointsLabel" Content="{x:Static res:Strings.JuggKillPoints}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggKillPoints, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=JuggKillPointsLabel}"
+                                 AutomationProperties.AutomationId="JuggKillPointsTextBox"
+                                 TabIndex="53"/>
                         <TextBlock Text="{x:Static res:Strings.JuggKillPointsHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.RegularKillPoints}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggRegularKillPoints, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="RegularKillPointsLabel" Content="{x:Static res:Strings.RegularKillPoints}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggRegularKillPoints, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=RegularKillPointsLabel}"
+                                 AutomationProperties.AutomationId="JuggRegularKillPointsTextBox"
+                                 TabIndex="54"/>
                         <TextBlock Text="{x:Static res:Strings.RegularKillPointsHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.DamagePerPoint}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggDamagePerPoint, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="DamagePerPointLabel" Content="{x:Static res:Strings.DamagePerPoint}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggDamagePerPoint, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=DamagePerPointLabel}"
+                                 AutomationProperties.AutomationId="JuggDamagePerPointTextBox"
+                                 TabIndex="55"/>
                         <TextBlock Text="{x:Static res:Strings.DamagePerPointHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.LoadoutChoices}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggLoadoutChoices, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="LoadoutChoicesLabel" Content="{x:Static res:Strings.LoadoutChoices}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggLoadoutChoices, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=LoadoutChoicesLabel}"
+                                 AutomationProperties.AutomationId="JuggLoadoutChoicesTextBox"
+                                 TabIndex="56"/>
                         <TextBlock Text="{x:Static res:Strings.LoadoutChoicesHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.LoadoutTimeoutS}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggLoadoutTimeout, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="LoadoutTimeoutLabel" Content="{x:Static res:Strings.LoadoutTimeoutS}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggLoadoutTimeout, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=LoadoutTimeoutLabel}"
+                                 AutomationProperties.AutomationId="JuggLoadoutTimeoutTextBox"
+                                 TabIndex="57"/>
                         <TextBlock Text="{x:Static res:Strings.LoadoutTimeoutHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="{x:Static res:Strings.MinSpawnDistance}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggMinSpawnDist, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="MinSpawnDistLabel" Content="{x:Static res:Strings.MinSpawnDistance}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggMinSpawnDist, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=MinSpawnDistLabel}"
+                                 AutomationProperties.AutomationId="JuggMinSpawnDistTextBox"
+                                 TabIndex="58"/>
                         <TextBlock Text="{x:Static res:Strings.MinSpawnDistanceHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{x:Static res:Strings.MinPlayersToStart}" Width="150"/>
-                        <TextBox Width="80" Text="{Binding JuggMinPlayers, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label x:Name="MinPlayersToStartLabel" Content="{x:Static res:Strings.MinPlayersToStart}" Width="150"/>
+                        <TextBox Width="80" Text="{Binding JuggMinPlayers, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=MinPlayersToStartLabel}"
+                                 AutomationProperties.AutomationId="JuggMinPlayersTextBox"
+                                 TabIndex="59"/>
                         <TextBlock Text="{x:Static res:Strings.MinPlayersToStartHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                 </StackPanel>
@@ -157,7 +226,10 @@
 
             <!-- Bottom bar -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <Button Content="{x:Static res:Strings.Save}" Width="100" Command="{Binding SaveCommand}"/>
+                <Button Content="{x:Static res:Strings.Save}" Width="100" Command="{Binding SaveCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.Save}"
+                        AutomationProperties.AutomationId="ModSettingsSaveButton"
+                        TabIndex="90"/>
                 <TextBlock Text="{Binding StatusText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
 
