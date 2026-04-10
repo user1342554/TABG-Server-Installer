@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tabs="clr-namespace:TabgInstaller.Gui.Tabs"
         xmlns:controls="clr-namespace:TabgInstaller.Gui.Controls"
-        Title="TABG Manager" Height="800" Width="1200"
+        xmlns:res="clr-namespace:TabgInstaller.Gui.Resources"
+        Title="{x:Static res:Strings.AppTitle}" Height="800" Width="1200"
         Icon="pack://application:,,,/Assets/tabg-mod-manager-icon-256.png">
 
     <Grid>
@@ -18,35 +19,35 @@
         <!-- Content area -->
         <Grid Grid.Column="1">
             <TabControl x:Name="MainTabs">
-                <TabItem Header="Dashboard">
+                <TabItem Header="{x:Static res:Strings.TabDashboard}">
                     <tabs:DashboardPanel x:Name="DashboardTab"/>
                 </TabItem>
 
-                <TabItem Header="Server Mods">
+                <TabItem Header="{x:Static res:Strings.TabServerMods}">
                     <tabs:ServerModsPanel x:Name="ServerModsTab"/>
                 </TabItem>
 
-                <TabItem Header="Client Mods">
+                <TabItem Header="{x:Static res:Strings.TabClientMods}">
                     <tabs:ClientPanel x:Name="ClientModsTab"/>
                 </TabItem>
 
-                <TabItem Header="Config">
+                <TabItem Header="{x:Static res:Strings.TabConfig}">
                     <tabs:ConfigPanel x:Name="ConfigTab"/>
                 </TabItem>
 
-                <TabItem Header="Console">
+                <TabItem Header="{x:Static res:Strings.TabConsole}">
                     <tabs:ConsolePanel x:Name="ConsoleTab"/>
                 </TabItem>
 
-                <TabItem Header="Backups" x:Name="BackupsTabItem">
+                <TabItem Header="{x:Static res:Strings.TabBackups}" x:Name="BackupsTabItem">
                     <tabs:BackupsPanel x:Name="BackupsTab"/>
                 </TabItem>
 
-                <TabItem Header="Reference">
+                <TabItem Header="{x:Static res:Strings.TabReference}">
                     <tabs:ReferencePanel x:Name="ReferenceTab"/>
                 </TabItem>
 
-                <TabItem Header="Settings">
+                <TabItem Header="{x:Static res:Strings.TabSettings}">
                     <tabs:SettingsPanel x:Name="SettingsTab"/>
                 </TabItem>
             </TabControl>

@@ -1,29 +1,30 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.ModSettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="5">
         <StackPanel Margin="8">
 
             <!-- StarterPack Fixes -->
-            <GroupBox Header="StarterPack Fixes" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.StarterPackFixes}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
-                    <CheckBox Content="Enable Loot Drops"
+                    <CheckBox Content="{x:Static res:Strings.EnableLootDrops}"
                               IsChecked="{Binding EnableLootDrops}"
-                              ToolTip="When enabled, items drop from loot containers. Disable for loadout-only modes."/>
+                              ToolTip="{x:Static res:Tooltips.LootDropsTooltip}"/>
                 </StackPanel>
             </GroupBox>
 
             <!-- Grenades On Death - Attacker -->
-            <GroupBox Header="Grenades On Death - Attacker" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.GrenadesOnDeathAttacker}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
-                    <CheckBox Content="Enabled" Margin="0,0,0,6"
+                    <CheckBox Content="{x:Static res:Strings.Enabled}" Margin="0,0,0,6"
                               IsChecked="{Binding AttackerEnabled}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Chance (0.0 - 1.0):" Width="130"/>
+                        <Label Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
                         <TextBox Width="80" Text="{Binding AttackerChance, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="Grenade:" Width="130"/>
+                        <Label Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
                         <ComboBox x:Name="CmbAttackerGrenade" Width="220"
                                   SelectedIndex="{Binding AttackerGrenadeIndex}"/>
                     </StackPanel>
@@ -31,16 +32,16 @@
             </GroupBox>
 
             <!-- Grenades On Death - Corpse -->
-            <GroupBox Header="Grenades On Death - Corpse" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.GrenadesOnDeathCorpse}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
-                    <CheckBox Content="Enabled" Margin="0,0,0,6"
+                    <CheckBox Content="{x:Static res:Strings.Enabled}" Margin="0,0,0,6"
                               IsChecked="{Binding CorpseEnabled}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Chance (0.0 - 1.0):" Width="130"/>
+                        <Label Content="{x:Static res:Strings.ChanceLabel}" Width="130"/>
                         <TextBox Width="80" Text="{Binding CorpseChance, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="Grenade:" Width="130"/>
+                        <Label Content="{x:Static res:Strings.GrenadeLabel}" Width="130"/>
                         <ComboBox x:Name="CmbCorpseGrenade" Width="220"
                                   SelectedIndex="{Binding CorpseGrenadeIndex}"/>
                     </StackPanel>
@@ -48,25 +49,25 @@
             </GroupBox>
 
             <!-- Lives & Advanced -->
-            <GroupBox Header="Lives &amp; Advanced" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.LivesAndAdvanced}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Lives:" Width="130"/>
+                        <Label Content="{x:Static res:Strings.LivesLabel}" Width="130"/>
                         <TextBox Width="80" Text="{Binding Lives, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(256 = infinite)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.Lives256Infinite}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="Streaming Distance:" Width="130"/>
+                        <Label Content="{x:Static res:Strings.StreamingDistance}" Width="130"/>
                         <TextBox Width="80" Text="{Binding StreamingDistance, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(-1 = normal)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.StreamingDistanceDefault}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
 
             <!-- Ban List -->
-            <GroupBox Header="Ban List" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.BanList}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
-                    <TextBlock Text="One Epic ID per line" Foreground="Gray" Margin="0,0,0,4"/>
+                    <TextBlock Text="{x:Static res:Strings.OneEpicIdPerLine}" Foreground="Gray" Margin="0,0,0,4"/>
                     <TextBox Height="120" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                              FontFamily="Consolas" FontSize="12"
@@ -75,88 +76,88 @@
             </GroupBox>
 
             <!-- Proximity Chat -->
-            <GroupBox Header="Proximity Chat" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.ProximityChat}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Max Range (m):" Width="130"/>
+                        <Label Content="{x:Static res:Strings.MaxRangeM}" Width="130"/>
                         <TextBox Width="80" Text="{Binding ProxChatMaxRange, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(default 50)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.DefaultFifty}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Min Range (m):" Width="130"/>
+                        <Label Content="{x:Static res:Strings.MinRangeM}" Width="130"/>
                         <TextBox Width="80" Text="{Binding ProxChatMinRange, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(default 5)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.DefaultFive}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="Falloff Curve:" Width="130"/>
+                        <Label Content="{x:Static res:Strings.FalloffCurve}" Width="130"/>
                         <ComboBox Width="140" SelectedIndex="{Binding ProxChatFalloffIndex}">
-                            <ComboBoxItem Content="Linear"/>
-                            <ComboBoxItem Content="Logarithmic"/>
+                            <ComboBoxItem Content="{x:Static res:Strings.Linear}"/>
+                            <ComboBoxItem Content="{x:Static res:Strings.Logarithmic}"/>
                         </ComboBox>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
 
             <!-- Juggernaut Mode -->
-            <GroupBox Header="Juggernaut Mode" Margin="0,0,0,8">
+            <GroupBox Header="{x:Static res:Strings.JuggernautMode}" Margin="0,0,0,8">
                 <StackPanel Margin="8">
-                    <TextBlock Text="Score-based game mode: one massive Juggernaut vs everyone" Foreground="Gray" Margin="0,0,0,8"/>
+                    <TextBlock Text="{x:Static res:Strings.JuggernautDescription}" Foreground="Gray" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Points to Win:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.PointsToWin}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggPointsToWin, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(default 100)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.DefaultHundred}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Juggernaut HP:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.JuggernautHP}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggHP, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(default 1000)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.DefaultThousand}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Juggernaut Kill Bonus:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.JuggernautKillBonus}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggKillBonus, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(points for killing the Juggernaut)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.JuggernautKillBonusHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Jugg Kill Points:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.JuggKillPoints}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggKillPoints, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(points Juggernaut earns per kill)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.JuggKillPointsHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Regular Kill Points:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.RegularKillPoints}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggRegularKillPoints, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(points for killing a regular player)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.RegularKillPointsHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Damage per Point:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.DamagePerPoint}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggDamagePerPoint, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(HP damage needed per score point)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.DamagePerPointHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Loadout Choices:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.LoadoutChoices}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggLoadoutChoices, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(cards shown on respawn)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.LoadoutChoicesHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Loadout Timeout (s):" Width="150"/>
+                        <Label Content="{x:Static res:Strings.LoadoutTimeoutS}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggLoadoutTimeout, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(auto-pick after this)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.LoadoutTimeoutHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Label Content="Min Spawn Distance:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.MinSpawnDistance}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggMinSpawnDist, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(meters from Juggernaut)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.MinSpawnDistanceHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="Min Players:" Width="150"/>
+                        <Label Content="{x:Static res:Strings.MinPlayersToStart}" Width="150"/>
                         <TextBox Width="80" Text="{Binding JuggMinPlayers, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(to start the match)" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                        <TextBlock Text="{x:Static res:Strings.MinPlayersToStartHint}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
 
             <!-- Bottom bar -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <Button Content="Save" Width="100" Command="{Binding SaveCommand}"/>
+                <Button Content="{x:Static res:Strings.Save}" Width="100" Command="{Binding SaveCommand}"/>
                 <TextBlock Text="{Binding StatusText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
 

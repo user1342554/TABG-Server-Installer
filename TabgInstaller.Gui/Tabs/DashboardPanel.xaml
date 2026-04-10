@@ -1,7 +1,8 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.DashboardPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:TabgInstaller.Gui.Controls">
+             xmlns:controls="clr-namespace:TabgInstaller.Gui.Controls"
+             xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,15 +20,15 @@
         <GroupBox Grid.Row="1" Margin="0,0,0,10">
             <GroupBox.Header>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Server Status" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static res:Strings.ServerStatus}" FontWeight="SemiBold"/>
                     <TextBlock FontWeight="Bold" Margin="8,0,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="  STOPPED"/>
+                                <Setter Property="Text" Value="{x:Static res:Strings.StatusStopped}"/>
                                 <Setter Property="Foreground" Value="#CC0000"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsServerRunning}" Value="True">
-                                        <Setter Property="Text" Value="  RUNNING"/>
+                                        <Setter Property="Text" Value="{x:Static res:Strings.StatusRunning}"/>
                                         <Setter Property="Foreground" Value="#00AA44"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -40,23 +41,23 @@
                 <StackPanel Orientation="Horizontal" Margin="5">
                     <Button Content="{Binding StartStopButtonText}" Width="120" Height="36"
                             Command="{Binding StartStopCommand}"/>
-                    <Button Content="Launch Modded TABG" Width="160" Height="36" Margin="10,0,0,0"
+                    <Button Content="{x:Static res:Strings.LaunchModdedTabg}" Width="160" Height="36" Margin="10,0,0,0"
                             Command="{Binding LaunchClientCommand}"/>
                 </StackPanel>
                 <TextBlock Text="{Binding ServerPath}" Foreground="#888" FontSize="11" Margin="5,5,5,0"/>
             </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Row="2" Header="Quick Actions" Margin="0,0,0,10">
+        <GroupBox Grid.Row="2" Header="{x:Static res:Strings.QuickActions}" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="5">
-                <Button Content="Open Server Folder" Width="130" Margin="2"
+                <Button Content="{x:Static res:Strings.OpenServerFolder}" Width="130" Margin="2"
                         Command="{Binding OpenServerFolderCommand}"/>
-                <Button Content="Open Logs" Width="90" Margin="2"
+                <Button Content="{x:Static res:Strings.OpenLogs}" Width="90" Margin="2"
                         Command="{Binding OpenLogsCommand}"/>
-                <Button Content="Open Config Files" Width="120" Margin="2"
+                <Button Content="{x:Static res:Strings.OpenConfigFiles}" Width="120" Margin="2"
                         Command="{Binding OpenConfigsCommand}"/>
             </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Row="3" Header="Console Preview (last 20 lines)">
+        <GroupBox Grid.Row="3" Header="{x:Static res:Strings.ConsolePreview}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -66,7 +67,7 @@
                     <TextBox Text="{Binding PreviewText, Mode=OneWay}" IsReadOnly="True"
                              TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
                 </ScrollViewer>
-                <Button Grid.Row="1" Content="Open Full Console" HorizontalAlignment="Right" Margin="5"
+                <Button Grid.Row="1" Content="{x:Static res:Strings.OpenFullConsole}" HorizontalAlignment="Right" Margin="5"
                         Command="{Binding OpenFullConsoleCommand}"/>
             </Grid>
         </GroupBox>

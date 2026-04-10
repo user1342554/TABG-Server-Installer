@@ -1,33 +1,34 @@
 <UserControl x:Class="TabgInstaller.Gui.Tabs.SettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:TabgInstaller.Gui.Tabs">
+             xmlns:local="clr-namespace:TabgInstaller.Gui.Tabs"
+             xmlns:res="clr-namespace:TabgInstaller.Gui.Resources">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="10">
-            <GroupBox Header="Paths" Margin="0,0,0,10">
+            <GroupBox Header="{x:Static res:Strings.Paths}" Margin="0,0,0,10">
                 <StackPanel Margin="5">
-                    <TextBlock Text="Server Path:" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static res:Strings.ServerPathLabel}" FontWeight="SemiBold"/>
                     <TextBox Text="{Binding ServerPath, Mode=OneWay}" Margin="0,4,0,8" IsReadOnly="True"/>
-                    <TextBlock Text="Client Path:" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static res:Strings.ClientPathLabel}" FontWeight="SemiBold"/>
                     <TextBox Text="{Binding ClientPath, Mode=OneWay}" Margin="0,4,0,8" IsReadOnly="True"/>
-                    <TextBlock Text="Modded TABG Path:" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static res:Strings.ModdedTabgPathLabel}" FontWeight="SemiBold"/>
                     <TextBox Text="{Binding ModdedPath, Mode=OneWay}" Margin="0,4,0,0" IsReadOnly="True"/>
                 </StackPanel>
             </GroupBox>
-            <GroupBox Header="Hard Reset" Margin="0,0,0,10">
+            <GroupBox Header="{x:Static res:Strings.HardReset}" Margin="0,0,0,10">
                 <StackPanel Margin="5">
                     <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
-                               Text="Completely reinstall the server from scratch. This will create a backup first, then run the full setup wizard again."/>
-                    <Button Content="Hard Reset (Full Reinstall)" Width="220" HorizontalAlignment="Left" Command="{Binding HardResetCommand}"/>
+                               Text="{x:Static res:Strings.HardResetDescription}"/>
+                    <Button Content="{x:Static res:Strings.HardResetButton}" Width="220" HorizontalAlignment="Left" Command="{Binding HardResetCommand}"/>
                 </StackPanel>
             </GroupBox>
-            <GroupBox Header="Super Secret Settings" Margin="0,0,0,10">
+            <GroupBox Header="{x:Static res:Strings.SuperSecretSettings}" Margin="0,0,0,10">
                 <local:SuperSecretSettingsPanel x:Name="SuperSecretControl"/>
             </GroupBox>
-            <GroupBox Header="About" Margin="0,0,0,10">
+            <GroupBox Header="{x:Static res:Strings.About}" Margin="0,0,0,10">
                 <StackPanel Margin="5">
                     <TextBlock Text="{Binding AppVersion}" FontSize="14"/>
-                    <TextBlock Text="TABG Server Installer" Foreground="#888" Margin="0,4,0,0"/>
+                    <TextBlock Text="{x:Static res:Strings.AppName}" Foreground="#888" Margin="0,4,0,0"/>
                 </StackPanel>
             </GroupBox>
         </StackPanel>
