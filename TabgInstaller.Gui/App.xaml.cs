@@ -32,7 +32,7 @@ namespace TabgInstaller.Gui
                 {
                     Trace.TraceError($"[App] Failed to write crash log: {logEx}");
                 }
-                MessageBox.Show("Error: " + args.Exception.ToString(), "TABG Manager Error");
+                MessageBox.Show(string.Format(Messages.ErrorPrefix, args.Exception), Messages.TabgManagerError);
                 args.Handled = true;
             };
         }
@@ -87,7 +87,7 @@ namespace TabgInstaller.Gui
                 {
                     Trace.TraceError($"[App] Failed to write startup log: {logEx}");
                 }
-                MessageBox.Show("Startup error: " + ex.Message, "TABG Manager",
+                MessageBox.Show(string.Format(Messages.StartupError, ex.Message), Messages.TabgManager,
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown(-1);
             }

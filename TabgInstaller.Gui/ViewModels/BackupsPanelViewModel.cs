@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -49,7 +50,7 @@ namespace TabgInstaller.Gui.ViewModels
 
             var list = _backupService.GetAvailableBackups(serverDir);
             Backups = new ObservableCollection<BackupInfo>(list);
-            StatusText = list.Count == 0 ? "No backups found." : $"{list.Count} backup(s)";
+            StatusText = list.Count == 0 ? Strings.NoBackupsFound : string.Format(Messages.BackupCount, list.Count);
         }
 
         [RelayCommand]
@@ -64,25 +65,25 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrWhiteSpace(serverDir))
             {
-                _toast.Error("No server directory configured.");
+                _toast.Error(Messages.NoServerDirectory);
                 return;
             }
 
             IsCreatingBackup = true;
-            StatusText = "Creating backup...";
+            StatusText = Messages.CreatingBackup;
 
             try
             {
                 bool success = await _backupService.CreateBackupAsync(serverDir);
                 if (success)
                 {
-                    _toast.Success("Backup created successfully!");
+                    _toast.Success(Messages.BackupCreatedSuccess);
                     RefreshBackupsInternal();
                 }
                 else
                 {
-                    _toast.Error("Failed to create backup. Check the log for details.");
-                    StatusText = "Backup failed.";
+                    _toast.Error(Messages.FailedToCreateBackup);
+                    StatusText = Messages.BackupFailed;
                 }
             }
             finally
@@ -97,35 +98,33 @@ namespace TabgInstaller.Gui.ViewModels
             if (backup == null) return;
 
             var result = MessageBox.Show(
-                $"Are you sure you want to restore backup '{backup.Name}'?\n\n" +
-                "This will replace your current server files with the backup files.\n" +
-                "Current files will be backed up with '.pre-restore' extension.",
-                "Confirm Restore",
+                string.Format(Messages.ConfirmRestore, backup.Name),
+                Messages.ConfirmRestoreTitle,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (result != MessageBoxResult.Yes) return;
 
-            StatusText = $"Restoring '{backup.Name}'...";
+            StatusText = string.Format(Messages.RestoringBackup, backup.Name);
 
             try
             {
                 bool success = await _backupService.RestoreBackupAsync(_serverPathProvider.ServerPath, backup);
                 if (success)
                 {
-                    _toast.Success("Backup restored successfully!");
-                    StatusText = $"Restored '{backup.Name}'.";
+                    _toast.Success(Messages.BackupRestoredSuccess);
+                    StatusText = string.Format(Messages.RestoredBackup, backup.Name);
                 }
                 else
                 {
-                    _toast.Error("Failed to restore backup. Check the log for details.");
-                    StatusText = "Restore failed.";
+                    _toast.Error(Messages.FailedToRestoreBackup);
+                    StatusText = Messages.RestoreFailed;
                 }
             }
             catch (Exception ex)
             {
-                _toast.Error($"Restore error: {ex.Message}");
-                StatusText = "Restore failed.";
+                _toast.Error(string.Format(Messages.RestoreError, ex.Message));
+                StatusText = Messages.RestoreFailed;
             }
         }
 
@@ -135,8 +134,8 @@ namespace TabgInstaller.Gui.ViewModels
             if (backup == null) return;
 
             var result = MessageBox.Show(
-                $"Are you sure you want to delete backup '{backup.Name}'?\n\nThis action cannot be undone!",
-                "Confirm Delete",
+                string.Format(Messages.ConfirmDelete, backup.Name),
+                Messages.ConfirmDeleteTitle,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -145,13 +144,13 @@ namespace TabgInstaller.Gui.ViewModels
             bool success = _backupService.DeleteBackup(backup);
             if (success)
             {
-                _toast.Success("Backup deleted successfully!");
+                _toast.Success(Messages.BackupDeletedSuccess);
                 Backups.Remove(backup);
-                StatusText = Backups.Count == 0 ? "No backups found." : $"{Backups.Count} backup(s)";
+                StatusText = Backups.Count == 0 ? Strings.NoBackupsFound : string.Format(Messages.BackupCount, Backups.Count);
             }
             else
             {
-                _toast.Error("Failed to delete backup.");
+                _toast.Error(Messages.FailedToDeleteBackup);
             }
         }
     }

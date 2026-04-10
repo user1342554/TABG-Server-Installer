@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -72,7 +73,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to start: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToStart, ex.Message));
             }
         }
 
@@ -121,7 +122,7 @@ namespace TabgInstaller.Gui.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        _toast.Error($"Failed to restart: {ex.Message}");
+                        _toast.Error(string.Format(Messages.FailedToRestart, ex.Message));
                     }
                 });
             }
@@ -133,8 +134,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (_activeInstance.ProcessService.IsRunning && !string.IsNullOrWhiteSpace(CommandText))
             {
                 var echoEntry = LogLineParser.Parse($"> {CommandText}");
-                var infoEntry = LogLineParser.Parse(
-                    "[INFO] Server does not accept stdin commands. Use RCON or a BepInEx console plugin.");
+                var infoEntry = LogLineParser.Parse(Messages.ServerNoStdin);
                 _activeInstance.ProcessService.AddEntry(echoEntry);
                 _activeInstance.ProcessService.AddEntry(infoEntry);
                 CommandText = "";
@@ -167,11 +167,11 @@ namespace TabgInstaller.Gui.ViewModels
                 }
 
                 File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
-                _toast.Success($"Log exported to {filePath}");
+                _toast.Success(string.Format(Messages.LogExportedTo, filePath));
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to export log: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToExportLog, ex.Message));
             }
         }
 

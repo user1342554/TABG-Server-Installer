@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -149,8 +150,8 @@ namespace TabgInstaller.Gui.ViewModels
             string serverDir = ServerPath.Trim();
 
             var result = MessageBox.Show(
-                "WARNING: Installation will modify server files!\n\nA backup will be created in the 'backup' folder before installation.\nDo you want to continue?",
-                "Installation Warning",
+                Messages.InstallationWarning,
+                Messages.InstallationWarningTitle,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -159,17 +160,17 @@ namespace TabgInstaller.Gui.ViewModels
 
             if (string.IsNullOrWhiteSpace(serverDir))
             {
-                _toast.Warning("Please select a valid TABG server folder.");
+                _toast.Warning(Messages.SelectValidTabgFolder);
                 return;
             }
             if (!Directory.Exists(serverDir))
             {
-                _toast.Error($"The path '{serverDir}' does not exist.");
+                _toast.Error(string.Format(Messages.PathDoesNotExist, serverDir));
                 return;
             }
             if (citrusTag.Length == 0 && !skipCitrus)
             {
-                _toast.Warning("CitrusLib tag is required if not skipping the plugin.");
+                _toast.Warning(Messages.CitruslibTagRequired);
                 return;
             }
 
@@ -191,9 +192,9 @@ namespace TabgInstaller.Gui.ViewModels
             LogText = "";
             IsProgressVisible = true;
             Progress = 0;
-            StatusText = "Preparing...";
+            StatusText = Messages.Preparing;
             IsCancelVisible = true;
-            CancelButtonText = "CANCEL";
+            CancelButtonText = Strings.Cancel;
 
             var logLines = new System.Text.StringBuilder();
 
@@ -222,7 +223,7 @@ namespace TabgInstaller.Gui.ViewModels
                         ((IProgress<string>)progress).Report("Creating backup...");
                         bool backupSuccess = await backupService.CreateBackupAsync(serverDir);
                         if (!backupSuccess)
-                            ((IProgress<string>)progress).Report("Warning: Backup failed — continuing anyway.");
+                            ((IProgress<string>)progress).Report(Messages.BackupWarningContinuing);
                     }
 
                     var installer = new Installer(gameDir: serverDir, log: progress);
@@ -249,27 +250,27 @@ namespace TabgInstaller.Gui.ViewModels
                         ((IProgress<string>)progress).Report("Installation completed successfully!");
                         Progress = 100;
                         StatusText = "Complete";
-                        _toast.Success("Installation completed! Change Server Name, Password and Description in Server Settings.");
+                        _toast.Success(Messages.InstallationCompleted);
                         ActivateServerTabs(serverDir);
                     }
                     else
                     {
                         StatusText = "Failed";
-                        _toast.Error($"Installation ended with code {exitCode}. See log output.");
+                        _toast.Error(string.Format(Messages.InstallationEndedWithCode, exitCode));
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                ((IProgress<string>)progress).Report("Installation cancelled by user.");
+                ((IProgress<string>)progress).Report(Messages.InstallationCancelledByUser);
                 StatusText = "Cancelled";
-                _toast.Warning("Installation cancelled.");
+                _toast.Warning(Messages.InstallationCancelled);
             }
             catch (Exception ex)
             {
                 progress.LogException("Unknown error during installation", ex);
                 StatusText = "Failed";
-                _toast.Error($"Installation error: {ex.Message}");
+                _toast.Error(string.Format(Messages.InstallationError, ex.Message));
             }
             finally
             {
@@ -297,7 +298,7 @@ namespace TabgInstaller.Gui.ViewModels
             string serverDir = ServerPath.Trim();
             if (string.IsNullOrWhiteSpace(serverDir) || !Directory.Exists(serverDir))
             {
-                _toast.Warning("Please select a valid TABG server folder.");
+                _toast.Warning(Messages.SelectValidTabgFolder);
                 return;
             }
 

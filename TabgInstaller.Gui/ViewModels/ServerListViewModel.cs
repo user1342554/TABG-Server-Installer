@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -63,7 +64,7 @@ namespace TabgInstaller.Gui.ViewModels
                             _credentials.Store(instanceData.Id, "password", vm.Password);
                     }
                 }
-                _toast.Success($"Added server: {vm.DisplayName}");
+                _toast.Success(string.Format(Messages.AddedServer, vm.DisplayName));
             }
         }
 
@@ -77,7 +78,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (InvalidOperationException)
             {
-                _toast.Warning("Cannot remove the last server instance.");
+                _toast.Warning(Messages.CannotRemoveLastServer);
             }
         }
 

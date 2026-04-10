@@ -10,6 +10,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -453,7 +454,7 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrEmpty(serverDir))
             {
-                _toast.Warning("Server path is not set.");
+                _toast.Warning(Messages.ServerPathNotSet);
                 return;
             }
 
@@ -493,7 +494,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             if (string.IsNullOrEmpty(raw))
             {
-                _toast.Warning("No text entered.");
+                _toast.Warning(Messages.NoTextEntered);
                 return;
             }
 

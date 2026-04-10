@@ -8,6 +8,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -101,7 +102,7 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrEmpty(serverDir))
             {
-                _toast.Warning("Server path is not set.");
+                _toast.Warning(Messages.ServerPathNotSet);
                 return;
             }
 
@@ -156,12 +157,12 @@ namespace TabgInstaller.Gui.ViewModels
                 _saving = true;
                 StarterPackConfigService.Write(serverDir, _settings);
                 _saving = false;
-                StatusText = "Settings saved.";
+                StatusText = Messages.SettingsSaved;
             }
             catch (Exception ex)
             {
                 _saving = false;
-                StatusText = $"Error saving: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorSaving, ex.Message);
             }
         }
 
@@ -197,11 +198,11 @@ namespace TabgInstaller.Gui.ViewModels
                 PreMatchTimeout = _settings.PreMatchTimeout.ToString(CultureInfo.InvariantCulture);
                 PeriMatchTimeout = _settings.PeriMatchTimeout.ToString(CultureInfo.InvariantCulture);
 
-                StatusText = "Settings loaded.";
+                StatusText = Messages.SettingsLoaded;
             }
             catch (Exception ex)
             {
-                StatusText = $"Error loading: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorLoading, ex.Message);
             }
         }
 

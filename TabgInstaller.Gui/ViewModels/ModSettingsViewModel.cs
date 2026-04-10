@@ -10,6 +10,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -112,7 +113,7 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrEmpty(serverDir))
             {
-                _toast.Warning("Server path is not set.");
+                _toast.Warning(Messages.ServerPathNotSet);
                 return;
             }
 
@@ -160,7 +161,7 @@ namespace TabgInstaller.Gui.ViewModels
                 ModConfigService.WriteFixes(serverDir, fixes);
                 _saving = false;
 
-                StatusText = "Settings saved";
+                StatusText = Messages.SettingsSaved;
 
                 // Proximity Chat cfg
                 try
@@ -272,7 +273,7 @@ MinPlayers = {JuggMinPlayers.Trim()}
             catch (Exception ex)
             {
                 _saving = false;
-                StatusText = $"Error saving: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorSaving, ex.Message);
             }
         }
 
@@ -316,11 +317,11 @@ MinPlayers = {JuggMinPlayers.Trim()}
                     BanList = "";
                 }
 
-                StatusText = "Settings loaded";
+                StatusText = Messages.SettingsLoaded;
             }
             catch (Exception ex)
             {
-                StatusText = $"Error loading: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorLoading, ex.Message);
             }
 
             // Juggernaut Mode

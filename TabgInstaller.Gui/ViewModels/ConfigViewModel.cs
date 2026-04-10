@@ -7,6 +7,7 @@ using System.Threading;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -103,7 +104,7 @@ namespace TabgInstaller.Gui.ViewModels
 
                 var path = Path.Combine(serverDir, "game_settings.txt");
                 ConfigIO.WriteGameSettings(GameSettingsVm.ToModel(), path);
-                StatusText = "All changes saved";
+                StatusText = Messages.AllChangesSaved;
 
                 // Re-enable watcher after a short delay so the write event is ignored
                 var reenableTimer = new Timer(_ =>
@@ -118,7 +119,7 @@ namespace TabgInstaller.Gui.ViewModels
                 {
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        if (StatusText == "All changes saved")
+                        if (StatusText == Messages.AllChangesSaved)
                             StatusText = "";
                     });
                 }, null, 3000, Timeout.Infinite);
@@ -129,7 +130,7 @@ namespace TabgInstaller.Gui.ViewModels
             catch (Exception ex)
             {
                 _saving = false;
-                StatusText = $"Auto-save failed: {ex.Message}";
+                StatusText = string.Format(Messages.AutoSaveFailed, ex.Message);
                 if (_gameSettingsWatcher != null)
                     _gameSettingsWatcher.EnableRaisingEvents = true;
             }
@@ -166,7 +167,7 @@ namespace TabgInstaller.Gui.ViewModels
                             var updatedVm = new GameSettingsDynamicViewModel(gs, _validationService);
                             WireAutoSave(updatedVm);
                             GameSettingsVm = updatedVm;
-                            StatusText = "Settings reloaded from file";
+                            StatusText = Messages.SettingsReloaded;
                         }
                         catch (Exception ex)
                         {
@@ -198,7 +199,7 @@ namespace TabgInstaller.Gui.ViewModels
 
                 var path = Path.Combine(serverDir, "game_settings.txt");
                 ConfigIO.WriteGameSettings(GameSettingsVm.ToModel(), path);
-                StatusText = "Settings saved to file";
+                StatusText = Messages.SettingsSavedToFile;
 
                 var reenableTimer = new Timer(_ =>
                 {
@@ -212,7 +213,7 @@ namespace TabgInstaller.Gui.ViewModels
             catch (Exception ex)
             {
                 _saving = false;
-                _toast.Error($"Save failed: {ex.Message}");
+                _toast.Error(string.Format(Messages.SaveFailed, ex.Message));
             }
         }
 
@@ -226,7 +227,7 @@ namespace TabgInstaller.Gui.ViewModels
                 var path = Path.Combine(serverDir, "game_settings.txt");
                 if (!File.Exists(path))
                 {
-                    _toast.Warning("game_settings.txt not found. Save settings first to generate the file.");
+                    _toast.Warning(Messages.GameSettingsNotFound);
                     return;
                 }
                 Process.Start(new ProcessStartInfo
@@ -238,7 +239,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Could not open file: {ex.Message}");
+                _toast.Error(string.Format(Messages.CouldNotOpenFile, ex.Message));
             }
         }
 

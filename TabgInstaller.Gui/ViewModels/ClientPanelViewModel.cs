@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using TabgInstaller.Core;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -103,7 +104,7 @@ namespace TabgInstaller.Gui.ViewModels
             var pluginsDir = PluginsDir;
             if (string.IsNullOrEmpty(pluginsDir) || !Directory.Exists(pluginsDir))
             {
-                _toast.Warning("Run Initial Setup first.");
+                _toast.Warning(Messages.RunInitialSetupFirst);
                 return;
             }
 
@@ -114,7 +115,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed: {ex.Message}");
+                _toast.Error(string.Format(Messages.ErrorPrefix, ex.Message));
             }
         }
 
@@ -151,7 +152,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to toggle mod: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToToggleMod, ex.Message));
             }
         }
 
@@ -163,12 +164,12 @@ namespace TabgInstaller.Gui.ViewModels
 
             if (string.IsNullOrWhiteSpace(clientDir) || !Directory.Exists(clientDir))
             {
-                _toast.Warning("Please enter a valid TABG Steam folder path.");
+                _toast.Warning(Messages.EnterValidTabgPath);
                 return;
             }
             if (string.IsNullOrWhiteSpace(moddedDir))
             {
-                _toast.Warning("No modded folder path set.");
+                _toast.Warning(Messages.NoModdedFolderPath);
                 return;
             }
 
@@ -176,10 +177,10 @@ namespace TabgInstaller.Gui.ViewModels
                 File.Exists(Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe"));
 
             var msg = alreadyExists
-                ? $"Modded copy already exists at:\n{moddedDir}\n\nThis will re-copy game files and reinstall BepInEx. Your plugins in BepInEx/plugins will be kept.\n\nContinue?"
-                : $"This will copy TABG to:\n{moddedDir}\n\nThen install BepInEx so you can add client mods.\n\nContinue?";
+                ? string.Format(Messages.InitialClientSetupExisting, moddedDir)
+                : string.Format(Messages.InitialClientSetupNew, moddedDir);
 
-            if (MessageBox.Show(msg, "Initial Client Setup",
+            if (MessageBox.Show(msg, Messages.InitialClientSetupTitle,
                     MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
@@ -204,12 +205,12 @@ namespace TabgInstaller.Gui.ViewModels
                 }
                 else
                 {
-                    _toast.Error("Client setup failed.");
+                    _toast.Error(Messages.ClientSetupFailed);
                 }
             }
             catch (Exception ex)
             {
-                _toast.Error($"Error: {ex.Message}");
+                _toast.Error(string.Format(Messages.ErrorPrefix, ex.Message));
             }
             finally
             {
@@ -223,7 +224,7 @@ namespace TabgInstaller.Gui.ViewModels
             var pluginsDir = PluginsDir;
             if (string.IsNullOrEmpty(pluginsDir) || !Directory.Exists(pluginsDir))
             {
-                _toast.Warning("Run Initial Setup first to create the modded TABG copy.");
+                _toast.Warning(Messages.RunInitialSetupCopy);
                 return;
             }
 
@@ -240,12 +241,12 @@ namespace TabgInstaller.Gui.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    _toast.Error($"Failed to install {entry.Name}: {ex.Message}");
+                    _toast.Error(string.Format(Messages.FailedToInstallPlugin, entry.Name, ex.Message));
                 }
             }
 
             if (count > 0)
-                StatusText = $"Installed {count} mod(s).";
+                StatusText = string.Format(Messages.InstalledModCount, count);
 
             RefreshAll();
         }
@@ -255,7 +256,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             if (mod == null) return;
 
-            if (MessageBox.Show($"Remove {mod.Name}?", "Confirm",
+            if (MessageBox.Show(string.Format(Messages.ConfirmRemove, mod.Name), Messages.ConfirmTitle,
                     MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
 
@@ -273,7 +274,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed: {ex.Message}");
+                _toast.Error(string.Format(Messages.ErrorPrefix, ex.Message));
             }
         }
 
@@ -287,7 +288,7 @@ namespace TabgInstaller.Gui.ViewModels
             var exe = Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe");
             if (!File.Exists(exe))
             {
-                _toast.Warning("Modded TABG not found. Run Initial Setup first.");
+                _toast.Warning(Messages.ModdedTabgNotFound);
                 return;
             }
             try
@@ -301,7 +302,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to launch: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToLaunch, ex.Message));
             }
         }
 

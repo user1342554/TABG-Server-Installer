@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using TabgInstaller.Core;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -51,12 +52,12 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrEmpty(serverDir))
             {
-                _toast.Warning("No server directory set. Please install/select a server first.");
+                _toast.Warning(Messages.NoServerDirectorySet);
                 return;
             }
             if (preset == null)
             {
-                _toast.Warning("Please select a template to apply.");
+                _toast.Warning(Messages.SelectTemplate);
                 return;
             }
 
@@ -106,7 +107,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             if (string.IsNullOrEmpty(SelectedPreset))
             {
-                _toast.Warning("Please select a preset to load.");
+                _toast.Warning(Messages.SelectPresetToLoad);
                 return;
             }
 
@@ -137,7 +138,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             if (string.IsNullOrEmpty(SelectedPreset))
             {
-                _toast.Warning("Please select a preset to delete.");
+                _toast.Warning(Messages.SelectPresetToDelete);
                 return;
             }
 

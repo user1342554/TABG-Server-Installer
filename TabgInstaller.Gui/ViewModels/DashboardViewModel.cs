@@ -8,6 +8,7 @@ using System.Timers;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Model;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -22,7 +23,7 @@ namespace TabgInstaller.Gui.ViewModels
         private Timer? _refreshTimer;
 
         [ObservableProperty] private string _previewText = "";
-        [ObservableProperty] private string _startStopButtonText = "Start Server";
+        [ObservableProperty] private string _startStopButtonText = Strings.StartServer;
         [ObservableProperty] private string _serverPath = "";
         [ObservableProperty] private ObservableCollection<ServerHealthCardData> _healthCards = new();
 
@@ -73,7 +74,7 @@ namespace TabgInstaller.Gui.ViewModels
         private void RefreshPreview()
         {
             PreviewText = _activeInstance.ProcessService.GetRecentText(20);
-            StartStopButtonText = _activeInstance.ProcessService.IsRunning ? "Stop Server" : "Start Server";
+            StartStopButtonText = _activeInstance.ProcessService.IsRunning ? Strings.StopServer : Strings.StartServer;
             OnPropertyChanged(nameof(IsServerRunning));
             RefreshHealthCards();
         }
@@ -140,13 +141,13 @@ namespace TabgInstaller.Gui.ViewModels
             var moddedDir = settings.ClientModdedPath;
             if (string.IsNullOrEmpty(moddedDir))
             {
-                _toast.Warning("Client mods not set up. Go to the Client Mods tab first.");
+                _toast.Warning(Messages.ClientModsNotSetUp);
                 return;
             }
             var exe = Path.Combine(moddedDir, "TotallyAccurateBattlegrounds.exe");
             if (!File.Exists(exe))
             {
-                _toast.Warning("Modded TABG not found. Install client mods first.");
+                _toast.Warning(Messages.ModdedTabgNotFoundClient);
                 return;
             }
             try
@@ -160,7 +161,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to launch: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToLaunch, ex.Message));
             }
         }
 

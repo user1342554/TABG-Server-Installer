@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -39,13 +40,13 @@ namespace TabgInstaller.Gui.ViewModels
 
             if (entered != Password)
             {
-                ErrorText = "Incorrect password.";
+                ErrorText = Messages.IncorrectPassword;
                 return;
             }
 
             var result = MessageBox.Show(
-                "Password correct. Enter Sigma mode?",
-                "Super Secret",
+                Messages.PasswordCorrectPrompt,
+                Messages.SuperSecretTitle,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
@@ -57,7 +58,7 @@ namespace TabgInstaller.Gui.ViewModels
             try
             {
                 EnterButtonEnabled = false;
-                EnterButtonContent = "Starting Sigma Mode...";
+                EnterButtonContent = Messages.StartingSigma;
                 StopButtonVisible = false;
                 InfoText = "";
                 DebugText = "";
@@ -70,33 +71,33 @@ namespace TabgInstaller.Gui.ViewModels
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
                         if (msg.Contains("Music"))
-                            EnterButtonContent = "Playing Music...";
+                            EnterButtonContent = Messages.PlayingMusic;
                         else if (msg.Contains("TABG") && msg.Contains("Launch"))
-                            EnterButtonContent = "Launching TABG...";
+                            EnterButtonContent = Messages.LaunchingTabg;
                         else if (msg.Contains("fans"))
-                            EnterButtonContent = "Setting Fans...";
+                            EnterButtonContent = Messages.SettingFans;
                         else if (msg.Contains("overlay"))
-                            EnterButtonContent = "Creating Overlays...";
+                            EnterButtonContent = Messages.CreatingOverlays;
                         else if (msg.Contains("engaged"))
                         {
-                            EnterButtonContent = "Scanning for TABG...";
+                            EnterButtonContent = Messages.ScanningForTabg;
                             StopButtonVisible = true;
-                            InfoText = "Music and black screen active. Waiting for TABG to reach main menu...";
+                            InfoText = Messages.WaitingForMainMenu;
                         }
                         else if (msg.Contains("process found"))
                         {
-                            EnterButtonContent = "TABG Loading...";
-                            InfoText = "TABG process started! Waiting for main menu to load...";
+                            EnterButtonContent = Messages.TabgLoading;
+                            InfoText = Messages.TabgProcessStarted;
                         }
                         else if (msg.Contains("window detected"))
                         {
-                            EnterButtonContent = "TABG Window Found...";
-                            InfoText = "TABG window visible! Waiting for main menu...";
+                            EnterButtonContent = Messages.TabgWindowFound;
+                            InfoText = Messages.TabgWindowVisible;
                         }
                         else if (msg.Contains("main menu should be loaded"))
                         {
-                            EnterButtonContent = "Main Menu Ready!";
-                            InfoText = "TABG main menu loaded! Stopping Sigma Mode...";
+                            EnterButtonContent = Messages.MainMenuReady;
+                            InfoText = Messages.TabgMainMenuLoaded;
                             StopButtonVisible = false;
                         }
 
@@ -111,13 +112,13 @@ namespace TabgInstaller.Gui.ViewModels
                 var success = await _sigmaMode.StartSigmaModeAsync();
 
                 if (success)
-                    _toast.Success("Sigma Mode completed successfully!");
+                    _toast.Success(Messages.SigmaModeCompleted);
                 else
-                    _toast.Warning("Sigma Mode completed with issues. Check the log for details.");
+                    _toast.Warning(Messages.SigmaModeIssues);
             }
             catch (Exception ex)
             {
-                _toast.Error($"Sigma Mode error: {ex.Message}");
+                _toast.Error(string.Format(Messages.SigmaModeError, ex.Message));
             }
             finally
             {
@@ -139,9 +140,9 @@ namespace TabgInstaller.Gui.ViewModels
                 return;
 
             IsRunning = false;
-            EnterButtonContent = "Force Stopping...";
+            EnterButtonContent = Messages.ForceStoppingLabel;
             StopButtonVisible = false;
-            InfoText = "Force stopping Sigma Mode...";
+            InfoText = Messages.ForceStopping;
             DebugText = "Manual stop requested";
 
             _sigmaMode.RequestEmergencyExit();

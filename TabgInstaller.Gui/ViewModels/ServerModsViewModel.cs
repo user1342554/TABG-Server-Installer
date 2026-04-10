@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using TabgInstaller.Core;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -95,7 +96,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Error loading plugins: {ex.Message}");
+                _toast.Error(string.Format(Messages.ErrorLoadingPlugins, ex.Message));
             }
         }
 
@@ -178,7 +179,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to toggle plugin: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToTogglePlugin, ex.Message));
             }
         }
 
@@ -200,12 +201,12 @@ namespace TabgInstaller.Gui.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    _toast.Error($"Failed to install {entry.Name}: {ex.Message}");
+                    _toast.Error(string.Format(Messages.FailedToInstallPlugin, entry.Name, ex.Message));
                 }
             }
 
             if (count > 0)
-                StatusText = $"Installed {count} plugin(s).";
+                StatusText = string.Format(Messages.InstalledPluginCount, count);
 
             RefreshAll();
         }
@@ -216,7 +217,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (entry == null) return;
 
             var result = System.Windows.MessageBox.Show(
-                $"Remove {entry.Name}?", "Confirm",
+                string.Format(Messages.ConfirmRemove, entry.Name), Messages.ConfirmTitle,
                 System.Windows.MessageBoxButton.YesNo);
 
             if (result != System.Windows.MessageBoxResult.Yes) return;
@@ -235,7 +236,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to remove plugin: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToRemovePlugin, ex.Message));
             }
         }
 
@@ -263,7 +264,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to add plugin: {ex.Message}");
+                _toast.Error(string.Format(Messages.FailedToAddPlugin, ex.Message));
             }
         }
 

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -81,7 +82,7 @@ namespace TabgInstaller.Gui.ViewModels
             var names = _knownPlayers.GetPlayerNames();
             KnownPlayerNames = new ObservableCollection<string>(names);
             if (count > 0)
-                StatusText = $"Found {names.Count} known players ({count} new)";
+                StatusText = string.Format(Messages.FoundKnownPlayers, names.Count, count);
         }
 
         private void LoadAdmins()
@@ -109,11 +110,11 @@ namespace TabgInstaller.Gui.ViewModels
                         PermLevel = p.PermLevel
                     });
                 }
-                StatusText = $"Loaded {Admins.Count} admin(s)";
+                StatusText = string.Format(Messages.LoadedAdmins, Admins.Count);
             }
             catch (Exception ex)
             {
-                StatusText = $"Error loading: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorLoading, ex.Message);
             }
         }
 
@@ -123,27 +124,27 @@ namespace TabgInstaller.Gui.ViewModels
             var playerName = SelectedPlayerName?.Trim();
             if (string.IsNullOrEmpty(playerName))
             {
-                _toast.Warning("Please select or type a player name.");
+                _toast.Warning(Messages.SelectOrTypePlayer);
                 return;
             }
 
             var epicId = _knownPlayers.ResolveEpicId(playerName);
             if (epicId == null)
             {
-                _toast.Warning($"Player '{playerName}' not found in Guestbooks. Use manual entry below.");
+                _toast.Warning(string.Format(Messages.PlayerNotFound, playerName));
                 return;
             }
 
             if (Admins.Any(a => a.EpicId.Equals(epicId, StringComparison.OrdinalIgnoreCase)))
             {
-                _toast.Warning($"'{playerName}' is already an admin.");
+                _toast.Warning(string.Format(Messages.AlreadyAdmin, playerName));
                 return;
             }
 
             var level = SelectedPermLevel + 1;
             Admins.Add(new AdminEntry { Name = playerName, EpicId = epicId, PermLevel = level });
             SelectedPlayerName = "";
-            StatusText = $"Added {playerName}";
+            StatusText = string.Format(Messages.AddedPlayer, playerName);
         }
 
         [RelayCommand]
@@ -155,27 +156,27 @@ namespace TabgInstaller.Gui.ViewModels
 
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(epicId))
             {
-                _toast.Warning("Please enter both a name and an Epic ID.");
+                _toast.Warning(Messages.EnterNameAndEpicId);
                 return;
             }
 
             if (Admins.Any(a => a.EpicId.Equals(epicId, StringComparison.OrdinalIgnoreCase)))
             {
-                _toast.Warning($"'{name}' is already an admin.");
+                _toast.Warning(string.Format(Messages.AlreadyAdmin, name));
                 return;
             }
 
             Admins.Add(new AdminEntry { Name = name, EpicId = epicId, PermLevel = level });
             ManualName = "";
             ManualEpicId = "";
-            StatusText = $"Added {name} (manual)";
+            StatusText = string.Format(Messages.AddedManual, name);
         }
 
         [RelayCommand]
         private void RemoveAdmin(AdminEntry entry)
         {
             Admins.Remove(entry);
-            StatusText = $"Removed {entry.Name}";
+            StatusText = string.Format(Messages.RemovedPlayer, entry.Name);
         }
 
         [RelayCommand]
@@ -195,7 +196,7 @@ namespace TabgInstaller.Gui.ViewModels
                     new PlayerPermsRoot
                     {
                         Name = "players",
-                        Description = "List of players with modified permission level. Default permission level is 0.",
+                        Description = Messages.AdminJsonDescription,
                         Players = players
                     }
                 };
@@ -203,12 +204,12 @@ namespace TabgInstaller.Gui.ViewModels
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 var json = JsonSerializer.Serialize(root, options);
                 File.WriteAllText(GetPermsPath(), json);
-                _toast.Success("Admins saved. Restart server to apply changes.");
-                StatusText = $"Saved {Admins.Count} admin(s)";
+                _toast.Success(Messages.AdminsSaved);
+                StatusText = string.Format(Messages.SavedAdmins, Admins.Count);
             }
             catch (Exception ex)
             {
-                _toast.Error($"Failed to save admins: {ex.Message}");
+                _toast.Error(string.Format(Messages.AdminSaveFailed, ex.Message));
             }
         }
 
@@ -216,7 +217,7 @@ namespace TabgInstaller.Gui.ViewModels
         private void RefreshPlayers()
         {
             RefreshKnownPlayers();
-            _toast.Info($"Scanned Guestbooks — {_knownPlayers.Players.Count} players known");
+            _toast.Info(string.Format(Messages.ScannedGuestbooks, _knownPlayers.Players.Count));
         }
     }
 }

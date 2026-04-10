@@ -8,6 +8,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
 
 namespace TabgInstaller.Gui.ViewModels
@@ -97,7 +98,7 @@ namespace TabgInstaller.Gui.ViewModels
             var serverDir = _serverPathProvider.ServerPath;
             if (string.IsNullOrEmpty(serverDir))
             {
-                _toast.Warning("Server path is not set.");
+                _toast.Warning(Messages.ServerPathNotSet);
                 return;
             }
 
@@ -130,12 +131,12 @@ namespace TabgInstaller.Gui.ViewModels
                 ConfigIO.WriteGameSettings(gs, gsPath);
                 _saving = false;
 
-                StatusText = "Settings saved.";
+                StatusText = Messages.SettingsSaved;
             }
             catch (Exception ex)
             {
                 _saving = false;
-                StatusText = $"Error saving: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorSaving, ex.Message);
             }
         }
 
@@ -149,7 +150,7 @@ namespace TabgInstaller.Gui.ViewModels
             SelectedLocation = loc.LobbySpawn;
             UseCustomSpawn = true;
             MatchSpawns = SpawnPointsToMultiline(loc.MatchSpawns);
-            StatusText = $"Applied location: {loc.Name}";
+            StatusText = string.Format(Messages.AppliedLocation, loc.Name);
         }
 
         [RelayCommand]
@@ -158,7 +159,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (SelectedSpawnLocation != null)
                 RingSizes = $"{SelectedSpawnLocation.RingSize}, {SelectedSpawnLocation.RingSize}, {SelectedSpawnLocation.RingSize}";
             RingSpeeds = "0.001, 50, 0.001";
-            StatusText = "Applied deathmatch ring preset.";
+            StatusText = Messages.AppliedDeathmatch;
         }
 
         [RelayCommand]
@@ -166,7 +167,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             RingSizes = "4240.0, 3450.0, 1710.0";
             RingSpeeds = "120, 120, 150";
-            StatusText = "Applied standard BR ring preset.";
+            StatusText = Messages.AppliedStandardBR;
         }
 
         // ── Static helpers ───────────────────────────────────────────────────────
@@ -219,11 +220,11 @@ namespace TabgInstaller.Gui.ViewModels
                 var spawnPoints = ModConfigService.ReadSpawnPoints(serverDir);
                 MatchSpawns = SpawnPointsToMultiline(spawnPoints);
 
-                StatusText = "Settings loaded.";
+                StatusText = Messages.SettingsLoaded;
             }
             catch (Exception ex)
             {
-                StatusText = $"Error loading: {ex.Message}";
+                StatusText = string.Format(Messages.ErrorLoading, ex.Message);
             }
         }
 
@@ -282,7 +283,7 @@ namespace TabgInstaller.Gui.ViewModels
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Where(l => !string.IsNullOrWhiteSpace(l))
                 .ToArray();
-            SpawnCountText = $"{lines.Length} spawn point(s)";
+            SpawnCountText = string.Format(Messages.SpawnPointCount, lines.Length);
         }
 
         // ── IDisposable ──────────────────────────────────────────────────────────
