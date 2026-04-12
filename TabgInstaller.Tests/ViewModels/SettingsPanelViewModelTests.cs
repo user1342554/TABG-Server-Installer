@@ -14,6 +14,12 @@ namespace TabgInstaller.Tests.ViewModels
         private readonly Mock<IServerPathProvider> _serverPath = new();
         private readonly Mock<IThemeService> _themeService = new();
 
+        public SettingsPanelViewModelTests()
+        {
+            // Default setup so the constructor doesn't NRE on settings.Language
+            _appSettings.Setup(a => a.Load()).Returns(new AppSettings());
+        }
+
         private SettingsPanelViewModel CreateSut() =>
             new(_appSettings.Object, _navigation.Object, _serverPath.Object, _themeService.Object);
 
