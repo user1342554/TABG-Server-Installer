@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-12T15:01:09Z",
+  "generatedAt": "2026-04-12T15:04:53Z",
   "plugins": [
     {
       "id": "BigSmoke",
       "name": "BigSmokeGrenade",
       "version": "1.0.0",
       "description": "Giant purple smoke grenades (/give 208).",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.CustomGrenades.dll"
@@ -62,7 +62,7 @@
       "name": "TABGCommunityServer",
       "version": "1.0.0",
       "description": "Community server browser integration for custom servers.",
-      "author": "TABG Modding Team",
+      "author": "JIBSIL",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TABGCommunityServer.dll"
@@ -86,7 +86,7 @@
       "name": "Coords Display",
       "version": "1.0.0",
       "description": "Press F5 to show your X/Y/Z position on screen.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.CoordsDisplay.dll"
@@ -111,7 +111,7 @@
       "name": "Custom Grenades (Client)",
       "version": "1.0.0",
       "description": "BigSmokeGrenade + MGLFlashbang visual effects on the client side.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.CustomGrenades.dll"
@@ -136,7 +136,7 @@
       "name": "CustomSpawnpoints",
       "version": "1.0.0",
       "description": "Custom spawn points for maps and game modes.",
-      "author": "TABG Modding Team",
+      "author": "Freddo",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "CustomSpawnpoints.dll"
@@ -164,7 +164,7 @@
       "name": "Enhanced TABG",
       "version": "1.0.0",
       "description": "Infinite LOD (F1), HUD toggle (F2), fog removal (F3) for better visuals.",
-      "author": "TABG Modding Team",
+      "author": "Freddo",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "Enhanced TABG.dll"
@@ -189,7 +189,7 @@
       "name": "FakePlayers",
       "version": "1.0.0",
       "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.FakePlayers.dll"
@@ -216,7 +216,7 @@
       "name": "FlyingControls",
       "version": "1.0.0",
       "description": "Steer Helicopters, UFOs, and Hover vehicles with W/S/A/D + Space.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.FlyingControls.dll"
@@ -241,7 +241,7 @@
       "name": "FreddoTABGCommission",
       "version": "1.0.0",
       "description": "Curses, grenades on kill, ban system, and other server enhancements.",
-      "author": "TABG Modding Team",
+      "author": "Freddo",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "FreddoTABGCommission.dll"
@@ -269,7 +269,7 @@
       "name": "Hunt Mode (4v1)",
       "version": "1.0.0",
       "description": "1 Killer vs 4 Survivors asymmetric survival game mode.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.HuntMode.dll",
@@ -300,7 +300,7 @@
       "name": "Hunt Mode Client",
       "version": "1.0.0",
       "description": "HUD, perk selection, and ability UI for Hunt Mode.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.HuntMode.Client.dll",
@@ -326,7 +326,7 @@
       "name": "Juggernaut Mode Client",
       "version": "1.0.0",
       "description": "Boss bar, loadout picker, and scoreboard UI for Juggernaut Mode.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "JuggernautMode.Client.dll"
@@ -351,7 +351,7 @@
       "name": "Juggernaut Mode",
       "version": "1.0.0",
       "description": "One massive player vs everyone else, score-based game mode.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "JuggernautMode.Server.dll"
@@ -379,7 +379,7 @@
       "name": "MGLFlashbang",
       "version": "1.0.0",
       "description": "MGL grenade launcher shoots flashbang rounds instead.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.CustomGrenades.dll"
@@ -407,7 +407,7 @@
       "name": "MatchAndPreMatchTimeout",
       "version": "1.0.0",
       "description": "Configurable match and pre-match timing controls.",
-      "author": "TABG Modding Team",
+      "author": "ContagiouslyStupid",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "MatchAndPreMatchTimeout.dll"
@@ -433,7 +433,7 @@
       "name": "Mod Settings",
       "version": "1.0.0",
       "description": "In-game settings menu for all installed mods (press # to open).",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.ModSettings.dll"
@@ -458,7 +458,7 @@
       "name": "Pop-up Blocker",
       "version": "1.0.0",
       "description": "Disable anti-cheat popups when connecting to custom modded servers.",
-      "author": "TABG Modding Team",
+      "author": "Freddo",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "Pop-up Blocker.dll"
@@ -482,7 +482,7 @@
       "name": "ProximityChat Server",
       "version": "1.0.0",
       "description": "Proximity-based voice chat for custom servers (server-side component).",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.ProximityChat.Server.dll"
@@ -511,7 +511,7 @@
       "name": "Proximity Chat (Client)",
       "version": "1.0.0",
       "description": "Client-side proximity voice chat for custom servers.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.ProximityChat.Client.dll"
@@ -536,7 +536,7 @@
       "name": "ServerLogger",
       "version": "1.0.0",
       "description": "Player join/leave and event logging for server administration.",
-      "author": "TABG Modding Team",
+      "author": "ContagiouslyStupid",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "ServerLogger.dll"
@@ -562,7 +562,7 @@
       "name": "SoloTesting",
       "version": "1.0.0",
       "description": "Prevents 'You Win' screen when testing a server alone.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.SoloTesting.dll"
@@ -617,7 +617,7 @@
       "name": "StarterPackFixes",
       "version": "1.0.0",
       "description": "Loot drop control and fixes for StarterPack.",
-      "author": "TABG Modding Team",
+      "author": "Freddo",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "StarterPackFixes.dll"
@@ -645,7 +645,7 @@
       "name": "TABGVR",
       "version": "1.0.0",
       "description": "Play TABG in Virtual Reality (requires VR headset).",
-      "author": "TABG Modding Team",
+      "author": "RedBigz",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TABGVR.dll"
@@ -669,7 +669,7 @@
       "name": "TABGVR Server",
       "version": "1.0.0",
       "description": "VR hand sync support for VR players on your server.",
-      "author": "TABG Modding Team",
+      "author": "RedBigz",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TABGVR.Server.CitrusLib.dll"
@@ -697,7 +697,7 @@
       "name": "UnusedVehicles",
       "version": "1.0.0",
       "description": "Spawn cut vehicles: Helicopter, UFO, Mustang, VW Bus, HoverBike.",
-      "author": "TABG Modding Team",
+      "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.UnusedVehicles.dll"
@@ -723,7 +723,7 @@
       "name": "VoteToStart",
       "version": "1.0.0",
       "description": "Players vote to start the match instead of waiting for auto-start.",
-      "author": "TABG Modding Team",
+      "author": "ContagiouslyStupid",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "VoteToStart.dll"
