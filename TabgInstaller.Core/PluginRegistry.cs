@@ -32,9 +32,8 @@ namespace TabgInstaller.Core
 
     /// <summary>
     /// Single source of truth for all server plugin and client mod definitions.
-    /// Loads dynamically from the online registry when available, with hardcoded
-    /// fallback for offline use. Both <c>InstallerPanel</c> and <c>SetupWizardWindow</c>
-    /// consume these arrays.
+    /// Loaded dynamically from the online registry at startup. Both
+    /// <c>InstallerPanel</c> and <c>SetupWizardWindow</c> consume these arrays.
     /// </summary>
     public static class PluginRegistry
     {
@@ -46,8 +45,8 @@ namespace TabgInstaller.Core
 
         static PluginRegistry()
         {
-            _serverPlugins = HardcodedServerPlugins;
-            _clientMods = HardcodedClientMods;
+            _serverPlugins = Array.Empty<PluginDefinition>();
+            _clientMods = Array.Empty<PluginDefinition>();
         }
 
         /// <summary>Current server plugin definitions (from registry or hardcoded fallback).</summary>
@@ -142,127 +141,5 @@ namespace TabgInstaller.Core
                 ?? Array.Find(_clientMods, p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         }
 
-        // ── Hardcoded Fallback (used when offline) ──────────────────────
-
-        private static readonly PluginDefinition[] HardcodedServerPlugins =
-        {
-            new("Citruslib",
-                "Citruslib \u2014 Core server library (admin, permissions, commands)",
-                Array.Empty<string>(), true, PluginKind.CoreDependency),
-
-            new("StarterPack",
-                "StarterPack \u2014 Match mechanics, loadouts, win conditions",
-                Array.Empty<string>(), true, PluginKind.CoreDependency),
-
-            new("StarterPackFixes",
-                "StarterPackFixes \u2014 Loot drop control",
-                new[] { "StarterPackFixes.dll" }, true, PluginKind.Bundled),
-
-            new("CustomSpawnpoints",
-                "CustomSpawnpoints \u2014 Custom spawn points",
-                new[] { "CustomSpawnpoints.dll" }, true, PluginKind.Bundled),
-
-            new("FreddoCommission",
-                "FreddoTABGCommission \u2014 Curses, grenades on kill, bans",
-                new[] { "FreddoTABGCommission.dll" }, true, PluginKind.Bundled),
-
-            new("MatchTimeout",
-                "MatchAndPreMatchTimeout \u2014 Match timing",
-                new[] { "MatchAndPreMatchTimeout.dll" }, true, PluginKind.Bundled),
-
-            new("ServerLogger",
-                "ServerLogger \u2014 Player logging",
-                new[] { "ServerLogger.dll" }, true, PluginKind.Bundled),
-
-            new("VoteToStart",
-                "VoteToStart \u2014 Vote-to-start",
-                new[] { "VoteToStart.dll" }, true, PluginKind.Bundled),
-
-            new("UnusedVehicles",
-                "UnusedVehicles \u2014 Spawn cut vehicles (Heli, UFO, Mustang, VW, HoverBike)",
-                new[] { "TabgInstaller.UnusedVehicles.dll" }, true, PluginKind.Bundled),
-
-            new("BigSmoke",
-                "BigSmokeGrenade \u2014 Giant purple smoke grenades (/give 208)",
-                new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
-
-            new("MGLFlashbang",
-                "MGLFlashbang \u2014 MGL shoots flashbang rounds",
-                new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
-
-            new("SoloTesting",
-                "SoloTesting \u2014 Prevents 'You Win' when testing alone",
-                new[] { "TabgInstaller.SoloTesting.dll" }, false, PluginKind.Bundled),
-
-            new("CommunityServer",
-                "TABGCommunityServer \u2014 Community server",
-                Array.Empty<string>(), false, PluginKind.CommunityServer),
-
-            new("ProximityChat",
-                "ProximityChat \u2014 Proximity voice chat",
-                new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled,
-                RequiresClientMod: true),
-
-            new("HuntMode",
-                "Hunt Mode (4v1) \u2014 1 Killer vs 4 Survivors survival",
-                new[] { "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled,
-                RequiresClientMod: true),
-
-            new("JuggernautMode",
-                "Juggernaut Mode \u2014 One massive player vs everyone, score-based",
-                new[] { "JuggernautMode.Server.dll" }, false, PluginKind.Bundled),
-
-            new("TabgVR",
-                "TABGVR Server \u2014 VR hand sync for VR players",
-                new[] { "TABGVR.Server.CitrusLib.dll" }, false, PluginKind.Bundled,
-                RequiresClientMod: true),
-
-            new("FakePlayers",
-                "FakePlayers \u2014 Spawn dummy players for solo testing (/spawndummy, /removedummy)",
-                new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
-        };
-
-        private static readonly PluginDefinition[] HardcodedClientMods =
-        {
-            new("FlyingControls",
-                "FlyingControls \u2014 Steer Helicopters, UFOs, Hover vehicles (W/S/A/D + Space)",
-                new[] { "TabgInstaller.FlyingControls.dll" }, true, PluginKind.Bundled),
-
-            new("EnhancedTABG",
-                "Enhanced TABG \u2014 Infinite LOD (F1), HUD toggle (F2), fog removal (F3)",
-                new[] { "Enhanced TABG.dll" }, true, PluginKind.Bundled),
-
-            new("CustomGrenades",
-                "BigSmokeGrenade + MGLFlashbang \u2014 Custom grenade effects",
-                new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
-
-            new("CoordsDisplay",
-                "Coords Display \u2014 Press F5 to show your X/Y/Z position",
-                new[] { "TabgInstaller.CoordsDisplay.dll" }, true, PluginKind.Bundled),
-
-            new("ModSettings",
-                "Mod Settings \u2014 In-game settings menu for all mods (press #)",
-                new[] { "TabgInstaller.ModSettings.dll" }, true, PluginKind.Bundled),
-
-            new("PopupBlocker",
-                "Pop-up Blocker \u2014 Disable anti-cheat popups for custom servers",
-                new[] { "Pop-up Blocker.dll" }, true, PluginKind.Bundled),
-
-            new("ProximityChatClient",
-                "Proximity Chat \u2014 Proximity voice chat for custom servers",
-                new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
-
-            new("HuntModeClient",
-                "Hunt Mode Client \u2014 HUD and perk selection UI",
-                new[] { "TabgInstaller.HuntMode.Client.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled),
-
-            new("JuggernautClient",
-                "Juggernaut Mode Client \u2014 Boss bar, loadout picker, scoreboard",
-                new[] { "JuggernautMode.Client.dll" }, false, PluginKind.Bundled),
-
-            new("TabgVR-Client",
-                "TABGVR \u2014 Play TABG in Virtual Reality (requires VR headset)",
-                new[] { "TABGVR.dll" }, false, PluginKind.Bundled),
-        };
     }
 }

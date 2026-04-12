@@ -10,9 +10,7 @@ namespace TabgInstaller.Gui.ViewModels
         Available,
         Installed,
         UpdateAvailable,
-        Incompatible,
-        /// <summary>Plugin ships with the installer — no download needed.</summary>
-        BuiltIn
+        Incompatible
     }
 
     public partial class PluginCardViewModel : ObservableObject
@@ -38,27 +36,11 @@ namespace TabgInstaller.Gui.ViewModels
         public string DependenciesText => string.Join(", ", Manifest.Dependencies);
         public bool HasChangelog => !string.IsNullOrEmpty(Manifest.Changelog);
 
-        /// <summary>True for bundled/core plugins that ship with the installer.</summary>
-        public bool IsBuiltIn => InstallStatus == PluginInstallStatus.BuiltIn;
-
-        /// <summary>True for community plugins that can be installed/uninstalled/pinned.</summary>
-        public bool IsManageable => !IsBuiltIn;
-
         public PluginCardViewModel(PluginManifest manifest, InstalledPluginEntry? installed, string currentInstallerVersion)
         {
             Manifest = manifest;
             _isPinned = installed?.Pinned ?? false;
             _isInstalled = installed != null;
-
-            // Bundled / core-dependency / community-server plugins ship with the installer
-            if (manifest.Kind == "bundled" || manifest.Kind == "core-dependency" || manifest.Kind == "community-server")
-            {
-                _installStatus = PluginInstallStatus.BuiltIn;
-                _actionButtonText = "Built-in";
-                _isActionEnabled = false;
-                _isInstalled = true;
-                return;
-            }
 
             // Determine compatibility
             if (!IsCompatible(manifest, currentInstallerVersion, out var reason))
@@ -104,10 +86,6 @@ namespace TabgInstaller.Gui.ViewModels
         private static bool IsCompatible(PluginManifest manifest, string currentInstallerVersion, out string reason)
         {
             reason = "";
-
-            // Bundled and core-dependency plugins ship with the installer — always compatible
-            if (manifest.Kind == "bundled" || manifest.Kind == "core-dependency" || manifest.Kind == "community-server")
-                return true;
 
             if (!string.IsNullOrEmpty(manifest.MinInstallerVersion)
                 && CompareVersions(currentInstallerVersion, manifest.MinInstallerVersion) < 0)

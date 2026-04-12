@@ -113,28 +113,38 @@ namespace TabgInstaller.Gui
             if (themeService.IsHighContrast)
                 themeService.SetHighContrast(true);
 
-            // Load plugin registry from cache (instant), then refresh from network in background
+            // Load plugin registry — this is the single source of truth for all plugin definitions
             try
             {
                 var registryService = _host.Services.GetRequiredService<IRegistryService>();
                 var cached = registryService.GetCachedRegistry();
-                if (cached?.Plugins != null)
+                if (cached?.Plugins != null && cached.Plugins.Count > 0)
+                {
                     PluginRegistry.LoadFromManifests(cached.Plugins);
 
-                // Fire-and-forget: refresh registry from network for next session
-                _ = System.Threading.Tasks.Task.Run(async () =>
+                    // Refresh from network in background for next session
+                    _ = System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var fresh = await registryService.FetchRegistryAsync();
+                            if (fresh?.Plugins != null)
+                                PluginRegistry.LoadFromManifests(fresh.Plugins);
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.TraceError($"[App] Background registry refresh failed: {ex}");
+                        }
+                    });
+                }
+                else
                 {
-                    try
-                    {
-                        var fresh = await registryService.FetchRegistryAsync();
-                        if (fresh?.Plugins != null)
-                            PluginRegistry.LoadFromManifests(fresh.Plugins);
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.TraceError($"[App] Background registry refresh failed: {ex}");
-                    }
-                });
+                    // No cache — must fetch from network before UI loads
+                    var fresh = System.Threading.Tasks.Task.Run(
+                        () => registryService.FetchRegistryAsync()).Result;
+                    if (fresh?.Plugins != null)
+                        PluginRegistry.LoadFromManifests(fresh.Plugins);
+                }
             }
             catch (Exception regEx)
             {

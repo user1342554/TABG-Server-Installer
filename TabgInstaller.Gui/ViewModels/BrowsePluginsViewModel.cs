@@ -185,7 +185,7 @@ namespace TabgInstaller.Gui.ViewModels
         [RelayCommand]
         private async Task UninstallPluginAsync(PluginCardViewModel card)
         {
-            if (!card.IsInstalled || card.IsBuiltIn) return;
+            if (!card.IsInstalled) return;
 
             var serverRoot = _activeInstance.ServerPath;
             var clientPath = _appSettings.Load().ClientModdedPath;

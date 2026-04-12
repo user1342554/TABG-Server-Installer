@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using Xunit;
@@ -22,6 +23,13 @@ namespace TabgInstaller.Tests.Services
             _communityDir = Path.Combine(_tempDir, "BepInEx", "plugins", "community");
             Directory.CreateDirectory(_communityDir);
             _tracker = new InstalledPluginTracker(_tempDir);
+
+            // Ensure PluginRegistry has the Citruslib entry for bundled-dep test
+            PluginRegistry.LoadFromManifests(new List<PluginManifest>
+            {
+                new() { Id = "Citruslib", Name = "Citruslib", Description = "Core server library",
+                    Kind = "core-dependency", Type = "server", DllNames = Array.Empty<string>() },
+            });
         }
 
         public void Dispose()

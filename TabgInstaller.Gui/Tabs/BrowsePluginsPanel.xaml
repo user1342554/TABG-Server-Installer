@@ -187,28 +187,19 @@
                                Visibility="{Binding HasChangelog, Converter={StaticResource BoolToVisibility}}"/>
 
                     <StackPanel Margin="0,12,0,0">
-                        <!-- Built-in notice for bundled plugins -->
-                        <TextBlock Text="Included with installer — managed via the Installer tab."
-                                   FontSize="11" FontStyle="Italic" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Visibility="{Binding IsBuiltIn, Converter={StaticResource BoolToVisibility}}"
-                                   Margin="0,0,0,8"/>
-
-                        <!-- Action buttons only for community plugins -->
                         <Button Content="{Binding ActionButtonText}" IsEnabled="{Binding IsActionEnabled}"
                                 Command="{Binding DataContext.InstallOrUpdateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 CommandParameter="{Binding}"
-                                Visibility="{Binding IsManageable, Converter={StaticResource BoolToVisibility}}"
                                 Margin="0,0,0,4" HorizontalAlignment="Stretch"/>
                         <Button Content="{x:Static res:Strings.Uninstall}"
                                 Command="{Binding DataContext.UninstallPluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 CommandParameter="{Binding}"
-                                Visibility="{Binding IsManageable, Converter={StaticResource BoolToVisibility}}"
+                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}"
                                 Margin="0,0,0,4" HorizontalAlignment="Stretch"/>
                         <CheckBox Content="Pin version" IsChecked="{Binding IsPinned}"
                                   Command="{Binding DataContext.TogglePinCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                   CommandParameter="{Binding}"
-                                  Visibility="{Binding IsManageable, Converter={StaticResource BoolToVisibility}}"
+                                  Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}"
                                   Margin="0,4,0,4"/>
                     </StackPanel>
                 </StackPanel>
