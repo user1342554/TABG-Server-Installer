@@ -157,14 +157,22 @@ namespace TabgInstaller.Core.Services
             string serverRoot,
             string? clientModdedPath)
         {
+            var installDir = GetInstallDir(manifest, serverRoot, clientModdedPath);
+            Directory.CreateDirectory(installDir);
+
+            // Try to copy from local bundled-plugins directories first
+            if (TryCopyFromBundled(manifest, installDir))
+            {
+                CopyToClientIfNeeded(manifest, installDir, clientModdedPath);
+                return true;
+            }
+
+            // Fall back to downloading from GitHub release
             if (!TryParseGitHubUrl(manifest.DownloadUrl, out var owner, out var repo))
                 return false;
 
             var release = await _gitHub.GetLatestReleaseAsync(owner, repo);
             if (release == null) return false;
-
-            var installDir = GetInstallDir(manifest, serverRoot, clientModdedPath);
-            Directory.CreateDirectory(installDir);
 
             foreach (var dllName in manifest.DllNames)
             {
@@ -178,6 +186,79 @@ namespace TabgInstaller.Core.Services
                 if (!success) return false;
             }
 
+            CopyToClientIfNeeded(manifest, installDir, clientModdedPath);
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to copy plugin DLLs from the bundled plugins/client-plugins directories
+        /// that ship alongside the installer exe.
+        /// </summary>
+        private static bool TryCopyFromBundled(PluginManifest manifest, string installDir)
+        {
+            if (manifest.DllNames == null || manifest.DllNames.Length == 0)
+                return false;
+
+            // Search both server and client bundled directories
+            var bundledDirs = new List<string>();
+            var serverDir = BuiltInPresets.FindBundledPluginsDir();
+            if (serverDir != null) bundledDirs.Add(serverDir);
+
+            var clientDir = FindClientPluginsDir();
+            if (clientDir != null) bundledDirs.Add(clientDir);
+
+            if (bundledDirs.Count == 0) return false;
+
+            // Check that ALL DLLs can be found in some bundled directory
+            foreach (var dllName in manifest.DllNames)
+            {
+                bool found = false;
+                foreach (var dir in bundledDirs)
+                {
+                    var src = Path.Combine(dir, dllName);
+                    if (File.Exists(src)) { found = true; break; }
+                }
+                if (!found) return false;
+            }
+
+            // All DLLs found — copy them
+            foreach (var dllName in manifest.DllNames)
+            {
+                foreach (var dir in bundledDirs)
+                {
+                    var src = Path.Combine(dir, dllName);
+                    if (File.Exists(src))
+                    {
+                        File.Copy(src, Path.Combine(installDir, dllName), true);
+                        break;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static string? FindClientPluginsDir()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var candidates = new[]
+            {
+                Path.Combine(baseDir, "client-plugins"),
+                Path.Combine(baseDir, "Assets", "bundled", "client-plugins"),
+                Path.Combine(baseDir, "..", "client-plugins"),
+                Path.Combine(baseDir, "..", "..", "client-plugins"),
+            };
+
+            foreach (var c in candidates)
+            {
+                if (Directory.Exists(c) && Directory.GetFiles(c, "*.dll").Length > 0)
+                    return c;
+            }
+            return null;
+        }
+
+        private static void CopyToClientIfNeeded(PluginManifest manifest, string installDir, string? clientModdedPath)
+        {
             if (manifest.Type == "both" && clientModdedPath != null)
             {
                 var clientDir = Path.Combine(clientModdedPath, "BepInEx", "plugins", "community", manifest.Id);
@@ -190,8 +271,6 @@ namespace TabgInstaller.Core.Services
                         File.Copy(srcPath, destPath, true);
                 }
             }
-
-            return true;
         }
 
         private string GetInstallDir(PluginManifest manifest, string serverRoot, string? clientModdedPath)

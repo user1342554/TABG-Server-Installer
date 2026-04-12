@@ -90,6 +90,11 @@ namespace TabgInstaller.Core.Services
             return FindById(id) != null;
         }
 
+        public void InvalidateCache()
+        {
+            _cached = null;
+        }
+
         private void Save(InstalledPluginsData data)
         {
             _cached = data;

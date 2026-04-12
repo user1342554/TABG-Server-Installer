@@ -152,6 +152,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (success)
             {
                 _toast.Success($"{card.Manifest.Name} installed successfully.");
+                _tracker.InvalidateCache();
                 await LoadPluginsAsync();
             }
             else
@@ -174,6 +175,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (success)
             {
                 _toast.Success($"{card.Manifest.Name} updated to {card.Manifest.Version}.");
+                _tracker.InvalidateCache();
                 await LoadPluginsAsync();
             }
             else
@@ -195,6 +197,7 @@ namespace TabgInstaller.Gui.ViewModels
             if (success)
             {
                 _toast.Success($"{card.Manifest.Name} uninstalled.");
+                _tracker.InvalidateCache();
                 await LoadPluginsAsync();
             }
             else
@@ -221,6 +224,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             _toast.Success($"Updated {updated} of {updatable.Count} plugins.");
+            _tracker.InvalidateCache();
             await LoadPluginsAsync();
         }
 

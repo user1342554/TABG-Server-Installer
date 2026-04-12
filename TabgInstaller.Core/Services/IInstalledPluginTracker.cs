@@ -11,5 +11,11 @@ namespace TabgInstaller.Core.Services
         void SetPinned(string id, bool pinned);
         InstalledPluginEntry? FindById(string id);
         bool IsInstalled(string id);
+
+        /// <summary>
+        /// Clears the in-memory cache so the next Load/FindById re-reads from disk.
+        /// Call this when another service may have modified the tracker file.
+        /// </summary>
+        void InvalidateCache();
     }
 }
