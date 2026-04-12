@@ -3,7 +3,7 @@
   "name": "TABGVR Server",
   "version": "1.0.0",
   "description": "VR hand sync support for VR players on your server.",
-  "author": "TABG Modding Team",
+  "author": "RedBigz",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TABGVR.Server.CitrusLib.dll"],
   "type": "server",

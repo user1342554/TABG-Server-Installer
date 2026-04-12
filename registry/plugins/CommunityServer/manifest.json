@@ -3,7 +3,7 @@
   "name": "TABGCommunityServer",
   "version": "1.0.0",
   "description": "Community server browser integration for custom servers.",
-  "author": "TABG Modding Team",
+  "author": "JIBSIL",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TABGCommunityServer.dll"],
   "type": "server",

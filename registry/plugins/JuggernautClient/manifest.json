@@ -3,7 +3,7 @@
   "name": "Juggernaut Mode Client",
   "version": "1.0.0",
   "description": "Boss bar, loadout picker, and scoreboard UI for Juggernaut Mode.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["JuggernautMode.Client.dll"],
   "type": "client",

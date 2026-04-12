@@ -3,7 +3,7 @@
   "name": "Coords Display",
   "version": "1.0.0",
   "description": "Press F5 to show your X/Y/Z position on screen.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.CoordsDisplay.dll"],
   "type": "client",

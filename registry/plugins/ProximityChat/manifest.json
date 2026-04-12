@@ -3,7 +3,7 @@
   "name": "ProximityChat Server",
   "version": "1.0.0",
   "description": "Proximity-based voice chat for custom servers (server-side component).",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.ProximityChat.Server.dll"],
   "type": "server",

@@ -3,7 +3,7 @@
   "name": "FlyingControls",
   "version": "1.0.0",
   "description": "Steer Helicopters, UFOs, and Hover vehicles with W/S/A/D + Space.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.FlyingControls.dll"],
   "type": "client",

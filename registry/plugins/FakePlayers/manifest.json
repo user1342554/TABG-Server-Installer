@@ -3,7 +3,7 @@
   "name": "FakePlayers",
   "version": "1.0.0",
   "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.FakePlayers.dll"],
   "type": "server",

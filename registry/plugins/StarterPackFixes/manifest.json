@@ -3,7 +3,7 @@
   "name": "StarterPackFixes",
   "version": "1.0.0",
   "description": "Loot drop control and fixes for StarterPack.",
-  "author": "TABG Modding Team",
+  "author": "Freddo",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["StarterPackFixes.dll"],
   "type": "server",

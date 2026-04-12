@@ -3,7 +3,7 @@
   "name": "Pop-up Blocker",
   "version": "1.0.0",
   "description": "Disable anti-cheat popups when connecting to custom modded servers.",
-  "author": "TABG Modding Team",
+  "author": "Freddo",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["Pop-up Blocker.dll"],
   "type": "client",

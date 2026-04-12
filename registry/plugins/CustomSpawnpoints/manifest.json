@@ -3,7 +3,7 @@
   "name": "CustomSpawnpoints",
   "version": "1.0.0",
   "description": "Custom spawn points for maps and game modes.",
-  "author": "TABG Modding Team",
+  "author": "Freddo",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["CustomSpawnpoints.dll"],
   "type": "server",

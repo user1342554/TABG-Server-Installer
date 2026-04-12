@@ -3,7 +3,7 @@
   "name": "Enhanced TABG",
   "version": "1.0.0",
   "description": "Infinite LOD (F1), HUD toggle (F2), fog removal (F3) for better visuals.",
-  "author": "TABG Modding Team",
+  "author": "Freddo",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["Enhanced TABG.dll"],
   "type": "client",

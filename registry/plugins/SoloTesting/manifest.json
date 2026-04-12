@@ -3,7 +3,7 @@
   "name": "SoloTesting",
   "version": "1.0.0",
   "description": "Prevents 'You Win' screen when testing a server alone.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.SoloTesting.dll"],
   "type": "server",

@@ -3,7 +3,7 @@
   "name": "VoteToStart",
   "version": "1.0.0",
   "description": "Players vote to start the match instead of waiting for auto-start.",
-  "author": "TABG Modding Team",
+  "author": "ContagiouslyStupid",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["VoteToStart.dll"],
   "type": "server",

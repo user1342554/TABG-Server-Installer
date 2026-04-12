@@ -3,7 +3,7 @@
   "name": "Hunt Mode Client",
   "version": "1.0.0",
   "description": "HUD, perk selection, and ability UI for Hunt Mode.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.HuntMode.Client.dll", "TabgInstaller.HuntMode.Shared.dll"],
   "type": "client",

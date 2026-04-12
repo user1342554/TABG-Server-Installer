@@ -3,7 +3,7 @@
   "name": "MGLFlashbang",
   "version": "1.0.0",
   "description": "MGL grenade launcher shoots flashbang rounds instead.",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.CustomGrenades.dll"],
   "type": "server",

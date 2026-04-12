@@ -3,7 +3,7 @@
   "name": "Mod Settings",
   "version": "1.0.0",
   "description": "In-game settings menu for all installed mods (press # to open).",
-  "author": "TABG Modding Team",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.ModSettings.dll"],
   "type": "client",

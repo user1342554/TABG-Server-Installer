@@ -3,7 +3,7 @@
   "name": "ServerLogger",
   "version": "1.0.0",
   "description": "Player join/leave and event logging for server administration.",
-  "author": "TABG Modding Team",
+  "author": "ContagiouslyStupid",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["ServerLogger.dll"],
   "type": "server",
