@@ -31,20 +31,6 @@ This project is **not** an original creation from scratch. It is a **collection 
 
 I (anonymer_hase) wrote the installer GUI and the glue code that ties everything together. The actual mods and core libraries that make the server work are mostly the hard work of other developers listed in the [Credits](#credits) section below.
 
-## What's New in v5
-
-v5 is a major release that adds a **Plugin Marketplace**, a **server dashboard**, **remote SSH management**, **theme & accessibility support**, and a **crash reporter** — on top of a full MVVM architecture rewrite under the hood.
-
-- **Plugin Marketplace** — Browse, install, update, and uninstall community plugins directly from the app with automatic dependency resolution
-- **Dashboard** — At-a-glance server health cards showing status, player count, uptime, and available plugin updates
-- **Remote SSH** — Manage remote dedicated servers over SSH without leaving the installer
-- **Health Monitoring** — Continuous server health checks with status indicators
-- **Theme System** — Light theme, dark theme, and a high-contrast mode for accessibility
-- **Accessibility** — Full keyboard navigation and screen reader support across all tabs
-- **Crash Reporter** — Automatic crash detection with a dialog to submit reports
-- **Config Validation** — Real-time validation of server configuration with warnings and error highlights
-- **Localization** — All UI strings are externalised for future translation support
-
 ## Features
 
 ### Core
