@@ -1,772 +1,748 @@
 {
-    "generatedAt":  "2026-04-12T16:51:49Z",
-    "version":  1,
-    "plugins":  [
-                    {
-                        "id":  "BigSmoke",
-                        "name":  "BigSmokeGrenade",
-                        "version":  "1.0.0",
-                        "description":  "Giant purple smoke grenades (/give 208).",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.CustomGrenades.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "grenades",
-                                     "gameplay",
-                                     "fun"
-                                 ]
-                    },
-                    {
-                        "id":  "Citruslib",
-                        "name":  "Citruslib",
-                        "version":  "0.7.0",
-                        "description":  "Core server library providing admin commands, permissions, and server management.",
-                        "author":  "CyrusTheLesser",
-                        "repositoryUrl":  "https://github.com/CyrusTheLesser/Citruslib",
-                        "downloadUrl":  "https://github.com/CyrusTheLesser/Citruslib/releases",
-                        "dllNames":  [
-                                         "Citruslib.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "core-dependency",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "core",
-                                     "admin",
-                                     "permissions",
-                                     "sigma"
-                                 ]
-                    },
-                    {
-                        "id":  "CommunityServer",
-                        "name":  "TABGCommunityServer",
-                        "version":  "1.0.0",
-                        "description":  "Community server browser integration for custom servers.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TABGCommunityServer.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "community-server",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "server-browser",
-                                     "community"
-                                 ]
-                    },
-                    {
-                        "id":  "CoordsDisplay",
-                        "name":  "Coords Display",
-                        "version":  "1.0.0",
-                        "description":  "Press F5 to show your X/Y/Z position on screen.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.CoordsDisplay.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "debug",
-                                     "coordinates",
-                                     "hud"
-                                 ]
-                    },
-                    {
-                        "id":  "CustomGrenades",
-                        "name":  "Custom Grenades (Client)",
-                        "version":  "1.0.0",
-                        "description":  "BigSmokeGrenade + MGLFlashbang visual effects on the client side.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.CustomGrenades.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "grenades",
-                                     "effects",
-                                     "visuals"
-                                 ]
-                    },
-                    {
-                        "id":  "CustomSpawnpoints",
-                        "name":  "CustomSpawnpoints",
-                        "version":  "1.0.0",
-                        "description":  "Custom spawn points for maps and game modes.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "CustomSpawnpoints.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "maps",
-                                     "spawns",
-                                     "sigma"
-                                 ]
-                    },
-                    {
-                        "id":  "EnhancedTABG",
-                        "name":  "Enhanced TABG",
-                        "version":  "1.0.0",
-                        "description":  "Infinite LOD (F1), HUD toggle (F2), fog removal (F3) for better visuals.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "Enhanced TABG.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "visuals",
-                                     "quality-of-life",
-                                     "hud"
-                                 ]
-                    },
-                    {
-                        "id":  "FakePlayers",
-                        "name":  "FakePlayers",
-                        "version":  "1.0.0",
-                        "description":  "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.FakePlayers.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "testing",
-                                     "development",
-                                     "bots"
-                                 ]
-                    },
-                    {
-                        "id":  "FlyingControls",
-                        "name":  "FlyingControls",
-                        "version":  "1.0.0",
-                        "description":  "Steer Helicopters, UFOs, and Hover vehicles with W/S/A/D + Space.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.FlyingControls.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "vehicles",
-                                     "controls",
-                                     "gameplay"
-                                 ]
-                    },
-                    {
-                        "id":  "FreddoCommission",
-                        "name":  "FreddoTABGCommission",
-                        "version":  "1.0.0",
-                        "description":  "Curses, grenades on kill, ban system, and other server enhancements.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "FreddoTABGCommission.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "gameplay",
-                                     "bans",
-                                     "sigma"
-                                 ]
-                    },
-                    {
-                        "id":  "HuntMode",
-                        "name":  "Hunt Mode (4v1)",
-                        "version":  "1.0.0",
-                        "description":  "1 Killer vs 4 Survivors asymmetric survival game mode.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.HuntMode.dll",
-                                         "TabgInstaller.HuntMode.Shared.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "gamemode",
-                                     "asymmetric",
-                                     "survival"
-                                 ],
-                        "requiresClientMod":  true,
-                        "clientPluginId":  "HuntModeClient"
-                    },
-                    {
-                        "id":  "HuntModeClient",
-                        "name":  "Hunt Mode Client",
-                        "version":  "1.0.0",
-                        "description":  "HUD, perk selection, and ability UI for Hunt Mode.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.HuntMode.Client.dll",
-                                         "TabgInstaller.HuntMode.Shared.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "gamemode",
-                                     "hud",
-                                     "hunt-mode"
-                                 ]
-                    },
-                    {
-                        "id":  "JuggernautClient",
-                        "name":  "Juggernaut Mode Client",
-                        "version":  "1.0.0",
-                        "description":  "Boss bar, loadout picker, and scoreboard UI for Juggernaut Mode.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "JuggernautMode.Client.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "gamemode",
-                                     "hud",
-                                     "juggernaut"
-                                 ]
-                    },
-                    {
-                        "id":  "JuggernautMode",
-                        "name":  "Juggernaut Mode",
-                        "version":  "1.0.0",
-                        "description":  "One massive player vs everyone else, score-based game mode.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "JuggernautMode.Server.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "gamemode",
-                                     "boss",
-                                     "pvp"
-                                 ]
-                    },
-                    {
-                        "id":  "MatchTimeout",
-                        "name":  "MatchAndPreMatchTimeout",
-                        "version":  "1.0.0",
-                        "description":  "Configurable match and pre-match timing controls.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "MatchAndPreMatchTimeout.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "match",
-                                     "timing"
-                                 ]
-                    },
-                    {
-                        "id":  "MGLFlashbang",
-                        "name":  "MGLFlashbang",
-                        "version":  "1.0.0",
-                        "description":  "MGL grenade launcher shoots flashbang rounds instead.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.CustomGrenades.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "grenades",
-                                     "weapons",
-                                     "fun"
-                                 ]
-                    },
-                    {
-                        "id":  "ModSettings",
-                        "name":  "Mod Settings",
-                        "version":  "1.0.0",
-                        "description":  "In-game settings menu for all installed mods (press # to open).",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.ModSettings.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "settings",
-                                     "ui",
-                                     "quality-of-life"
-                                 ]
-                    },
-                    {
-                        "id":  "PopupBlocker",
-                        "name":  "Pop-up Blocker",
-                        "version":  "1.0.0",
-                        "description":  "Disable anti-cheat popups when connecting to custom modded servers.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "Pop-up Blocker.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "anti-cheat",
-                                     "quality-of-life"
-                                 ]
-                    },
-                    {
-                        "id":  "ProximityChat",
-                        "name":  "ProximityChat Server",
-                        "version":  "1.0.0",
-                        "description":  "Proximity-based voice chat for custom servers (server-side component).",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.ProximityChat.Server.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "voice-chat",
-                                     "proximity",
-                                     "multiplayer"
-                                 ],
-                        "requiresClientMod":  true,
-                        "clientPluginId":  "ProximityChatClient"
-                    },
-                    {
-                        "id":  "ProximityChatClient",
-                        "name":  "Proximity Chat (Client)",
-                        "version":  "1.0.0",
-                        "description":  "Client-side proximity voice chat for custom servers.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.ProximityChat.Client.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "voice-chat",
-                                     "proximity",
-                                     "multiplayer"
-                                 ]
-                    },
-                    {
-                        "id":  "ServerLogger",
-                        "name":  "ServerLogger",
-                        "version":  "1.0.0",
-                        "description":  "Player join/leave and event logging for server administration.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "ServerLogger.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "logging",
-                                     "admin"
-                                 ]
-                    },
-                    {
-                        "id":  "SoloTesting",
-                        "name":  "SoloTesting",
-                        "version":  "1.0.0",
-                        "description":  "Prevents \u0027You Win\u0027 screen when testing a server alone.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.SoloTesting.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "testing",
-                                     "development"
-                                 ]
-                    },
-                    {
-                        "id":  "StarterPack",
-                        "name":  "StarterPack",
-                        "version":  "1.0.0",
-                        "description":  "Match mechanics, loadouts, loot tables, and win conditions for custom servers.",
-                        "author":  "ContagiouslyStupid",
-                        "repositoryUrl":  "https://github.com/ContagiouslyStupid/TABGStarterPack",
-                        "downloadUrl":  "https://github.com/ContagiouslyStupid/TABGStarterPack/releases",
-                        "dllNames":  [
-                                         "StarterPack.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "core-dependency",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "core",
-                                     "loadouts",
-                                     "loot",
-                                     "sigma"
-                                 ]
-                    },
-                    {
-                        "id":  "StarterPackFixes",
-                        "name":  "StarterPackFixes",
-                        "version":  "1.0.0",
-                        "description":  "Loot drop control and fixes for StarterPack.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "StarterPackFixes.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib",
-                                             "StarterPack"
-                                         ],
-                        "tags":  [
-                                     "loot",
-                                     "fixes",
-                                     "sigma"
-                                 ]
-                    },
-                    {
-                        "id":  "TabgVR",
-                        "name":  "TABGVR Server",
-                        "version":  "1.0.0",
-                        "description":  "VR hand sync support for VR players on your server.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TABGVR.Server.CitrusLib.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "vr",
-                                     "virtual-reality"
-                                 ],
-                        "requiresClientMod":  true,
-                        "clientPluginId":  "TabgVR-Client"
-                    },
-                    {
-                        "id":  "TabgVR-Client",
-                        "name":  "TABGVR",
-                        "version":  "1.0.0",
-                        "description":  "Play TABG in Virtual Reality (requires VR headset).",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TABGVR.dll"
-                                     ],
-                        "type":  "client",
-                        "kind":  "bundled",
-                        "defaultChecked":  false,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-
-                                         ],
-                        "tags":  [
-                                     "vr",
-                                     "virtual-reality"
-                                 ]
-                    },
-                    {
-                        "id":  "UnusedVehicles",
-                        "name":  "UnusedVehicles",
-                        "version":  "1.0.0",
-                        "description":  "Spawn cut vehicles: Helicopter, UFO, Mustang, VW Bus, HoverBike.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "TabgInstaller.UnusedVehicles.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "vehicles",
-                                     "gameplay"
-                                 ]
-                    },
-                    {
-                        "id":  "VoteToStart",
-                        "name":  "VoteToStart",
-                        "version":  "1.0.0",
-                        "description":  "Players vote to start the match instead of waiting for auto-start.",
-                        "author":  "TABG Modding Team",
-                        "downloadUrl":  "https://github.com/user1342554/TABG-Server-Installer/releases",
-                        "dllNames":  [
-                                         "VoteToStart.dll"
-                                     ],
-                        "type":  "server",
-                        "kind":  "bundled",
-                        "defaultChecked":  true,
-                        "compatibleTabgVersions":  [
-                                                       "*"
-                                                   ],
-                        "minInstallerVersion":  "5.0.0",
-                        "bepInExVersion":  "5.4.22",
-                        "dependencies":  [
-                                             "Citruslib"
-                                         ],
-                        "tags":  [
-                                     "match",
-                                     "voting"
-                                 ]
-                    }
-                ]
+  "version": 1,
+  "generatedAt": "2026-04-12T15:01:09Z",
+  "plugins": [
+    {
+      "id": "BigSmoke",
+      "name": "BigSmokeGrenade",
+      "version": "1.0.0",
+      "description": "Giant purple smoke grenades (/give 208).",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CustomGrenades.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "grenades",
+        "gameplay",
+        "fun"
+      ]
+    },
+    {
+      "id": "Citruslib",
+      "name": "Citruslib",
+      "version": "0.7.0",
+      "description": "Core server library providing admin commands, permissions, and server management.",
+      "author": "CyrusTheLesser",
+      "repositoryUrl": "https://github.com/CyrusTheLesser/Citruslib",
+      "downloadUrl": "https://github.com/CyrusTheLesser/Citruslib/releases",
+      "dllNames": [
+        "Citruslib.dll"
+      ],
+      "type": "server",
+      "kind": "core-dependency",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "core",
+        "admin",
+        "permissions",
+        "sigma"
+      ]
+    },
+    {
+      "id": "CommunityServer",
+      "name": "TABGCommunityServer",
+      "version": "1.0.0",
+      "description": "Community server browser integration for custom servers.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TABGCommunityServer.dll"
+      ],
+      "type": "server",
+      "kind": "community-server",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "server-browser",
+        "community"
+      ]
+    },
+    {
+      "id": "CoordsDisplay",
+      "name": "Coords Display",
+      "version": "1.0.0",
+      "description": "Press F5 to show your X/Y/Z position on screen.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CoordsDisplay.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "debug",
+        "coordinates",
+        "hud"
+      ]
+    },
+    {
+      "id": "CustomGrenades",
+      "name": "Custom Grenades (Client)",
+      "version": "1.0.0",
+      "description": "BigSmokeGrenade + MGLFlashbang visual effects on the client side.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CustomGrenades.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "grenades",
+        "effects",
+        "visuals"
+      ]
+    },
+    {
+      "id": "CustomSpawnpoints",
+      "name": "CustomSpawnpoints",
+      "version": "1.0.0",
+      "description": "Custom spawn points for maps and game modes.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "CustomSpawnpoints.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "maps",
+        "spawns",
+        "sigma"
+      ]
+    },
+    {
+      "id": "EnhancedTABG",
+      "name": "Enhanced TABG",
+      "version": "1.0.0",
+      "description": "Infinite LOD (F1), HUD toggle (F2), fog removal (F3) for better visuals.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "Enhanced TABG.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "visuals",
+        "quality-of-life",
+        "hud"
+      ]
+    },
+    {
+      "id": "FakePlayers",
+      "name": "FakePlayers",
+      "version": "1.0.0",
+      "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.FakePlayers.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "testing",
+        "development",
+        "bots"
+      ]
+    },
+    {
+      "id": "FlyingControls",
+      "name": "FlyingControls",
+      "version": "1.0.0",
+      "description": "Steer Helicopters, UFOs, and Hover vehicles with W/S/A/D + Space.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.FlyingControls.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "vehicles",
+        "controls",
+        "gameplay"
+      ]
+    },
+    {
+      "id": "FreddoCommission",
+      "name": "FreddoTABGCommission",
+      "version": "1.0.0",
+      "description": "Curses, grenades on kill, ban system, and other server enhancements.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "FreddoTABGCommission.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "gameplay",
+        "bans",
+        "sigma"
+      ]
+    },
+    {
+      "id": "HuntMode",
+      "name": "Hunt Mode (4v1)",
+      "version": "1.0.0",
+      "description": "1 Killer vs 4 Survivors asymmetric survival game mode.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.HuntMode.dll",
+        "TabgInstaller.HuntMode.Shared.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "gamemode",
+        "asymmetric",
+        "survival"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "HuntModeClient"
+    },
+    {
+      "id": "HuntModeClient",
+      "name": "Hunt Mode Client",
+      "version": "1.0.0",
+      "description": "HUD, perk selection, and ability UI for Hunt Mode.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.HuntMode.Client.dll",
+        "TabgInstaller.HuntMode.Shared.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "gamemode",
+        "hud",
+        "hunt-mode"
+      ]
+    },
+    {
+      "id": "JuggernautClient",
+      "name": "Juggernaut Mode Client",
+      "version": "1.0.0",
+      "description": "Boss bar, loadout picker, and scoreboard UI for Juggernaut Mode.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "JuggernautMode.Client.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "gamemode",
+        "hud",
+        "juggernaut"
+      ]
+    },
+    {
+      "id": "JuggernautMode",
+      "name": "Juggernaut Mode",
+      "version": "1.0.0",
+      "description": "One massive player vs everyone else, score-based game mode.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "JuggernautMode.Server.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "gamemode",
+        "boss",
+        "pvp"
+      ]
+    },
+    {
+      "id": "MGLFlashbang",
+      "name": "MGLFlashbang",
+      "version": "1.0.0",
+      "description": "MGL grenade launcher shoots flashbang rounds instead.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CustomGrenades.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "grenades",
+        "weapons",
+        "fun"
+      ]
+    },
+    {
+      "id": "MatchTimeout",
+      "name": "MatchAndPreMatchTimeout",
+      "version": "1.0.0",
+      "description": "Configurable match and pre-match timing controls.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "MatchAndPreMatchTimeout.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "match",
+        "timing"
+      ]
+    },
+    {
+      "id": "ModSettings",
+      "name": "Mod Settings",
+      "version": "1.0.0",
+      "description": "In-game settings menu for all installed mods (press # to open).",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.ModSettings.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "settings",
+        "ui",
+        "quality-of-life"
+      ]
+    },
+    {
+      "id": "PopupBlocker",
+      "name": "Pop-up Blocker",
+      "version": "1.0.0",
+      "description": "Disable anti-cheat popups when connecting to custom modded servers.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "Pop-up Blocker.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "anti-cheat",
+        "quality-of-life"
+      ]
+    },
+    {
+      "id": "ProximityChat",
+      "name": "ProximityChat Server",
+      "version": "1.0.0",
+      "description": "Proximity-based voice chat for custom servers (server-side component).",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.ProximityChat.Server.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "voice-chat",
+        "proximity",
+        "multiplayer"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "ProximityChatClient"
+    },
+    {
+      "id": "ProximityChatClient",
+      "name": "Proximity Chat (Client)",
+      "version": "1.0.0",
+      "description": "Client-side proximity voice chat for custom servers.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.ProximityChat.Client.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "voice-chat",
+        "proximity",
+        "multiplayer"
+      ]
+    },
+    {
+      "id": "ServerLogger",
+      "name": "ServerLogger",
+      "version": "1.0.0",
+      "description": "Player join/leave and event logging for server administration.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "ServerLogger.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "logging",
+        "admin"
+      ]
+    },
+    {
+      "id": "SoloTesting",
+      "name": "SoloTesting",
+      "version": "1.0.0",
+      "description": "Prevents 'You Win' screen when testing a server alone.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.SoloTesting.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "testing",
+        "development"
+      ]
+    },
+    {
+      "id": "StarterPack",
+      "name": "StarterPack",
+      "version": "1.0.0",
+      "description": "Match mechanics, loadouts, loot tables, and win conditions for custom servers.",
+      "author": "ContagiouslyStupid",
+      "repositoryUrl": "https://github.com/ContagiouslyStupid/TABGStarterPack",
+      "downloadUrl": "https://github.com/ContagiouslyStupid/TABGStarterPack/releases",
+      "dllNames": [
+        "StarterPack.dll"
+      ],
+      "type": "server",
+      "kind": "core-dependency",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "core",
+        "loadouts",
+        "loot",
+        "sigma"
+      ]
+    },
+    {
+      "id": "StarterPackFixes",
+      "name": "StarterPackFixes",
+      "version": "1.0.0",
+      "description": "Loot drop control and fixes for StarterPack.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "StarterPackFixes.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib",
+        "StarterPack"
+      ],
+      "tags": [
+        "loot",
+        "fixes",
+        "sigma"
+      ]
+    },
+    {
+      "id": "TabgVR-Client",
+      "name": "TABGVR",
+      "version": "1.0.0",
+      "description": "Play TABG in Virtual Reality (requires VR headset).",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TABGVR.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "vr",
+        "virtual-reality"
+      ]
+    },
+    {
+      "id": "TabgVR",
+      "name": "TABGVR Server",
+      "version": "1.0.0",
+      "description": "VR hand sync support for VR players on your server.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TABGVR.Server.CitrusLib.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "vr",
+        "virtual-reality"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "TabgVR-Client"
+    },
+    {
+      "id": "UnusedVehicles",
+      "name": "UnusedVehicles",
+      "version": "1.0.0",
+      "description": "Spawn cut vehicles: Helicopter, UFO, Mustang, VW Bus, HoverBike.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.UnusedVehicles.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "vehicles",
+        "gameplay"
+      ]
+    },
+    {
+      "id": "VoteToStart",
+      "name": "VoteToStart",
+      "version": "1.0.0",
+      "description": "Players vote to start the match instead of waiting for auto-start.",
+      "author": "TABG Modding Team",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "VoteToStart.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": true,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [
+        "Citruslib"
+      ],
+      "tags": [
+        "match",
+        "voting"
+      ]
+    }
+  ]
 }
