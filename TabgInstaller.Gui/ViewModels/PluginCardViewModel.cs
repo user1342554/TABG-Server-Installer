@@ -10,7 +10,9 @@ namespace TabgInstaller.Gui.ViewModels
         Available,
         Installed,
         UpdateAvailable,
-        Incompatible
+        Incompatible,
+        /// <summary>Plugin ships with the installer — no download needed.</summary>
+        BuiltIn
     }
 
     public partial class PluginCardViewModel : ObservableObject
@@ -41,6 +43,16 @@ namespace TabgInstaller.Gui.ViewModels
             Manifest = manifest;
             _isPinned = installed?.Pinned ?? false;
             _isInstalled = installed != null;
+
+            // Bundled / core-dependency / community-server plugins ship with the installer
+            if (manifest.Kind == "bundled" || manifest.Kind == "core-dependency" || manifest.Kind == "community-server")
+            {
+                _installStatus = PluginInstallStatus.BuiltIn;
+                _actionButtonText = "Built-in";
+                _isActionEnabled = false;
+                _isInstalled = true;
+                return;
+            }
 
             // Determine compatibility
             if (!IsCompatible(manifest, currentInstallerVersion, out var reason))
