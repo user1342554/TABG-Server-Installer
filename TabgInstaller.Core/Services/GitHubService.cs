@@ -24,7 +24,7 @@ namespace TabgInstaller.Core.Services
             _client = new GitHubClient(new ProductHeaderValue("TabgInstaller"));
         }
 
-        public async Task<Octokit.Release?> GetLatestReleaseAsync(string owner, string repo)
+        public virtual async Task<Octokit.Release?> GetLatestReleaseAsync(string owner, string repo)
         {
             try
             {
@@ -42,7 +42,7 @@ namespace TabgInstaller.Core.Services
             }
         }
 
-        public async Task<Octokit.Release?> GetReleaseAsync(string owner, string repo, string tagName)
+        public virtual async Task<Octokit.Release?> GetReleaseAsync(string owner, string repo, string tagName)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace TabgInstaller.Core.Services
         }
 
         // Modified DownloadAssetAsync to match compiler error expectation
-        public async Task<bool> DownloadAssetAsync(string owner, string repo, string browserDownloadUrl, string destinationPath, string downloadDirectory, string? anotherOptionalString)
+        public virtual async Task<bool> DownloadAssetAsync(string owner, string repo, string browserDownloadUrl, string destinationPath, string downloadDirectory, string? anotherOptionalString)
         {
             _log.Report($"• Attempting to download asset from {browserDownloadUrl} to {destinationPath}..."); 
             try
@@ -103,5 +103,32 @@ namespace TabgInstaller.Core.Services
 
         // LoadAllowedWordsAsync (from previous HttpClient version) also not in the user's diff for GitHubService.cs
         // If this functionality is still needed, it must be re-added or moved.
+
+        /// <summary>
+        /// Fetches a file's content from a GitHub repo via the Contents API.
+        /// Returns the decoded string content, or null on failure.
+        /// </summary>
+        public virtual async Task<string?> FetchFileContentAsync(string owner, string repo, string path)
+        {
+            try
+            {
+                var contents = await _client.Repository.Content.GetAllContents(owner, repo, path);
+                if (contents.Count > 0 && contents[0].Content != null)
+                    return contents[0].Content;
+
+                _log.Report($"[WARN] File {path} in {owner}/{repo} had no content.");
+                return null;
+            }
+            catch (Octokit.NotFoundException)
+            {
+                _log.Report($"[WARN] File {path} not found in {owner}/{repo}.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _log.LogException($"Error fetching {path} from {owner}/{repo}", ex);
+                return null;
+            }
+        }
     }
 } 
