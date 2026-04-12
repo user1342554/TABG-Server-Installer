@@ -38,6 +38,12 @@ namespace TabgInstaller.Gui.ViewModels
         public string DependenciesText => string.Join(", ", Manifest.Dependencies);
         public bool HasChangelog => !string.IsNullOrEmpty(Manifest.Changelog);
 
+        /// <summary>True for bundled/core plugins that ship with the installer.</summary>
+        public bool IsBuiltIn => InstallStatus == PluginInstallStatus.BuiltIn;
+
+        /// <summary>True for community plugins that can be installed/uninstalled/pinned.</summary>
+        public bool IsManageable => !IsBuiltIn;
+
         public PluginCardViewModel(PluginManifest manifest, InstalledPluginEntry? installed, string currentInstallerVersion)
         {
             Manifest = manifest;
