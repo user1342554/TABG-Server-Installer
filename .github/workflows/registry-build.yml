@@ -6,6 +6,9 @@ on:
     paths:
       - 'registry/plugins/**'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
