@@ -18,6 +18,8 @@ namespace TabgInstaller.Tests.ViewModels
         private readonly Mock<INavigationService> _navigation = new();
         private readonly Mock<IToastService> _toast = new();
         private readonly Mock<IServerInstanceManager> _instanceManager = new();
+        private readonly Mock<IRegistryService> _registryService = new();
+        private readonly Mock<IInstalledPluginTracker> _pluginTracker = new();
 
         public DashboardViewModelTests()
         {
@@ -31,7 +33,8 @@ namespace TabgInstaller.Tests.ViewModels
 
         private DashboardViewModel CreateSut() =>
             new(_activeInstance.Object, _appSettings.Object,
-                _navigation.Object, _toast.Object, _instanceManager.Object);
+                _navigation.Object, _toast.Object, _instanceManager.Object,
+                _registryService.Object, _pluginTracker.Object);
 
         [Fact]
         public void IsServerRunning_DelegatesToProcessService()

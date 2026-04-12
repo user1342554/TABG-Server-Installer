@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
@@ -187,6 +188,25 @@ namespace TabgInstaller.Gui
             // Navigation
             services.AddSingleton<INavigationService, NavigationService>();
 
+            // Marketplace services
+            services.AddSingleton<TabgInstaller.Core.Services.GitHubService>(sp =>
+                new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(msg =>
+                    Debug.WriteLine($"[GitHub] {msg}"))));
+            services.AddSingleton<IRegistryService>(sp =>
+            {
+                var cachePath = Path.Combine(settingsDir, "registry-cache.json");
+                return new RegistryService(sp.GetRequiredService<TabgInstaller.Core.Services.GitHubService>(), cachePath);
+            });
+            services.AddTransient<IInstalledPluginTracker>(sp =>
+            {
+                var active = sp.GetRequiredService<IActiveInstanceService>();
+                return new InstalledPluginTracker(active.ServerPath);
+            });
+            services.AddTransient<IMarketplaceInstallService>(sp =>
+                new MarketplaceInstallService(
+                    sp.GetRequiredService<TabgInstaller.Core.Services.GitHubService>(),
+                    sp.GetRequiredService<IInstalledPluginTracker>()));
+
             // ViewModels — registered as each panel is migrated
             services.AddTransient<SettingsPanelViewModel>();
             services.AddTransient<DashboardViewModel>();
@@ -205,6 +225,7 @@ namespace TabgInstaller.Gui
             services.AddTransient<ReferencePanelViewModel>();
             services.AddTransient<LoadoutEditorViewModel>();
             services.AddTransient<ServerListViewModel>();
+            services.AddTransient<BrowsePluginsViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

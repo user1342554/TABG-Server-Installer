@@ -20,12 +20,16 @@ namespace TabgInstaller.Gui.ViewModels
         private readonly INavigationService _navigation;
         private readonly IToastService _toast;
         private readonly IServerInstanceManager _instanceManager;
+        private readonly IRegistryService _registryService;
+        private readonly IInstalledPluginTracker _pluginTracker;
         private Timer? _refreshTimer;
 
         [ObservableProperty] private string _previewText = "";
         [ObservableProperty] private string _startStopButtonText = Strings.StartServer;
         [ObservableProperty] private string _serverPath = "";
         [ObservableProperty] private ObservableCollection<ServerHealthCardData> _healthCards = new();
+        [ObservableProperty] private string _pluginUpdatesText = "";
+        [ObservableProperty] private bool _hasPluginUpdates;
 
         public bool IsServerRunning
         {
@@ -41,13 +45,17 @@ namespace TabgInstaller.Gui.ViewModels
             IAppSettingsService appSettings,
             INavigationService navigation,
             IToastService toast,
-            IServerInstanceManager instanceManager)
+            IServerInstanceManager instanceManager,
+            IRegistryService registryService,
+            IInstalledPluginTracker pluginTracker)
         {
             _activeInstance = activeInstance;
             _appSettings = appSettings;
             _navigation = navigation;
             _toast = toast;
             _instanceManager = instanceManager;
+            _registryService = registryService;
+            _pluginTracker = pluginTracker;
 
             _activeInstance.PathChanged += OnServerPathChanged;
         }
@@ -77,6 +85,7 @@ namespace TabgInstaller.Gui.ViewModels
             StartStopButtonText = _activeInstance.ProcessService.IsRunning ? Strings.StopServer : Strings.StartServer;
             OnPropertyChanged(nameof(IsServerRunning));
             RefreshHealthCards();
+            RefreshPluginUpdates();
         }
 
         private void RefreshHealthCards()
@@ -121,6 +130,24 @@ namespace TabgInstaller.Gui.ViewModels
                     });
                 }
             }
+        }
+
+        private void RefreshPluginUpdates()
+        {
+            var registry = _registryService.GetCachedRegistry();
+            if (registry == null) return;
+
+            int count = 0;
+            foreach (var manifest in registry.Plugins)
+            {
+                if (MarketplaceInstallService.HasUpdate(manifest, _pluginTracker))
+                    count++;
+            }
+
+            HasPluginUpdates = count > 0;
+            PluginUpdatesText = count > 0
+                ? string.Format("{0} plugin update(s) available", count)
+                : "";
         }
 
         [RelayCommand]
