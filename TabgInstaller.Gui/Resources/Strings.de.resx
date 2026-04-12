@@ -874,4 +874,52 @@
   <data name="NeverAsk" xml:space="preserve">
     <value>Nie fragen</value>
   </data>
+  <data name="TabBrowsePlugins" xml:space="preserve">
+    <value>Plugins durchsuchen</value>
+  </data>
+  <data name="BrowsePluginsTitle" xml:space="preserve">
+    <value>Plugin-Marktplatz</value>
+  </data>
+  <data name="BrowsePluginsSubtitle" xml:space="preserve">
+    <value>Community-Plugins f&#x00FC;r deinen Server entdecken und installieren</value>
+  </data>
+  <data name="SearchPlugins" xml:space="preserve">
+    <value>Plugins suchen...</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Nach Updates suchen</value>
+  </data>
+  <data name="UpdateAll" xml:space="preserve">
+    <value>Alle aktualisieren</value>
+  </data>
+  <data name="CategoryAll" xml:space="preserve">
+    <value>Alle</value>
+  </data>
+  <data name="CategoryServer" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="CategoryClient" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="PluginUpdatesAvailable" xml:space="preserve">
+    <value>{0} Plugin-Update(s) verf&#x00FC;gbar</value>
+  </data>
+  <data name="MarketplaceUnavailable" xml:space="preserve">
+    <value>Plugin-Marktplatz nicht verf&#x00FC;gbar &#x2014; Internetverbindung pr&#x00FC;fen.</value>
+  </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>Deinstallieren</value>
+  </data>
+  <data name="PinVersion" xml:space="preserve">
+    <value>Version {0} fixieren</value>
+  </data>
+  <data name="UnpinVersion" xml:space="preserve">
+    <value>Version freigeben</value>
+  </data>
+  <data name="ViewOnGitHub" xml:space="preserve">
+    <value>Auf GitHub ansehen</value>
+  </data>
+  <data name="NoLongerInRegistry" xml:space="preserve">
+    <value>Nicht mehr in der Registry</value>
+  </data>
 </root>

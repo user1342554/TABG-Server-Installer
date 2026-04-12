@@ -874,4 +874,52 @@
   <data name="NeverAsk" xml:space="preserve">
     <value>Never Ask</value>
   </data>
+  <data name="TabBrowsePlugins" xml:space="preserve">
+    <value>Browse Plugins</value>
+  </data>
+  <data name="BrowsePluginsTitle" xml:space="preserve">
+    <value>Plugin Marketplace</value>
+  </data>
+  <data name="BrowsePluginsSubtitle" xml:space="preserve">
+    <value>Discover and install community plugins for your server</value>
+  </data>
+  <data name="SearchPlugins" xml:space="preserve">
+    <value>Search plugins...</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="UpdateAll" xml:space="preserve">
+    <value>Update All</value>
+  </data>
+  <data name="CategoryAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="CategoryServer" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="CategoryClient" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="PluginUpdatesAvailable" xml:space="preserve">
+    <value>{0} plugin update(s) available</value>
+  </data>
+  <data name="MarketplaceUnavailable" xml:space="preserve">
+    <value>Plugin marketplace unavailable — check your internet connection.</value>
+  </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="PinVersion" xml:space="preserve">
+    <value>Pin to version {0}</value>
+  </data>
+  <data name="UnpinVersion" xml:space="preserve">
+    <value>Unpin version</value>
+  </data>
+  <data name="ViewOnGitHub" xml:space="preserve">
+    <value>View on GitHub</value>
+  </data>
+  <data name="NoLongerInRegistry" xml:space="preserve">
+    <value>No longer in registry</value>
+  </data>
 </root>
