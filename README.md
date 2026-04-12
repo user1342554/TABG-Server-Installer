@@ -19,6 +19,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/user1342554/TABG-Server-Installer)](https://github.com/user1342554/TABG-Server-Installer/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![CI](https://github.com/user1342554/TABG-Server-Installer/actions/workflows/ci.yml/badge.svg)](https://github.com/user1342554/TABG-Server-Installer/actions/workflows/ci.yml)
 
 </div>
 
@@ -30,23 +31,73 @@ This project is **not** an original creation from scratch. It is a **collection 
 
 I (anonymer_hase) wrote the installer GUI and the glue code that ties everything together. The actual mods and core libraries that make the server work are mostly the hard work of other developers listed in the [Credits](#credits) section below.
 
+## What's New in v5
+
+v5 is a major release that adds a **Plugin Marketplace**, a **server dashboard**, **remote SSH management**, **theme & accessibility support**, and a **crash reporter** — on top of a full MVVM architecture rewrite under the hood.
+
+- **Plugin Marketplace** — Browse, install, update, and uninstall community plugins directly from the app with automatic dependency resolution
+- **Dashboard** — At-a-glance server health cards showing status, player count, uptime, and available plugin updates
+- **Remote SSH** — Manage remote dedicated servers over SSH without leaving the installer
+- **Health Monitoring** — Continuous server health checks with status indicators
+- **Theme System** — Light theme, dark theme, and a high-contrast mode for accessibility
+- **Accessibility** — Full keyboard navigation and screen reader support across all tabs
+- **Crash Reporter** — Automatic crash detection with a dialog to submit reports
+- **Config Validation** — Real-time validation of server configuration with warnings and error highlights
+- **Localization** — All UI strings are externalised for future translation support
+
 ## Features
+
+### Core
 
 - **One-click server setup** — Installs BepInEx, plugins, and generates default configs automatically
 - **Client mod installer** — Creates a modded TABG copy with BepInEx + client plugins (separate from Steam to bypass EAC)
 - **Config editor** — GUI for editing game settings, match rules, ring behavior, spawn points, and loadouts
+- **Config validation** — Real-time validation with warnings before you start the server
 - **Preset templates** — Battle Royale, Deathmatch, Gun Game, Scavenge, and more
 - **Weapon spawn config** — Control weapon spawn rates per category
-- **Admin panel** — In-app player/admin management
+- **Admin panel** — In-app player/admin management with known-player tracking
 - **Backup system** — Create and restore server config backups
 - **Auto-updater** — Checks GitHub Releases for new versions on startup
 - **Self-contained** — No .NET installation required, just extract and run
-- **Proximity voice chat** — Built-in proximity-based voice chat through the game's network (no extra ports needed, works with relay)
+
+### Plugin Marketplace
+
+Browse and manage community-made plugins without leaving the app.
+
+- **Browse tab** — Search, filter by type (server/client/both), and sort by name or date
+- **One-click install** — Download and install plugins with automatic dependency resolution
+- **Update detection** — Dashboard health card shows how many plugin updates are available
+- **Version pinning** — Pin a plugin version to prevent automatic updates
+- **Per-server tracking** — Each server instance tracks its own installed community plugins independently
+- **Uninstall** — Clean removal of plugin DLLs and tracking data
+- **Open registry** — Plugin authors can submit plugins via pull request ([see Contributing](./registry/CONTRIBUTING.md))
+
+### Server Management
+
+- **Dashboard** — Health cards for server status, player count, uptime, and plugin updates
+- **Server console** — Integrated console output panel
+- **Health monitoring** — Continuous background health checks with status indicators
+- **Remote SSH** — Connect to and manage remote dedicated servers over SSH
+- **Credential storage** — Securely stores SSH and service credentials
+
+### Appearance & Accessibility
+
+- **Theme system** — Base theme with high-contrast mode
+- **Keyboard navigation** — Full keyboard support across all tabs and dialogs
+- **Screen reader support** — Accessible labels and focus management
+- **Localized strings** — All UI text externalised for translation
+
+### Built-in Plugins
+
+- **Proximity voice chat** — Voice communication through the game's network (no extra ports, works with relay)
 - **Custom vehicles** — Spawns cut vehicles (Helicopter, UFO, Mustang, VW, Hover Bike, Hover Car, Box Car)
 - **Flying controls** — Client mod to steer flying vehicles (W/S/A/D + Space/Ctrl)
 - **Custom grenades** — Giant purple smoke grenades + MGL flashbang rounds
 - **In-game settings menu** — Press # to adjust mod settings in-game
 - **Coords display** — Press F5 to show X/Y/Z position
+- **Hunt Mode** — 4v1 survival game mode (server + client) *(buggy)*
+- **Juggernaut Mode** — One massive player vs everyone (server + client) *(buggy)*
+- **Fake Players** — Spawn dummy players for testing *(buggy)*
 
 ## Download
 
@@ -75,6 +126,13 @@ I (anonymer_hase) wrote the installer GUI and the glue code that ties everything
 5. Click **INSTALL CLIENT MODS**
 6. Launch the modded TABG from the installer (**NOT** from Steam)
 
+### Installing Community Plugins
+
+1. Go to the **Browse Plugins** tab
+2. Search or filter for a plugin
+3. Click **Install** — dependencies are resolved automatically
+4. The plugin is tracked per-server and can be updated or removed at any time
+
 ## Plugins
 
 ### Server Plugins
@@ -95,6 +153,20 @@ Voice communication is built directly into the game's existing network connectio
 - HUD indicator shows who is currently talking
 - Open microphone with noise gate to suppress background noise
 - 16 kHz audio quality
+
+## Plugin Marketplace Registry
+
+The marketplace is powered by a GitHub-based registry. Plugin authors submit a JSON manifest via pull request, which is validated automatically by CI and compiled into a single `registry.json` that the app fetches at runtime.
+
+- **Schema**: [`registry/schema/plugin-manifest.schema.json`](./registry/schema/plugin-manifest.schema.json)
+- **Template**: [`registry/TEMPLATE.json`](./registry/TEMPLATE.json)
+- **How to submit**: [`registry/CONTRIBUTING.md`](./registry/CONTRIBUTING.md)
+
+Pull requests to `registry/plugins/` are automatically validated:
+- Manifest schema compliance
+- Folder name matches plugin ID
+- Download URL reachability check
+- Duplicate ID detection
 
 ## Disclaimer
 
@@ -153,7 +225,7 @@ This project would not exist without the work of these developers and communitie
 
 ### Installer (this project)
 
-- **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, and all the glue code tying everything together
+- **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, plugin marketplace, dashboard, SSH remote management, theme system, crash reporter, and all the glue code tying everything together
 
 | Plugin | Author | Description | Status |
 |--------|--------|-------------|--------|
@@ -164,6 +236,7 @@ This project would not exist without the work of these developers and communitie
 | CoordsDisplay | anonymer_hase | In-game coordinate display | Working |
 | ModSettings | anonymer_hase | In-game settings menu for all mods | Working |
 | SoloTesting | anonymer_hase | Solo testing mode | Working |
+| WeaponSpawnConfig | anonymer_hase | Weapon spawn rate configuration | Working |
 | ProximityChat | anonymer_hase | Proximity voice chat (server + client) | Working |
 | HuntMode | anonymer_hase | 4v1 survival game mode (server + client) | Buggy |
 | JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) | Buggy |
@@ -171,10 +244,12 @@ This project would not exist without the work of these developers and communitie
 
 ### Third-Party Libraries
 
-- [Octokit](https://github.com/octokit/octokit.net) — GitHub API (auto-updater)
+- [Octokit](https://github.com/octokit/octokit.net) — GitHub API (auto-updater, registry fetching)
 - [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) by James Newton-King — JSON handling
 - [Polly](https://github.com/App-vNext/Polly) — Resilience and retry policies
 - [RestSharp](https://github.com/restsharp/RestSharp) — HTTP client
+- [SSH.NET](https://github.com/sshnet/SSH.NET) — SSH remote server management
+- [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM framework for WPF
 
 > **Know someone who should be credited?** Open an issue or DM me on Discord.
 
