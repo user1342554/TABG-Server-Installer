@@ -1,0 +1,92 @@
+name: Validate Plugin Manifests
+
+on:
+  pull_request:
+    paths:
+      - 'registry/plugins/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: Validate manifests
+        id: validate
+        run: |
+          SCHEMA="registry/schema/plugin-manifest.schema.json"
+          ERRORS=""
+          SUCCESS=true
+
+          for manifest in registry/plugins/*/manifest.json; do
+            PLUGIN_DIR=$(dirname "$manifest")
+            PLUGIN_ID=$(basename "$PLUGIN_DIR")
+            MANIFEST_ID=$(jq -r '.id' "$manifest")
+
+            echo "Validating $manifest..."
+
+            # Check ID matches folder name
+            if [ "$PLUGIN_ID" != "$MANIFEST_ID" ]; then
+              ERRORS="$ERRORS\n❌ **$PLUGIN_ID**: manifest id '$MANIFEST_ID' does not match folder name '$PLUGIN_ID'"
+              SUCCESS=false
+              continue
+            fi
+
+            # Validate against schema
+            if ! ajv validate -s "$SCHEMA" -d "$manifest" --spec=draft2020 -c ajv-formats 2>/tmp/ajv_err; then
+              ERR=$(cat /tmp/ajv_err)
+              ERRORS="$ERRORS\n❌ **$PLUGIN_ID**: Schema validation failed\n\`\`\`\n$ERR\n\`\`\`"
+              SUCCESS=false
+              continue
+            fi
+
+            # Verify downloadUrl is reachable
+            DOWNLOAD_URL=$(jq -r '.downloadUrl' "$manifest")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "$DOWNLOAD_URL" || echo "000")
+            if [ "$HTTP_CODE" != "200" ]; then
+              ERRORS="$ERRORS\n⚠️ **$PLUGIN_ID**: downloadUrl returned HTTP $HTTP_CODE"
+            fi
+
+            echo "✅ $PLUGIN_ID passed"
+          done
+
+          # Check for duplicate IDs
+          DUPES=$(find registry/plugins -name manifest.json -exec jq -r '.id' {} \; | sort | uniq -d)
+          if [ -n "$DUPES" ]; then
+            ERRORS="$ERRORS\n❌ **Duplicate IDs found:** $DUPES"
+            SUCCESS=false
+          fi
+
+          if [ "$SUCCESS" = true ]; then
+            echo "RESULT=✅ All manifests validated successfully." >> $GITHUB_OUTPUT
+          else
+            echo "RESULT<<EOF" >> $GITHUB_OUTPUT
+            echo -e "## ❌ Manifest Validation Failed\n$ERRORS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+          echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = `${{ steps.validate.outputs.RESULT }}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### Plugin Manifest Validation\n\n${result}`
+            });
+
+      - name: Fail if validation errors
+        if: steps.validate.outputs.SUCCESS != 'true'
+        run: exit 1

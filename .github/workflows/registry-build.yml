@@ -1,0 +1,44 @@
+name: Build Plugin Registry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'registry/plugins/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile registry.json
+        run: |
+          echo '{"version":1,"generatedAt":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","plugins":[' > /tmp/registry_parts.json
+
+          FIRST=true
+          for manifest in registry/plugins/*/manifest.json; do
+            if [ "$FIRST" = true ]; then
+              FIRST=false
+            else
+              echo ',' >> /tmp/registry_parts.json
+            fi
+            cat "$manifest" >> /tmp/registry_parts.json
+          done
+
+          echo ']}' >> /tmp/registry_parts.json
+
+          # Pretty-print with jq
+          jq '.' /tmp/registry_parts.json > registry/registry.json
+
+      - name: Commit registry.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add registry/registry.json
+          if git diff --cached --quiet; then
+            echo "No changes to registry.json"
+          else
+            git commit -m "chore: auto-generate registry.json [skip ci]"
+            git push
+          fi
