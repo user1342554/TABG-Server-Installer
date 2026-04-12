@@ -10,6 +10,8 @@
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="{x:Static SystemColors.GrayTextColor}"/>
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="{x:Static SystemColors.WindowTextColor}"/>
     <SolidColorBrush x:Key="LightTextBrush" Color="{x:Static SystemColors.HighlightTextColor}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{x:Static SystemColors.WindowColor}"/>
     <SolidColorBrush x:Key="DefaultBorderBrush" Color="{x:Static SystemColors.ActiveBorderColor}"/>
     <SolidColorBrush x:Key="PanelBgBrush" Color="{x:Static SystemColors.WindowColor}"/>
     <SolidColorBrush x:Key="AltPanelBgBrush" Color="{x:Static SystemColors.ControlColor}"/>

@@ -1,0 +1,209 @@
+<UserControl x:Class="TabgInstaller.Gui.Tabs.BrowsePluginsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:TabgInstaller.Gui.Converters"
+             xmlns:res="clr-namespace:TabgInstaller.Gui.Resources"
+             xmlns:vm="clr-namespace:TabgInstaller.Gui.ViewModels">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Inverse="True"/>
+    </UserControl.Resources>
+
+    <Grid Margin="10" KeyboardNavigation.TabNavigation="Cycle">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="{x:Static res:Strings.BrowsePluginsTitle}" FontSize="18" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Static res:Strings.BrowsePluginsSubtitle}"
+                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+        </StackPanel>
+
+        <!-- Top bar: search + filters + actions -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     VerticalContentAlignment="Center" Padding="6,4"
+                     AutomationProperties.Name="Search plugins"
+                     AutomationProperties.AutomationId="PluginSearchBox"
+                     TabIndex="10">
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Style.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <VisualBrush Stretch="None" AlignmentX="Left" AlignmentY="Center">
+                                            <VisualBrush.Visual>
+                                                <TextBlock Text="{x:Static res:Strings.SearchPlugins}"
+                                                           Foreground="Gray" Margin="6,0,0,0"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                      Width="90" Margin="6,0,0,0"
+                      AutomationProperties.Name="Filter by category"
+                      AutomationProperties.AutomationId="CategoryComboBox"
+                      TabIndex="20"/>
+
+            <ComboBox Grid.Column="2" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}"
+                      Width="140" Margin="6,0,0,0"
+                      AutomationProperties.Name="Sort by"
+                      AutomationProperties.AutomationId="SortComboBox"
+                      TabIndex="30"/>
+
+            <Button Grid.Column="3" Content="{x:Static res:Strings.CheckForUpdates}"
+                    Command="{Binding RefreshCommand}" Width="130" Margin="6,0,0,0"
+                    AutomationProperties.AutomationId="RefreshRegistryButton"
+                    TabIndex="40"/>
+
+            <Button Grid.Column="4" Content="{x:Static res:Strings.UpdateAll}"
+                    Command="{Binding UpdateAllCommand}" Width="90" Margin="6,0,0,0"
+                    Visibility="{Binding HasUpdates, Converter={StaticResource BoolToVisibility}}"
+                    AutomationProperties.AutomationId="UpdateAllButton"
+                    TabIndex="41"/>
+        </Grid>
+
+        <!-- Plugin cards list -->
+        <Grid Grid.Row="2">
+            <!-- Loading indicator -->
+            <TextBlock Text="Loading plugins..."
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+
+            <!-- Status text (errors) -->
+            <TextBlock Text="{Binding StatusText}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibility}}"/>
+
+            <!-- Plugin cards -->
+            <ListView ItemsSource="{Binding FilteredPlugins}" SelectedItem="{Binding SelectedPlugin}"
+                      BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibility}}"
+                      AutomationProperties.Name="Community plugins"
+                      AutomationProperties.AutomationId="PluginCardsListView"
+                      TabIndex="50">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:PluginCardViewModel}">
+                        <Border BorderBrush="{DynamicResource SecondaryTextBrush}" BorderThickness="0,0,0,1"
+                                Padding="8" Margin="0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Name + Author -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Manifest.Name}" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Text="{Binding Manifest.Author, StringFormat=' by {0}'}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"
+                                               VerticalAlignment="Bottom" Margin="4,0,0,2"/>
+                                </StackPanel>
+
+                                <!-- Description -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding Manifest.Description}"
+                                           TextTrimming="CharacterEllipsis" MaxHeight="36"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                                           Margin="0,2,10,0"/>
+
+                                <!-- Tags + badges -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="{DynamicResource AccentBrush}" CornerRadius="3" Padding="6,2" Margin="0,0,4,0">
+                                        <TextBlock Text="{Binding TypeBadge}" FontSize="10" Foreground="White"/>
+                                    </Border>
+                                    <TextBlock Text="&#x1F4CC;" FontSize="12" Margin="4,0"
+                                               Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}"
+                                               ToolTip="Version pinned"/>
+                                </StackPanel>
+
+                                <!-- Action button -->
+                                <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                                        Content="{Binding ActionButtonText}"
+                                        IsEnabled="{Binding IsActionEnabled}"
+                                        Width="160" VerticalAlignment="Center"
+                                        AutomationProperties.Name="{Binding ActionButtonText}"
+                                        Command="{Binding DataContext.InstallOrUpdateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+
+        <!-- Detail panel (shown when a plugin is selected) -->
+        <Border Grid.Row="2" Background="{DynamicResource BackgroundBrush}"
+                HorizontalAlignment="Right" Width="320" Padding="12"
+                BorderBrush="{DynamicResource SecondaryTextBrush}" BorderThickness="1,0,0,0"
+                Visibility="{Binding HasSelectedPlugin, Converter={StaticResource BoolToVisibility}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel DataContext="{Binding SelectedPlugin}">
+                    <TextBlock Text="{Binding Manifest.Name}" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Manifest.Author, StringFormat='by {0}'}"
+                               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,2,0,8"/>
+                    <TextBlock Text="{Binding Manifest.Description}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10"/>
+
+                    <TextBlock FontSize="11" Margin="0,0,0,4">
+                        <Run Text="Version: " FontWeight="SemiBold"/>
+                        <Run Text="{Binding Manifest.Version, Mode=OneWay}"/>
+                    </TextBlock>
+
+                    <TextBlock FontSize="11" Margin="0,0,0,4"
+                               Visibility="{Binding HasDependencies, Converter={StaticResource BoolToVisibility}}">
+                        <Run Text="Dependencies: " FontWeight="SemiBold"/>
+                        <Run Text="{Binding DependenciesText, Mode=OneWay}"/>
+                    </TextBlock>
+
+                    <TextBlock Text="Changelog" FontWeight="SemiBold" FontSize="11" Margin="0,8,0,2"
+                               Visibility="{Binding HasChangelog, Converter={StaticResource BoolToVisibility}}"/>
+                    <TextBlock Text="{Binding Manifest.Changelog}" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Visibility="{Binding HasChangelog, Converter={StaticResource BoolToVisibility}}"/>
+
+                    <StackPanel Margin="0,12,0,0">
+                        <Button Content="{Binding ActionButtonText}" IsEnabled="{Binding IsActionEnabled}"
+                                Command="{Binding DataContext.InstallOrUpdateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Margin="0,0,0,4" HorizontalAlignment="Stretch"/>
+                        <Button Content="{x:Static res:Strings.Uninstall}"
+                                Command="{Binding DataContext.UninstallPluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}"
+                                Margin="0,0,0,4" HorizontalAlignment="Stretch"/>
+                        <CheckBox Content="Pin version" IsChecked="{Binding IsPinned}"
+                                  Command="{Binding DataContext.TogglePinCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}"
+                                  Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}"
+                                  Margin="0,4,0,4"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

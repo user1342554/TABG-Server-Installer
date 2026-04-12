@@ -10,6 +10,8 @@
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#888888"/>
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="#000000"/>
     <SolidColorBrush x:Key="LightTextBrush" Color="White"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#2E86C1"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="DefaultBorderBrush" Color="#CCCCCC"/>
     <SolidColorBrush x:Key="PanelBgBrush" Color="White"/>
     <SolidColorBrush x:Key="AltPanelBgBrush" Color="#F5F5F5"/>

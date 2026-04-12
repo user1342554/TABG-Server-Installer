@@ -32,6 +32,10 @@ namespace TabgInstaller.Gui.ViewModels
             _ => Manifest.Type
         };
 
+        public bool HasDependencies => Manifest.Dependencies.Length > 0;
+        public string DependenciesText => string.Join(", ", Manifest.Dependencies);
+        public bool HasChangelog => !string.IsNullOrEmpty(Manifest.Changelog);
+
         public PluginCardViewModel(PluginManifest manifest, InstalledPluginEntry? installed, string currentInstallerVersion)
         {
             Manifest = manifest;

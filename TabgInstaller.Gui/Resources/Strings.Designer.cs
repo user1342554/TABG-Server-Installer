@@ -2502,5 +2502,67 @@ namespace TabgInstaller.Gui.Resources {
                 return ResourceManager.GetString("NeverAsk", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to Browse Plugins.
+        /// </summary>
+        public static string TabBrowsePlugins {
+            get {
+                return ResourceManager.GetString("TabBrowsePlugins", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Plugin Marketplace.
+        /// </summary>
+        public static string BrowsePluginsTitle {
+            get {
+                return ResourceManager.GetString("BrowsePluginsTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Discover and install community plugins for your server.
+        /// </summary>
+        public static string BrowsePluginsSubtitle {
+            get {
+                return ResourceManager.GetString("BrowsePluginsSubtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search plugins....
+        /// </summary>
+        public static string SearchPlugins {
+            get {
+                return ResourceManager.GetString("SearchPlugins", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Check for Updates.
+        /// </summary>
+        public static string CheckForUpdates {
+            get {
+                return ResourceManager.GetString("CheckForUpdates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Update All.
+        /// </summary>
+        public static string UpdateAll {
+            get {
+                return ResourceManager.GetString("UpdateAll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Uninstall.
+        /// </summary>
+        public static string Uninstall {
+            get {
+                return ResourceManager.GetString("Uninstall", resourceCulture);
+            }
+        }
     }
 }
