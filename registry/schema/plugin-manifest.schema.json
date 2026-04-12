@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TABG Plugin Manifest",
+  "description": "Schema for community plugin manifests in the TABG Server Installer plugin marketplace.",
+  "type": "object",
+  "required": ["id", "name", "version", "description", "author", "downloadUrl", "dllNames", "type", "compatibleTabgVersions", "minInstallerVersion", "bepInExVersion"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$",
+      "description": "Unique kebab-case identifier, 3-50 characters."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version (major.minor.patch)."
+    },
+    "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "author": { "type": "string", "minLength": 1 },
+    "authorUrl": { "type": "string", "format": "uri" },
+    "repositoryUrl": { "type": "string", "format": "uri" },
+    "downloadUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://github\\.com/.+/releases"
+    },
+    "dllNames": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "\\.dll$" },
+      "minItems": 1
+    },
+    "type": { "type": "string", "enum": ["server", "client", "both"] },
+    "compatibleTabgVersions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "minInstallerVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "bepInExVersion": { "type": "string" },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "iconUrl": { "type": "string", "format": "uri" },
+    "requiresClientMod": { "type": "boolean", "default": false },
+    "clientPluginId": { "type": "string" },
+    "changelog": { "type": "string" }
+  },
+  "if": { "properties": { "requiresClientMod": { "const": true } } },
+  "then": { "required": ["clientPluginId"] },
+  "additionalProperties": false
+}

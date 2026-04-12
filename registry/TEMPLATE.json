@@ -1,0 +1,18 @@
+{
+  "id": "your-plugin-id",
+  "name": "Your Plugin Name",
+  "version": "1.0.0",
+  "description": "A short description of what your plugin does.",
+  "author": "YourGitHubUsername",
+  "authorUrl": "https://github.com/YourGitHubUsername",
+  "repositoryUrl": "https://github.com/YourGitHubUsername/YourPlugin",
+  "downloadUrl": "https://github.com/YourGitHubUsername/YourPlugin/releases/latest",
+  "dllNames": ["YourPlugin.dll"],
+  "type": "server",
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "4.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": [],
+  "requiresClientMod": false
+}
