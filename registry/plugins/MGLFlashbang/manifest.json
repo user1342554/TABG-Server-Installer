@@ -1,0 +1,17 @@
+{
+  "id": "MGLFlashbang",
+  "name": "MGLFlashbang",
+  "version": "1.0.0",
+  "description": "MGL grenade launcher shoots flashbang rounds instead.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.CustomGrenades.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib", "StarterPack"],
+  "tags": ["grenades", "weapons", "fun"]
+}

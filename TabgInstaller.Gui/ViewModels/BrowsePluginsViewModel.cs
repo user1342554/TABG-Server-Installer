@@ -20,7 +20,8 @@ namespace TabgInstaller.Gui.ViewModels
         private readonly IAppSettingsService _appSettings;
         private readonly IToastService _toast;
 
-        private static readonly string CurrentInstallerVersion = "4.0.0";
+        private static readonly string CurrentInstallerVersion =
+            typeof(BrowsePluginsViewModel).Assembly.GetName().Version?.ToString(3) ?? "5.0.0";
 
         [ObservableProperty] private string _searchText = "";
         [ObservableProperty] private string _selectedCategory = "All";

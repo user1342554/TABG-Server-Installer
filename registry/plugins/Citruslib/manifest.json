@@ -1,0 +1,18 @@
+{
+  "id": "Citruslib",
+  "name": "Citruslib",
+  "version": "0.7.0",
+  "description": "Core server library providing admin commands, permissions, and server management.",
+  "author": "CyrusTheLesser",
+  "repositoryUrl": "https://github.com/CyrusTheLesser/Citruslib",
+  "downloadUrl": "https://github.com/CyrusTheLesser/Citruslib/releases",
+  "dllNames": ["Citruslib.dll"],
+  "type": "server",
+  "kind": "core-dependency",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["core", "admin", "permissions", "sigma"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "TabgVR",
+  "name": "TABGVR Server",
+  "version": "1.0.0",
+  "description": "VR hand sync support for VR players on your server.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TABGVR.Server.CitrusLib.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["vr", "virtual-reality"],
+  "requiresClientMod": true,
+  "clientPluginId": "TabgVR-Client"
+}

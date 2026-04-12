@@ -113,6 +113,34 @@ namespace TabgInstaller.Gui
             if (themeService.IsHighContrast)
                 themeService.SetHighContrast(true);
 
+            // Load plugin registry from cache (instant), then refresh from network in background
+            try
+            {
+                var registryService = _host.Services.GetRequiredService<IRegistryService>();
+                var cached = registryService.GetCachedRegistry();
+                if (cached?.Plugins != null)
+                    PluginRegistry.LoadFromManifests(cached.Plugins);
+
+                // Fire-and-forget: refresh registry from network for next session
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        var fresh = await registryService.FetchRegistryAsync();
+                        if (fresh?.Plugins != null)
+                            PluginRegistry.LoadFromManifests(fresh.Plugins);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceError($"[App] Background registry refresh failed: {ex}");
+                    }
+                });
+            }
+            catch (Exception regEx)
+            {
+                Trace.TraceError($"[App] Failed to load plugin registry: {regEx}");
+            }
+
             try
             {
                 var mainWindow = _host.Services.GetRequiredService<MainWindow>();

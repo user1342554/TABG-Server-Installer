@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TABG Plugin Manifest",
-  "description": "Schema for community plugin manifests in the TABG Server Installer plugin marketplace.",
+  "description": "Schema for plugin manifests in the TABG Server Installer plugin marketplace.",
   "type": "object",
-  "required": ["id", "name", "version", "description", "author", "downloadUrl", "dllNames", "type", "compatibleTabgVersions", "minInstallerVersion", "bepInExVersion"],
+  "required": ["id", "name", "version", "description", "author", "dllNames", "type", "kind", "compatibleTabgVersions", "minInstallerVersion", "bepInExVersion"],
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$",
-      "description": "Unique kebab-case identifier, 3-50 characters."
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,48}[a-zA-Z0-9]$",
+      "description": "Unique identifier, 2-50 characters (PascalCase or kebab-case)."
     },
     "name": { "type": "string", "minLength": 1, "maxLength": 100 },
     "version": {
@@ -23,7 +23,7 @@
     "downloadUrl": {
       "type": "string",
       "format": "uri",
-      "pattern": "^https://github\\.com/.+/releases"
+      "description": "Direct download URL. Required for community plugins."
     },
     "dllNames": {
       "type": "array",
@@ -31,6 +31,16 @@
       "minItems": 1
     },
     "type": { "type": "string", "enum": ["server", "client", "both"] },
+    "kind": {
+      "type": "string",
+      "enum": ["bundled", "core-dependency", "community-server", "community"],
+      "description": "How the plugin is distributed. 'bundled' ships with the installer, 'core-dependency' is downloaded during install, 'community' is from the marketplace."
+    },
+    "defaultChecked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this plugin is selected by default in the installer wizard."
+    },
     "compatibleTabgVersions": {
       "type": "array",
       "items": { "type": "string" },
@@ -53,7 +63,15 @@
     "clientPluginId": { "type": "string" },
     "changelog": { "type": "string" }
   },
-  "if": { "properties": { "requiresClientMod": { "const": true } } },
-  "then": { "required": ["clientPluginId"] },
+  "allOf": [
+    {
+      "if": { "properties": { "requiresClientMod": { "const": true } } },
+      "then": { "required": ["clientPluginId"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "community" } } },
+      "then": { "required": ["downloadUrl"] }
+    }
+  ],
   "additionalProperties": false
 }

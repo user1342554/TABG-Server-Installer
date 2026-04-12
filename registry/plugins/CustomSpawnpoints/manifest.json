@@ -1,0 +1,17 @@
+{
+  "id": "CustomSpawnpoints",
+  "name": "CustomSpawnpoints",
+  "version": "1.0.0",
+  "description": "Custom spawn points for maps and game modes.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["CustomSpawnpoints.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib", "StarterPack"],
+  "tags": ["maps", "spawns", "sigma"]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "SoloTesting",
+  "name": "SoloTesting",
+  "version": "1.0.0",
+  "description": "Prevents 'You Win' screen when testing a server alone.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.SoloTesting.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["testing", "development"]
+}

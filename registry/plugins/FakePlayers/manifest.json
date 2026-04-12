@@ -1,0 +1,17 @@
+{
+  "id": "FakePlayers",
+  "name": "FakePlayers",
+  "version": "1.0.0",
+  "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.FakePlayers.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["testing", "development", "bots"]
+}

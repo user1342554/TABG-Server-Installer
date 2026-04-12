@@ -1,0 +1,17 @@
+{
+  "id": "UnusedVehicles",
+  "name": "UnusedVehicles",
+  "version": "1.0.0",
+  "description": "Spawn cut vehicles: Helicopter, UFO, Mustang, VW Bus, HoverBike.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.UnusedVehicles.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["vehicles", "gameplay"]
+}

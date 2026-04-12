@@ -65,5 +65,13 @@ namespace TabgInstaller.Core.Model
 
         [JsonProperty("changelog")]
         public string? Changelog { get; set; }
+
+        /// <summary>How the plugin is distributed: "bundled", "core-dependency", "community-server", or "community".</summary>
+        [JsonProperty("kind")]
+        public string Kind { get; set; } = "community";
+
+        /// <summary>Whether this plugin is selected by default in the installer wizard.</summary>
+        [JsonProperty("defaultChecked")]
+        public bool DefaultChecked { get; set; }
     }
 }

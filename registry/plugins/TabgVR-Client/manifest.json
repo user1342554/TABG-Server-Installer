@@ -1,0 +1,17 @@
+{
+  "id": "TabgVR-Client",
+  "name": "TABGVR",
+  "version": "1.0.0",
+  "description": "Play TABG in Virtual Reality (requires VR headset).",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TABGVR.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["vr", "virtual-reality"]
+}

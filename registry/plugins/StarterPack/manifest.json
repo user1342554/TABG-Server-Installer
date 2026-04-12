@@ -1,0 +1,18 @@
+{
+  "id": "StarterPack",
+  "name": "StarterPack",
+  "version": "1.0.0",
+  "description": "Match mechanics, loadouts, loot tables, and win conditions for custom servers.",
+  "author": "ContagiouslyStupid",
+  "repositoryUrl": "https://github.com/ContagiouslyStupid/TABGStarterPack",
+  "downloadUrl": "https://github.com/ContagiouslyStupid/TABGStarterPack/releases",
+  "dllNames": ["StarterPack.dll"],
+  "type": "server",
+  "kind": "core-dependency",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["core", "loadouts", "loot", "sigma"]
+}

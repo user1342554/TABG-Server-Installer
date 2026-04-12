@@ -1,0 +1,17 @@
+{
+  "id": "CommunityServer",
+  "name": "TABGCommunityServer",
+  "version": "1.0.0",
+  "description": "Community server browser integration for custom servers.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TABGCommunityServer.dll"],
+  "type": "server",
+  "kind": "community-server",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["server-browser", "community"]
+}

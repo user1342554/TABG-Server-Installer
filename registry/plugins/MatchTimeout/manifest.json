@@ -1,0 +1,17 @@
+{
+  "id": "MatchTimeout",
+  "name": "MatchAndPreMatchTimeout",
+  "version": "1.0.0",
+  "description": "Configurable match and pre-match timing controls.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["MatchAndPreMatchTimeout.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["match", "timing"]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "JuggernautMode",
+  "name": "Juggernaut Mode",
+  "version": "1.0.0",
+  "description": "One massive player vs everyone else, score-based game mode.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["JuggernautMode.Server.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib", "StarterPack"],
+  "tags": ["gamemode", "boss", "pvp"]
+}

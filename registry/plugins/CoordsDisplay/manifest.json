@@ -1,0 +1,17 @@
+{
+  "id": "CoordsDisplay",
+  "name": "Coords Display",
+  "version": "1.0.0",
+  "description": "Press F5 to show your X/Y/Z position on screen.",
+  "author": "TABG Modding Team",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.CoordsDisplay.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["debug", "coordinates", "hud"]
+}
