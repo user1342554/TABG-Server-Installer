@@ -86,7 +86,13 @@ namespace TabgInstaller.Gui.ViewModels
         private static bool IsCompatible(PluginManifest manifest, string currentInstallerVersion, out string reason)
         {
             reason = "";
-            if (CompareVersions(currentInstallerVersion, manifest.MinInstallerVersion) < 0)
+
+            // Bundled and core-dependency plugins ship with the installer — always compatible
+            if (manifest.Kind == "bundled" || manifest.Kind == "core-dependency" || manifest.Kind == "community-server")
+                return true;
+
+            if (!string.IsNullOrEmpty(manifest.MinInstallerVersion)
+                && CompareVersions(currentInstallerVersion, manifest.MinInstallerVersion) < 0)
             {
                 reason = $"Requires installer version {manifest.MinInstallerVersion} or newer.";
                 return false;

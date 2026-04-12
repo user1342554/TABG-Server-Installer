@@ -20,8 +20,22 @@ namespace TabgInstaller.Gui.ViewModels
         private readonly IAppSettingsService _appSettings;
         private readonly IToastService _toast;
 
-        private static readonly string CurrentInstallerVersion =
-            typeof(BrowsePluginsViewModel).Assembly.GetName().Version?.ToString(3) ?? "5.0.0";
+        private static readonly string CurrentInstallerVersion = GetInstallerVersion();
+
+        private static string GetInstallerVersion()
+        {
+            // AssemblyInformationalVersion reliably reads <Version> from csproj
+            var asm = typeof(BrowsePluginsViewModel).Assembly;
+            var infoAttr = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+            if (infoAttr.Length > 0)
+            {
+                var ver = ((System.Reflection.AssemblyInformationalVersionAttribute)infoAttr[0]).InformationalVersion;
+                // Strip any +metadata suffix (e.g. "5.0.0+abc123")
+                var plus = ver.IndexOf('+');
+                return plus >= 0 ? ver.Substring(0, plus) : ver;
+            }
+            return asm.GetName().Version?.ToString(3) ?? "5.0.0";
+        }
 
         [ObservableProperty] private string _searchText = "";
         [ObservableProperty] private string _selectedCategory = "All";
