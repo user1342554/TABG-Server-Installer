@@ -184,19 +184,56 @@ public sealed class MainWindow : Window
         root.Children.Add(_log);
 
         _tabs = new TabControl();
-        _tabs.Items.Add(new TabItem { Header = "Install", Content = BuildInstallTab() });
-        _tabs.Items.Add(new TabItem { Header = "Server", Content = BuildServerTab() });
-        _tabs.Items.Add(new TabItem { Header = "Console", Content = BuildConsoleTab() });
-        _tabs.Items.Add(new TabItem { Header = "Server Mods", Content = BuildServerModsTab() });
+        _tabs.Items.Add(new TabItem { Header = "Setup", Content = BuildSetupTab() });
+        _tabs.Items.Add(new TabItem { Header = "Server", Content = BuildServerWorkspaceTab() });
         _tabs.Items.Add(new TabItem { Header = "Config", Content = BuildConfigTab() });
-        _tabs.Items.Add(new TabItem { Header = "Backups", Content = BuildBackupsTab() });
-        _tabs.Items.Add(new TabItem { Header = "Client", Content = BuildClientTab() });
+        _tabs.Items.Add(new TabItem { Header = "Mods", Content = BuildModsTab() });
         _tabs.Items.Add(new TabItem { Header = "Marketplace", Content = BuildMarketplaceTab() });
         _tabs.Items.Add(new TabItem { Header = "Reference", Content = BuildReferenceTab() });
         _tabs.Items.Add(new TabItem { Header = "Settings", Content = BuildSettingsTab() });
         root.Children.Add(_tabs);
 
         Content = root;
+    }
+
+    private Control BuildSetupTab()
+    {
+        return new TabControl
+        {
+            Margin = new Avalonia.Thickness(6),
+            Items =
+            {
+                new TabItem { Header = "Server install", Content = BuildInstallTab() },
+                new TabItem { Header = "Client install", Content = BuildClientTab() }
+            }
+        };
+    }
+
+    private Control BuildServerWorkspaceTab()
+    {
+        return new TabControl
+        {
+            Margin = new Avalonia.Thickness(6),
+            Items =
+            {
+                new TabItem { Header = "Run", Content = BuildServerTab() },
+                new TabItem { Header = "Console", Content = BuildConsoleTab() },
+                new TabItem { Header = "Backups", Content = BuildBackupsTab() }
+            }
+        };
+    }
+
+    private Control BuildModsTab()
+    {
+        return new TabControl
+        {
+            Margin = new Avalonia.Thickness(6),
+            Items =
+            {
+                new TabItem { Header = "Server DLLs", Content = BuildServerModsTab() },
+                new TabItem { Header = "Client DLLs", Content = BuildClientModsTab() }
+            }
+        };
     }
 
     private Control BuildInstallTab()
@@ -682,7 +719,6 @@ public sealed class MainWindow : Window
     private Control BuildClientTab()
     {
         RebuildClientModChecks();
-        RefreshClientModLists();
 
         return new ScrollViewer
         {
@@ -707,47 +743,63 @@ public sealed class MainWindow : Window
                             Button("Start modded client", StartModdedClient),
                             Button("Open modded folder", () => OpenPath(_moddedClientPath.Text))
                         }
-                    },
-                    new Grid
-                    {
-                        ColumnDefinitions = new ColumnDefinitions("*,*"),
-                        Children =
-                        {
-                            Put(new StackPanel
-                            {
-                                Spacing = 8,
-                                Children =
-                                {
-                                    new TextBlock { Text = "Installed client DLLs" },
-                                    new ScrollViewer { Content = _clientPluginList, Height = 260 },
-                                    new StackPanel
-                                    {
-                                        Orientation = Orientation.Horizontal,
-                                        Spacing = 8,
-                                        Children =
-                                        {
-                                            Button("Refresh", RefreshClientModLists),
-                                            Button("Enable / disable", ToggleSelectedClientPlugin),
-                                            Button("Remove", RemoveSelectedClientPlugin),
-                                            Button("Add DLL", AddClientPluginAsync)
-                                        }
-                                    }
-                                }
-                            }, 0),
-                            Put(new StackPanel
-                            {
-                                Spacing = 8,
-                                Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                                Children =
-                                {
-                                    new TextBlock { Text = "Bundled client DLLs" },
-                                    new ScrollViewer { Content = _bundledClientPluginList, Height = 260 },
-                                    Button("Install selected", InstallBundledClientPlugin)
-                                }
-                            }, 1)
-                        }
                     }
                 }
+            }
+        };
+    }
+
+    private Control BuildClientModsTab()
+    {
+        RefreshClientModLists();
+        return new Grid
+        {
+            Margin = new Avalonia.Thickness(6),
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children =
+            {
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = "Installed client DLLs" },
+                        new ScrollViewer { Content = _clientPluginList, Height = 360 },
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Spacing = 8,
+                            Children =
+                            {
+                                Button("Refresh", RefreshClientModLists),
+                                Button("Enable / disable", ToggleSelectedClientPlugin),
+                                Button("Remove", RemoveSelectedClientPlugin),
+                                Button("Add DLL", AddClientPluginAsync),
+                                Button("Open folder", () => OpenPath(ClientPluginDir()))
+                            }
+                        }
+                    }
+                }, 0),
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                    Children =
+                    {
+                        new TextBlock { Text = "Bundled client DLLs" },
+                        new ScrollViewer { Content = _bundledClientPluginList, Height = 360 },
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Spacing = 8,
+                            Children =
+                            {
+                                Button("Install selected", InstallBundledClientPlugin),
+                                Button("Open Marketplace", SelectMarketplaceTab)
+                            }
+                        }
+                    }
+                }, 1)
             }
         };
     }
@@ -2248,7 +2300,7 @@ public sealed class MainWindow : Window
     private void SelectMarketplaceTab()
     {
         if (_tabs != null)
-            _tabs.SelectedIndex = 7;
+            _tabs.SelectedIndex = 4;
     }
 
     private static TextBox SmallBox(string text = "") => new() { Text = text, Width = 80 };
