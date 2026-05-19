@@ -5,13 +5,16 @@ using Avalonia.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
@@ -50,6 +53,12 @@ public sealed class MainWindow : Window
     private readonly ListBox _backups = new();
     private readonly ListBox _marketplace = new();
     private readonly TextBox _marketplaceSearch = new() { Width = 240, Watermark = "Search plugins" };
+    private readonly ComboBox _marketplaceSort = new()
+    {
+        Width = 150,
+        ItemsSource = new[] { "Type then A-Z", "A-Z", "Installed first", "Updates first" },
+        SelectedIndex = 0,
+    };
     private readonly ComboBox _marketplaceType = new()
     {
         Width = 120,
@@ -61,6 +70,71 @@ public sealed class MainWindow : Window
         Text = "Select a plugin to see details.",
         TextWrapping = Avalonia.Media.TextWrapping.Wrap,
     };
+    private readonly Dictionary<string, Control> _gameSettingEditors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ComboBox _spLoadoutMode = new() { Width = 150, ItemsSource = new[] { "Normal", "GunGame", "ReverseGunGame", "KeepInventory" } };
+    private readonly ComboBox _spWinCondition = new() { Width = 150, ItemsSource = new[] { "Default", "KillsToWin", "Debug" } };
+    private readonly TextBox _spKillsToWin = SmallBox("20");
+    private readonly CheckBox _spForceKillAtStart = new() { Content = "Force kill at start" };
+    private readonly CheckBox _spDropItemsOnDeath = new() { Content = "Drop items on death" };
+    private readonly TextBox _spItemsGiven = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBox _spLoadouts = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly CheckBox _spHealOnKill = new() { Content = "Heal on kill" };
+    private readonly TextBox _spHealOnKillAmount = SmallBox("50");
+    private readonly CheckBox _spCanGoDown = new() { Content = "Can go down" };
+    private readonly CheckBox _spCanLockOut = new() { Content = "Can lock out" };
+    private readonly TextBox _spPercentVotes = SmallBox("50");
+    private readonly TextBox _spMinPlayers = SmallBox("2");
+    private readonly TextBox _spTimeToStart = SmallBox("20");
+    private readonly CheckBox _spSpellDropEnabled = new() { Content = "Spell drops" };
+    private readonly TextBox _spMinSpellDelay = SmallBox("30");
+    private readonly TextBox _spMaxSpellDelay = SmallBox("90");
+    private readonly TextBox _spSpellOffset = SmallBox("0");
+    private readonly TextBox _spPreMatchTimeout = SmallBox("15");
+    private readonly TextBox _spPeriMatchTimeout = SmallBox("30");
+    private readonly TextBox _ringSizes = new() { Width = 420 };
+    private readonly TextBox _ringSpeeds = new() { Width = 420 };
+    private readonly ComboBox _spawnLocations = new() { Width = 220 };
+    private readonly TextBox _validSpawnPoints = SmallBox("6,");
+    private readonly TextBox _customSpawnPoint = new() { Width = 260 };
+    private readonly TextBox _matchSpawns = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly CheckBox _enableLootDrops = new() { Content = "Enable StarterPack loot drops" };
+    private readonly CheckBox _attackerGrenadeEnabled = new() { Content = "Attacker grenade" };
+    private readonly ComboBox _attackerGrenade = new() { Width = 240 };
+    private readonly TextBox _attackerChance = SmallBox("0.2");
+    private readonly CheckBox _corpseGrenadeEnabled = new() { Content = "Corpse grenade" };
+    private readonly ComboBox _corpseGrenade = new() { Width = 240 };
+    private readonly TextBox _corpseChance = SmallBox("0.2");
+    private readonly TextBox _lives = SmallBox("256");
+    private readonly TextBox _streamingDistance = SmallBox("-1");
+    private readonly TextBox _banList = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBox _proxMaxRange = SmallBox("50");
+    private readonly TextBox _proxMinRange = SmallBox("5");
+    private readonly ComboBox _proxFalloff = new() { Width = 140, ItemsSource = new[] { "Linear", "Logarithmic" }, SelectedIndex = 0 };
+    private readonly TextBox _juggPointsToWin = SmallBox("100");
+    private readonly TextBox _juggHp = SmallBox("1000");
+    private readonly TextBox _juggKillBonus = SmallBox("5");
+    private readonly TextBox _juggKillPoints = SmallBox("2");
+    private readonly TextBox _juggRegularKillPoints = SmallBox("1");
+    private readonly TextBox _juggDamagePerPoint = SmallBox("10");
+    private readonly TextBox _juggLoadoutChoices = SmallBox("3");
+    private readonly TextBox _juggLoadoutTimeout = SmallBox("10");
+    private readonly TextBox _juggMinSpawnDistance = SmallBox("50");
+    private readonly TextBox _juggMinPlayers = SmallBox("3");
+    private readonly ListBox _adminList = new();
+    private readonly TextBox _adminName = new() { Width = 180, Watermark = "name" };
+    private readonly TextBox _adminEpic = new() { Width = 260, Watermark = "Epic ID" };
+    private readonly TextBox _adminLevel = SmallBox("4");
+    private readonly ListBox _userPresets = new();
+    private readonly ListBox _builtInPresets = new();
+    private readonly TextBox _presetName = new() { Width = 220, Watermark = "preset name" };
+    private readonly ListBox _serverPluginList = new();
+    private readonly ListBox _clientPluginList = new();
+    private readonly ListBox _bundledServerPluginList = new();
+    private readonly ListBox _bundledClientPluginList = new();
+    private readonly TextBox _consoleCommand = new() { Width = 360, Watermark = "command text (logged; server stdin is unavailable)" };
+    private readonly TextBox _consoleSearch = new() { Width = 220, Watermark = "search log" };
+    private readonly TextBox _referenceSearch = new() { Width = 240, Watermark = "filter items" };
+    private readonly TextBox _settingsSummary = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
     private readonly List<PluginManifest> _registryPlugins = new();
     private readonly ServerPathProvider _serverPathProvider = new();
     private readonly ServerProcessService _serverProcess;
@@ -112,6 +186,8 @@ public sealed class MainWindow : Window
         _tabs = new TabControl();
         _tabs.Items.Add(new TabItem { Header = "Install", Content = BuildInstallTab() });
         _tabs.Items.Add(new TabItem { Header = "Server", Content = BuildServerTab() });
+        _tabs.Items.Add(new TabItem { Header = "Console", Content = BuildConsoleTab() });
+        _tabs.Items.Add(new TabItem { Header = "Server Mods", Content = BuildServerModsTab() });
         _tabs.Items.Add(new TabItem { Header = "Config", Content = BuildConfigTab() });
         _tabs.Items.Add(new TabItem { Header = "Backups", Content = BuildBackupsTab() });
         _tabs.Items.Add(new TabItem { Header = "Client", Content = BuildClientTab() });
@@ -207,6 +283,24 @@ public sealed class MainWindow : Window
 
     private Control BuildConfigTab()
     {
+        return new TabControl
+        {
+            Margin = new Avalonia.Thickness(6),
+            Items =
+            {
+                new TabItem { Header = "Game", Content = BuildGameSettingsTab() },
+                new TabItem { Header = "Match", Content = BuildMatchSettingsTab() },
+                new TabItem { Header = "Ring / Spawns", Content = BuildRingSpawnsTab() },
+                new TabItem { Header = "Mod Settings", Content = BuildModSettingsTab() },
+                new TabItem { Header = "Admins", Content = BuildAdminsTab() },
+                new TabItem { Header = "Presets", Content = BuildPresetsTab() },
+                new TabItem { Header = "Raw", Content = BuildRawConfigTab() },
+            }
+        };
+    }
+
+    private Control BuildRawConfigTab()
+    {
         return new DockPanel
         {
             Margin = new Avalonia.Thickness(6),
@@ -224,6 +318,338 @@ public sealed class MainWindow : Window
                     }
                 }),
                 _rawConfig
+            }
+        };
+    }
+
+    private Control BuildConsoleTab()
+    {
+        return new StackPanel
+        {
+            Spacing = 8,
+            Margin = new Avalonia.Thickness(6),
+            Children =
+            {
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        Button("Start server", () => StartServer("-batchmode -nographics -nolog")),
+                        Button("Stop server", () => _serverProcess.Stop()),
+                        Button("Quick restart", QuickRestartServer),
+                        Button("Clear log", () => _log.Text = ""),
+                        Button("Export log", ExportVisibleLog)
+                    }
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        Label("Search"),
+                        _consoleSearch,
+                        Button("Find", FindInVisibleLog),
+                        Label("Command"),
+                        _consoleCommand,
+                        Button("Send", SendConsoleCommand)
+                    }
+                },
+                new TextBlock { Text = "The live log is shown at the bottom. TABG dedicated server does not expose a reliable stdin command channel here, so commands are recorded for operator notes." }
+            }
+        };
+    }
+
+    private Control BuildServerModsTab()
+    {
+        RefreshServerModLists();
+        return new Grid
+        {
+            Margin = new Avalonia.Thickness(6),
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children =
+            {
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = "Installed server DLLs" },
+                        new ScrollViewer { Content = _serverPluginList, Height = 360 },
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Spacing = 8,
+                            Children =
+                            {
+                                Button("Refresh", RefreshServerModLists),
+                                Button("Enable / disable", ToggleSelectedServerPlugin),
+                                Button("Remove", RemoveSelectedServerPlugin),
+                                Button("Add DLL", AddServerPluginAsync),
+                                Button("Open folder", () => OpenPath(ServerPluginDir()))
+                            }
+                        }
+                    }
+                }, 0),
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                    Children =
+                    {
+                        new TextBlock { Text = "Bundled server DLLs" },
+                        new ScrollViewer { Content = _bundledServerPluginList, Height = 360 },
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Spacing = 8,
+                            Children =
+                            {
+                                Button("Install selected", InstallBundledServerPlugin),
+                                Button("Open Marketplace", SelectMarketplaceTab)
+                            }
+                        }
+                    }
+                }, 1)
+            }
+        };
+    }
+
+    private Control BuildGameSettingsTab()
+    {
+        _gameSettingEditors.Clear();
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("180,*,180,*"),
+            RowDefinitions = new RowDefinitions()
+        };
+
+        var props = typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        for (var i = 0; i < props.Length; i++)
+        {
+            var row = i / 2;
+            var col = (i % 2) * 2;
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            var editor = CreateGameSettingEditor(props[i]);
+            _gameSettingEditors[props[i].Name] = editor;
+            Put(grid, Label(props[i].Name), row, col);
+            Put(grid, editor, row, col + 1);
+        }
+
+        LoadGameSettingsTyped();
+        return new DockPanel
+        {
+            Children =
+            {
+                DockTop(new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(0, 0, 0, 8),
+                    Children =
+                    {
+                        Button("Load", LoadGameSettingsTyped),
+                        Button("Save", SaveGameSettingsTyped),
+                        Button("Open file", () => OpenPath(GameSettingsPath()))
+                    }
+                }),
+                new ScrollViewer { Content = grid }
+            }
+        };
+    }
+
+    private Control BuildMatchSettingsTab()
+    {
+        LoadStarterPackSettings();
+        return new ScrollViewer
+        {
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new WrapPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Children =
+                        {
+                            Label("Win condition"), _spWinCondition,
+                            Label("Loadout mode"), _spLoadoutMode,
+                            Label("Kills"), _spKillsToWin,
+                            _spForceKillAtStart,
+                            _spDropItemsOnDeath,
+                            _spHealOnKill,
+                            Label("Heal %"), _spHealOnKillAmount,
+                            _spCanGoDown,
+                            _spCanLockOut
+                        }
+                    },
+                    new WrapPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Children =
+                        {
+                            Label("Votes %"), _spPercentVotes,
+                            Label("Min players"), _spMinPlayers,
+                            Label("Time to start"), _spTimeToStart,
+                            _spSpellDropEnabled,
+                            Label("Spell min"), _spMinSpellDelay,
+                            Label("Spell max"), _spMaxSpellDelay,
+                            Label("Spell offset"), _spSpellOffset
+                        }
+                    },
+                    new WrapPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Children =
+                        {
+                            Label("Pre-match timeout"), _spPreMatchTimeout,
+                            Label("Match timeout"), _spPeriMatchTimeout,
+                            Button("Load", LoadStarterPackSettings),
+                            Button("Save", SaveStarterPackSettings),
+                            Button("Open file", () => OpenPath(StarterPackConfigService.GetPath(_serverPath.Text ?? "")))
+                        }
+                    },
+                    new TextBlock { Text = "ItemsGiven" },
+                    new ScrollViewer { Content = _spItemsGiven, Height = 90 },
+                    new TextBlock { Text = "Loadouts" },
+                    new ScrollViewer { Content = _spLoadouts, Height = 210 }
+                }
+            }
+        };
+    }
+
+    private Control BuildRingSpawnsTab()
+    {
+        _spawnLocations.ItemsSource = ItemDatabase.SpawnLocations;
+        LoadRingSpawnSettings();
+        return new ScrollViewer
+        {
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children =
+                        {
+                            Label("Location"), _spawnLocations,
+                            Button("Apply location", ApplySelectedSpawnLocation),
+                            Button("Standard BR", ApplyStandardRingPreset),
+                            Button("No ring deathmatch", ApplyDeathmatchRingPreset)
+                        }
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children = { Label("Ring sizes"), _ringSizes, Label("Ring speeds"), _ringSpeeds }
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children = { Label("Valid spawn points"), _validSpawnPoints, Label("Custom lobby spawn"), _customSpawnPoint }
+                    },
+                    new TextBlock { Text = "Match spawn points (x,z;x,z;...)" },
+                    new ScrollViewer { Content = _matchSpawns, Height = 210 },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children =
+                        {
+                            Button("Load", LoadRingSpawnSettings),
+                            Button("Save", SaveRingSpawnSettings),
+                            Button("Open custom spawn cfg", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "FreddoCustomSpawnpoints.cfg")))
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    private Control BuildModSettingsTab()
+    {
+        var grenades = ItemDatabase.ByCategory("Grenades").OrderBy(g => g.Name).Select(g => $"{g.Name} ({g.Id})").ToList();
+        _attackerGrenade.ItemsSource = grenades;
+        _corpseGrenade.ItemsSource = grenades;
+        LoadModSettings();
+        return new ScrollViewer
+        {
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "StarterPack fixes and Freddo commission" },
+                    _enableLootDrops,
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _attackerGrenadeEnabled, _attackerGrenade, Label("Chance"), _attackerChance } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _corpseGrenadeEnabled, _corpseGrenade, Label("Chance"), _corpseChance } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Lives"), _lives, Label("Streaming distance"), _streamingDistance } },
+                    new TextBlock { Text = "Ban list (one Epic ID per line)" },
+                    new ScrollViewer { Content = _banList, Height = 90 },
+                    new TextBlock { Text = "Proximity chat" },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Max range"), _proxMaxRange, Label("Min range"), _proxMinRange, Label("Falloff"), _proxFalloff } },
+                    new TextBlock { Text = "Juggernaut" },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Points"), _juggPointsToWin, Label("HP"), _juggHp, Label("Kill bonus"), _juggKillBonus, Label("Jugg kill"), _juggKillPoints, Label("Regular kill"), _juggRegularKillPoints } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Damage/point"), _juggDamagePerPoint, Label("Choices"), _juggLoadoutChoices, Label("Timeout"), _juggLoadoutTimeout, Label("Min spawn dist"), _juggMinSpawnDistance, Label("Min players"), _juggMinPlayers } },
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Load", LoadModSettings), Button("Save", SaveModSettings), Button("Open config folder", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config"))) } }
+                }
+            }
+        };
+    }
+
+    private Control BuildAdminsTab()
+    {
+        LoadAdmins();
+        return new StackPanel
+        {
+            Spacing = 8,
+            Children =
+            {
+                new ScrollViewer { Content = _adminList, Height = 300 },
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _adminName, _adminEpic, Label("Level"), _adminLevel } },
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Load", LoadAdmins), Button("Add / update", AddOrUpdateAdmin), Button("Remove", RemoveSelectedAdmin), Button("Save", SaveAdmins), Button("Open PlayerPerms.json", () => OpenPath(PlayerPermsPath())) } }
+            }
+        };
+    }
+
+    private Control BuildPresetsTab()
+    {
+        RefreshPresetLists();
+        return new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children =
+            {
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = "Built-in templates" },
+                        new ScrollViewer { Content = _builtInPresets, Height = 320 },
+                        Button("Apply selected template", ApplyBuiltInPreset)
+                    }
+                }, 0),
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                    Children =
+                    {
+                        new TextBlock { Text = "Saved config presets" },
+                        new ScrollViewer { Content = _userPresets, Height = 280 },
+                        _presetName,
+                        new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Refresh", RefreshPresetLists), Button("Save", SaveUserPreset), Button("Load", LoadUserPreset), Button("Delete", DeleteUserPreset) } }
+                    }
+                }, 1)
             }
         };
     }
@@ -256,27 +682,70 @@ public sealed class MainWindow : Window
     private Control BuildClientTab()
     {
         RebuildClientModChecks();
+        RefreshClientModLists();
 
-        return new StackPanel
+        return new ScrollViewer
         {
-            Spacing = 8,
-            Margin = new Avalonia.Thickness(6),
-            Children =
+            Content = new StackPanel
             {
-                PathRow("TABG Steam folder", _clientPath, BrowseClientAsync),
-                PathRow("Modded copy folder", _moddedClientPath, BrowseModdedClientAsync),
-                Button("Detect TABG client", DetectClientPath),
-                new TextBlock { Text = "This prepares a modded TABG copy. Install client mods from Marketplace." },
-                new StackPanel
+                Spacing = 8,
+                Margin = new Avalonia.Thickness(6),
+                Children =
                 {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
-                    Children =
+                    PathRow("TABG Steam folder", _clientPath, BrowseClientAsync),
+                    PathRow("Modded copy folder", _moddedClientPath, BrowseModdedClientAsync),
+                    Button("Detect TABG client", DetectClientPath),
+                    new TextBlock { Text = "This prepares a modded TABG copy. Install client mods from Marketplace or manage DLLs here." },
+                    new StackPanel
                     {
-                        Button("Prepare / update client", InstallClientModsAsync),
-                        Button("Open Marketplace", SelectMarketplaceTab),
-                        Button("Start modded client", StartModdedClient),
-                        Button("Open modded folder", () => OpenPath(_moddedClientPath.Text))
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children =
+                        {
+                            Button("Prepare / update client", InstallClientModsAsync),
+                            Button("Open Marketplace", SelectMarketplaceTab),
+                            Button("Start modded client", StartModdedClient),
+                            Button("Open modded folder", () => OpenPath(_moddedClientPath.Text))
+                        }
+                    },
+                    new Grid
+                    {
+                        ColumnDefinitions = new ColumnDefinitions("*,*"),
+                        Children =
+                        {
+                            Put(new StackPanel
+                            {
+                                Spacing = 8,
+                                Children =
+                                {
+                                    new TextBlock { Text = "Installed client DLLs" },
+                                    new ScrollViewer { Content = _clientPluginList, Height = 260 },
+                                    new StackPanel
+                                    {
+                                        Orientation = Orientation.Horizontal,
+                                        Spacing = 8,
+                                        Children =
+                                        {
+                                            Button("Refresh", RefreshClientModLists),
+                                            Button("Enable / disable", ToggleSelectedClientPlugin),
+                                            Button("Remove", RemoveSelectedClientPlugin),
+                                            Button("Add DLL", AddClientPluginAsync)
+                                        }
+                                    }
+                                }
+                            }, 0),
+                            Put(new StackPanel
+                            {
+                                Spacing = 8,
+                                Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                                Children =
+                                {
+                                    new TextBlock { Text = "Bundled client DLLs" },
+                                    new ScrollViewer { Content = _bundledClientPluginList, Height = 260 },
+                                    Button("Install selected", InstallBundledClientPlugin)
+                                }
+                            }, 1)
+                        }
                     }
                 }
             }
@@ -302,8 +771,13 @@ public sealed class MainWindow : Window
                         _marketplaceSearch,
                         Label("Type"),
                         _marketplaceType,
+                        Label("Sort"),
+                        _marketplaceSort,
                         Button("Refresh registry", () => { LoadPluginRegistry(); RebuildMarketplace(); }),
                         Button("Install selected", InstallMarketplacePluginAsync),
+                        Button("Update selected", UpdateMarketplacePluginAsync),
+                        Button("Update all", UpdateAllMarketplacePluginsAsync),
+                        Button("Pin / unpin", ToggleMarketplacePin),
                         Button("Uninstall selected", UninstallMarketplacePlugin)
                     }
                 },
@@ -325,36 +799,59 @@ public sealed class MainWindow : Window
             list.Items.Add(file);
 
         var viewer = new TextBox { IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+        _referenceSearch.TextChanged += (_, _) => viewer.Text = BuildItemsReference(_referenceSearch.Text);
         list.SelectionChanged += (_, _) =>
         {
             if (list.SelectedItem is string path && File.Exists(path))
                 viewer.Text = File.ReadAllText(path);
         };
 
-        return new Grid
+        return new DockPanel
         {
             Margin = new Avalonia.Thickness(6),
-            ColumnDefinitions = new ColumnDefinitions("300,*"),
             Children =
             {
-                Put(list, 0),
-                Put(viewer, 1)
+                DockTop(new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        Button("Commands", () => viewer.Text = BuildCommandsReference()),
+                        Button("Items", () => viewer.Text = BuildItemsReference(_referenceSearch.Text)),
+                        Button("Spawns", () => viewer.Text = BuildSpawnsReference()),
+                        Button("Loadout syntax", () => viewer.Text = BuildLoadoutReference()),
+                        _referenceSearch
+                    }
+                }),
+                new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitions("300,*"),
+                    Children =
+                    {
+                        Put(list, 0),
+                        Put(viewer, 1)
+                    }
+                }
             }
         };
     }
 
     private Control BuildSettingsTab()
     {
+        RefreshSettingsSummary();
         return new StackPanel
         {
             Spacing = 8,
             Margin = new Avalonia.Thickness(6),
             Children =
             {
-                new TextBlock { Text = "Functional Linux build. Settings are kept minimal in this first pass." },
+                _settingsSummary,
                 Button("Clear log", () => _log.Text = ""),
                 Button("Open log file", () => OpenPath(_logPath)),
-                Button("Open app folder", () => OpenPath(AppContext.BaseDirectory))
+                Button("Open app folder", () => OpenPath(AppContext.BaseDirectory)),
+                Button("Refresh status", RefreshSettingsSummary),
+                Button("Hard reset detected paths", HardResetDetectedPaths)
             }
         };
     }
@@ -554,6 +1051,282 @@ public sealed class MainWindow : Window
         Log("Saved game_settings.txt.");
     }
 
+    private string GameSettingsPath() => Path.Combine(_serverPath.Text ?? "", "game_settings.txt");
+    private string PlayerPermsPath() => Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "CitrusLib", "PlayerPerms.json");
+
+    private void LoadGameSettingsTyped()
+    {
+        try
+        {
+            var file = GameSettingsPath();
+            var settings = File.Exists(file) ? ConfigIO.ReadGameSettings(file) : new GameSettingsData();
+            foreach (var prop in typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (!_gameSettingEditors.TryGetValue(prop.Name, out var editor)) continue;
+                SetEditorValue(editor, prop.GetValue(settings));
+            }
+            Log(File.Exists(file) ? "Loaded typed game_settings.txt." : "Using default game settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not load typed game settings: " + ex.Message);
+        }
+    }
+
+    private void SaveGameSettingsTyped()
+    {
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir))
+        {
+            Log("Select a valid server folder first.");
+            return;
+        }
+
+        try
+        {
+            var file = GameSettingsPath();
+            var settings = File.Exists(file) ? ConfigIO.ReadGameSettings(file) : new GameSettingsData();
+            foreach (var prop in typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (!_gameSettingEditors.TryGetValue(prop.Name, out var editor)) continue;
+                prop.SetValue(settings, ConvertEditorValue(editor, prop.PropertyType));
+            }
+            ConfigIO.WriteGameSettings(settings, file);
+            LoadConfig();
+            Log("Saved typed game_settings.txt.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not save typed game settings: " + ex.Message);
+        }
+    }
+
+    private void LoadStarterPackSettings()
+    {
+        try
+        {
+            var s = StarterPackConfigService.Read(_serverPath.Text ?? "");
+            SelectComboText(_spWinCondition, s.WinCondition);
+            SelectComboText(_spLoadoutMode, s.GetLoadoutMode());
+            _spKillsToWin.Text = s.KillsToWin?.ToString(CultureInfo.InvariantCulture) ?? "";
+            _spForceKillAtStart.IsChecked = s.ForceKillAtStart;
+            _spDropItemsOnDeath.IsChecked = s.DropItemsOnDeath;
+            _spItemsGiven.Text = s.ItemsGiven;
+            _spLoadouts.Text = s.GetLoadoutsWithoutPrefix();
+            _spHealOnKill.IsChecked = s.HealOnKill;
+            _spHealOnKillAmount.Text = s.HealOnKillAmount.ToString(CultureInfo.InvariantCulture);
+            _spCanGoDown.IsChecked = s.CanGoDown;
+            _spCanLockOut.IsChecked = s.CanLockOut;
+            _spPercentVotes.Text = s.PercentOfVotes.ToString(CultureInfo.InvariantCulture);
+            _spMinPlayers.Text = s.MinNumberOfPlayers.ToString(CultureInfo.InvariantCulture);
+            _spTimeToStart.Text = s.TimeToStart.ToString(CultureInfo.InvariantCulture);
+            _spSpellDropEnabled.IsChecked = s.SpelldropEnabled;
+            _spMinSpellDelay.Text = s.MinSpellDropDelay.ToString(CultureInfo.InvariantCulture);
+            _spMaxSpellDelay.Text = s.MaxSpellDropDelay.ToString(CultureInfo.InvariantCulture);
+            _spSpellOffset.Text = s.SpellDropOffset.ToString(CultureInfo.InvariantCulture);
+            _spPreMatchTimeout.Text = s.PreMatchTimeout.ToString(CultureInfo.InvariantCulture);
+            _spPeriMatchTimeout.Text = s.PeriMatchTimeout.ToString(CultureInfo.InvariantCulture);
+            Log("Loaded TheStarterPack.txt settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not load StarterPack settings: " + ex.Message);
+        }
+    }
+
+    private void SaveStarterPackSettings()
+    {
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir))
+        {
+            Log("Select a valid server folder first.");
+            return;
+        }
+
+        try
+        {
+            var s = StarterPackConfigService.Read(dir);
+            s.WinCondition = _spWinCondition.SelectedItem?.ToString() ?? "Default";
+            s.KillsToWin = ParseNullableInt(_spKillsToWin.Text);
+            s.ForceKillAtStart = _spForceKillAtStart.IsChecked == true;
+            s.DropItemsOnDeath = _spDropItemsOnDeath.IsChecked == true;
+            s.ItemsGiven = _spItemsGiven.Text ?? "";
+            s.SetLoadoutsWithPrefix(_spLoadoutMode.SelectedItem?.ToString() ?? "Normal", _spLoadouts.Text ?? "");
+            s.HealOnKill = _spHealOnKill.IsChecked == true;
+            s.HealOnKillAmount = ParseFloat(_spHealOnKillAmount.Text, s.HealOnKillAmount);
+            s.CanGoDown = _spCanGoDown.IsChecked == true;
+            s.CanLockOut = _spCanLockOut.IsChecked == true;
+            s.PercentOfVotes = ParseInt(_spPercentVotes.Text, s.PercentOfVotes);
+            s.MinNumberOfPlayers = ParseInt(_spMinPlayers.Text, s.MinNumberOfPlayers);
+            s.TimeToStart = ParseInt(_spTimeToStart.Text, s.TimeToStart);
+            s.SpelldropEnabled = _spSpellDropEnabled.IsChecked == true;
+            s.MinSpellDropDelay = ParseInt(_spMinSpellDelay.Text, s.MinSpellDropDelay);
+            s.MaxSpellDropDelay = ParseInt(_spMaxSpellDelay.Text, s.MaxSpellDropDelay);
+            s.SpellDropOffset = ParseInt(_spSpellOffset.Text, s.SpellDropOffset);
+            s.PreMatchTimeout = ParseFloat(_spPreMatchTimeout.Text, s.PreMatchTimeout);
+            s.PeriMatchTimeout = ParseFloat(_spPeriMatchTimeout.Text, s.PeriMatchTimeout);
+            StarterPackConfigService.Write(dir, s);
+            Log("Saved TheStarterPack.txt settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not save StarterPack settings: " + ex.Message);
+        }
+    }
+
+    private void LoadRingSpawnSettings()
+    {
+        try
+        {
+            var gsPath = GameSettingsPath();
+            var gs = File.Exists(gsPath) ? ConfigIO.ReadGameSettings(gsPath) : new GameSettingsData();
+            var starter = StarterPackConfigService.Read(_serverPath.Text ?? "");
+            _ringSizes.Text = gs.RingSizes;
+            _ringSpeeds.Text = gs.RingSpeeds;
+            _validSpawnPoints.Text = starter.ValidSpawnPoints;
+            _customSpawnPoint.Text = starter.CustomSpawnPoint;
+            _matchSpawns.Text = ModConfigService.ReadSpawnPoints(_serverPath.Text ?? "");
+            Log("Loaded ring and spawn settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not load ring/spawn settings: " + ex.Message);
+        }
+    }
+
+    private void SaveRingSpawnSettings()
+    {
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir))
+        {
+            Log("Select a valid server folder first.");
+            return;
+        }
+
+        try
+        {
+            var gsPath = GameSettingsPath();
+            var gs = File.Exists(gsPath) ? ConfigIO.ReadGameSettings(gsPath) : new GameSettingsData();
+            gs.RingSizes = _ringSizes.Text ?? "";
+            gs.RingSpeeds = _ringSpeeds.Text ?? "";
+            ConfigIO.WriteGameSettings(gs, gsPath);
+
+            var starter = StarterPackConfigService.Read(dir);
+            starter.ValidSpawnPoints = _validSpawnPoints.Text ?? "";
+            starter.CustomSpawnPoint = _customSpawnPoint.Text ?? "";
+            StarterPackConfigService.Write(dir, starter);
+            ModConfigService.WriteSpawnPoints(dir, _matchSpawns.Text ?? "");
+            Log("Saved ring and spawn settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not save ring/spawn settings: " + ex.Message);
+        }
+    }
+
+    private void ApplySelectedSpawnLocation()
+    {
+        if (_spawnLocations.SelectedItem is not SpawnLocation spawn)
+            return;
+
+        _customSpawnPoint.Text = spawn.LobbySpawn;
+        _matchSpawns.Text = spawn.MatchSpawns;
+        _validSpawnPoints.Text = "6,";
+        _ringSizes.Text = $"{spawn.RingSize},{spawn.RingSize},{spawn.RingSize}";
+        _ringSpeeds.Text = "0.001,50,0.001";
+        Log("Applied spawn location: " + spawn.Name);
+    }
+
+    private void ApplyStandardRingPreset()
+    {
+        _ringSizes.Text = "4240.0,3450.0,1710.0,830.0,360.0,140.0";
+        _ringSpeeds.Text = "25.0,3.0,1.5,1.5,2,2";
+    }
+
+    private void ApplyDeathmatchRingPreset()
+    {
+        _ringSizes.Text = "244,244,244";
+        _ringSpeeds.Text = "0.001,50,0.001";
+    }
+
+    private void LoadModSettings()
+    {
+        try
+        {
+            var dir = _serverPath.Text ?? "";
+            var commission = ModConfigService.ReadCommission(dir);
+            var fixes = ModConfigService.ReadFixes(dir);
+            _enableLootDrops.IsChecked = fixes.EnableLootDrops;
+            _attackerGrenadeEnabled.IsChecked = commission.GrenadeAttackerEnabled;
+            _attackerChance.Text = commission.GrenadeAttackerChance.ToString(CultureInfo.InvariantCulture);
+            SelectGrenade(_attackerGrenade, commission.GrenadeAttackerId);
+            _corpseGrenadeEnabled.IsChecked = commission.GrenadeCorpseEnabled;
+            _corpseChance.Text = commission.GrenadeCorpseChance.ToString(CultureInfo.InvariantCulture);
+            SelectGrenade(_corpseGrenade, commission.GrenadeCorpseId);
+            _lives.Text = commission.Lives.ToString(CultureInfo.InvariantCulture);
+            _streamingDistance.Text = commission.StreamingDistance.ToString(CultureInfo.InvariantCulture);
+            _banList.Text = string.Join(Environment.NewLine, (commission.BanList ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            LoadSimpleCfg(Path.Combine(dir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg"), new Dictionary<string, TextBox>
+            {
+                ["MaxRange"] = _proxMaxRange,
+                ["MinRange"] = _proxMinRange,
+            });
+            var falloff = ReadSimpleCfgValue(Path.Combine(dir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg"), "FalloffCurve");
+            SelectComboText(_proxFalloff, string.Equals(falloff, "Logarithmic", StringComparison.OrdinalIgnoreCase) ? "Logarithmic" : "Linear");
+            LoadSimpleCfg(Path.Combine(dir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg"), new Dictionary<string, TextBox>
+            {
+                ["PointsToWin"] = _juggPointsToWin,
+                ["HP"] = _juggHp,
+                ["JuggernautKillBonus"] = _juggKillBonus,
+                ["JuggernautKillPoints"] = _juggKillPoints,
+                ["RegularKillPoints"] = _juggRegularKillPoints,
+                ["DamagePerPoint"] = _juggDamagePerPoint,
+                ["LoadoutChoices"] = _juggLoadoutChoices,
+                ["LoadoutTimeout"] = _juggLoadoutTimeout,
+                ["MinSpawnDistance"] = _juggMinSpawnDistance,
+                ["MinPlayers"] = _juggMinPlayers,
+            });
+            Log("Loaded mod settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not load mod settings: " + ex.Message);
+        }
+    }
+
+    private void SaveModSettings()
+    {
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir))
+        {
+            Log("Select a valid server folder first.");
+            return;
+        }
+
+        try
+        {
+            var commission = ModConfigService.ReadCommission(dir);
+            commission.GrenadeAttackerEnabled = _attackerGrenadeEnabled.IsChecked == true;
+            commission.GrenadeAttackerChance = ParseFloat(_attackerChance.Text, commission.GrenadeAttackerChance);
+            commission.GrenadeAttackerId = SelectedGrenadeId(_attackerGrenade) ?? commission.GrenadeAttackerId;
+            commission.GrenadeCorpseEnabled = _corpseGrenadeEnabled.IsChecked == true;
+            commission.GrenadeCorpseChance = ParseFloat(_corpseChance.Text, commission.GrenadeCorpseChance);
+            commission.GrenadeCorpseId = SelectedGrenadeId(_corpseGrenade) ?? commission.GrenadeCorpseId;
+            commission.Lives = ParseInt(_lives.Text, commission.Lives);
+            commission.StreamingDistance = ParseFloat(_streamingDistance.Text, commission.StreamingDistance);
+            commission.BanList = string.Join(",", (_banList.Text ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            ModConfigService.WriteCommission(dir, commission);
+            ModConfigService.WriteFixes(dir, new StarterPackFixesSettings { EnableLootDrops = _enableLootDrops.IsChecked == true });
+            WriteProximityCfg(dir);
+            WriteJuggernautCfg(dir);
+            Log("Saved mod settings.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not save mod settings: " + ex.Message);
+        }
+    }
+
     private async void CreateBackupAsync()
     {
         var backup = new BackupService(new Progress<string>(Log));
@@ -584,6 +1357,162 @@ public sealed class MainWindow : Window
         RefreshBackups();
     }
 
+    private void LoadAdmins()
+    {
+        _adminList.Items.Clear();
+        var path = PlayerPermsPath();
+        if (!File.Exists(path))
+        {
+            Log("PlayerPerms.json not found yet.");
+            return;
+        }
+
+        try
+        {
+            var root = JArray.Parse(File.ReadAllText(path));
+            foreach (var player in root.SelectTokens("$..players[*]").OfType<JObject>())
+            {
+                _adminList.Items.Add(new AdminEntry(
+                    player.Value<string>("name") ?? "",
+                    player.Value<string>("epic") ?? "",
+                    player.Value<int?>("permlevel") ?? 1));
+            }
+            Log("Loaded admins from PlayerPerms.json.");
+        }
+        catch (Exception ex)
+        {
+            Log("Could not load PlayerPerms.json: " + ex.Message);
+        }
+    }
+
+    private void AddOrUpdateAdmin()
+    {
+        var entry = new AdminEntry(
+            _adminName.Text?.Trim() ?? "",
+            _adminEpic.Text?.Trim() ?? "",
+            ParseInt(_adminLevel.Text, 4));
+        if (string.IsNullOrWhiteSpace(entry.Epic))
+        {
+            Log("Epic ID is required.");
+            return;
+        }
+
+        foreach (var item in _adminList.Items.OfType<AdminEntry>().ToList())
+        {
+            if (item.Epic.Equals(entry.Epic, StringComparison.OrdinalIgnoreCase))
+            {
+                _adminList.Items.Remove(item);
+                _adminList.Items.Add(entry);
+                return;
+            }
+        }
+
+        _adminList.Items.Add(entry);
+    }
+
+    private void RemoveSelectedAdmin()
+    {
+        if (_adminList.SelectedItem != null)
+            _adminList.Items.Remove(_adminList.SelectedItem);
+    }
+
+    private void SaveAdmins()
+    {
+        var dir = Path.GetDirectoryName(PlayerPermsPath());
+        if (dir == null) return;
+        Directory.CreateDirectory(dir);
+
+        var players = new JArray();
+        foreach (var entry in _adminList.Items.OfType<AdminEntry>())
+        {
+            players.Add(new JObject
+            {
+                ["name"] = entry.Name,
+                ["epic"] = entry.Epic,
+                ["permlevel"] = entry.PermLevel
+            });
+        }
+
+        var root = new JArray
+        {
+            new JObject
+            {
+                ["name"] = "players",
+                ["description"] = "Linux GUI managed player permissions.",
+                ["players"] = players
+            }
+        };
+
+        File.WriteAllText(PlayerPermsPath(), root.ToString(Formatting.Indented));
+        Log("Saved PlayerPerms.json.");
+    }
+
+    private void RefreshPresetLists()
+    {
+        _builtInPresets.Items.Clear();
+        foreach (var preset in BuiltInPresets.All)
+            _builtInPresets.Items.Add(preset);
+
+        _userPresets.Items.Clear();
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (Directory.Exists(dir))
+        {
+            foreach (var name in PresetManager.ListPresets(dir).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                _userPresets.Items.Add(name);
+        }
+    }
+
+    private void ApplyBuiltInPreset()
+    {
+        if (_builtInPresets.SelectedItem is not BuiltInPresets.BuiltInPreset preset)
+        {
+            Log("Select a built-in template first.");
+            return;
+        }
+
+        var dir = _serverPath.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir))
+        {
+            Log("Select a valid server folder first.");
+            return;
+        }
+
+        BuiltInPresets.Deploy(preset, dir);
+        Log("Applied built-in template: " + preset.Name);
+        LoadConfig();
+    }
+
+    private void SaveUserPreset()
+    {
+        var dir = _serverPath.Text?.Trim() ?? "";
+        var name = _presetName.Text?.Trim() ?? "";
+        if (!Directory.Exists(dir) || string.IsNullOrWhiteSpace(name))
+        {
+            Log("Select a server folder and enter a preset name.");
+            return;
+        }
+
+        PresetManager.SavePreset(dir, name, PresetManager.DefaultConfigRelativePaths);
+        RefreshPresetLists();
+        Log("Saved preset: " + name);
+    }
+
+    private void LoadUserPreset()
+    {
+        if (_userPresets.SelectedItem is not string name) return;
+        PresetManager.LoadPreset(_serverPath.Text ?? "", name);
+        Log("Loaded preset: " + name);
+        LoadConfig();
+    }
+
+    private void DeleteUserPreset()
+    {
+        if (_userPresets.SelectedItem is not string name) return;
+        PresetManager.DeletePreset(_serverPath.Text ?? "", name);
+        RefreshPresetLists();
+        Log("Deleted preset: " + name);
+    }
+
     private async void InstallClientModsAsync()
     {
         var ok = await ClientModInstaller.InstallAsync(
@@ -593,6 +1522,124 @@ public sealed class MainWindow : Window
             new Progress<string>(Log));
 
         Log(ok ? "Client prepared." : "Client preparation failed.");
+        RefreshClientModLists();
+    }
+
+    private string ServerPluginDir() => Path.Combine(_serverPath.Text ?? "", "BepInEx", "plugins");
+    private string ClientPluginDir() => Path.Combine(_moddedClientPath.Text ?? "", "BepInEx", "plugins");
+
+    private void RefreshServerModLists()
+    {
+        RefreshPluginList(_serverPluginList, ServerPluginDir());
+        RefreshBundledList(_bundledServerPluginList, "plugins");
+    }
+
+    private void RefreshClientModLists()
+    {
+        RefreshPluginList(_clientPluginList, ClientPluginDir());
+        RefreshBundledList(_bundledClientPluginList, "client-plugins");
+    }
+
+    private void RefreshPluginList(ListBox list, string dir)
+    {
+        list.Items.Clear();
+        if (!Directory.Exists(dir)) return;
+        foreach (var file in Directory.GetFiles(dir, "*.dll", SearchOption.AllDirectories).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+            list.Items.Add(new PluginFileItem(file, true));
+        foreach (var file in Directory.GetFiles(dir, "*.dll.disabled", SearchOption.AllDirectories).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+            list.Items.Add(new PluginFileItem(file, false));
+    }
+
+    private void RefreshBundledList(ListBox list, string folder)
+    {
+        list.Items.Clear();
+        foreach (var file in FindFilesNearApp(folder, "*.dll").OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+            list.Items.Add(file);
+    }
+
+    private async void AddServerPluginAsync()
+    {
+        var file = await PickDllAsync("Select server plugin DLL");
+        if (file == null) return;
+        InstallDllToFolder(file, ServerPluginDir());
+        RefreshServerModLists();
+    }
+
+    private async void AddClientPluginAsync()
+    {
+        var file = await PickDllAsync("Select client plugin DLL");
+        if (file == null) return;
+        InstallDllToFolder(file, ClientPluginDir());
+        RefreshClientModLists();
+    }
+
+    private void InstallBundledServerPlugin()
+    {
+        if (_bundledServerPluginList.SelectedItem is not string file) return;
+        InstallDllToFolder(file, ServerPluginDir());
+        RefreshServerModLists();
+    }
+
+    private void InstallBundledClientPlugin()
+    {
+        if (_bundledClientPluginList.SelectedItem is not string file) return;
+        InstallDllToFolder(file, ClientPluginDir());
+        RefreshClientModLists();
+    }
+
+    private void ToggleSelectedServerPlugin()
+    {
+        TogglePluginFile(_serverPluginList.SelectedItem as PluginFileItem);
+        RefreshServerModLists();
+    }
+
+    private void ToggleSelectedClientPlugin()
+    {
+        TogglePluginFile(_clientPluginList.SelectedItem as PluginFileItem);
+        RefreshClientModLists();
+    }
+
+    private void RemoveSelectedServerPlugin()
+    {
+        RemovePluginFile(_serverPluginList.SelectedItem as PluginFileItem);
+        RefreshServerModLists();
+    }
+
+    private void RemoveSelectedClientPlugin()
+    {
+        RemovePluginFile(_clientPluginList.SelectedItem as PluginFileItem);
+        RefreshClientModLists();
+    }
+
+    private void QuickRestartServer()
+    {
+        _serverProcess.Stop();
+        Task.Delay(1200).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() => StartServer("-batchmode -nographics -nolog")));
+        Log("Queued server restart.");
+    }
+
+    private void ExportVisibleLog()
+    {
+        var path = Path.Combine(Path.GetDirectoryName(_logPath) ?? AppContext.BaseDirectory, $"linux-gui-export-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+        File.WriteAllText(path, _log.Text ?? "");
+        Log("Exported visible log to " + path);
+    }
+
+    private void FindInVisibleLog()
+    {
+        var query = _consoleSearch.Text;
+        if (string.IsNullOrWhiteSpace(query) || string.IsNullOrEmpty(_log.Text)) return;
+        var index = _log.Text.LastIndexOf(query, StringComparison.OrdinalIgnoreCase);
+        Log(index >= 0 ? $"Found '{query}' at visible log offset {index}." : $"'{query}' not found in visible log.");
+    }
+
+    private void SendConsoleCommand()
+    {
+        var command = _consoleCommand.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(command)) return;
+        Log("[operator command note] " + command);
+        _consoleCommand.Text = "";
     }
 
     private void StartModdedClient()
@@ -752,6 +1799,68 @@ public sealed class MainWindow : Window
         UpdateMarketplaceDetails();
     }
 
+    private async void UpdateMarketplacePluginAsync()
+    {
+        var manifest = GetSelectedMarketplaceManifest();
+        if (manifest == null)
+        {
+            Log("Select a marketplace plugin first.");
+            return;
+        }
+
+        var tracker = CreateTrackerForManifest(manifest);
+        if (tracker == null || !MarketplaceInstallService.HasUpdate(manifest, tracker))
+        {
+            Log("No update available for selected plugin.");
+            return;
+        }
+
+        var service = new MarketplaceInstallService(
+            new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
+            tracker);
+        var ok = await service.UpdatePluginAsync(manifest, _serverPath.Text?.Trim() ?? "", _moddedClientPath.Text?.Trim());
+        Log(ok ? $"Updated {manifest.Name}." : $"Failed to update {manifest.Name}.");
+        RebuildMarketplace();
+        UpdateMarketplaceDetails();
+    }
+
+    private async void UpdateAllMarketplacePluginsAsync()
+    {
+        var updated = 0;
+        foreach (var manifest in _registryPlugins.Where(IsMarketplaceInstallable).ToList())
+        {
+            var tracker = CreateTrackerForManifest(manifest);
+            if (tracker == null || !MarketplaceInstallService.HasUpdate(manifest, tracker))
+                continue;
+
+            var service = new MarketplaceInstallService(
+                new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
+                tracker);
+            if (await service.UpdatePluginAsync(manifest, _serverPath.Text?.Trim() ?? "", _moddedClientPath.Text?.Trim()))
+                updated++;
+        }
+
+        Log($"Updated {updated} marketplace plugin(s).");
+        RebuildMarketplace();
+    }
+
+    private void ToggleMarketplacePin()
+    {
+        var manifest = GetSelectedMarketplaceManifest();
+        var tracker = manifest == null ? null : CreateTrackerForManifest(manifest);
+        var entry = manifest == null ? null : tracker?.FindById(manifest.Id);
+        if (manifest == null || tracker == null || entry == null)
+        {
+            Log("Install a marketplace plugin before pinning it.");
+            return;
+        }
+
+        tracker.SetPinned(manifest.Id, !entry.Pinned);
+        Log((entry.Pinned ? "Pinned " : "Unpinned ") + manifest.Name);
+        RebuildMarketplace();
+        UpdateMarketplaceDetails();
+    }
+
     private void LoadPluginRegistry()
     {
         _registryPlugins.Clear();
@@ -818,9 +1927,8 @@ public sealed class MainWindow : Window
         var plugins = _registryPlugins
             .Where(IsMarketplaceInstallable)
             .Where(p => MarketplaceMatchesFilter(p, query, typeFilter))
-            .OrderBy(p => p.Type, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        plugins = SortMarketplacePlugins(plugins);
 
         foreach (var plugin in plugins)
         {
@@ -832,6 +1940,30 @@ public sealed class MainWindow : Window
 
         Log($"Marketplace loaded {plugins.Count} installable plugins.");
         UpdateMarketplaceDetails();
+    }
+
+    private List<PluginManifest> SortMarketplacePlugins(List<PluginManifest> plugins)
+    {
+        return (_marketplaceSort.SelectedItem?.ToString() ?? "Type then A-Z") switch
+        {
+            "A-Z" => plugins.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList(),
+            "Installed first" => plugins
+                .OrderByDescending(IsMarketplaceInstalled)
+                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            "Updates first" => plugins
+                .OrderByDescending(p =>
+                {
+                    var tracker = CreateTrackerForManifest(p);
+                    return tracker != null && MarketplaceInstallService.HasUpdate(p, tracker);
+                })
+                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            _ => plugins
+                .OrderBy(p => p.Type, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+        };
     }
 
     private static bool MarketplaceMatchesFilter(PluginManifest plugin, string? query, string typeFilter)
@@ -909,6 +2041,7 @@ public sealed class MainWindow : Window
         _marketplace.SelectionChanged += (_, _) => UpdateMarketplaceDetails();
         _marketplaceSearch.TextChanged += (_, _) => RebuildMarketplace();
         _marketplaceType.SelectionChanged += (_, _) => RebuildMarketplace();
+        _marketplaceSort.SelectionChanged += (_, _) => RebuildMarketplace();
     }
 
     private PluginManifest? GetSelectedMarketplaceManifest()
@@ -931,9 +2064,12 @@ public sealed class MainWindow : Window
         }
 
         var missingDlls = FindMissingBundledMarketplaceDlls(manifest);
+        var tracker = CreateTrackerForManifest(manifest);
         var status = missingDlls.Length > 0
             ? "Missing bundled DLLs: " + string.Join(", ", missingDlls)
+            : tracker != null && MarketplaceInstallService.HasUpdate(manifest, tracker) ? "Update available"
             : IsMarketplaceInstalled(manifest) ? "Installed" : "Available";
+        var installed = tracker?.FindById(manifest.Id);
 
         var companion = !string.IsNullOrWhiteSpace(manifest.ClientPluginId)
             ? _registryPlugins.FirstOrDefault(p => p.Id.Equals(manifest.ClientPluginId, StringComparison.OrdinalIgnoreCase))
@@ -948,6 +2084,9 @@ public sealed class MainWindow : Window
             $"DLLs: {string.Join(", ", manifest.DllNames)}",
         };
 
+        if (installed != null)
+            lines.Add($"Installed version: {installed.InstalledVersion}  Pinned: {installed.Pinned}");
+
         if (manifest.Dependencies.Length > 0)
             lines.Add($"Dependencies: {string.Join(", ", manifest.Dependencies)}");
 
@@ -957,20 +2096,28 @@ public sealed class MainWindow : Window
         if (!string.IsNullOrWhiteSpace(manifest.Description))
             lines.Add(manifest.Description);
 
+        if (!string.IsNullOrWhiteSpace(manifest.Changelog))
+            lines.Add("Changelog: " + manifest.Changelog);
+
         _marketplaceDetails.Text = string.Join(Environment.NewLine, lines);
     }
 
     private bool IsMarketplaceInstalled(PluginManifest manifest)
     {
+        var tracker = CreateTrackerForManifest(manifest);
+        return tracker?.IsInstalled(manifest.Id) == true;
+    }
+
+    private InstalledPluginTracker? CreateTrackerForManifest(PluginManifest manifest)
+    {
         var type = manifest.Type.ToLowerInvariant();
         var root = type == "client"
             ? _moddedClientPath.Text?.Trim()
             : _serverPath.Text?.Trim();
-
         if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
-            return false;
+            return null;
 
-        return new InstalledPluginTracker(root).IsInstalled(manifest.Id);
+        return new InstalledPluginTracker(root);
     }
 
     private static string[] FindMissingBundledMarketplaceDlls(PluginManifest manifest)
@@ -1101,7 +2248,287 @@ public sealed class MainWindow : Window
     private void SelectMarketplaceTab()
     {
         if (_tabs != null)
-            _tabs.SelectedIndex = 5;
+            _tabs.SelectedIndex = 7;
+    }
+
+    private static TextBox SmallBox(string text = "") => new() { Text = text, Width = 80 };
+
+    private static Control CreateGameSettingEditor(PropertyInfo prop)
+    {
+        if (prop.PropertyType == typeof(bool))
+            return new CheckBox();
+
+        if (prop.Name == nameof(GameSettingsData.TeamMode))
+            return new ComboBox { Width = 160, ItemsSource = new[] { "SQUAD", "DUO", "SOLO" } };
+
+        if (prop.Name == nameof(GameSettingsData.GameMode))
+            return new ComboBox { Width = 180, ItemsSource = new[] { "BattleRoyale", "Brawl", "Test", "Bomb", "Deception" } };
+
+        return new TextBox { Width = prop.PropertyType == typeof(string) ? 260 : 120 };
+    }
+
+    private static void SetEditorValue(Control editor, object? value)
+    {
+        switch (editor)
+        {
+            case CheckBox cb:
+                cb.IsChecked = value is bool b && b;
+                break;
+            case ComboBox combo:
+                SelectComboText(combo, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "");
+                break;
+            case TextBox box:
+                box.Text = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+                break;
+        }
+    }
+
+    private static object ConvertEditorValue(Control editor, Type type)
+    {
+        if (type == typeof(bool))
+            return editor is CheckBox cb && cb.IsChecked == true;
+
+        var text = editor switch
+        {
+            ComboBox combo => combo.SelectedItem?.ToString() ?? "",
+            TextBox box => box.Text ?? "",
+            _ => ""
+        };
+
+        if (type == typeof(int))
+            return ParseInt(text, 0);
+        if (type == typeof(float))
+            return ParseFloat(text, 0);
+
+        return text;
+    }
+
+    private static int? ParseNullableInt(string? text)
+        => int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
+
+    private static int ParseInt(string? text, int fallback)
+        => int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : fallback;
+
+    private static float ParseFloat(string? text, float fallback)
+        => float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : fallback;
+
+    private static void SelectComboText(ComboBox combo, string text)
+    {
+        foreach (var item in combo.Items)
+        {
+            if (string.Equals(item?.ToString(), text, StringComparison.OrdinalIgnoreCase))
+            {
+                combo.SelectedItem = item;
+                return;
+            }
+        }
+        if (combo.Items.Count > 0)
+            combo.SelectedIndex = 0;
+    }
+
+    private static int? SelectedGrenadeId(ComboBox combo)
+    {
+        var text = combo.SelectedItem?.ToString() ?? "";
+        var open = text.LastIndexOf('(');
+        var close = text.LastIndexOf(')');
+        if (open >= 0 && close > open && int.TryParse(text[(open + 1)..close], out var id))
+            return id;
+        return null;
+    }
+
+    private static void SelectGrenade(ComboBox combo, int id)
+    {
+        var needle = $"({id})";
+        foreach (var item in combo.Items)
+        {
+            if ((item?.ToString() ?? "").Contains(needle, StringComparison.Ordinal))
+            {
+                combo.SelectedItem = item;
+                return;
+            }
+        }
+    }
+
+    private static void LoadSimpleCfg(string path, IReadOnlyDictionary<string, TextBox> targets)
+    {
+        if (!File.Exists(path)) return;
+        foreach (var raw in File.ReadAllLines(path))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("#") || line.StartsWith("[")) continue;
+            var idx = line.IndexOf('=');
+            if (idx < 1) continue;
+            var key = line[..idx].Trim();
+            var value = line[(idx + 1)..].Trim();
+            if (targets.TryGetValue(key, out var box))
+                box.Text = value;
+        }
+    }
+
+    private static string? ReadSimpleCfgValue(string path, string key)
+    {
+        if (!File.Exists(path)) return null;
+        foreach (var raw in File.ReadAllLines(path))
+        {
+            var line = raw.Trim();
+            if (!line.StartsWith(key, StringComparison.OrdinalIgnoreCase)) continue;
+            var idx = line.IndexOf('=');
+            if (idx >= 0) return line[(idx + 1)..].Trim();
+        }
+        return null;
+    }
+
+    private void WriteProximityCfg(string serverDir)
+    {
+        var cfg = Path.Combine(serverDir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg");
+        Directory.CreateDirectory(Path.GetDirectoryName(cfg)!);
+        File.WriteAllText(cfg, $@"[ProximityChat]
+
+## Distance beyond which audio is not relayed
+# Setting type: Single
+# Default value: 50
+MaxRange = {_proxMaxRange.Text?.Trim()}
+
+## Distance within which audio is full volume
+# Setting type: Single
+# Default value: 5
+MinRange = {_proxMinRange.Text?.Trim()}
+
+## Volume falloff: Linear or Logarithmic
+# Setting type: String
+# Default value: Linear
+FalloffCurve = {_proxFalloff.SelectedItem}
+");
+    }
+
+    private void WriteJuggernautCfg(string serverDir)
+    {
+        var cfg = Path.Combine(serverDir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg");
+        Directory.CreateDirectory(Path.GetDirectoryName(cfg)!);
+        File.WriteAllText(cfg, $@"[Scoring]
+PointsToWin = {_juggPointsToWin.Text?.Trim()}
+DamagePointsPerChunk = 1
+DamagePerPoint = {_juggDamagePerPoint.Text?.Trim()}
+JuggernautKillBonus = {_juggKillBonus.Text?.Trim()}
+JuggernautKillPoints = {_juggKillPoints.Text?.Trim()}
+RegularKillPoints = {_juggRegularKillPoints.Text?.Trim()}
+
+[Juggernaut]
+HP = {_juggHp.Text?.Trim()}
+LoadoutChoices = {_juggLoadoutChoices.Text?.Trim()}
+LoadoutTimeout = {_juggLoadoutTimeout.Text?.Trim()}
+MinSpawnDistance = {_juggMinSpawnDistance.Text?.Trim()}
+
+[General]
+MinPlayers = {_juggMinPlayers.Text?.Trim()}
+");
+    }
+
+    private void InstallDllToFolder(string sourceFile, string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+        var dest = Path.Combine(targetDir, Path.GetFileName(sourceFile));
+        File.Copy(sourceFile, dest, overwrite: true);
+        Log("Installed DLL: " + dest);
+    }
+
+    private static void TogglePluginFile(PluginFileItem? item)
+    {
+        if (item == null || !File.Exists(item.Path)) return;
+        var target = item.Enabled
+            ? item.Path + ".disabled"
+            : item.Path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase)
+                ? item.Path[..^".disabled".Length]
+                : item.Path;
+        File.Move(item.Path, target, overwrite: true);
+    }
+
+    private static void RemovePluginFile(PluginFileItem? item)
+    {
+        if (item == null || !File.Exists(item.Path)) return;
+        File.Delete(item.Path);
+    }
+
+    private async Task<string?> PickDllAsync(string title)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("DLL") { Patterns = new[] { "*.dll" } }
+            }
+        });
+        return files.FirstOrDefault()?.TryGetLocalPath();
+    }
+
+    private static string BuildCommandsReference()
+    {
+        return string.Join(Environment.NewLine, new[]
+        {
+            "Common TABG dedicated server/operator notes",
+            "",
+            "Start args used by this GUI: -batchmode -nographics -nolog",
+            "Main configs: game_settings.txt, TheStarterPack.txt, BepInEx/config/CitrusLib/PlayerPerms.json",
+            "Marketplace installs community mods into BepInEx/plugins/community/<plugin-id>/",
+            "Enable/disable local DLLs by renaming .dll <-> .dll.disabled in the Server Mods or Client panels.",
+            "",
+            "The dedicated server does not expose a reliable stdin command pipe in this launcher."
+        });
+    }
+
+    private static string BuildItemsReference(string? filter)
+    {
+        var query = filter?.Trim();
+        var items = ItemDatabase.AllItems
+            .Where(i => string.IsNullOrWhiteSpace(query) ||
+                i.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                i.Category.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                i.Id.ToString(CultureInfo.InvariantCulture).Contains(query, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(i => i.Category)
+            .ThenBy(i => i.Name);
+        return string.Join(Environment.NewLine, items.Select(i => $"{i.Id,4}  {i.Category,-14}  {i.Name}"));
+    }
+
+    private static string BuildSpawnsReference()
+    {
+        return string.Join(Environment.NewLine + Environment.NewLine,
+            ItemDatabase.SpawnLocations.Select(s =>
+                $"{s.Name}{Environment.NewLine}Lobby: {s.LobbySpawn}{Environment.NewLine}Ring center: {s.RingCenter} size {s.RingSize}{Environment.NewLine}Match spawns: {s.MatchSpawns}"));
+    }
+
+    private static string BuildLoadoutReference()
+    {
+        return "Loadout syntax:" + Environment.NewLine +
+               "Name(allowed attachment ids):weight%itemId:amount,itemId:amount/" + Environment.NewLine +
+               "Example: AK2K(1,0,14):10%151:1,6:255,6:255/" + Environment.NewLine +
+               "ItemsGiven syntax: itemId:amount,itemId:amount,";
+    }
+
+    private void RefreshSettingsSummary()
+    {
+        _settingsSummary.Text = string.Join(Environment.NewLine, new[]
+        {
+            "Linux GUI status",
+            $"App folder: {AppContext.BaseDirectory}",
+            $"Log file: {_logPath}",
+            $"Server folder: {_serverPath.Text}",
+            $"Client folder: {_clientPath.Text}",
+            $"Modded client: {_moddedClientPath.Text}",
+            $"Bundled server plugins: {FindFilesNearApp("plugins", "*.dll").Count()}",
+            $"Bundled client plugins: {FindFilesNearApp("client-plugins", "*.dll").Count()}",
+            $"Marketplace entries: {_registryPlugins.Count}"
+        });
+    }
+
+    private void HardResetDetectedPaths()
+    {
+        _serverPath.Text = "";
+        _clientPath.Text = "";
+        _moddedClientPath.Text = "";
+        TryAutoDetectPaths();
+        RefreshSettingsSummary();
     }
 
     private void OpenPath(string? path)
@@ -1478,6 +2905,14 @@ public sealed class MainWindow : Window
         return control;
     }
 
+    private static void Put(Grid grid, Control control, int row, int column)
+    {
+        Grid.SetRow(control, row);
+        Grid.SetColumn(control, column);
+        control.Margin = new Avalonia.Thickness(2);
+        grid.Children.Add(control);
+    }
+
     private static string? FindFileNearApp(string relativePath)
     {
         var current = AppContext.BaseDirectory;
@@ -1535,6 +2970,22 @@ public sealed class MainWindow : Window
         public override string ToString()
         {
             return $"[{Manifest.Type}] [{Status}] {Manifest.Name} {Manifest.Version} - {Manifest.Description}";
+        }
+    }
+
+    private sealed record AdminEntry(string Name, string Epic, int PermLevel)
+    {
+        public override string ToString() => $"{Name} - {Epic} - level {PermLevel}";
+    }
+
+    private sealed record PluginFileItem(string Path, bool Enabled)
+    {
+        public override string ToString()
+        {
+            var name = System.IO.Path.GetFileName(Path);
+            if (name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))
+                name = name[..^".disabled".Length];
+            return $"[{(Enabled ? "on" : "off")}] {name}";
         }
     }
 }
