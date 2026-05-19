@@ -11,6 +11,7 @@ using Xunit;
 
 namespace TabgInstaller.Tests.Services
 {
+    [Collection("PluginRegistry")]
     public class MarketplaceInstallServiceTests : IDisposable
     {
         private readonly string _tempDir;

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace TabgInstaller.Tests.ViewModels
 {
+    [Collection("PluginRegistry")]
     public class InstallerPanelViewModelTests
     {
         private readonly Mock<IServerPathProvider> _serverPath = new();
