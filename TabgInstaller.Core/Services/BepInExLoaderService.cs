@@ -26,6 +26,12 @@ namespace TabgInstaller.Core.Services
 
             try
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    await ConfigureUnixDoorstopAsync(serverPath);
+                    return;
+                }
+
                 var originalExe = Path.Combine(serverPath, "TABG.exe");
                 var backupExe = Path.Combine(serverPath, "TABG_Original.exe");
                 
@@ -106,6 +112,69 @@ Write-Host 'You may need to restart any open terminals for changes to take effec
             }
         }
 
+        private async Task ConfigureUnixDoorstopAsync(string serverPath)
+        {
+            var configPath = Path.Combine(serverPath, "doorstop_config.ini");
+            var lines = new[]
+            {
+                "[UnityDoorstop]",
+                "enabled=true",
+                "targetAssembly=BepInEx/core/BepInEx.Preloader.dll",
+                "redirectOutputLog=true",
+                "ignoreDisableSwitch=false",
+                "dllSearchPathOverride="
+            };
+            await File.WriteAllLinesAsync(configPath, lines);
+
+            var runScript = Path.Combine(serverPath, "run_bepinex.sh");
+            if (File.Exists(runScript))
+            {
+                ConfigureUnixBepInExScript(serverPath, runScript);
+                try
+                {
+                    Process.Start("chmod", $"+x \"{runScript}\"")?.WaitForExit(2000);
+                    _log.Report("  → Marked run_bepinex.sh executable");
+                }
+                catch (Exception ex)
+                {
+                    _log.Report($"  → Could not chmod run_bepinex.sh: {ex.Message}");
+                }
+            }
+
+            _log.Report("  → Linux Doorstop configuration written");
+            _log.Report("  → Start the server through run_bepinex.sh when available");
+        }
+
+        private void ConfigureUnixBepInExScript(string serverPath, string runScript)
+        {
+            try
+            {
+                var exe = new[]
+                {
+                    "TABG-DS.x86_64",
+                    "TABG.x86_64",
+                    "TotallyAccurateBattlegroundsDedicatedServer.x86_64",
+                    "TABG-DS.exe",
+                    "TABG.exe"
+                }.FirstOrDefault(name => File.Exists(Path.Combine(serverPath, name)));
+
+                if (string.IsNullOrEmpty(exe))
+                    return;
+
+                var script = File.ReadAllText(runScript);
+                script = System.Text.RegularExpressions.Regex.Replace(
+                    script,
+                    @"(?m)^executable_name\s*=.*$",
+                    $"executable_name=\"{exe}\"");
+                File.WriteAllText(runScript, script);
+                _log.Report($"  → Configured run_bepinex.sh executable_name={exe}");
+            }
+            catch (Exception ex)
+            {
+                _log.Report($"  → Could not configure run_bepinex.sh: {ex.Message}");
+            }
+        }
+
         private async Task CreateSimpleWrapperAsync(string serverPath)
         {
             // For Unity 2021.3+, we need to ensure the doorstop DLLs are recognized
@@ -156,4 +225,4 @@ Write-Host 'You may need to restart any open terminals for changes to take effec
             // Nothing to dispose
         }
     }
-} 
+}

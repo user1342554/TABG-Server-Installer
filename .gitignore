@@ -49,3 +49,8 @@ _tabgvr_temp/
 !*.xaml
 !*.json
 !*.sln 
+
+# Ignore TABG server files generated when testing from the repo root
+ExtraSettings.json
+PlayerPerms.json
+LootTables/

@@ -73,5 +73,8 @@ namespace TabgInstaller.Core.Model
         /// <summary>Whether this plugin is selected by default in the installer wizard.</summary>
         [JsonProperty("defaultChecked")]
         public bool DefaultChecked { get; set; }
+
+        public override string ToString()
+            => string.IsNullOrWhiteSpace(Version) ? Name : $"{Name} {Version} - {Description}";
     }
 }

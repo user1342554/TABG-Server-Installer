@@ -33,10 +33,6 @@ namespace TabgInstaller.Core.Services
 
                 foreach (var depId in plugin.Dependencies)
                 {
-                    // Skip bundled plugins
-                    if (PluginRegistry.FindById(depId) != null) continue;
-
-                    // Skip already-installed community plugins
                     if (tracker.IsInstalled(depId)) continue;
 
                     var dep = registryPlugins.FirstOrDefault(
@@ -199,13 +195,23 @@ namespace TabgInstaller.Core.Services
             if (manifest.DllNames == null || manifest.DllNames.Length == 0)
                 return false;
 
-            // Search both server and client bundled directories
             var bundledDirs = new List<string>();
             var serverDir = BuiltInPresets.FindBundledPluginsDir();
-            if (serverDir != null) bundledDirs.Add(serverDir);
-
             var clientDir = FindClientPluginsDir();
-            if (clientDir != null) bundledDirs.Add(clientDir);
+
+            if (manifest.Type.Equals("client", StringComparison.OrdinalIgnoreCase))
+            {
+                if (clientDir != null) bundledDirs.Add(clientDir);
+            }
+            else if (manifest.Type.Equals("server", StringComparison.OrdinalIgnoreCase))
+            {
+                if (serverDir != null) bundledDirs.Add(serverDir);
+            }
+            else
+            {
+                if (serverDir != null) bundledDirs.Add(serverDir);
+                if (clientDir != null) bundledDirs.Add(clientDir);
+            }
 
             if (bundledDirs.Count == 0) return false;
 
@@ -259,7 +265,7 @@ namespace TabgInstaller.Core.Services
 
         private static void CopyToClientIfNeeded(PluginManifest manifest, string installDir, string? clientModdedPath)
         {
-            if (manifest.Type == "both" && clientModdedPath != null)
+            if (manifest.Type.Equals("both", StringComparison.OrdinalIgnoreCase) && clientModdedPath != null)
             {
                 var clientDir = Path.Combine(clientModdedPath, "BepInEx", "plugins", "community", manifest.Id);
                 Directory.CreateDirectory(clientDir);
@@ -275,7 +281,7 @@ namespace TabgInstaller.Core.Services
 
         private string GetInstallDir(PluginManifest manifest, string serverRoot, string? clientModdedPath)
         {
-            if (manifest.Type == "client" && clientModdedPath != null)
+            if (manifest.Type.Equals("client", StringComparison.OrdinalIgnoreCase) && clientModdedPath != null)
                 return GetCommunityPluginDir(null, clientModdedPath, manifest.Id, "client");
             return GetCommunityPluginDir(serverRoot, null, manifest.Id, "server");
         }

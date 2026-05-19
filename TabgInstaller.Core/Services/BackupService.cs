@@ -12,6 +12,9 @@ namespace TabgInstaller.Core.Services
         public DateTime CreatedDate { get; set; }
         public string BackupPath { get; set; } = "";
         public long SizeInBytes { get; set; }
+
+        public override string ToString()
+            => $"{Name} ({CreatedDate:g}, {SizeInBytes / 1024d / 1024d:0.##} MB)";
     }
 
     public class BackupService : IBackupService

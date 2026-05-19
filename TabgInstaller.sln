@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.Core", "TabgI
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.Gui", "TabgInstaller.Gui\TabgInstaller.Gui.csproj", "{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.LinuxGui", "TabgInstaller.LinuxGui\TabgInstaller.LinuxGui.csproj", "{4E6F65F4-5407-4F26-86A5-14B5B886476E}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.AntiCheatBypass", "TabgInstaller.AntiCheatBypass\TabgInstaller.AntiCheatBypass.csproj", "{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigSanitizer", "ConfigSanitizer\ConfigSanitizer.csproj", "{8C0E2F76-7AC5-408C-AE68-A8B2F2830025}"
@@ -63,6 +65,18 @@ Global
 		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Release|x64.Build.0 = Release|Any CPU
 		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Release|x86.ActiveCfg = Release|Any CPU
 		{D60B42BC-C74A-4025-9EEF-DA5D17EC4124}.Release|x86.Build.0 = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|x64.Build.0 = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Debug|x86.Build.0 = Debug|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|x64.ActiveCfg = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|x64.Build.0 = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|x86.ActiveCfg = Release|Any CPU
+		{4E6F65F4-5407-4F26-86A5-14B5B886476E}.Release|x86.Build.0 = Release|Any CPU
 		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FFEA6A5C-7CDF-400D-A87F-FD95D41CEB1B}.Debug|x64.ActiveCfg = Debug|Any CPU

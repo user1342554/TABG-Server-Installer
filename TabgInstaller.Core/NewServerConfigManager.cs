@@ -15,7 +15,9 @@ using TabgInstaller.Core.Model; // Adjusted from .Models to .Model
 namespace TabgInstaller.Core
 {
     public class NewServerConfigManager
-    { 
+    {
+        private const string DefaultServerName = "Deathmatch Big Work";
+
         private readonly IProgress<string> _log;
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
@@ -109,8 +111,8 @@ namespace TabgInstaller.Core
         {
             if (string.IsNullOrWhiteSpace(raw))
             {
-                _log.Report("  [INFO] Server name was empty, using default 'DefaultServer'.");
-                return "DefaultServer";
+                _log.Report($"  [INFO] Server name was empty, using default '{DefaultServerName}'.");
+                return DefaultServerName;
             }
             // Erlaubte Zeichen laut TABG: alphanumerisch, Leerzeichen, Bindestrich, Unterstrich
             var allowed = raw
@@ -120,8 +122,8 @@ namespace TabgInstaller.Core
             var sanitized = new string(allowed).Trim();
             if (string.IsNullOrWhiteSpace(sanitized))
             {
-                _log.Report($"  [INFO] Sanitized server name for '{raw}' resulted in empty string, using default 'DefaultServer'.");
-                return "DefaultServer";
+                _log.Report($"  [INFO] Sanitized server name for '{raw}' resulted in empty string, using default '{DefaultServerName}'.");
+                return DefaultServerName;
             }
             _log.Report($"  → Sanitized server name (for game_settings.txt): \"{raw}\" → \"{sanitized}\"");
             return sanitized;

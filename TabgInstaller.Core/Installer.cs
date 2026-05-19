@@ -38,6 +38,7 @@ namespace TabgInstaller.Core
         private const string BepInExRepo = "BepInEx";
         private const string BepInExReleaseTag = "v5.4.22";
         private const string BepInExWindowsAssetExactName = "BepInEx_x64_5.4.22.0.zip";
+        private const string BepInExUnixAssetExactName = "BepInEx_unix_5.4.22.0.zip";
 
         private const string BepInExVersion = "5.4.22";
         private const string BepInExZipUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip";
@@ -117,6 +118,23 @@ namespace TabgInstaller.Core
 
         private static string? GetSteamInstallPath()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var candidates = new[]
+                {
+                    Environment.GetEnvironmentVariable("STEAM_DIR"),
+                    Environment.GetEnvironmentVariable("STEAM_COMPAT_CLIENT_INSTALL_PATH"),
+                    Path.Combine(home, ".steam", "steam"),
+                    Path.Combine(home, ".local", "share", "Steam"),
+                    Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")
+                };
+
+                return candidates
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
+                    .FirstOrDefault(path => Directory.Exists(path!) && Directory.Exists(Path.Combine(path!, "steamapps")));
+            }
+
             // For 64-bit systems, the path is in the 32-bit node
             var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Wow6432Node\Valve\Steam") ??
                       Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Valve\Steam");
@@ -150,6 +168,39 @@ namespace TabgInstaller.Core
             return libraryFolders.Distinct().ToList();
         }
 
+        private static string? ResolveServerExecutable(string serverDir)
+        {
+            var candidates = OperatingSystem.IsWindows()
+                ? new[]
+                {
+                    "TABG-DS.exe",
+                    "TABG.exe",
+                    "TABG-DS.x86_64",
+                    "TABG.x86_64",
+                    "TotallyAccurateBattlegroundsDedicatedServer.x86_64"
+                }
+                : new[]
+            {
+                "run_bepinex.sh",
+                "TABG-DS.x86_64",
+                "TABG.x86_64",
+                "TotallyAccurateBattlegroundsDedicatedServer.x86_64",
+                "TABG-DS.exe",
+                "TABG.exe"
+            };
+
+            foreach (var candidate in candidates)
+            {
+                var path = Path.Combine(serverDir, candidate);
+                if (File.Exists(path))
+                    return path;
+            }
+
+            return Directory.Exists(serverDir)
+                ? Directory.GetFiles(serverDir, "TABG*", SearchOption.TopDirectoryOnly).FirstOrDefault(File.Exists)
+                : null;
+        }
+
     /// <summary>
     ///   Run a full fresh install.  The caller must validate that
     ///   serverName, serverPassword, and serverDescription each
@@ -179,125 +230,75 @@ namespace TabgInstaller.Core
 
             // 1) Write game_settings.txt with ALL available settings
             _log.Report("• Writing game_settings.txt with comprehensive configuration...");
-            var settingsServerName = newConfigManager.SanitizeServerNameForGameSettings(serverName); 
+            var settingsServerName = newConfigManager.SanitizeServerNameForGameSettings(serverName);
+            var settingsServerDescription = string.IsNullOrWhiteSpace(serverDescription)
+                ? "Big Work"
+                : serverDescription.Trim();
             var settingsPath = Path.Combine(serverDir, "game_settings.txt");
             try
             {
                 using (var w = new StreamWriter(settingsPath, false, Encoding.UTF8))
                 {
-                    w.WriteLine("// Allowed word list for name / description: https://github.com/landfallgames/tabg-word-list");
-                    w.WriteLine("// =============== BASIC SERVER SETTINGS ===============");
-                    w.WriteLine("// Name of the server");
                     w.WriteLine($"ServerName={settingsServerName}");
-                    w.WriteLine("// Server Description");
-                    w.WriteLine($"ServerDescription={serverDescription}");
-                    w.WriteLine("// Sets the port that the server is hosted on. Only required when hosting without relay");
+                    w.WriteLine($"ServerDescription={settingsServerDescription}");
                     w.WriteLine("Port=7777");
-                    w.WriteLine("// Your IP address. Used when hosting without Relay");
                     w.WriteLine("ServerBrowserIP=");
-                    w.WriteLine("// Server password (leave empty for no password)");
                     w.WriteLine($"Password={serverPassword}");
-                    w.WriteLine("// Max players on server. Max being 253");
                     w.WriteLine("MaxPlayers=70");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== NETWORK SETTINGS ===============");
-                    w.WriteLine("// Whether to use Relay when hosting. If disabled, you need port forwarding");
+
                     w.WriteLine("Relay=true");
-                    w.WriteLine("// Server wide auto teaming");
                     w.WriteLine("AutoTeam=false");
-                    w.WriteLine("// Whether to allow spectating (untested - may break respawn)");
                     w.WriteLine("AllowSpectating=true");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== GAME MODE SETTINGS ===============");
-                    w.WriteLine("// Game mode: BattleRoyale, Brawl, Test, Bomb, Deception");
+
                     w.WriteLine("GameMode=BattleRoyale");
-                    w.WriteLine("// Team mode: SQUAD, DUO, SOLO");
                     w.WriteLine("TeamMode=SQUAD");
-                    w.WriteLine("// Enable or disable the respawn minigame");
                     w.WriteLine("AllowRespawnMinigame=true");
-                    w.WriteLine("// Number of lives per team (use 'inf' for infinite)");
                     w.WriteLine("NumberOfLivesPerTeam=inf");
-                    w.WriteLine("// Max number of teams when AutoTeam is enabled");
                     w.WriteLine("MaxNumberOfTeamsAuto=2");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== MATCH TIMING ===============");
-                    w.WriteLine("// Will start match with fewer players if waited longer than ForceStartTime");
+
                     w.WriteLine("UseTimedForceStart=true");
-                    w.WriteLine("// Seconds until force start activates");
                     w.WriteLine("ForceStartTime=200.0");
-                    w.WriteLine("// Players needed to start the force start timer");
                     w.WriteLine("MinPlayersToForceStart=2");
-                    w.WriteLine("// Players required to start countdown");
                     w.WriteLine("PlayersToStart=2");
-                    w.WriteLine("// Seconds for countdown after players join or force start");
                     w.WriteLine("Countdown=20.0");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== RING SETTINGS ===============");
-                    w.WriteLine("// Disables the ring in Battle Royale");
+
                     w.WriteLine("NoRing=false");
-                    w.WriteLine("// Time before first ring appears after game starts");
                     w.WriteLine("TimeBeforeFirstRing=70.0");
-                    w.WriteLine("// Base time for ring to travel to its location");
                     w.WriteLine("BaseRingTime=200.0");
-                    w.WriteLine("// Ring sizes: comma-separated float values");
                     w.WriteLine("RingSizes=4240.0,3450.0,1710.0,830.0,360.0,140.0");
-                    w.WriteLine("// Ring speeds: divide BaseRingTime by these values");
                     w.WriteLine("RingSpeeds=25.0,3.0,1.5,1.5,2,2");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== LOOT & SPAWNING ===============");
-                    w.WriteLine("// Car spawn rate: 0.0-1.0 (0=no cars, 1=all cars)");
+
                     w.WriteLine("CarSpawnRate=1.0");
-                    w.WriteLine("// Percentage of loot to keep: 0.0-1.0 (0.1=10% of vanilla loot)");
                     w.WriteLine("StripLootByPercentage=0.1");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== GAMEMODE SPECIFIC ===============");
-                    w.WriteLine("// BRAWL: Minimum groups before starting countdown");
+
                     w.WriteLine("GroupsToStart=10");
-                    w.WriteLine("// BRAWL: Amount of kills required to win");
                     w.WriteLine("KillsToWin=20");
-                    w.WriteLine("// BRAWL: Time before dropped weapon despawns");
                     w.WriteLine("WeaponDissapearTime=10.0");
                     w.WriteLine();
-                    w.WriteLine("// BOMB: Time before bomb explodes");
+
                     w.WriteLine("BombTime=30.0");
-                    w.WriteLine("// BOMB: Round duration");
                     w.WriteLine("RoundTime=90");
-                    w.WriteLine("// BOMB: Time to defuse bomb");
                     w.WriteLine("BombDefuseTime=5.0");
-                    w.WriteLine("// BOMB: Rounds needed to win");
                     w.WriteLine("RoundsToWin=3");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== EXPERIMENTAL/DEBUG ===============");
-                    w.WriteLine("// When set to 0, players spawn a soul item when they die");
+
                     w.WriteLine("UseSouls=0");
-                    w.WriteLine("// Whether to allow server to kick players");
                     w.WriteLine("UseKicks=true");
-                    w.WriteLine("// Spawn bots (non-functional)");
                     w.WriteLine("SpawnBots=0");
-                    w.WriteLine("// Enable deathmatch mode (experimental)");
                     w.WriteLine("DEBUG_DEATHMATCH=false");
                     w.WriteLine();
-                    
-                    w.WriteLine("// =============== DISABLED/BROKEN SETTINGS ===============");
-                    w.WriteLine("// These settings don't work or break gameplay - leave as default");
-                    w.WriteLine("// Whether to use PlayFab stats (broken)");
+
                     w.WriteLine("UsePlayFabStats=false");
-                    w.WriteLine("// Allow players to rejoin (doesn't work)");
                     w.WriteLine("AllowRejoins=false");
-                    w.WriteLine("// Enable EAC (breaks gameplay)");
                     w.WriteLine("AntiCheat=false");
-                    w.WriteLine("// Log EAC events");
                     w.WriteLine("AntiCheatEventLogging=false");
-                    w.WriteLine("// EAC debug logging");
                     w.WriteLine("AntiCheatDebugLogging=false");
-                    w.WriteLine("// LAN mode (unused)");
                     w.WriteLine("LAN=false");
                 }
                 _log.Report($"  → Wrote comprehensive game_settings.txt to: {settingsPath}");
@@ -594,7 +595,7 @@ namespace TabgInstaller.Core
                     if (relPath.Equals(dirRule, StringComparison.OrdinalIgnoreCase) || relPath.StartsWith(dirRule + "/", StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
-                else if (relPath.Equals(r, StringComparison.OrdinalIgnoreCase))
+                else if (relPath.Equals(r, StringComparison.OrdinalIgnoreCase) || relPath.StartsWith(r + "/", StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -668,22 +669,17 @@ namespace TabgInstaller.Core
 
         private async Task FirstRun(string serverDir, CancellationToken ct)
         {
-            var exeName = "TABG-DS.exe";
-            var exePath = Path.Combine(serverDir, exeName);
-            if (!File.Exists(exePath))
+            var exePath = ResolveServerExecutable(serverDir);
+            if (string.IsNullOrEmpty(exePath))
             {
-                exeName = "TABG.exe";
-                exePath = Path.Combine(serverDir, exeName);
-                if (!File.Exists(exePath))
-                {
-                    _log.Report($"⚠ TABG-DS.exe and TABG.exe not found in {serverDir}. First run skipped.");
+                _log.Report($"⚠ TABG server executable not found in {serverDir}. First run skipped.");
                 return;
             }
-        }
+            var exeName = Path.GetFileName(exePath);
         
         // Check if server is in Program Files and needs elevated privileges
         bool needsElevation = false;
-        if (serverDir.Contains("Program Files", StringComparison.OrdinalIgnoreCase))
+        if (OperatingSystem.IsWindows() && serverDir.Contains("Program Files", StringComparison.OrdinalIgnoreCase))
         {
             _log.Report("⚠️ Server is in Program Files - checking if we need elevated privileges...");
             
@@ -727,6 +723,7 @@ namespace TabgInstaller.Core
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            AddLinuxNativeLibraryPath(psi, serverDir);
         }
         
         using var proc = new Process { StartInfo = psi };
@@ -844,6 +841,10 @@ namespace TabgInstaller.Core
         private async Task InstallBepInExAsync(string serverDir, CancellationToken ct)
         {
             _log.Report("<<< InstallBepInExAsync starting >>>");
+            var bepInExAssetName = OperatingSystem.IsWindows()
+                ? BepInExWindowsAssetExactName
+                : BepInExUnixAssetExactName;
+
             // 1) Log that we're starting:
             _log.Report($"• Installing BepInEx (direct HTTP download of {BepInExReleaseTag})...");
 
@@ -851,12 +852,12 @@ namespace TabgInstaller.Core
             //      https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip
             //    (Note: BepInExReleaseTag = "v5.4.23.3", BepInExWindowsAssetExactName = "BepInEx_win_x64_5.4.23.3.zip")
             var downloadUrl =
-                $"https://github.com/{BepInExOwner}/{BepInExRepo}/releases/download/{BepInExReleaseTag}/{BepInExWindowsAssetExactName}";
+                $"https://github.com/{BepInExOwner}/{BepInExRepo}/releases/download/{BepInExReleaseTag}/{bepInExAssetName}";
 
             _log.Report($"  → Download URL: {downloadUrl}");
 
             // 3) Download to a temporary file in %TEMP%:
-            string tempZipPath = Path.Combine(Path.GetTempPath(), BepInExWindowsAssetExactName);
+            string tempZipPath = Path.Combine(Path.GetTempPath(), bepInExAssetName);
             if (File.Exists(tempZipPath))
             {
                 try
@@ -923,7 +924,7 @@ namespace TabgInstaller.Core
             // 5) Extract into the server directory (overwrite any existing files):
             try
             {
-                _log.Report($"  → Extracting {BepInExWindowsAssetExactName} into '{serverDir}' (overwrite = true)...");
+                _log.Report($"  → Extracting {bepInExAssetName} into '{serverDir}' (overwrite = true)...");
                 ZipFile.ExtractToDirectory(tempZipPath, serverDir, overwriteFiles: true);
             }
             catch (Exception ex)
@@ -947,20 +948,39 @@ namespace TabgInstaller.Core
             // 7) Ensure the correct 64-bit Doorstop proxy is at the root
             try
             {
-                string srcWinHttp = Path.Combine(serverDir, "doorstop_libs", "x64", "winhttp.dll");
-                string dstWinHttp = Path.Combine(serverDir, "winhttp.dll");
-                if (File.Exists(srcWinHttp))
+                if (OperatingSystem.IsWindows())
                 {
-                    File.Copy(srcWinHttp, dstWinHttp, overwrite: true);
-                    _log.Report($"  → Copied x64 Doorstop proxy to root winhttp.dll.");
-                }
+                    string srcWinHttp = Path.Combine(serverDir, "doorstop_libs", "x64", "winhttp.dll");
+                    string dstWinHttp = Path.Combine(serverDir, "winhttp.dll");
+                    if (File.Exists(srcWinHttp))
+                    {
+                        File.Copy(srcWinHttp, dstWinHttp, overwrite: true);
+                        _log.Report($"  → Copied x64 Doorstop proxy to root winhttp.dll.");
+                    }
                 
-                // For Unity 2021.3+ servers, also create version.dll as an alternative
-                string dstVersionDll = Path.Combine(serverDir, "version.dll");
-                if (File.Exists(dstWinHttp))
+                    // For Unity 2021.3+ servers, also create version.dll as an alternative
+                    string dstVersionDll = Path.Combine(serverDir, "version.dll");
+                    if (File.Exists(dstWinHttp))
+                    {
+                        File.Copy(dstWinHttp, dstVersionDll, overwrite: true);
+                        _log.Report($"  → Created version.dll as alternative loader for Unity 2021.3+ compatibility.");
+                    }
+                }
+                else
                 {
-                    File.Copy(dstWinHttp, dstVersionDll, overwrite: true);
-                    _log.Report($"  → Created version.dll as alternative loader for Unity 2021.3+ compatibility.");
+                    var runScript = Path.Combine(serverDir, "run_bepinex.sh");
+                    if (File.Exists(runScript))
+                    {
+                        ConfigureUnixBepInExScript(serverDir, runScript);
+                        try
+                        {
+                            Process.Start("chmod", $"+x \"{runScript}\"")?.WaitForExit(2000);
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Report($"[WARN] Could not mark run_bepinex.sh executable: {ex.Message}");
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -979,7 +999,9 @@ namespace TabgInstaller.Core
                     {
                         "[UnityDoorstop]",
                         "enabled=true",
-                        "targetAssembly=BepInEx\\core\\BepInEx.Preloader.dll",
+                        OperatingSystem.IsWindows()
+                            ? "targetAssembly=BepInEx\\core\\BepInEx.Preloader.dll"
+                            : "targetAssembly=BepInEx/core/BepInEx.Preloader.dll",
                         "redirectOutputLog=true",
                         "ignoreDisableSwitch=false",
                         "dllSearchPathOverride="
@@ -989,8 +1011,8 @@ namespace TabgInstaller.Core
                 }
                 
                 // Check Unity version of TABG.exe
-                string tabgExe = Path.Combine(serverDir, "TABG.exe");
-                if (File.Exists(tabgExe))
+                string? tabgExe = ResolveServerExecutable(serverDir);
+                if (!string.IsNullOrEmpty(tabgExe) && File.Exists(tabgExe))
                 {
                     var versionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(tabgExe);
                     _log.Report($"  → Detected Unity version: {versionInfo.FileVersion} ({versionInfo.ProductVersion})");
@@ -1010,6 +1032,36 @@ namespace TabgInstaller.Core
             
             // Check if this is a Unity 2021.3+ server and create special loader
             await CheckAndCreateUnity2021LoaderAsync(serverDir, ct);
+        }
+
+        private void ConfigureUnixBepInExScript(string serverDir, string runScript)
+        {
+            try
+            {
+                var exe = new[]
+                {
+                    "TABG-DS.x86_64",
+                    "TABG.x86_64",
+                    "TotallyAccurateBattlegroundsDedicatedServer.x86_64",
+                    "TABG-DS.exe",
+                    "TABG.exe"
+                }.FirstOrDefault(name => File.Exists(Path.Combine(serverDir, name)));
+
+                if (string.IsNullOrEmpty(exe))
+                    return;
+
+                var script = File.ReadAllText(runScript);
+                script = Regex.Replace(
+                    script,
+                    @"(?m)^executable_name\s*=.*$",
+                    $"executable_name=\"{exe}\"");
+                File.WriteAllText(runScript, script);
+                _log.Report($"  → Configured run_bepinex.sh executable_name={exe}");
+            }
+            catch (Exception ex)
+            {
+                _log.Report($"[WARN] Could not configure run_bepinex.sh: {ex.Message}");
+            }
         }
 
         private async Task CheckAndCreateUnity2021LoaderAsync(string serverDir, CancellationToken ct)
@@ -1091,8 +1143,8 @@ namespace TabgInstaller.Core
         string[] defaultEntries = new[] 
         {
             "# Auto-generated default vanilla whitelist by TabgInstaller",
-                "TABG.exe", "TABG_Data", "UnityPlayer.dll", "UnityCrashHandler64.exe",
-                "steam_appid.txt", "doorstop_config.ini", "libdoorstop.so", "run_bepinex.cmd", "run_bepinex.sh",
+                "TABG.exe", "TABG_Data", "UnityPlayer.dll", "UnityPlayer.so", "UnityCrashHandler64.exe",
+                "steam_appid.txt", "doorstop_config.ini", "libdoorstop.so", "libsteam_api.so", "run_bepinex.cmd", "run_bepinex.sh",
                 "MonoBleedingEdge", "TheStarterPack.json", "TheStarterPack.txt", "game_settings.txt",
                 "winhttp.dll", "backup", "PlayerPerms.json"
             };
@@ -1129,6 +1181,8 @@ namespace TabgInstaller.Core
             ensureEntry("backup", "backup folder");
             ensureEntry("PlayerPerms.json", "PlayerPerms.json");
             ensureEntry("winhttp.dll", "winhttp.dll");
+            ensureEntry("UnityPlayer.so", "UnityPlayer.so");
+            ensureEntry("libsteam_api.so", "libsteam_api.so");
 
             if (madeChanges || !fileExisted)
             {
@@ -1959,6 +2013,7 @@ namespace TabgInstaller.Core
                 },
                 EnableRaisingEvents = true
             };
+            AddLinuxNativeLibraryPath(serverProcess.StartInfo, serverDir);
 
             var tcs = new TaskCompletionSource<bool>();
             var crashTcs = new TaskCompletionSource<bool>();
@@ -1967,9 +2022,16 @@ namespace TabgInstaller.Core
             {
                 if (e.Data != null)
                 {
-                    _log.Report(e.Data);
-                    if (e.Data.Contains("Heartbeat sent!"))
+                    if (!IsNoisyUnityServerLine(e.Data))
+                        _log.Report(e.Data);
+
+                    if (e.Data.Contains("Heartbeat sent!") || e.Data.Contains("Got join code:", StringComparison.OrdinalIgnoreCase))
                     {
+                        tcs.TrySetResult(true);
+                    }
+                    if (e.Data.Contains("unsupported word in server name", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _log.Report("[WARN] Server name was rejected by TABG word validation. Continuing initial config generation.");
                         tcs.TrySetResult(true);
                     }
                     if (allowCrash && e.Data.Trim().StartsWith("FormatException: Input string was not in a correct format.", StringComparison.Ordinal))
@@ -2009,6 +2071,92 @@ namespace TabgInstaller.Core
             catch (Exception ex)
             {
                 _log.Report($"[WARN] Could not kill server process: {ex.Message}");
+            }
+        }
+
+        private static bool IsNoisyUnityServerLine(string line)
+        {
+            return line.Contains("DllNotFoundException: fmodstudio", StringComparison.OrdinalIgnoreCase) ||
+                (line.Contains("Fallback handler could not load library", StringComparison.OrdinalIgnoreCase) &&
+                    line.Contains("fmodstudio", StringComparison.OrdinalIgnoreCase)) ||
+                line.Contains("FMOD.", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("FMODUnity.", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("VehicleSoundHandler", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("PillarSounds", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("CollisionChecker", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("TakeCollisionDamage", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Unity.Services.Relay.", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("System.Runtime.CompilerServices", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("System.Threading.Tasks.", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("System.Threading.ExecutionContext", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("UnityEngine.AsyncOperation", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("UnityEngine.Object:Destroy", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Rethrow as SystemNotInitializedException: [FMOD]", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("The referenced script on this Behaviour", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("shader is not supported on this GPU", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("WARNING: Shader", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("No mesh data available for mesh", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("is not derived from MonoBehaviour or ScriptableObject", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("[LandLog] - Reading Line:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("[LandLog] - GameSetting:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("[LandLog] - Exception when parsing gamesettings:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("EOS SDK Analytics disabled", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Purchase flow is disabled", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("TabgInstaller.UnusedVehicles.SearchForCarsPatch", StringComparison.OrdinalIgnoreCase) ||
+                (line.Contains("Landfall.Network.", StringComparison.OrdinalIgnoreCase) &&
+                    !line.Contains("[LandLog]", StringComparison.OrdinalIgnoreCase)) ||
+                line.TrimStart().StartsWith("at (wrapper", StringComparison.OrdinalIgnoreCase) ||
+                line.TrimStart().StartsWith("at Landfall.Network.", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void AddLinuxNativeLibraryPath(ProcessStartInfo psi, string serverDir)
+        {
+            if (OperatingSystem.IsWindows())
+                return;
+
+            EnsureLinuxFmodLibraryLinks(serverDir);
+
+            var pluginDir = Path.Combine(serverDir, "TABG_Data", "Plugins");
+            var x64PluginDir = Path.Combine(pluginDir, "x86_64");
+            var existing = psi.Environment.TryGetValue("LD_LIBRARY_PATH", out var current)
+                ? current
+                : Environment.GetEnvironmentVariable("LD_LIBRARY_PATH") ?? string.Empty;
+
+            var paths = new[] { pluginDir, x64PluginDir }
+                .Where(Directory.Exists)
+                .Concat(string.IsNullOrWhiteSpace(existing)
+                    ? Array.Empty<string>()
+                    : existing.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+
+            if (paths.Length > 0)
+                psi.Environment["LD_LIBRARY_PATH"] = string.Join(Path.PathSeparator, paths);
+        }
+
+        private static void EnsureLinuxFmodLibraryLinks(string serverDir)
+        {
+            var source = Path.Combine(serverDir, "TABG_Data", "Plugins", "libfmodstudio.so");
+            if (!File.Exists(source))
+                return;
+
+            var targetDir = Path.Combine(serverDir, "TABG_Data", "MonoBleedingEdge", "x86_64");
+            Directory.CreateDirectory(targetDir);
+
+            foreach (var name in new[] { "fmodstudio", "libfmodstudio", "libfmodstudio.so" })
+            {
+                var link = Path.Combine(targetDir, name);
+                try
+                {
+                    if (File.Exists(link))
+                        File.Delete(link);
+
+                    File.CreateSymbolicLink(link, "../../Plugins/libfmodstudio.so");
+                }
+                catch
+                {
+                    File.Copy(source, link, overwrite: true);
+                }
             }
         }
     }

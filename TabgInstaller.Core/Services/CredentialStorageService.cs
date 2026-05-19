@@ -23,8 +23,16 @@ namespace TabgInstaller.Core.Services
         {
             var key = BuildKey(instanceId, credentialType);
             var plainBytes = Encoding.UTF8.GetBytes(value);
-            var encrypted = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
-            _store[key] = Convert.ToBase64String(encrypted);
+            if (OperatingSystem.IsWindows())
+            {
+                var encrypted = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
+                _store[key] = "dpapi:" + Convert.ToBase64String(encrypted);
+            }
+            else
+            {
+                // Functional Linux fallback. Users can secure this further later with libsecret/keyring.
+                _store[key] = "plain:" + Convert.ToBase64String(plainBytes);
+            }
             SaveToDisk();
         }
 
@@ -36,7 +44,20 @@ namespace TabgInstaller.Core.Services
 
             try
             {
-                var encrypted = Convert.FromBase64String(base64);
+                if (base64.StartsWith("plain:", StringComparison.Ordinal))
+                {
+                    var plain = Convert.FromBase64String(base64.Substring("plain:".Length));
+                    return Encoding.UTF8.GetString(plain);
+                }
+
+                var encryptedBlob = base64.StartsWith("dpapi:", StringComparison.Ordinal)
+                    ? base64.Substring("dpapi:".Length)
+                    : base64;
+
+                if (!OperatingSystem.IsWindows())
+                    return null;
+
+                var encrypted = Convert.FromBase64String(encryptedBlob);
                 var plainBytes = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
                 return Encoding.UTF8.GetString(plainBytes);
             }
