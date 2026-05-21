@@ -29,17 +29,14 @@ namespace TabgInstaller.FakePlayers
             if (FakePlayersPlugin.FakeIndices.Count == 0)
                 return true;
 
+            FakePlayersPlugin.PruneMissingFakePlayers(__instance);
+            if (FakePlayersPlugin.FakeIndices.Count == 0)
+                return true;
+
             var players = __instance.Players;
             int count = mustBeReady
                 ? players.FindAll(p => p.Ready).Count
                 : players.Count;
-
-            int groups = __instance.GetNumberOfGroups();
-            if (groups < 2)
-            {
-                __result = 1;
-                return false;
-            }
 
             __result = Math.Max(count, 1);
             return false;

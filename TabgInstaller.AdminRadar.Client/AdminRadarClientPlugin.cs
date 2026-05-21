@@ -1,0 +1,657 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using BepInEx;
+using BepInEx.Configuration;
+using HarmonyLib;
+using Landfall.Network;
+using UnityEngine;
+
+namespace TabgInstaller.AdminRadar.Client
+{
+    [BepInPlugin("tabginstaller.adminradar.client", "Admin Radar Client", "1.0.0")]
+    public class AdminRadarClientPlugin : BaseUnityPlugin
+    {
+        internal const byte RadarEventCode = 241;
+
+        internal static AdminRadarClientPlugin Instance;
+        internal static BepInEx.Logging.ManualLogSource Log;
+
+        private static readonly Dictionary<byte, RadarPlayer> Players = new Dictionary<byte, RadarPlayer>();
+        private static readonly string[] LocalPlayerIndexMembers =
+        {
+            "PlayerIndex",
+            "NetworkIndex",
+            "m_playerIndex",
+            "playerIndex",
+            "m_networkIndex",
+            "networkIndex"
+        };
+
+        private static Type _localPlayerType;
+        private static MemberInfo _localPlayerIndexMember;
+        private static bool _localPlayerIndexResolved;
+        private static MethodInfo _respawnPlayerMethod;
+        private static bool _respawnPlayerMethodResolved;
+        private static int _serverPayloadCount;
+        private static int _serverPlayerCount;
+        private static int _dummySnapLogCount;
+        private static int _dummyRespawnLogCount;
+
+        private ConfigEntry<KeyCode> _toggleKey;
+        private ConfigEntry<bool> _visible;
+        private ConfigEntry<float> _radarRange;
+        private ConfigEntry<int> _radarSize;
+        private ConfigEntry<bool> _showNames;
+        private ConfigEntry<bool> _showWorldMarkers;
+        private ConfigEntry<bool> _showOnlyDummies;
+        private ConfigEntry<float> _markerMaxDistance;
+
+        private Harmony _harmony;
+        private GUIStyle _labelStyle;
+        private GUIStyle _smallStyle;
+        private GUIStyle _markerStyle;
+        private Texture2D _bgTexture;
+        private Texture2D _selfTexture;
+        private Texture2D _playerTexture;
+        private Texture2D _dummyTexture;
+
+        private void Awake()
+        {
+            Instance = this;
+            Log = Logger;
+
+            _toggleKey = Config.Bind("Radar", "ToggleKey", KeyCode.F6, "Key to show/hide the server-authorized radar.");
+            _visible = Config.Bind("Radar", "Visible", true, "Show radar overlay.");
+            _radarRange = Config.Bind("Radar", "RangeMeters", 350f, "World range covered by the radar.");
+            _radarSize = Config.Bind("Radar", "SizePixels", 220, "Radar size in pixels.");
+            _showNames = Config.Bind("Radar", "ShowNames", true, "Show player names next to radar markers.");
+            _showWorldMarkers = Config.Bind("Dummy Highlighter", "ShowWorldMarkers", true, "Show screen-space labels over dummy players.");
+            _showOnlyDummies = Config.Bind("Dummy Highlighter", "OnlyDummies", true, "Only draw world markers for AIPlayer dummy names.");
+            _markerMaxDistance = Config.Bind("Dummy Highlighter", "MaxDistanceMeters", 2500f, "Maximum distance for dummy world markers.");
+
+            RegisterSettings();
+
+            _harmony = new Harmony("tabginstaller.adminradar.client");
+            AdminRadarNetworkPatch.Apply(_harmony);
+
+            Logger.LogInfo("[AdminRadar.Client] Loaded. Waiting for server radar packets.");
+        }
+
+        private void OnDestroy()
+        {
+            _harmony?.UnpatchSelf();
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(_toggleKey.Value))
+                _visible.Value = !_visible.Value;
+
+            RefreshClientPlayers();
+            RemoveExpiredPlayers();
+        }
+
+        private void OnGUI()
+        {
+            if (!_visible.Value) return;
+
+            InitGui();
+            DrawStatusLine();
+            if (Players.Count == 0) return;
+            if (_showWorldMarkers.Value)
+                DrawWorldMarkers();
+            DrawRadar();
+        }
+
+        internal static void HandleRadarPayload(byte[] data)
+        {
+            if (data == null || data.Length == 0) return;
+
+            try
+            {
+                using (var ms = new MemoryStream(data))
+                using (var br = new BinaryReader(ms))
+                {
+                    int count = br.ReadByte();
+                    _serverPayloadCount++;
+                    _serverPlayerCount = count;
+                    if (_serverPayloadCount == 1 || _serverPayloadCount % 20 == 0)
+                        Log?.LogInfo($"[AdminRadar.Client] Received radar payload #{_serverPayloadCount} with {count} player(s).");
+
+                    for (int i = 0; i < count && br.BaseStream.Position < br.BaseStream.Length; i++)
+                    {
+                        byte index = br.ReadByte();
+                        string name = br.ReadString();
+                        float x = br.ReadSingle();
+                        float y = br.ReadSingle();
+                        float z = br.ReadSingle();
+                        bool alive = br.ReadBoolean();
+
+                        RadarPlayer previous;
+                        bool hadPrevious = Players.TryGetValue(index, out previous);
+                        Vector3 serverPosition = new Vector3(x, y, z);
+                        bool largeServerJump = hadPrevious &&
+                            previous.LastServerSeen > 0f &&
+                            Vector3.Distance(previous.Position, serverPosition) > 45f;
+
+                        Players[index] = new RadarPlayer
+                        {
+                            Index = index,
+                            Name = string.IsNullOrWhiteSpace(name) ? "Player " + index : name,
+                            Position = serverPosition,
+                            Alive = alive,
+                            LastSeen = Time.unscaledTime,
+                            LastServerSeen = Time.unscaledTime
+                        };
+
+                        if (IsDummyName(name) && largeServerJump)
+                            ForceClientDummyPosition(index, name, serverPosition, largeServerJump);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogWarning("[AdminRadar.Client] Could not parse radar payload: " + ex.Message);
+            }
+        }
+
+        internal static void MarkDummyPlayersDroppedBeforeAllDrop()
+        {
+            try
+            {
+                PhotonServerHandler handler = PhotonServerHandler.instance;
+                if (handler == null || handler.Players == null)
+                    return;
+
+                int marked = 0;
+                foreach (TABGPlayerClient player in handler.Players)
+                {
+                    if (player == null || !IsDummyName(player.PlayerName) || player.HasDropped)
+                        continue;
+
+                    player.Dropped();
+                    if (player.PlayerObject != null)
+                    {
+                        Skydiving skydiving = player.PlayerObject.GetComponent<Skydiving>();
+                        if (skydiving != null)
+                            skydiving.enabled = false;
+                    }
+
+                    marked++;
+                }
+
+                if (marked > 0)
+                    Log?.LogInfo($"[AdminRadar.Client] Marked {marked} dummy player(s) as dropped before vanilla AllDrop.");
+            }
+            catch (Exception ex)
+            {
+                Log?.LogDebug("[AdminRadar.Client] Could not pre-mark dummy AllDrop state: " + ex.Message);
+            }
+        }
+
+        private static void RefreshClientPlayers()
+        {
+            try
+            {
+                PhotonServerHandler handler = PhotonServerHandler.instance;
+                if (handler == null || handler.Players == null)
+                    return;
+
+                foreach (TABGPlayerClient player in handler.Players)
+                {
+                    if (player == null)
+                        continue;
+
+                    RadarPlayer existing;
+                    string playerName = string.IsNullOrWhiteSpace(player.PlayerName) ? "Player " + player.PlayerIndex : player.PlayerName;
+                    if (Players.TryGetValue(player.PlayerIndex, out existing) && IsDummyName(existing.Name) && HasFreshServerPosition(existing))
+                    {
+                        existing.Name = playerName;
+                        existing.Alive = !player.IsDead;
+                        existing.LastSeen = Time.unscaledTime;
+                        Players[player.PlayerIndex] = existing;
+                        continue;
+                    }
+
+                    Vector3 position = player.PlayerPosition;
+                    if (player.PlayerHip != null)
+                        position = player.PlayerHip.position;
+                    else if (player.PlayerObject != null)
+                        position = player.PlayerObject.transform.position;
+
+                    Players[player.PlayerIndex] = new RadarPlayer
+                    {
+                        Index = player.PlayerIndex,
+                        Name = playerName,
+                        Position = position,
+                        Alive = !player.IsDead,
+                        LastSeen = Time.unscaledTime,
+                        LastServerSeen = existing.LastServerSeen
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogDebug("[AdminRadar.Client] Client player scan failed: " + ex.Message);
+            }
+        }
+
+        private static void ForceClientDummyPosition(byte index, string name, Vector3 position, bool allowRespawn)
+        {
+            try
+            {
+                PhotonServerHandler handler = PhotonServerHandler.instance;
+                if (handler == null || handler.Players == null)
+                    return;
+
+                foreach (TABGPlayerClient player in handler.Players)
+                {
+                    if (player == null || player.PlayerIndex != index)
+                        continue;
+
+                    if (allowRespawn)
+                        TryRespawnClientDummy(handler, player, position);
+
+                    ForceClientDummyPosition(player, position);
+                    if (_dummySnapLogCount < 12)
+                    {
+                        _dummySnapLogCount++;
+                        Log?.LogInfo($"[AdminRadar.Client] Snapped dummy {name} ({index}) to server position {position}.");
+                    }
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogDebug("[AdminRadar.Client] Dummy client lookup failed: " + ex.Message);
+            }
+        }
+
+        private static void ForceClientDummyPosition(TABGPlayerClient player, Vector3 position)
+        {
+            try
+            {
+                player.UpdatePosition(position);
+
+                if (player.PlayerObject != null)
+                    player.PlayerObject.transform.position = position;
+
+                if (player.PlayerHip != null)
+                    player.PlayerHip.position = position;
+            }
+            catch (Exception ex)
+            {
+                Log?.LogDebug("[AdminRadar.Client] Dummy client snap failed: " + ex.Message);
+            }
+        }
+
+        private static void TryRespawnClientDummy(PhotonServerHandler handler, TABGPlayerClient player, Vector3 position)
+        {
+            try
+            {
+                if (handler == null || player == null)
+                    return;
+
+                bool needsRespawn = player.PlayerObject == null;
+                if (!needsRespawn)
+                    needsRespawn = Vector3.Distance(player.PlayerObject.transform.position, position) > 20f;
+                if (!needsRespawn)
+                    return;
+
+                MethodInfo method = GetRespawnPlayerMethod(handler.GetType());
+                if (method == null)
+                    return;
+
+                player.Respawn();
+                float health = Mathf.Max(1f, player.Health);
+                method.Invoke(handler, new object[] { player, health, position, player.PlayerIndex, 0f });
+
+                if (_dummyRespawnLogCount < 16)
+                {
+                    _dummyRespawnLogCount++;
+                    Log?.LogInfo($"[AdminRadar.Client] Rebuilt dummy {player.PlayerName} ({player.PlayerIndex}) body at server position {position}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogDebug("[AdminRadar.Client] Dummy client respawn failed: " + ex.Message);
+            }
+        }
+
+        private static MethodInfo GetRespawnPlayerMethod(Type handlerType)
+        {
+            if (_respawnPlayerMethodResolved)
+                return _respawnPlayerMethod;
+
+            _respawnPlayerMethodResolved = true;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            _respawnPlayerMethod = handlerType.GetMethod(
+                "RespawnPlayer",
+                flags,
+                null,
+                new[] { typeof(TABGPlayerClient), typeof(float), typeof(Vector3), typeof(byte), typeof(float) },
+                null);
+
+            return _respawnPlayerMethod;
+        }
+
+        private void DrawRadar()
+        {
+            int size = Mathf.Clamp(_radarSize.Value, 120, 420);
+            float x = Screen.width - size - 18f;
+            float y = 58f;
+            float center = size * 0.5f;
+            float range = Mathf.Max(50f, _radarRange.Value);
+
+            var oldColor = GUI.color;
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(x, y, size, size), _bgTexture);
+            GUI.color = new Color(1f, 1f, 1f, 0.35f);
+            GUI.Box(new Rect(x, y, size, size), GUIContent.none);
+
+            GUI.color = Color.white;
+            GUI.Label(new Rect(x + 8f, y + 6f, size - 16f, 22f), "ADMIN RADAR", _labelStyle);
+
+            var localPosition = GetLocalPosition();
+            var localForward = GetLocalForward();
+            float yaw = Mathf.Atan2(localForward.x, localForward.z);
+
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(x + center - 3f, y + center - 3f, 6f, 6f), _selfTexture);
+
+            foreach (var player in Players.Values)
+            {
+                if (!player.Alive) continue;
+                if (IsLocalPlayer(player)) continue;
+
+                Vector3 offset = player.Position - localPosition;
+                float cos = Mathf.Cos(-yaw);
+                float sin = Mathf.Sin(-yaw);
+                float rx = offset.x * cos - offset.z * sin;
+                float rz = offset.x * sin + offset.z * cos;
+
+                float px = Mathf.Clamp(rx / range, -1f, 1f) * center;
+                float py = Mathf.Clamp(-rz / range, -1f, 1f) * center;
+
+                float dotX = x + center + px;
+                float dotY = y + center + py;
+
+                GUI.color = new Color(1f, 0.25f, 0.2f, 0.95f);
+                GUI.DrawTexture(new Rect(dotX - 4f, dotY - 4f, 8f, 8f), _playerTexture);
+
+                if (_showNames.Value)
+                {
+                    GUI.color = Color.white;
+                    GUI.Label(new Rect(dotX + 6f, dotY - 10f, 110f, 20f), player.Name, _smallStyle);
+                }
+            }
+
+            GUI.color = oldColor;
+        }
+
+        private void DrawStatusLine()
+        {
+            int dummyCount = 0;
+            foreach (var player in Players.Values)
+            {
+                if (player.Alive && IsDummyName(player.Name))
+                    dummyCount++;
+            }
+
+            var oldColor = GUI.color;
+            GUI.color = dummyCount > 0 ? new Color(1f, 0.9f, 0.05f, 0.95f) : new Color(1f, 1f, 1f, 0.55f);
+            GUI.Label(new Rect(18f, 58f, 520f, 24f), $"DUMMY HIGHLIGHTER: {dummyCount} dummy marker(s)  server:{_serverPayloadCount}/{_serverPlayerCount}", _smallStyle);
+            GUI.color = oldColor;
+        }
+
+        private void DrawWorldMarkers()
+        {
+            Camera camera = Camera.main;
+            if (camera == null) return;
+
+            Vector3 localPosition = GetLocalPosition();
+            float maxDistance = Mathf.Max(50f, _markerMaxDistance.Value);
+            var oldColor = GUI.color;
+
+            foreach (var player in Players.Values)
+            {
+                if (!player.Alive) continue;
+                if (IsLocalPlayer(player)) continue;
+                if (_showOnlyDummies.Value && !IsDummyName(player.Name)) continue;
+
+                Vector3 world = player.Position + Vector3.up * 2.2f;
+                float distance = Vector3.Distance(localPosition, player.Position);
+                if (distance > maxDistance) continue;
+
+                Vector3 screen = camera.WorldToScreenPoint(world);
+                bool behind = screen.z < 0f;
+                Vector2 point;
+                if (behind)
+                {
+                    point = new Vector2(Screen.width - screen.x, screen.y);
+                }
+                else
+                {
+                    point = new Vector2(screen.x, Screen.height - screen.y);
+                }
+
+                point.x = Mathf.Clamp(point.x, 24f, Screen.width - 24f);
+                point.y = Mathf.Clamp(point.y, 24f, Screen.height - 24f);
+
+                Color markerColor = IsDummyName(player.Name)
+                    ? new Color(1f, 0.88f, 0.05f, 0.96f)
+                    : new Color(1f, 0.25f, 0.2f, 0.92f);
+
+                GUI.color = markerColor;
+                GUI.DrawTexture(new Rect(point.x - 7f, point.y - 7f, 14f, 14f), _dummyTexture);
+                GUI.Label(
+                    new Rect(point.x + 10f, point.y - 18f, 360f, 40f),
+                    $"{player.Name}  {distance:0}m  ({player.Position.x:0},{player.Position.y:0},{player.Position.z:0})",
+                    _markerStyle);
+            }
+
+            GUI.color = oldColor;
+        }
+
+        private static void RemoveExpiredPlayers()
+        {
+            var stale = new List<byte>();
+            foreach (var kvp in Players)
+            {
+                if (Time.unscaledTime - kvp.Value.LastSeen > 2.5f)
+                    stale.Add(kvp.Key);
+            }
+
+            foreach (byte key in stale)
+                Players.Remove(key);
+        }
+
+        private static Vector3 GetLocalPosition()
+        {
+            if (Player.localPlayer == null) return Vector3.zero;
+            return Player.localPlayer.m_hip != null
+                ? Player.localPlayer.m_hip.transform.position
+                : Player.localPlayer.transform.position;
+        }
+
+        private static Vector3 GetLocalForward()
+        {
+            if (Player.localPlayer == null) return Vector3.forward;
+            return Player.localPlayer.transform.forward;
+        }
+
+        private static bool IsLocalPlayer(RadarPlayer player)
+        {
+            if (Player.localPlayer == null) return false;
+
+            byte localIndex;
+            if (TryGetLocalPlayerIndex(out localIndex))
+                return localIndex == player.Index;
+
+            try
+            {
+                return !IsDummyName(player.Name) &&
+                    Vector3.Distance(player.Position, GetLocalPosition()) < 2.5f;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryGetLocalPlayerIndex(out byte index)
+        {
+            index = byte.MaxValue;
+            object localPlayer = Player.localPlayer;
+            if (localPlayer == null)
+                return false;
+
+            ResolveLocalPlayerIndexMember(localPlayer.GetType());
+            if (_localPlayerIndexMember == null)
+                return false;
+
+            try
+            {
+                object value = null;
+                var property = _localPlayerIndexMember as PropertyInfo;
+                if (property != null)
+                    value = property.GetValue(localPlayer, null);
+
+                var field = _localPlayerIndexMember as FieldInfo;
+                if (field != null)
+                    value = field.GetValue(localPlayer);
+
+                if (value is byte b)
+                {
+                    index = b;
+                    return true;
+                }
+
+                if (value is int i && i >= 0 && i <= 255)
+                {
+                    index = (byte)i;
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private static void ResolveLocalPlayerIndexMember(Type playerType)
+        {
+            if (_localPlayerIndexResolved && _localPlayerType == playerType)
+                return;
+
+            _localPlayerType = playerType;
+            _localPlayerIndexResolved = true;
+            _localPlayerIndexMember = null;
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            for (int i = 0; i < LocalPlayerIndexMembers.Length; i++)
+            {
+                string name = LocalPlayerIndexMembers[i];
+                PropertyInfo property = playerType.GetProperty(name, flags);
+                if (property != null)
+                {
+                    _localPlayerIndexMember = property;
+                    return;
+                }
+
+                FieldInfo field = playerType.GetField(name, flags);
+                if (field != null)
+                {
+                    _localPlayerIndexMember = field;
+                    return;
+                }
+            }
+        }
+
+        private void InitGui()
+        {
+            if (_labelStyle != null) return;
+
+            _bgTexture = MakeTex(new Color(0f, 0f, 0f, 0.62f));
+            _selfTexture = MakeTex(new Color(0.2f, 0.85f, 1f, 1f));
+            _playerTexture = MakeTex(new Color(1f, 0.2f, 0.15f, 1f));
+            _dummyTexture = MakeTex(Color.white);
+
+            _labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            _labelStyle.normal.textColor = Color.white;
+
+            _smallStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            _smallStyle.normal.textColor = Color.white;
+
+            _markerStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 15,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            _markerStyle.normal.textColor = new Color(1f, 0.92f, 0.08f, 1f);
+        }
+
+        private static Texture2D MakeTex(Color color)
+        {
+            var texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, color);
+            texture.Apply();
+            return texture;
+        }
+
+        private void RegisterSettings()
+        {
+            try
+            {
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Toggle Key", "Key to show/hide radar", _toggleKey);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Visible", "Show radar overlay", _visible);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Range", "Radar range in meters", _radarRange);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Size", "Radar size in pixels", _radarSize);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Show Names", "Show player names", _showNames);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "World Markers", "Show labels over dummy players", _showWorldMarkers);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Only Dummies", "Only label AI dummy players", _showOnlyDummies);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Max Distance", "Maximum label distance", _markerMaxDistance);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[AdminRadar.Client] ModSettings registration failed: " + ex.Message);
+            }
+        }
+
+        private static bool IsDummyName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            return name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("Player", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool HasFreshServerPosition(RadarPlayer player)
+        {
+            return player.LastServerSeen > 0f && Time.unscaledTime - player.LastServerSeen <= 1.5f;
+        }
+
+        private struct RadarPlayer
+        {
+            public byte Index;
+            public string Name;
+            public Vector3 Position;
+            public bool Alive;
+            public float LastSeen;
+            public float LastServerSeen;
+        }
+    }
+}

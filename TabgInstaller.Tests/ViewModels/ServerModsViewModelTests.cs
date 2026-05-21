@@ -252,7 +252,7 @@ namespace TabgInstaller.Tests.ViewModels
         [Fact]
         public void KnownServerPlugins_HasExpectedCount()
         {
-            ServerModsViewModel.KnownServerPlugins.Should().HaveCount(17);
+            ServerModsViewModel.KnownServerPlugins.Should().HaveCount(18);
         }
 
         // ── FindDllPath / FindBundledPluginsDir ──────────────────────────────────

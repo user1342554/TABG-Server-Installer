@@ -362,7 +362,7 @@ namespace TabgInstaller.Tests.ViewModels
         [Fact]
         public void KnownClientMods_HasExpectedCount()
         {
-            ClientPanelViewModel.KnownClientMods.Should().HaveCount(11);
+            ClientPanelViewModel.KnownClientMods.Should().HaveCount(12);
         }
 
         // ── FindDllPath / FindClientPluginsDir ───────────────────────────────────

@@ -1,0 +1,19 @@
+{
+  "id": "AdminRadar",
+  "name": "Admin Radar Server",
+  "version": "1.0.0",
+  "description": "Server-authorized player position radar for custom servers.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.AdminRadar.Server.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["admin", "radar", "debug"],
+  "requiresClientMod": true,
+  "clientPluginId": "AdminRadarClient"
+}

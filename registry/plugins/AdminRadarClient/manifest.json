@@ -1,0 +1,17 @@
+{
+  "id": "AdminRadarClient",
+  "name": "Admin Radar Client",
+  "version": "1.0.0",
+  "description": "Displays server-authorized player positions on a toggleable radar overlay.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.AdminRadar.Client.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["admin", "radar", "debug"]
+}

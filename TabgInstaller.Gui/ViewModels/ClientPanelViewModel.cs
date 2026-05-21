@@ -48,6 +48,7 @@ namespace TabgInstaller.Gui.ViewModels
             "TabgInstaller.CoordsDisplay.dll", "TabgInstaller.ModSettings.dll", "Pop-up Blocker.dll",
             "TabgInstaller.ProximityChat.Client.dll", "TabgInstaller.HuntMode.Client.dll",
             "TabgInstaller.HuntMode.Shared.dll", "JuggernautMode.Client.dll", "TABGVR.dll",
+            "TabgInstaller.AdminRadar.Client.dll",
         };
 
         public ClientPanelViewModel(IAppSettingsService appSettings, IToastService toast)

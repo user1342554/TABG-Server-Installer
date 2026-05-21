@@ -48,6 +48,7 @@ namespace TabgInstaller.Gui.ViewModels
             "TabgInstaller.SoloTesting.dll", "TabgInstaller.ProximityChat.Server.dll",
             "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll",
             "JuggernautMode.Server.dll", "TABGVR.Server.CitrusLib.dll", "TabgInstaller.FakePlayers.dll",
+            "TabgInstaller.AdminRadar.Server.dll",
         };
 
         public ServerModsViewModel(IServerPathProvider serverPathProvider, IToastService toast)
