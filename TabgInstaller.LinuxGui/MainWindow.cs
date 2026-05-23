@@ -116,6 +116,7 @@ public sealed class MainWindow : Window
     private readonly ListBox _builtInPresets = new();
     private readonly TextBox _presetName = new() { Width = 220, Watermark = "preset name" };
     private readonly ListBox _serverPluginList = new();
+    private readonly ListBox _serverPluginCatalog = new();
     private readonly ListBox _clientPluginList = new();
     private readonly ListBox _bundledServerPluginList = new();
     private readonly ListBox _bundledClientPluginList = new();
@@ -420,16 +421,26 @@ public sealed class MainWindow : Window
                     Margin = new Avalonia.Thickness(10, 0, 0, 0),
                     Children =
                     {
-                        new TextBlock { Text = "Bundled server DLLs" },
-                        new ScrollViewer { Content = _bundledServerPluginList, Height = 360 },
+                        new TextBlock { Text = "Local plugin library" },
+                        new ScrollViewer { Content = _serverPluginCatalog, Height = 250 },
                         new StackPanel
                         {
                             Orientation = Orientation.Horizontal,
                             Spacing = 8,
                             Children =
                             {
-                                Button("Install selected", InstallBundledServerPlugin)
+                                Button("Install", InstallCatalogServerPlugin),
+                                Button("Enable", EnableCatalogServerPlugin),
+                                Button("Disable", DisableCatalogServerPlugin)
                             }
+                        },
+                        new TextBlock { Text = "Advanced: raw bundled DLLs" },
+                        new ScrollViewer { Content = _bundledServerPluginList, Height = 120 },
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Spacing = 8,
+                            Children = { Button("Install selected DLL", InstallBundledServerPlugin) }
                         }
                     }
                 }, 1)
@@ -1565,6 +1576,7 @@ public sealed class MainWindow : Window
     private void RefreshServerModLists()
     {
         RefreshPluginList(_serverPluginList, ServerPluginDir());
+        RefreshServerPluginCatalog();
         RefreshBundledList(_bundledServerPluginList, "plugins");
     }
 
@@ -1591,6 +1603,27 @@ public sealed class MainWindow : Window
             list.Items.Add(file);
     }
 
+    private void RefreshServerPluginCatalog()
+    {
+        _serverPluginCatalog.Items.Clear();
+        foreach (var plugin in PluginRegistry.ServerPlugins)
+            _serverPluginCatalog.Items.Add(BuildCatalogItem(plugin));
+    }
+
+    private PluginCatalogItem BuildCatalogItem(PluginDefinition plugin)
+    {
+        var pluginDir = ServerPluginDir();
+        var installed = plugin.DllNames.Length > 0 && plugin.DllNames.All(dll =>
+            File.Exists(Path.Combine(pluginDir, dll)) ||
+            File.Exists(Path.Combine(pluginDir, dll + ".disabled")));
+        var enabled = plugin.DllNames.Length > 0 && plugin.DllNames.All(dll =>
+            File.Exists(Path.Combine(pluginDir, dll)));
+        var available = plugin.DllNames.Length == 0 || plugin.DllNames.All(dll =>
+            FindFileNearApp(Path.Combine("plugins", dll)) != null);
+
+        return new PluginCatalogItem(plugin, installed, enabled, available);
+    }
+
     private async void AddServerPluginAsync()
     {
         var file = await PickDllAsync("Select server plugin DLL");
@@ -1611,6 +1644,53 @@ public sealed class MainWindow : Window
     {
         if (_bundledServerPluginList.SelectedItem is not string file) return;
         InstallDllToFolder(file, ServerPluginDir());
+        RefreshServerModLists();
+    }
+
+    private void InstallCatalogServerPlugin()
+    {
+        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item) return;
+        foreach (var dll in item.Plugin.DllNames)
+        {
+            var file = FindFileNearApp(Path.Combine("plugins", dll));
+            if (file == null)
+            {
+                Log("Bundled DLL not found: " + dll);
+                continue;
+            }
+
+            InstallDllToFolder(file, ServerPluginDir());
+        }
+
+        RefreshServerModLists();
+    }
+
+    private void EnableCatalogServerPlugin()
+    {
+        MoveCatalogServerPlugin(enable: true);
+    }
+
+    private void DisableCatalogServerPlugin()
+    {
+        MoveCatalogServerPlugin(enable: false);
+    }
+
+    private void MoveCatalogServerPlugin(bool enable)
+    {
+        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item) return;
+
+        var pluginDir = ServerPluginDir();
+        foreach (var dll in item.Plugin.DllNames)
+        {
+            var enabledPath = Path.Combine(pluginDir, dll);
+            var disabledPath = enabledPath + ".disabled";
+            var src = enable ? disabledPath : enabledPath;
+            var dst = enable ? enabledPath : disabledPath;
+            if (!File.Exists(src)) continue;
+            File.Move(src, dst, overwrite: true);
+        }
+
+        Log((enable ? "Enabled " : "Disabled ") + item.Name);
         RefreshServerModLists();
     }
 
@@ -2601,6 +2681,24 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
             if (name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))
                 name = name[..^".disabled".Length];
             return $"[{(Enabled ? "on" : "off")}] {name}";
+        }
+    }
+
+    private sealed record PluginCatalogItem(PluginDefinition Plugin, bool Installed, bool Enabled, bool Available)
+    {
+        public string Name => Plugin.Label.Split(" - ", 2, StringSplitOptions.None)[0];
+
+        public override string ToString()
+        {
+            var state = Enabled
+                ? "on"
+                : Installed
+                    ? "off"
+                    : Available
+                        ? "available"
+                        : "missing";
+            var client = Plugin.RequiresClientMod ? " | client mod" : "";
+            return $"[{state}] {Plugin.Label} | {string.Join(", ", Plugin.DllNames)}{client}";
         }
     }
 }

@@ -24,6 +24,42 @@ namespace TabgInstaller.Gui.ViewModels
         [ObservableProperty] private bool _isSelected;
     }
 
+    public partial class PluginCatalogEntry : ObservableObject
+    {
+        public PluginDefinition Definition { get; init; } = null!;
+        public string Id => Definition.Id;
+        public string DisplayName => SplitLabel(Definition.Label).name;
+        public string Description => SplitLabel(Definition.Label).description;
+        public string Dlls => string.Join(", ", Definition.DllNames);
+        public string Kind => Definition.Kind == PluginKind.CoreDependency ? "Dependency" : "Bundled";
+        public string ClientRequirement => Definition.RequiresClientMod ? "Client mod required" : "";
+        public bool DefaultChecked => Definition.DefaultChecked;
+
+        [ObservableProperty] private bool _isInstalled;
+        [ObservableProperty] private bool _isEnabled;
+        [ObservableProperty] private bool _isAvailable;
+
+        public string StateText =>
+            IsEnabled ? "Installed, enabled" :
+            IsInstalled ? "Installed, disabled" :
+            IsAvailable ? "Ready to install" :
+            "Missing bundled DLL";
+
+        partial void OnIsInstalledChanged(bool value) => OnPropertyChanged(nameof(StateText));
+        partial void OnIsEnabledChanged(bool value) => OnPropertyChanged(nameof(StateText));
+        partial void OnIsAvailableChanged(bool value) => OnPropertyChanged(nameof(StateText));
+
+        private static (string name, string description) SplitLabel(string label)
+        {
+            var marker = " - ";
+            var index = label.IndexOf(marker, StringComparison.Ordinal);
+            if (index < 0)
+                return (label, "");
+
+            return (label.Substring(0, index), label.Substring(index + marker.Length));
+        }
+    }
+
     public partial class ServerModsViewModel : ObservableObject
     {
         private readonly IServerPathProvider _serverPathProvider;
@@ -31,6 +67,8 @@ namespace TabgInstaller.Gui.ViewModels
 
         [ObservableProperty] private ObservableCollection<PluginEntry> _plugins = new();
         [ObservableProperty] private ObservableCollection<BundledEntry> _availableMods = new();
+        [ObservableProperty] private ObservableCollection<PluginCatalogEntry> _pluginCatalog = new();
+        [ObservableProperty] private PluginCatalogEntry? _selectedCatalogPlugin;
         [ObservableProperty] private string _statusText = "";
         [ObservableProperty] private bool _allPluginsInstalled;
 
@@ -67,6 +105,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             LoadPluginsList();
             LoadAvailableList();
+            LoadPluginCatalog();
         }
 
         private void LoadPluginsList()
@@ -146,6 +185,50 @@ namespace TabgInstaller.Gui.ViewModels
             AllPluginsInstalled = available.Count == 0;
         }
 
+        private void LoadPluginCatalog()
+        {
+            var serverPath = _serverPathProvider.ServerPath;
+            if (string.IsNullOrWhiteSpace(serverPath)) return;
+
+            var enabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var pluginsDir = PluginsDir;
+            var disabledDir = Path.Combine(pluginsDir, "disabled");
+
+            if (Directory.Exists(pluginsDir))
+            {
+                foreach (var file in Directory.GetFiles(pluginsDir, "*.dll"))
+                    enabled.Add(Path.GetFileName(file));
+            }
+
+            if (Directory.Exists(disabledDir))
+            {
+                foreach (var file in Directory.GetFiles(disabledDir, "*.dll"))
+                    disabled.Add(Path.GetFileName(file));
+            }
+
+            var catalog = new ObservableCollection<PluginCatalogEntry>();
+            foreach (var definition in PluginRegistry.ServerPlugins)
+            {
+                var dlls = definition.DllNames ?? Array.Empty<string>();
+                var isInstalled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll) || disabled.Contains(dll));
+                var isEnabled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll));
+                var isAvailable = dlls.Length > 0 && dlls.All(dll => FindDllPath(dll, "plugins") != null);
+
+                catalog.Add(new PluginCatalogEntry
+                {
+                    Definition = definition,
+                    IsInstalled = isInstalled,
+                    IsEnabled = isEnabled,
+                    IsAvailable = isAvailable
+                });
+            }
+
+            PluginCatalog = catalog;
+            if (SelectedCatalogPlugin != null)
+                SelectedCatalogPlugin = PluginCatalog.FirstOrDefault(p => p.Id.Equals(SelectedCatalogPlugin.Id, StringComparison.OrdinalIgnoreCase));
+        }
+
         [RelayCommand]
         private void TogglePlugin(PluginEntry? entry)
         {
@@ -209,6 +292,84 @@ namespace TabgInstaller.Gui.ViewModels
                 StatusText = string.Format(Messages.InstalledPluginCount, count);
 
             RefreshAll();
+        }
+
+        [RelayCommand]
+        private void InstallCatalogPlugin(PluginCatalogEntry? entry)
+        {
+            if (entry == null) return;
+
+            var pluginsDir = PluginsDir;
+            Directory.CreateDirectory(pluginsDir);
+
+            var count = 0;
+            foreach (var dll in entry.Definition.DllNames)
+            {
+                var srcPath = FindDllPath(dll, "plugins");
+                if (srcPath == null)
+                {
+                    _toast.Error($"Bundled DLL not found: {dll}");
+                    continue;
+                }
+
+                try
+                {
+                    File.Copy(srcPath, Path.Combine(pluginsDir, dll), overwrite: true);
+                    count++;
+                }
+                catch (Exception ex)
+                {
+                    _toast.Error(string.Format(Messages.FailedToInstallPlugin, dll, ex.Message));
+                }
+            }
+
+            if (count > 0)
+                StatusText = $"Installed {entry.DisplayName}.";
+
+            RefreshAll();
+        }
+
+        [RelayCommand]
+        private void EnableCatalogPlugin(PluginCatalogEntry? entry)
+        {
+            MoveCatalogPlugin(entry, enable: true);
+        }
+
+        [RelayCommand]
+        private void DisableCatalogPlugin(PluginCatalogEntry? entry)
+        {
+            MoveCatalogPlugin(entry, enable: false);
+        }
+
+        private void MoveCatalogPlugin(PluginCatalogEntry? entry, bool enable)
+        {
+            if (entry == null) return;
+
+            var pluginsDir = PluginsDir;
+            var disabledDir = Path.Combine(pluginsDir, "disabled");
+            Directory.CreateDirectory(pluginsDir);
+            Directory.CreateDirectory(disabledDir);
+
+            try
+            {
+                foreach (var dll in entry.Definition.DllNames)
+                {
+                    var src = enable ? Path.Combine(disabledDir, dll) : Path.Combine(pluginsDir, dll);
+                    var dst = enable ? Path.Combine(pluginsDir, dll) : Path.Combine(disabledDir, dll);
+                    if (!File.Exists(src)) continue;
+                    if (File.Exists(dst)) File.Delete(dst);
+                    File.Move(src, dst);
+                }
+
+                StatusText = enable
+                    ? $"Enabled {entry.DisplayName}."
+                    : $"Disabled {entry.DisplayName}.";
+                RefreshAll();
+            }
+            catch (Exception ex)
+            {
+                _toast.Error(string.Format(Messages.FailedToTogglePlugin, ex.Message));
+            }
         }
 
         [RelayCommand]

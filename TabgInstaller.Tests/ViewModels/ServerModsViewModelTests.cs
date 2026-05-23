@@ -51,6 +51,13 @@ namespace TabgInstaller.Tests.ViewModels
         }
 
         [Fact]
+        public void InitialState_PluginCatalog_IsEmpty()
+        {
+            var sut = CreateSut();
+            sut.PluginCatalog.Should().BeEmpty();
+        }
+
+        [Fact]
         public void InitialState_StatusText_IsEmpty()
         {
             var sut = CreateSut();
@@ -104,6 +111,17 @@ namespace TabgInstaller.Tests.ViewModels
             sut.RefreshCommand.Execute(null);
 
             sut.Plugins.Should().ContainSingle(p => p.Name == "NewPlugin.dll");
+        }
+
+        [Fact]
+        public void RefreshCommand_LoadsLocalPluginCatalog()
+        {
+            var sut = CreateSut();
+
+            sut.RefreshCommand.Execute(null);
+
+            sut.PluginCatalog.Should().HaveCount(PluginRegistry.ServerPlugins.Length);
+            sut.PluginCatalog.Should().Contain(p => p.Id == "ServerLogger");
         }
 
         // ── AllPluginsInstalled / CanInstallBundled ──────────────────────────────

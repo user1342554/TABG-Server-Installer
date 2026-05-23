@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -64,16 +65,72 @@
                     TabIndex="53"/>
         </StackPanel>
 
-        <!-- Available bundled plugins -->
-        <GroupBox Grid.Row="3" Header="{x:Static res:Strings.AvailablePlugins}" Margin="0,10,0,0">
+        <!-- Local plugin catalog -->
+        <GroupBox Grid.Row="3" Header="Local Plugin Library" Margin="0,10,0,0">
+            <StackPanel>
+                <ListView x:Name="LstCatalog" ItemsSource="{Binding PluginCatalog}"
+                          SelectedItem="{Binding SelectedCatalogPlugin, Mode=TwoWay}"
+                          MinHeight="180" MaxHeight="260"
+                          AutomationProperties.Name="Local server plugin library"
+                          AutomationProperties.AutomationId="LocalPluginLibraryListView"
+                          TabIndex="60">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Plugin" Width="150">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Kind}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Description" Width="320">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding ClientRequirement}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="DLLs" Width="240" DisplayMemberBinding="{Binding Dlls}"/>
+                            <GridViewColumn Header="State" Width="130" DisplayMemberBinding="{Binding StateText}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="Install" Width="90"
+                            Command="{Binding InstallCatalogPluginCommand}"
+                            CommandParameter="{Binding SelectedCatalogPlugin}"
+                            AutomationProperties.AutomationId="InstallCatalogPluginButton"
+                            TabIndex="61"/>
+                    <Button Content="Enable" Width="90" Margin="5,0,0,0"
+                            Command="{Binding EnableCatalogPluginCommand}"
+                            CommandParameter="{Binding SelectedCatalogPlugin}"
+                            AutomationProperties.AutomationId="EnableCatalogPluginButton"
+                            TabIndex="62"/>
+                    <Button Content="Disable" Width="90" Margin="5,0,0,0"
+                            Command="{Binding DisableCatalogPluginCommand}"
+                            CommandParameter="{Binding SelectedCatalogPlugin}"
+                            AutomationProperties.AutomationId="DisableCatalogPluginButton"
+                            TabIndex="63"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Advanced raw bundled DLL install -->
+        <GroupBox Grid.Row="4" Header="Advanced: Raw Bundled DLLs" Margin="0,10,0,0">
             <StackPanel>
                 <Grid>
                     <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableMods}"
-                              MaxHeight="200" SelectionMode="Extended" BorderThickness="0"
+                              MaxHeight="120" SelectionMode="Extended" BorderThickness="0"
                               Visibility="{Binding AllPluginsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
                               AutomationProperties.Name="Available bundled plugins"
                               AutomationProperties.AutomationId="AvailablePluginsListView"
-                              TabIndex="60">
+                              TabIndex="70">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -93,11 +150,11 @@
                         IsEnabled="{Binding CanInstallBundled}"
                         AutomationProperties.Name="{x:Static res:Strings.InstallSelected}"
                         AutomationProperties.AutomationId="InstallSelectedPluginsButton"
-                        TabIndex="90"/>
+                        TabIndex="71"/>
             </StackPanel>
         </GroupBox>
 
         <!-- Spacer row so grid doesn't complain -->
-        <StackPanel Grid.Row="4"/>
+        <StackPanel Grid.Row="5"/>
     </Grid>
 </UserControl>
