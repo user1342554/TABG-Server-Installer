@@ -208,7 +208,6 @@ namespace TabgInstaller.Gui.Windows
             {
                 var bundled = new List<string>();
                 bool skipCitrus = true;
-                bool skipStarterPack = true;
                 bool installCommunityServer = false;
 
                 for (int i = 0; i < _pluginCheckboxes.Count && i < PluginRegistry.ServerPlugins.Length; i++)
@@ -220,7 +219,6 @@ namespace TabgInstaller.Gui.Windows
                     {
                         case PluginKind.CoreDependency:
                             if (plugin.Id == "Citruslib") skipCitrus = false;
-                            if (plugin.Id == "StarterPack") skipStarterPack = false;
                             break;
                         case PluginKind.CommunityServer:
                             installCommunityServer = true;
@@ -264,7 +262,7 @@ namespace TabgInstaller.Gui.Windows
                         serverDescription: "enormous",
                         starterPackTag: "",
                         citrusLibTag: DefaultCitrusTag,
-                        skipStarterPack: skipStarterPack,
+                        skipStarterPack: true,
                         skipCitruslib: skipCitrus,
                         installCommunityServer: installCommunityServer,
                         bundledPlugins: bundled,

@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace TabgInstaller.Core.Model
 {
     /// <summary>
-    /// Represents a community plugin manifest from the marketplace registry.
+    /// Represents bundled plugin metadata used by the launcher.
     /// </summary>
     public class PluginManifest
     {

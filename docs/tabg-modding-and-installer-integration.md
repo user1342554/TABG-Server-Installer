@@ -6,7 +6,7 @@ This repo already contains the working pattern for TABG mods:
 - Mods compile against TABG's Unity/Mono assemblies from `TABG_Data/Managed`, especially `Assembly-CSharp.dll`.
 - Server mods go to `BepInEx/plugins`.
 - Client mods go to a modded TABG copy's `BepInEx/plugins`.
-- Marketplace and built-in install choices are driven by `registry/plugins/<id>/manifest.json`.
+- Bundled install choices are owned by `PluginRegistry` and documented by `registry/plugins/<id>/manifest.json`.
 
 The decoded reference project at:
 
@@ -265,14 +265,9 @@ To add a new built-in client mod:
 3. Add a manifest under `registry/plugins/<PluginId>/manifest.json` with `"type": "client"` and `"kind": "bundled"`.
 4. Add its DLL to `ClientPanelViewModel.KnownClientMods` if you want it in the direct client mods panel.
 
-### Marketplace Plugins
+### Bundled Plugin Manifests
 
-Marketplace installs are driven by `registry/plugins/<id>/manifest.json`.
-
-`MarketplaceInstallService` installs community plugins into:
-
-- Server: `<server>/BepInEx/plugins/community/<id>/`
-- Client: `<modded-client>/BepInEx/plugins/community/<id>/`
+The launcher no longer has a runtime plugin marketplace. A manifest under `registry/plugins/<id>/manifest.json` is release metadata for a plugin that is built or bundled in this repository.
 
 Minimal server manifest:
 
@@ -283,10 +278,10 @@ Minimal server manifest:
   "version": "1.0.0",
   "description": "Does one focused thing.",
   "author": "YourName",
-  "downloadUrl": "https://github.com/you/MyPlugin/releases/latest",
+  "downloadUrl": "",
   "dllNames": ["MyPlugin.dll"],
   "type": "server",
-  "kind": "community",
+  "kind": "bundled",
   "defaultChecked": false,
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
@@ -302,7 +297,7 @@ For server mods that require a client component, use:
 "clientPluginId": "MyPluginClient"
 ```
 
-and create a separate client manifest with `"type": "client"`.
+and create a separate bundled client manifest with `"type": "client"`.
 
 ## Current Examples In This Repo
 

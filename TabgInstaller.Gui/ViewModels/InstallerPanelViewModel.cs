@@ -146,7 +146,6 @@ namespace TabgInstaller.Gui.ViewModels
             string citrusTag = CitrusTag.Trim();
             bool skipCitrus = !GetSelectionById("Citruslib");
             bool installCommunityServer = GetSelectionById("CommunityServer");
-            bool skipStarterPack = !GetSelectionById("StarterPack");
             string serverDir = ServerPath.Trim();
 
             var result = MessageBox.Show(
@@ -235,7 +234,7 @@ namespace TabgInstaller.Gui.ViewModels
                         serverDescription: serverDesc,
                         starterPackTag: "",
                         citrusLibTag: citrusTag,
-                        skipStarterPack: skipStarterPack,
+                        skipStarterPack: true,
                         skipCitruslib: skipCitrus,
                         installCommunityServer: installCommunityServer,
                         bundledPlugins: selectedBundledPlugins,

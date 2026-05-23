@@ -452,7 +452,7 @@
     <value>Spawn Coordinates (one x,z per line):</value>
   </data>
   <data name="StarterPackFixes" xml:space="preserve">
-    <value>StarterPack Fixes</value>
+    <value>MatchCore</value>
   </data>
   <data name="EnableLootDrops" xml:space="preserve">
     <value>Enable Loot Drops</value>
@@ -874,15 +874,6 @@
   <data name="NeverAsk" xml:space="preserve">
     <value>Never Ask</value>
   </data>
-  <data name="TabBrowsePlugins" xml:space="preserve">
-    <value>Browse Plugins</value>
-  </data>
-  <data name="BrowsePluginsTitle" xml:space="preserve">
-    <value>Plugin Marketplace</value>
-  </data>
-  <data name="BrowsePluginsSubtitle" xml:space="preserve">
-    <value>Discover and install community plugins for your server</value>
-  </data>
   <data name="SearchPlugins" xml:space="preserve">
     <value>Search plugins...</value>
   </data>
@@ -903,9 +894,6 @@
   </data>
   <data name="PluginUpdatesAvailable" xml:space="preserve">
     <value>{0} plugin update(s) available</value>
-  </data>
-  <data name="MarketplaceUnavailable" xml:space="preserve">
-    <value>Plugin marketplace unavailable — check your internet connection.</value>
   </data>
   <data name="Uninstall" xml:space="preserve">
     <value>Uninstall</value>

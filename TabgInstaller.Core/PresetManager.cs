@@ -18,9 +18,7 @@ namespace TabgInstaller.Core
             "TheStarterPack.json",
             Path.Combine("BepInEx","config","CitrusLib","ExtraSettings.json"),
             Path.Combine("BepInEx","config","CitrusLib","PlayerPerms.json"),
-            Path.Combine("BepInEx","config","FreddoTABGCommission.cfg"),
-            Path.Combine("BepInEx","config","FreddoFixStarterPack.cfg"),
-            Path.Combine("BepInEx","config","FreddoCustomSpawnpoints.cfg"),
+            Path.Combine("BepInEx","config","TabgInstaller.MatchCore.cfg"),
         };
 
         private static string PresetsRoot(string serverDir) => Path.Combine(serverDir, "Presets");
@@ -76,4 +74,4 @@ namespace TabgInstaller.Core
             if (Directory.Exists(presetDir)) Directory.Delete(presetDir, recursive:true);
         }
     }
-} 
+}

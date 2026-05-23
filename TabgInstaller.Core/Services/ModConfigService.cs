@@ -7,20 +7,63 @@ using TabgInstaller.Core.Model;
 namespace TabgInstaller.Core.Services
 {
     /// <summary>
-    /// Reads/writes FreddoTABGCommission.cfg, FreddoFixStarterPack.cfg,
-    /// and FreddoCustomSpawnpoints.cfg (BepInEx config format).
+    /// Reads/writes MatchCore's BepInEx config. Legacy Freddo config files
+    /// are still read as a migration fallback, but new writes use owned names.
     /// </summary>
     public static class ModConfigService
     {
-        // ── FreddoTABGCommission.cfg ──
+        // ── TabgInstaller.MatchCore.cfg ──
 
-        private static string CommissionPath(string serverDir) =>
+        private static string MatchCoreConfigPath(string serverDir) =>
+            Path.Combine(serverDir, "BepInEx", "config", "TabgInstaller.MatchCore.cfg");
+
+        private static string LegacyCommissionPath(string serverDir) =>
             Path.Combine(serverDir, "BepInEx", "config", "FreddoTABGCommission.cfg");
+
+        private static string LegacyFixesPath(string serverDir) =>
+            Path.Combine(serverDir, "BepInEx", "config", "FreddoFixStarterPack.cfg");
+
+        private static string LegacySpawnPath(string serverDir) =>
+            Path.Combine(serverDir, "BepInEx", "config", "FreddoCustomSpawnpoints.cfg");
+
+        public static string ServerLoggerConfigPath(string serverDir) =>
+            Path.Combine(serverDir, "BepInEx", "config", "tabginstaller.serverlogger.cfg");
+
+        public static string GetServerLoggerCsvPath(string serverDir, ServerLoggerSettings settings)
+        {
+            var directory = string.IsNullOrWhiteSpace(settings.LogDirectory)
+                ? "server-logs"
+                : settings.LogDirectory;
+
+            if (!Path.IsPathRooted(directory))
+                directory = Path.Combine(serverDir, "BepInEx", directory);
+
+            var fileName = string.IsNullOrWhiteSpace(settings.CsvFileName)
+                ? "players.csv"
+                : settings.CsvFileName;
+
+            return Path.IsPathRooted(fileName) ? fileName : Path.Combine(directory, fileName);
+        }
+
+        public static string GetServerLoggerLegacyPath(string serverDir, ServerLoggerSettings settings)
+        {
+            var fileName = string.IsNullOrWhiteSpace(settings.LegacyFileName)
+                ? "ServerLogger.txt"
+                : settings.LegacyFileName;
+
+            return Path.IsPathRooted(fileName) ? fileName : Path.Combine(serverDir, fileName);
+        }
+
+        private static string ResolveReadPath(string primaryPath, string legacyPath)
+        {
+            if (File.Exists(primaryPath)) return primaryPath;
+            return legacyPath;
+        }
 
         public static FreddoCommissionSettings ReadCommission(string serverDir)
         {
             var s = new FreddoCommissionSettings();
-            var path = CommissionPath(serverDir);
+            var path = ResolveReadPath(MatchCoreConfigPath(serverDir), LegacyCommissionPath(serverDir));
             if (!File.Exists(path)) return s;
 
             var dict = ParseCfg(path);
@@ -45,97 +88,13 @@ namespace TabgInstaller.Core.Services
 
         public static void WriteCommission(string serverDir, FreddoCommissionSettings s)
         {
-            var path = CommissionPath(serverDir);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-            var lines = new List<string>
-            {
-                "## Settings file was created by plugin Freddo TABG Commission v1.0.0",
-                "## Plugin GUID: FreddoTABGCommission",
-                "",
-                "[Bans]",
-                "",
-                "## A list of Epic IDs to ban, separated with semicolons.",
-                "# Setting type: String",
-                "# Default value: ",
-                $"BanList = {s.BanList}",
-                "",
-                "[Curses]",
-                "",
-                "## A list of curse IDs to inflict the player using a loadout at that index (e.g. loadout 1 = group 1), Ex: 0,1/1,2/2,3",
-                "# Setting type: String",
-                "# Default value: ",
-                $"LoadoutCurses = {s.LoadoutCurses}",
-                "",
-                "[Blessings]",
-                "",
-                "## A list of blessing item IDs per loadout (e.g. loadout 1 = group 1). Blessings are items added to the loadout. Ex: 53,42/45,47/50",
-                "# Setting type: String",
-                "# Default value: ",
-                $"LoadoutBlessings = {s.LoadoutBlessings}",
-                "",
-                "[GrenadesOnDeath.Attacker]",
-                "",
-                "## Drops a grenade if a player kills another player, chance can be configured.",
-                "# Setting type: Boolean",
-                "# Default value: false",
-                $"Enabled = {s.GrenadeAttackerEnabled.ToString().ToLower()}",
-                "",
-                "## The chance a grenade drops on kill.",
-                "# Setting type: Single",
-                "# Default value: 0.2",
-                $"Chance = {s.GrenadeAttackerChance.ToString(CultureInfo.InvariantCulture)}",
-                "",
-                "## The ID of the grenade to throw (can be any throwable).",
-                "# Setting type: Int32",
-                "# Default value: 198",
-                $"ID = {s.GrenadeAttackerId}",
-                "",
-                "[GrenadesOnDeath.Corpse]",
-                "",
-                "## Drops a grenade on a corpse if a player kills another player, chance can be configured.",
-                "# Setting type: Boolean",
-                "# Default value: false",
-                $"Enabled = {s.GrenadeCorpseEnabled.ToString().ToLower()}",
-                "",
-                "## The chance a grenade drops on kill.",
-                "# Setting type: Single",
-                "# Default value: 0.2",
-                $"Chance = {s.GrenadeCorpseChance.ToString(CultureInfo.InvariantCulture)}",
-                "",
-                "## The ID of the grenade to throw (can be any throwable).",
-                "# Setting type: Int32",
-                "# Default value: 198",
-                $"ID = {s.GrenadeCorpseId}",
-                "",
-                "[Networking]",
-                "",
-                "## The distance (in metres) that packets can be sent to nearby players without being cut off. (-1 means normal TABG, -2 means all players)",
-                "# Setting type: Int32",
-                "# Default value: -1",
-                $"StreamingDistance = {s.StreamingDistance.ToString(CultureInfo.InvariantCulture)}",
-                "",
-                "[Player]",
-                "",
-                "## The number of lives that the player has before being kicked from the game (256 means infinite).",
-                "# Setting type: Int32",
-                "# Default value: 256",
-                $"Lives = {s.Lives}",
-                ""
-            };
-
-            File.WriteAllLines(path, lines);
+            WriteMatchCoreConfig(serverDir, s, ReadFixes(serverDir), ReadSpawnPoints(serverDir));
         }
-
-        // ── FreddoFixStarterPack.cfg ──
-
-        private static string FixesPath(string serverDir) =>
-            Path.Combine(serverDir, "BepInEx", "config", "FreddoFixStarterPack.cfg");
 
         public static StarterPackFixesSettings ReadFixes(string serverDir)
         {
             var s = new StarterPackFixesSettings();
-            var path = FixesPath(serverDir);
+            var path = ResolveReadPath(MatchCoreConfigPath(serverDir), LegacyFixesPath(serverDir));
             if (!File.Exists(path)) return s;
 
             var dict = ParseCfg(path);
@@ -147,35 +106,13 @@ namespace TabgInstaller.Core.Services
 
         public static void WriteFixes(string serverDir, StarterPackFixesSettings s)
         {
-            var path = FixesPath(serverDir);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-            var lines = new List<string>
-            {
-                "## Settings file was created by plugin FreddoFixStarterPack v1.0.0",
-                "## Plugin GUID: FreddoFixStarterPack",
-                "",
-                "[Fixes]",
-                "",
-                "## Enable loot drops for items since StarterPack broke it",
-                "# Setting type: Boolean",
-                "# Default value: true",
-                $"EnableLootDrops = {s.EnableLootDrops.ToString().ToLower()}",
-                ""
-            };
-
-            File.WriteAllLines(path, lines);
+            WriteMatchCoreConfig(serverDir, ReadCommission(serverDir), s, ReadSpawnPoints(serverDir));
         }
-
-        // ── FreddoCustomSpawnpoints.cfg ──
-
-        private static string SpawnPath(string serverDir) =>
-            Path.Combine(serverDir, "BepInEx", "config", "FreddoCustomSpawnpoints.cfg");
 
         /// <summary>Reads match spawn points as "x,z;x,z;..." string.</summary>
         public static string ReadSpawnPoints(string serverDir)
         {
-            var path = SpawnPath(serverDir);
+            var path = ResolveReadPath(MatchCoreConfigPath(serverDir), LegacySpawnPath(serverDir));
             if (!File.Exists(path)) return "";
 
             var dict = ParseCfg(path);
@@ -185,17 +122,177 @@ namespace TabgInstaller.Core.Services
 
         public static void WriteSpawnPoints(string serverDir, string spawnPoints)
         {
-            var path = SpawnPath(serverDir);
+            WriteMatchCoreConfig(serverDir, ReadCommission(serverDir), ReadFixes(serverDir), spawnPoints);
+        }
+
+        public static ServerLoggerSettings ReadServerLogger(string serverDir)
+        {
+            var settings = new ServerLoggerSettings();
+            var path = ServerLoggerConfigPath(serverDir);
+            if (!File.Exists(path)) return settings;
+
+            var dict = ParseCfg(path);
+            if (dict.TryGetValue("LogToBepInExConsole", out var logConsole)) settings.LogToBepInExConsole = ParseBool(logConsole);
+            if (dict.TryGetValue("WriteCsv", out var writeCsv)) settings.WriteCsv = ParseBool(writeCsv);
+            if (dict.TryGetValue("WriteLegacyServerLoggerTxt", out var writeLegacy)) settings.WriteLegacyServerLoggerTxt = ParseBool(writeLegacy);
+            if (dict.TryGetValue("FallbackPlayerScan", out var fallbackScan)) settings.FallbackPlayerScan = ParseBool(fallbackScan);
+            if (dict.TryGetValue("FallbackScanIntervalSeconds", out var interval) && float.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var intervalValue))
+                settings.FallbackScanIntervalSeconds = intervalValue;
+            if (dict.TryGetValue("LogDirectory", out var logDirectory)) settings.LogDirectory = logDirectory;
+            if (dict.TryGetValue("CsvFileName", out var csvFileName)) settings.CsvFileName = csvFileName;
+            if (dict.TryGetValue("LegacyFileName", out var legacyFileName)) settings.LegacyFileName = legacyFileName;
+
+            return settings;
+        }
+
+        public static void WriteServerLogger(string serverDir, ServerLoggerSettings settings)
+        {
+            var path = ServerLoggerConfigPath(serverDir);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             var lines = new List<string>
             {
-                "## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0",
-                "## Plugin GUID: FreddoCustomSpawnpoints",
+                "## Settings file for TABG Server Logger v1.0.0",
+                "## Plugin GUID: tabginstaller.serverlogger",
+                "",
+                "[Logging]",
+                "",
+                "## Log player identities to the BepInEx console/log.",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"LogToBepInExConsole = {settings.LogToBepInExConsole.ToString().ToLowerInvariant()}",
+                "",
+                "## Append player identities to the CSV log.",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"WriteCsv = {settings.WriteCsv.ToString().ToLowerInvariant()}",
+                "",
+                "## Keep writing the old ServerLogger.txt format for existing tools.",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"WriteLegacyServerLoggerTxt = {settings.WriteLegacyServerLoggerTxt.ToString().ToLowerInvariant()}",
+                "",
+                "## Also scan connected players in case another mod changes the Epic token callback.",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"FallbackPlayerScan = {settings.FallbackPlayerScan.ToString().ToLowerInvariant()}",
+                "",
+                "## Seconds between fallback connected-player scans.",
+                "# Setting type: Single",
+                "# Default value: 2",
+                $"FallbackScanIntervalSeconds = {settings.FallbackScanIntervalSeconds.ToString(CultureInfo.InvariantCulture)}",
+                "",
+                "[Paths]",
+                "",
+                "## Relative to BepInEx, or an absolute path.",
+                "# Setting type: String",
+                "# Default value: server-logs",
+                $"LogDirectory = {settings.LogDirectory ?? ""}",
+                "",
+                "## CSV file name inside LogDirectory, or an absolute path.",
+                "# Setting type: String",
+                "# Default value: players.csv",
+                $"CsvFileName = {settings.CsvFileName ?? ""}",
+                "",
+                "## Legacy text file name, stored in the server root unless absolute.",
+                "# Setting type: String",
+                "# Default value: ServerLogger.txt",
+                $"LegacyFileName = {settings.LegacyFileName ?? ""}",
+                ""
+            };
+
+            File.WriteAllLines(path, lines);
+        }
+
+        private static void WriteMatchCoreConfig(
+            string serverDir,
+            FreddoCommissionSettings commission,
+            StarterPackFixesSettings fixes,
+            string spawnPoints)
+        {
+            var path = MatchCoreConfigPath(serverDir);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+            var lines = new List<string>
+            {
+                "## Settings file for TABG MatchCore v1.0.0",
+                "## Plugin GUID: tabginstaller.matchcore",
+                "",
+                "[Bans]",
+                "",
+                "## A list of Epic IDs to ban, separated with semicolons.",
+                "# Setting type: String",
+                "# Default value: ",
+                $"BanList = {commission.BanList}",
+                "",
+                "[Curses]",
+                "",
+                "## A list of curse IDs to apply by loadout index.",
+                "# Setting type: String",
+                "# Default value: ",
+                $"LoadoutCurses = {commission.LoadoutCurses}",
+                "",
+                "[Blessings]",
+                "",
+                "## A list of blessing item IDs per loadout.",
+                "# Setting type: String",
+                "# Default value: ",
+                $"LoadoutBlessings = {commission.LoadoutBlessings}",
+                "",
+                "[GrenadesOnDeath.Attacker]",
+                "",
+                "## Drops a grenade when a player kills another player.",
+                "# Setting type: Boolean",
+                "# Default value: false",
+                $"Enabled = {commission.GrenadeAttackerEnabled.ToString().ToLower()}",
+                "",
+                "# Setting type: Single",
+                "# Default value: 0.2",
+                $"Chance = {commission.GrenadeAttackerChance.ToString(CultureInfo.InvariantCulture)}",
+                "",
+                "# Setting type: Int32",
+                "# Default value: 198",
+                $"ID = {commission.GrenadeAttackerId}",
+                "",
+                "[GrenadesOnDeath.Corpse]",
+                "",
+                "## Drops a grenade on the defeated player's body.",
+                "# Setting type: Boolean",
+                "# Default value: false",
+                $"Enabled = {commission.GrenadeCorpseEnabled.ToString().ToLower()}",
+                "",
+                "# Setting type: Single",
+                "# Default value: 0.2",
+                $"Chance = {commission.GrenadeCorpseChance.ToString(CultureInfo.InvariantCulture)}",
+                "",
+                "# Setting type: Int32",
+                "# Default value: 198",
+                $"ID = {commission.GrenadeCorpseId}",
+                "",
+                "[Networking]",
+                "",
+                "## Nearby packet streaming distance. -1 uses TABG defaults, -2 sends to everyone.",
+                "# Setting type: Single",
+                "# Default value: -1",
+                $"StreamingDistance = {commission.StreamingDistance.ToString(CultureInfo.InvariantCulture)}",
+                "",
+                "[Player]",
+                "",
+                "## Number of lives before lockout. 256 means effectively infinite.",
+                "# Setting type: Int32",
+                "# Default value: 256",
+                $"Lives = {commission.Lives}",
+                "",
+                "[Fixes]",
+                "",
+                "## Enables world loot drops for MatchCore game modes.",
+                "# Setting type: Boolean",
+                "# Default value: true",
+                $"EnableLootDrops = {fixes.EnableLootDrops.ToString().ToLower()}",
                 "",
                 "[Spawn]",
                 "",
-                "## The spawnpoints you want to spawn. Leave empty to use the default system. Spawns are in this format: x,y;x,y;x,y...",
+                "## Match spawn points in x,z or x,y,z form, separated by semicolons.",
                 "# Setting type: String",
                 "# Default value: 0,0;100,100",
                 $"Spawnpoints = {spawnPoints}",

@@ -73,13 +73,6 @@
     </None>
   </ItemGroup>
 
-  <!-- Copy StarterPackSetup.exe to output directory -->
-  <ItemGroup>
-    <None Include="StarterPackSetup.exe" Condition="Exists('StarterPackSetup.exe')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
   <!-- Copy bundled server plugin DLLs to output directory -->
   <ItemGroup>
     <None Include="plugins\**\*.dll">
@@ -93,14 +86,6 @@
     <None Include="client-plugins\**\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>client-plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
-
-  <!-- Copy bundled TABGVR zip to output directory -->
-  <ItemGroup>
-    <None Include="tabgvr\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>tabgvr\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 

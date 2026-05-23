@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Timers;
 using TabgInstaller.Core.Model;
-using TabgInstaller.Core.Services;
 using TabgInstaller.Gui.Model;
 using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
@@ -20,8 +19,6 @@ namespace TabgInstaller.Gui.ViewModels
         private readonly INavigationService _navigation;
         private readonly IToastService _toast;
         private readonly IServerInstanceManager _instanceManager;
-        private readonly IRegistryService _registryService;
-        private readonly IInstalledPluginTracker _pluginTracker;
         private Timer? _refreshTimer;
 
         [ObservableProperty] private string _previewText = "";
@@ -45,17 +42,13 @@ namespace TabgInstaller.Gui.ViewModels
             IAppSettingsService appSettings,
             INavigationService navigation,
             IToastService toast,
-            IServerInstanceManager instanceManager,
-            IRegistryService registryService,
-            IInstalledPluginTracker pluginTracker)
+            IServerInstanceManager instanceManager)
         {
             _activeInstance = activeInstance;
             _appSettings = appSettings;
             _navigation = navigation;
             _toast = toast;
             _instanceManager = instanceManager;
-            _registryService = registryService;
-            _pluginTracker = pluginTracker;
 
             _activeInstance.PathChanged += OnServerPathChanged;
         }
@@ -134,20 +127,8 @@ namespace TabgInstaller.Gui.ViewModels
 
         private void RefreshPluginUpdates()
         {
-            var registry = _registryService.GetCachedRegistry();
-            if (registry == null) return;
-
-            int count = 0;
-            foreach (var manifest in registry.Plugins)
-            {
-                if (MarketplaceInstallService.HasUpdate(manifest, _pluginTracker))
-                    count++;
-            }
-
-            HasPluginUpdates = count > 0;
-            PluginUpdatesText = count > 0
-                ? string.Format("{0} plugin update(s) available", count)
-                : "";
+            HasPluginUpdates = false;
+            PluginUpdatesText = "";
         }
 
         [RelayCommand]

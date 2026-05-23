@@ -13,13 +13,13 @@ namespace TabgInstaller.Core
         public record BuiltInPreset(string Name, string Description, string Notes, Dictionary<string, string> Files, string[] RequiredPlugins);
 
         /// <summary>Common plugins needed by DM/GG/Scavenge modes.</summary>
-        private static readonly string[] GameModePlugins = { "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll", "FreddoTABGCommission.dll" };
+        private static readonly string[] GameModePlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll" };
         /// <summary>Plugins for standard BR mode.</summary>
-        private static readonly string[] BattleRoyalePlugins = { "Citruslib.dll", "MatchAndPreMatchTimeout.dll", "ServerLogger.dll", "VoteToStart.dll" };
+        private static readonly string[] BattleRoyalePlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll" };
         /// <summary>Optional standalone plugin that spawns cut/unused vehicles (Heli, UFO, Mustang, VW, etc).</summary>
         public static readonly string UnusedVehiclesPlugin = "TabgInstaller.UnusedVehicles.dll";
 
-        private static readonly string[] JuggernautPlugins = { "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll", "FreddoTABGCommission.dll", "JuggernautMode.Server.dll" };
+        private static readonly string[] JuggernautPlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll", "JuggernautMode.Server.dll" };
 
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
@@ -118,6 +118,33 @@ namespace TabgInstaller.Core
 ]";
 
         static string CfgPath(params string[] parts) => Path.Combine(parts);
+        private static readonly string MatchCoreConfigRelativePath = Path.Combine("BepInEx", "config", "TabgInstaller.MatchCore.cfg");
+
+        private static string MatchCoreConfig(params string[] sections)
+        {
+            var lines = new List<string>
+            {
+                "## Settings file for TABG MatchCore v1.0.0",
+                "## Plugin GUID: tabginstaller.matchcore",
+                ""
+            };
+
+            foreach (var section in sections)
+            {
+                foreach (var raw in section.Replace("\r\n", "\n").Split('\n'))
+                {
+                    var line = raw.TrimEnd();
+                    if (line.StartsWith("## Settings file", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (line.StartsWith("## Plugin GUID:", StringComparison.OrdinalIgnoreCase)) continue;
+                    lines.Add(line);
+                }
+
+                if (lines.Count == 0 || lines[lines.Count - 1].Length != 0)
+                    lines.Add("");
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
 
         // ──────────────────────────────────────────────
         // CollinSigma — Collin's personal deathmatch config
@@ -228,8 +255,8 @@ SpellDropOffset=999
 PreMatchTimeout=120
 PeriMatchTimeout=20";
 
-            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
-## Plugin GUID: FreddoTABGCommission
+            var commission = @"## MatchCore commission settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Bans]
 
@@ -264,16 +291,16 @@ StreamingDistance = -1
 Lives = 256
 ";
 
-            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
-## Plugin GUID: FreddoFixStarterPack
+            var fixes = @"## MatchCore loot compatibility settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Fixes]
 
 EnableLootDrops = false
 ";
 
-            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
-## Plugin GUID: FreddoCustomSpawnpoints
+            var spawns = @"## MatchCore custom spawn settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Spawn]
 
@@ -305,15 +332,13 @@ Spawnpoints =363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,
                 ["ExtraSettings.json"] = SharedExtraSettings,
                 ["PlayerPerms.json"] = playerPerms,
                 [Path.Combine("BepInEx", "config", "CitrusLib", "ExtraSettings.json")] = SharedExtraSettings,
-                [Path.Combine("BepInEx", "config", "FreddoTABGCommission.cfg")] = commission,
-                [Path.Combine("BepInEx", "config", "FreddoFixStarterPack.cfg")] = fixes,
-                [Path.Combine("BepInEx", "config", "FreddoCustomSpawnpoints.cfg")] = spawns,
+                [MatchCoreConfigRelativePath] = MatchCoreConfig(commission, fixes, spawns),
             };
 
             return new BuiltInPreset(
                 "CollinSigma",
                 "Collin's Deathmatch at Big Work. 20 players, 20 kills, password 'enormous'. 33 loadouts with curses, medkits on spawn, grenade on kill. Admins: Freddo & Jon_ass.",
-                "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
+                "Requires plugins: Citruslib, TabgInstaller.MatchCore",
                 files, GameModePlugins);
         }
 
@@ -351,8 +376,8 @@ AntiCheat=false";
 
             return new BuiltInPreset(
                 "Battle Royale - More Loot",
-                "Classic BR with enhanced loot, 40 players, solo. Force start at 5 players. No StarterPack mods.",
-                "This mode uses standard BR with custom loot tables. Does NOT use StarterPack, CustomSpawnpoints, or FreddoTABGCommission plugins.",
+                "Classic BR with enhanced loot, 40 players, solo. Force start at 5 players. No custom loadouts.",
+                "This mode uses MatchCore for vote-start and timeout handling, but keeps standard BR loot and spawn rules.",
                 files, BattleRoyalePlugins);
         }
 
@@ -444,8 +469,8 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=20";
 
-            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
-## Plugin GUID: FreddoTABGCommission
+            var commission = @"## MatchCore commission settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Bans]
 
@@ -480,16 +505,16 @@ StreamingDistance = -1
 Lives = 256
 ";
 
-            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
-## Plugin GUID: FreddoFixStarterPack
+            var fixes = @"## MatchCore loot compatibility settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Fixes]
 
 EnableLootDrops = false
 ";
 
-            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
-## Plugin GUID: FreddoCustomSpawnpoints
+            var spawns = @"## MatchCore custom spawn settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Spawn]
 
@@ -500,15 +525,13 @@ Spawnpoints =363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,
                 ["game_settings.txt"] = gs,
                 ["TheStarterPack.txt"] = sp,
                 [Path.Combine("BepInEx", "config", "CitrusLib", "ExtraSettings.json")] = SharedExtraSettings,
-                [Path.Combine("BepInEx", "config", "FreddoTABGCommission.cfg")] = commission,
-                [Path.Combine("BepInEx", "config", "FreddoFixStarterPack.cfg")] = fixes,
-                [Path.Combine("BepInEx", "config", "FreddoCustomSpawnpoints.cfg")] = spawns,
+                [MatchCoreConfigRelativePath] = MatchCoreConfig(commission, fixes, spawns),
             };
 
             return new BuiltInPreset(
                 "Deathmatch - Big Work",
                 "FFA Deathmatch at Big Work. 20 players, 20 kills to win, 35 loadouts with curses. Healing grenade on kill, 50% heal. Infinite lives.",
-                "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
+                "Requires plugins: Citruslib, TabgInstaller.MatchCore",
                 files, GameModePlugins);
         }
 
@@ -602,8 +625,8 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=30";
 
-            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
-## Plugin GUID: FreddoTABGCommission
+            var commission = @"## MatchCore commission settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Bans]
 
@@ -638,16 +661,16 @@ StreamingDistance = -1
 Lives = 256
 ";
 
-            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
-## Plugin GUID: FreddoFixStarterPack
+            var fixes = @"## MatchCore loot compatibility settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Fixes]
 
 EnableLootDrops = false
 ";
 
-            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
-## Plugin GUID: FreddoCustomSpawnpoints
+            var spawns = @"## MatchCore custom spawn settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Spawn]
 
@@ -658,15 +681,13 @@ Spawnpoints =-702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-691
                 ["game_settings.txt"] = gs,
                 ["TheStarterPack.txt"] = sp,
                 [Path.Combine("BepInEx", "config", "CitrusLib", "ExtraSettings.json")] = SharedExtraSettings,
-                [Path.Combine("BepInEx", "config", "FreddoTABGCommission.cfg")] = commission,
-                [Path.Combine("BepInEx", "config", "FreddoFixStarterPack.cfg")] = fixes,
-                [Path.Combine("BepInEx", "config", "FreddoCustomSpawnpoints.cfg")] = spawns,
+                [MatchCoreConfigRelativePath] = MatchCoreConfig(commission, fixes, spawns),
             };
 
             return new BuiltInPreset(
                 "Gun Game - Castle",
                 "Progressive Gun Game at Castle. 20 players, 35 kills. Weapon advances on each kill. 20% heal on kill. Infinite lives.",
-                "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
+                "Requires plugins: Citruslib, TabgInstaller.MatchCore",
                 files, GameModePlugins);
         }
 
@@ -723,8 +744,8 @@ SpellDropOffset=30
 PreMatchTimeout=120
 PeriMatchTimeout=30";
 
-            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
-## Plugin GUID: FreddoTABGCommission
+            var commission = @"## MatchCore commission settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Bans]
 
@@ -759,16 +780,16 @@ StreamingDistance = -1
 Lives = 256
 ";
 
-            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
-## Plugin GUID: FreddoFixStarterPack
+            var fixes = @"## MatchCore loot compatibility settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Fixes]
 
 EnableLootDrops = true
 ";
 
-            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
-## Plugin GUID: FreddoCustomSpawnpoints
+            var spawns = @"## MatchCore custom spawn settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Spawn]
 
@@ -779,15 +800,13 @@ Spawnpoints =-41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,
                 ["game_settings.txt"] = gs,
                 ["TheStarterPack.txt"] = sp,
                 [Path.Combine("BepInEx", "config", "CitrusLib", "ExtraSettings.json")] = SharedExtraSettings,
-                [Path.Combine("BepInEx", "config", "FreddoTABGCommission.cfg")] = commission,
-                [Path.Combine("BepInEx", "config", "FreddoFixStarterPack.cfg")] = fixes,
-                [Path.Combine("BepInEx", "config", "FreddoCustomSpawnpoints.cfg")] = spawns,
+                [MatchCoreConfigRelativePath] = MatchCoreConfig(commission, fixes, spawns),
             };
 
             return new BuiltInPreset(
                 "Scavenge - Point Of Impact",
                 "KeepInventory scavenge at Point Of Impact. 20 players, 25 kills. Items persist through death. Loot drops enabled. 50% heal on kill. Infinite lives.",
-                "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission",
+                "Requires plugins: Citruslib, TabgInstaller.MatchCore",
                 files, GameModePlugins);
         }
 
@@ -866,8 +885,8 @@ SpellDropOffset=999
 PreMatchTimeout=120
 PeriMatchTimeout=20";
 
-            var commission = @"## Settings file was created by plugin Freddo TABG Commission v1.0.0
-## Plugin GUID: FreddoTABGCommission
+            var commission = @"## MatchCore commission settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Bans]
 
@@ -902,8 +921,8 @@ StreamingDistance = -1
 Lives = 999
 ";
 
-            var fixes = @"## Settings file was created by plugin FreddoFixStarterPack v1.0.0
-## Plugin GUID: FreddoFixStarterPack
+            var fixes = @"## MatchCore loot compatibility settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Fixes]
 
@@ -911,8 +930,8 @@ EnableLootDrops = true
 ";
 
             // Area 64 spawn points — spread across the open area
-            var spawns = @"## Settings file was created by plugin Freddo Custom Spawnpoints v1.0.0
-## Plugin GUID: FreddoCustomSpawnpoints
+            var spawns = @"## MatchCore custom spawn settings
+## Plugin GUID: tabginstaller.matchcore
 
 [Spawn]
 
@@ -924,15 +943,13 @@ Spawnpoints = 385,468;370,450;400,485;355,440;410,460;375,500;395,435;360,475;42
                 ["game_settings.txt"] = gs,
                 ["TheStarterPack.txt"] = sp,
                 [CfgPath("BepInEx", "config", "CitrusLib", "ExtraSettings.json")] = SharedExtraSettings,
-                [CfgPath("BepInEx", "config", "FreddoTABGCommission.cfg")] = commission,
-                [CfgPath("BepInEx", "config", "FreddoFixStarterPack.cfg")] = fixes,
-                [CfgPath("BepInEx", "config", "FreddoCustomSpawnpoints.cfg")] = spawns,
+                [MatchCoreConfigRelativePath] = MatchCoreConfig(commission, fixes, spawns),
             };
 
             return new BuiltInPreset(
                 "Juggernaut Mode",
                 "One massive player vs everyone. Kill the Juggernaut to become the Juggernaut. First to score target wins. Area 64, 20 players, no ring, infinite respawns.",
-                "Requires plugins: Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission, JuggernautMode.Server. Client mod (JuggernautMode.Client) recommended for boss bar, loadout picker, and scoreboard.",
+                "Requires plugins: Citruslib, TabgInstaller.MatchCore, JuggernautMode.Server. Client mod (JuggernautMode.Client) recommended for boss bar, loadout picker, and scoreboard.",
                 files, JuggernautPlugins);
         }
     }

@@ -39,15 +39,14 @@ namespace TabgInstaller.Gui.ViewModels
         partial void OnAllPluginsInstalledChanged(bool value) =>
             OnPropertyChanged(nameof(CanInstallBundled));
 
-        // All known server plugin DLLs
+        // All known bundled server plugin DLLs
         public static readonly string[] KnownServerPlugins = new[]
         {
-            "Citruslib.dll", "StarterPack.dll", "StarterPackFixes.dll", "CustomSpawnpoints.dll",
-            "FreddoTABGCommission.dll", "MatchAndPreMatchTimeout.dll", "ServerLogger.dll",
-            "VoteToStart.dll", "TabgInstaller.UnusedVehicles.dll", "TabgInstaller.CustomGrenades.dll",
+            "Citruslib.dll", "TabgInstaller.MatchCore.dll", "TabgInstaller.ServerLogger.dll",
+            "TabgInstaller.UnusedVehicles.dll", "TabgInstaller.CustomGrenades.dll",
             "TabgInstaller.SoloTesting.dll", "TabgInstaller.ProximityChat.Server.dll",
             "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll",
-            "JuggernautMode.Server.dll", "TABGVR.Server.CitrusLib.dll", "TabgInstaller.FakePlayers.dll",
+            "JuggernautMode.Server.dll", "TabgInstaller.FakePlayers.dll",
             "TabgInstaller.AdminRadar.Server.dll",
         };
 

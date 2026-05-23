@@ -38,9 +38,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>client-plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
-    <None Include="..\TabgInstaller.Gui\StarterPackSetup.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>StarterPackSetup.exe</Link>
-    </None>
   </ItemGroup>
 </Project>

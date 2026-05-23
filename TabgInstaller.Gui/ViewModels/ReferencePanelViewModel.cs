@@ -342,7 +342,7 @@ In game_settings.txt:
   RingSizes=200, 200, 200
   RingSpeeds=35, 35, 35
 
-Both are arrays of three values. Ringsizes must match the StarterPackSetup ring size.
+Both are arrays of three values. RingSizes must match the MatchCore ring size.
 For deathmatch-style (no ring closing): use large sizes with tiny speeds like
   RingSizes=244, 244, 244
   RingSpeeds=0.001, 50, 0.001

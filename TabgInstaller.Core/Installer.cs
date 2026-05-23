@@ -20,8 +20,8 @@ namespace TabgInstaller.Core
 {
 /// <summary>
 /// Contains the complete installation logic.
-/// The installer generates (or validates) a TheStarterPack.txt up front
-/// so that StarterPackSetup.exe no longer throws a FormatException.
+/// The installer generates a TheStarterPack.txt-compatible MatchCore config
+/// so existing launcher screens can keep managing match settings.
 /// </summary>
     public sealed partial class Installer : IDisposable
     {
@@ -52,15 +52,10 @@ namespace TabgInstaller.Core
         private const string AntiCheatBypassDllName = "TabgInstaller.AntiCheatBypass.dll";
         private const string TestModDllName = "tabginstaller.testmod.dll";
         private const string WeaponSpawnConfigDllName = "TabgInstaller.WeaponSpawnConfig.dll";
-        private const string StarterPackDllAssetName = "StarterPack.dll";
-        private const string StarterPackSetupAssetName = "StarterPackSetup.exe";
         private const string EosDllName = "EOSSDK-Win64-Shipping.dll";
 
         private const string UnityEngineDll = "UnityEngine.dll";
         private const string UnityEngineCoreDll = "UnityEngine.CoreModule.dll";
-
-        private const string StarterPackOwner = "ContagiouslyStupid";
-        private const string StarterPackRepo = "TABGStarterPack";
 
         public Installer(string gameDir, IProgress<string> log)
         {
@@ -363,133 +358,7 @@ namespace TabgInstaller.Core
                 }
             }
 
-            // Define actual tags to be used, potentially overriding with latest
-            string actualStarterPackTag = starterPackTag;
-            string actualCitrusLibTag = citrusLibTag;
-
-            if (!skipStarterPack)
-            {
-                _log.Report("• Starting StarterPack installation (using local files)...");
-
-            // Get the installer's directory and navigate to solution root
-            var installerDir = AppDomain.CurrentDomain.BaseDirectory;
-            _log.Report($"  → Installer directory: {installerDir}");
-            
-            // Navigate from bin\Release\net8.0-windows up to solution root
-            // Use Path.GetFullPath with relative navigation for a more robust approach
-            var solutionRoot = Path.GetFullPath(Path.Combine(installerDir, "..", "..", "..", ".."));
-            _log.Report($"  → Solution root: {solutionRoot}");
-            
-            var localStarterPackDir = Path.Combine(solutionRoot, "TABGStarterPack-main", "TABGStarterPack-main");
-            _log.Report($"  → Looking for StarterPack in: {localStarterPackDir}");
-
-                // Paths to local files - use our built DLL instead of the original
-                var localDllPath = Path.Combine(localStarterPackDir, "StarterPack", "bin", "Release", "net46", "StarterPack.dll");
-                var localSetupPath = Path.Combine(localStarterPackDir, "StarterPackSetup", "bin", "Debug", "StarterPackSetup.exe");
-
-                // Fallback: look for bundled files next to the installer exe (release builds)
-                if (!File.Exists(localDllPath))
-                {
-                    var bundledDll = Path.Combine(installerDir, "plugins", "StarterPack.dll");
-                    if (File.Exists(bundledDll))
-                    {
-                        localDllPath = bundledDll;
-                        _log.Report("  → Using bundled StarterPack.dll");
-                    }
-                }
-                if (!File.Exists(localSetupPath))
-                {
-                    var bundledSetup = Path.Combine(installerDir, "StarterPackSetup.exe");
-                    if (File.Exists(bundledSetup))
-                    {
-                        localSetupPath = bundledSetup;
-                        _log.Report("  → Using bundled StarterPackSetup.exe");
-                    }
-                }
-
-                // Auto-build StarterPack projects if DLLs are still missing (dev environment)
-                if (!File.Exists(localDllPath) || !File.Exists(localSetupPath))
-                {
-                    _log.Report("  → Pre-built binaries not found, building StarterPack projects...");
-
-                    // Ensure TABG game DLLs are available for the StarterPack build
-                    var tabgDataTarget = Path.Combine(solutionRoot, "TABG_Data", "Managed");
-                    var tabgDataSource = Path.Combine(serverDir, "TABG_Data", "Managed");
-                    if (!Directory.Exists(tabgDataTarget) && Directory.Exists(tabgDataSource))
-                    {
-                        Directory.CreateDirectory(tabgDataTarget);
-                        foreach (var dllName in new[] { "Assembly-CSharp.dll", "Assembly-CSharp-firstpass.dll", "Sirenix.Serialization.dll" })
-                        {
-                            var src = Path.Combine(tabgDataSource, dllName);
-                            var dst = Path.Combine(tabgDataTarget, dllName);
-                            if (File.Exists(src))
-                                File.Copy(src, dst, true);
-                        }
-                        _log.Report("  → Copied required TABG game DLLs for build");
-                    }
-
-                    // Build StarterPack DLL (Release)
-                    if (!File.Exists(localDllPath))
-                    {
-                        var starterPackProj = Path.Combine(localStarterPackDir, "StarterPack", "StarterPack.csproj");
-                        _log.Report("  → Building StarterPack.dll...");
-                        await BuildProjectAsync(starterPackProj, "Release", ct);
-                        _log.Report("  → StarterPack.dll built successfully");
-                    }
-
-                    // Build StarterPackSetup (Debug) - requires VS MSBuild for .NET Framework 4.8 WPF
-                    if (!File.Exists(localSetupPath))
-                    {
-                        var setupProj = Path.Combine(localStarterPackDir, "StarterPackSetup", "StarterPackSetup.csproj");
-                        _log.Report("  → Building StarterPackSetup.exe...");
-                        await BuildProjectAsync(setupProj, "Debug", ct);
-                        _log.Report("  → StarterPackSetup.exe built successfully");
-                    }
-                }
-
-                // Check if local files exist after build attempt
-                if (!File.Exists(localDllPath))
-                {
-                    throw new InvalidOperationException($"Local StarterPack DLL not found at: {localDllPath}");
-                }
-                if (!File.Exists(localSetupPath))
-                {
-                    throw new InvalidOperationException($"Local StarterPackSetup.exe not found at: {localSetupPath}");
-                }
-
-                _log.Report($"  → Found local StarterPack files");
-
-                // Copy StarterPack.dll to plugins folder (rename from StarterPack_Fixed.dll to StarterPack.dll)
-                var targetDllPath = Path.Combine(_pluginsDir, StarterPackDllAssetName);
-                File.Copy(localDllPath, targetDllPath, true);
-                _log.Report($"  → Copied {StarterPackDllAssetName} to plugins folder from local source.");
-
-                // Run server once to generate config
-                _log.Report("• Running server once to generate StarterPack config...");
-                await RunServerUntilHeartbeatAsync(serverDir, true);
-                _log.Report("  → Server ran once and was terminated.");
-
-                // Copy StarterPackSetup.exe to server root (available for manual use if needed)
-                var targetSetupPath = Path.Combine(serverDir, StarterPackSetupAssetName);
-                File.Copy(localSetupPath, targetSetupPath, true);
-                _log.Report($"  → Copied {StarterPackSetupAssetName} to server root (available for manual use).");
-                _log.Report("  → Skipping StarterPackSetup.exe launch — config generated by server run.");
-
-                // Sanitize TheStarterPack.txt to ensure StarterPack can parse numeric fields correctly
-                try
-                {
-                    var starterPackConfigPath = Path.Combine(serverDir, "TheStarterPack.txt");
-                    SanitizeStarterPackConfig(starterPackConfigPath);
-                }
-                catch (Exception ex)
-                {
-                    _log.Report($"[WARN] Failed to sanitize TheStarterPack.txt: {ex.Message}");
-                }
-            }
-            else
-            {
-                _log.Report("  → Skipping StarterPack installation (per user choice).");
-            }
+            EnsureMatchCoreConfig(serverDir);
 
             _log.Report("\n✔ Fresh install complete. You can now start the server with your new configuration.");
             return 0;
@@ -503,11 +372,50 @@ namespace TabgInstaller.Core
         {
             _log.Report($"\n❌ Installation failed:\n{ex}");
             return 2;
+            }
         }
-    }
 
-    private void HardResetMods(string serverDir)
-    {
+        private void EnsureMatchCoreConfig(string serverDir)
+        {
+            var path = StarterPackConfigService.GetPath(serverDir);
+            if (File.Exists(path))
+            {
+                _log.Report("  -> Keeping existing TheStarterPack.txt for MatchCore.");
+                return;
+            }
+
+            var settings = new StarterPackTextSettings
+            {
+                RingSettings = "Default:100%0,160,0:4240,3450,1710,830,360,140/",
+                WinCondition = "Default",
+                KillsToWin = 20,
+                ForceKillAtStart = false,
+                DropItemsOnDeath = true,
+                ItemsGiven = "",
+                Loadouts = "Default:100%1:1,2:30/",
+                HealOnKill = false,
+                HealOnKillAmount = 100f,
+                CanGoDown = true,
+                CanLockOut = true,
+                ValidSpawnPoints = "-1",
+                CustomSpawnPoint = "0,150,0",
+                PercentOfVotes = 60,
+                MinNumberOfPlayers = 1,
+                TimeToStart = 5,
+                SpelldropEnabled = true,
+                MinSpellDropDelay = 60,
+                MaxSpellDropDelay = 100,
+                SpellDropOffset = 0,
+                PreMatchTimeout = 0f,
+                PeriMatchTimeout = 0f
+            };
+
+            StarterPackConfigService.Write(serverDir, settings);
+            _log.Report("  -> Created TheStarterPack.txt for MatchCore.");
+        }
+
+        private void HardResetMods(string serverDir)
+        {
         var vanillaFilesPath = Path.Combine(serverDir, "VanillaFiles.txt");
         if (!File.Exists(vanillaFilesPath))
         {

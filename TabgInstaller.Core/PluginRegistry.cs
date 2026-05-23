@@ -12,7 +12,7 @@ namespace TabgInstaller.Core
     {
         /// <summary>Normal DLL copied from the bundled-plugins directory.</summary>
         Bundled,
-        /// <summary>Core dependency handled separately by the installer (Citruslib, StarterPack).</summary>
+        /// <summary>Core dependency handled separately by the installer.</summary>
         CoreDependency,
         /// <summary>Community server — downloaded/handled separately by the installer.</summary>
         CommunityServer
@@ -32,12 +32,12 @@ namespace TabgInstaller.Core
 
     /// <summary>
     /// Single source of truth for all server plugin and client mod definitions.
-    /// Loaded dynamically from the online registry at startup. Both
-    /// <c>InstallerPanel</c> and <c>SetupWizardWindow</c> consume these arrays.
+    /// The launcher now uses owned bundled definitions directly instead of
+    /// replacing them with runtime registry data at startup.
     /// </summary>
     public static class PluginRegistry
     {
-        // ── Dynamic state (updated from online registry) ────────────────
+        // -- Built-in state ------------------------------------------------
 
         private static PluginDefinition[] _serverPlugins;
         private static PluginDefinition[] _clientMods;
@@ -45,8 +45,7 @@ namespace TabgInstaller.Core
 
         static PluginRegistry()
         {
-            _serverPlugins = Array.Empty<PluginDefinition>();
-            _clientMods = Array.Empty<PluginDefinition>();
+            ResetToBuiltIns();
         }
 
         /// <summary>Current server plugin definitions (from registry or hardcoded fallback).</summary>
@@ -55,42 +54,64 @@ namespace TabgInstaller.Core
         /// <summary>Current client mod definitions (from registry or hardcoded fallback).</summary>
         public static PluginDefinition[] ClientMods => _clientMods;
 
-        /// <summary>True when definitions were loaded from the online registry.</summary>
+        /// <summary>False in the built-in launcher flow; retained for old callers.</summary>
         public static bool IsLoadedFromRegistry => _loadedFromRegistry;
 
-        // ── Sigma Preset ────────────────────────────────────────────────
+        // -- Sigma Preset --------------------------------------------------
 
         /// <summary>Plugin IDs that make up the "Sigma" preset.</summary>
         public static readonly HashSet<string> SigmaPresetIds = new(StringComparer.OrdinalIgnoreCase)
         {
-            "Citruslib", "StarterPack", "StarterPackFixes", "CustomSpawnpoints", "FreddoCommission"
+            "Citruslib", "MatchCore", "ServerLogger", "BigSmoke", "MGLFlashbang", "UnusedVehicles", "ProximityChat"
         };
 
-        // ── Load from registry ──────────────────────────────────────────
+        // -- Built-in definitions ----------------------------------------
+
+        private static readonly PluginDefinition[] BuiltInServerPlugins =
+        {
+            new("Citruslib", "Citruslib - required server modding API", new[] { "Citruslib.dll" }, true, PluginKind.CoreDependency),
+            new("MatchCore", "TABG Match Core - rings, loadouts, vote-start, drops, timers, win rules", new[] { "TabgInstaller.MatchCore.dll" }, true, PluginKind.Bundled),
+            new("ServerLogger", "Server Logger - player name, PlayFab, and Epic identity log", new[] { "TabgInstaller.ServerLogger.dll" }, true, PluginKind.Bundled),
+            new("UnusedVehicles", "Unused Vehicles - spawn and manage hidden TABG vehicles", new[] { "TabgInstaller.UnusedVehicles.dll" }, true, PluginKind.Bundled),
+            new("BigSmoke", "Big Smoke Grenade - custom grenade gameplay", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
+            new("MGLFlashbang", "MGL Flashbang - custom grenade gameplay", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
+            new("SoloTesting", "Solo Testing - local testing helpers", new[] { "TabgInstaller.SoloTesting.dll" }, false, PluginKind.Bundled),
+            new("ProximityChat", "Proximity Chat Server - relays nearby voice packets", new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
+            new("HuntMode", "Hunt Mode - asymmetric 4v1 survival mode", new[] { "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("JuggernautMode", "Juggernaut Mode - boss player versus everyone", new[] { "JuggernautMode.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("FakePlayers", "Fake Players - dummy players and AI test targets", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
+            new("AdminRadar", "Admin Radar Server - sends admin-only player telemetry", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+        };
+
+        private static readonly PluginDefinition[] BuiltInClientMods =
+        {
+            new("FlyingControls", "Flying Controls - steering support for custom flying vehicles", new[] { "TabgInstaller.FlyingControls.dll" }, true, PluginKind.Bundled),
+            new("CustomGrenades", "Custom Grenades Client - visuals and effects for custom grenades", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
+            new("CoordsDisplay", "Coords Display - client coordinate overlay", new[] { "TabgInstaller.CoordsDisplay.dll" }, true, PluginKind.Bundled),
+            new("ModSettings", "Mod Settings - client-side settings support", new[] { "TabgInstaller.ModSettings.dll" }, true, PluginKind.Bundled),
+            new("EnhancedClient", "Enhanced Client - LOD, draw distance, haze, and HUD controls", new[] { "TabgInstaller.EnhancedClient.dll" }, true, PluginKind.Bundled),
+            new("PopupBlocker", "Popup Blocker - suppresses modded-client anti-cheat popups", new[] { "TabgInstaller.PopupBlocker.dll" }, true, PluginKind.Bundled),
+            new("ProximityChatClient", "Proximity Chat Client - captures and plays proximity voice", new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
+            new("HuntModeClient", "Hunt Mode Client - HUD for Hunt Mode", new[] { "TabgInstaller.HuntMode.Client.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled),
+            new("JuggernautClient", "Juggernaut Client - boss bar, loadout picker, scoreboard", new[] { "JuggernautMode.Client.dll" }, false, PluginKind.Bundled),
+            new("AdminRadarClient", "Admin Radar Client - admin-only radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
+        };
+
+        public static void ResetToBuiltIns()
+        {
+            _serverPlugins = BuiltInServerPlugins;
+            _clientMods = BuiltInClientMods;
+            _loadedFromRegistry = false;
+        }
 
         /// <summary>
-        /// Replaces the hardcoded plugin lists with definitions from the online registry.
-        /// Called on app startup after the registry is fetched.
+        /// Registry loading is intentionally disabled. The launcher owns the
+        /// bundled plugin list now, so stale cached registry data cannot
+        /// reintroduce removed third-party DLLs.
         /// </summary>
         public static void LoadFromManifests(List<PluginManifest> manifests)
         {
-            if (manifests == null || manifests.Count == 0) return;
-
-            var server = new List<PluginDefinition>();
-            var client = new List<PluginDefinition>();
-
-            foreach (var m in manifests)
-            {
-                var def = ToDefinition(m);
-                if (m.Type == "client")
-                    client.Add(def);
-                else
-                    server.Add(def);
-            }
-
-            if (server.Count > 0) _serverPlugins = server.ToArray();
-            if (client.Count > 0) _clientMods = client.ToArray();
-            _loadedFromRegistry = true;
+            ResetToBuiltIns();
         }
 
         private static PluginDefinition ToDefinition(PluginManifest m)

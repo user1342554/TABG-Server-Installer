@@ -14,6 +14,7 @@ namespace TabgInstaller.AdminRadar.Client
     public class AdminRadarClientPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
+        private const byte BotDebugExtensionMarker = 219;
 
         internal static AdminRadarClientPlugin Instance;
         internal static BepInEx.Logging.ManualLogSource Log;
@@ -56,6 +57,8 @@ namespace TabgInstaller.AdminRadar.Client
         private Texture2D _selfTexture;
         private Texture2D _playerTexture;
         private Texture2D _dummyTexture;
+        private Texture2D _goalTexture;
+        private Texture2D _lootTexture;
 
         private void Awake()
         {
@@ -143,11 +146,43 @@ namespace TabgInstaller.AdminRadar.Client
                             Position = serverPosition,
                             Alive = alive,
                             LastSeen = Time.unscaledTime,
-                            LastServerSeen = Time.unscaledTime
+                            LastServerSeen = Time.unscaledTime,
+                            BotState = hadPrevious ? previous.BotState : null,
+                            TargetName = hadPrevious ? previous.TargetName : null,
+                            WeaponName = hadPrevious ? previous.WeaponName : null,
+                            HasLineOfSight = hadPrevious && previous.HasLineOfSight,
+                            IsFiring = hadPrevious && previous.IsFiring,
+                            HasMoveGoal = hadPrevious && previous.HasMoveGoal,
+                            MoveGoal = hadPrevious ? previous.MoveGoal : Vector3.zero,
+                            HasLootGoal = hadPrevious && previous.HasLootGoal,
+                            LootGoal = hadPrevious ? previous.LootGoal : Vector3.zero,
+                            LootName = hadPrevious ? previous.LootName : null,
+                            LastDebugSeen = hadPrevious ? previous.LastDebugSeen : 0f
                         };
 
                         if (IsDummyName(name) && largeServerJump)
                             ForceClientDummyPosition(index, name, serverPosition, largeServerJump);
+                    }
+
+                    if (br.BaseStream.Position < br.BaseStream.Length && br.ReadByte() == BotDebugExtensionMarker)
+                    {
+                        int debugCount = br.ReadByte();
+                        for (int i = 0; i < debugCount && br.BaseStream.Position < br.BaseStream.Length; i++)
+                        {
+                            byte index = br.ReadByte();
+                            string state = br.ReadString();
+                            string targetName = br.ReadString();
+                            string weaponName = br.ReadString();
+                            bool hasLineOfSight = br.ReadBoolean();
+                            bool isFiring = br.ReadBoolean();
+                            bool hasMoveGoal = br.ReadBoolean();
+                            Vector3 moveGoal = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
+                            bool hasLootGoal = br.ReadBoolean();
+                            Vector3 lootGoal = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
+                            string lootName = br.ReadString();
+
+                            ApplyBotDebug(index, state, targetName, weaponName, hasLineOfSight, isFiring, hasMoveGoal, moveGoal, hasLootGoal, lootGoal, lootName);
+                        }
                     }
                 }
             }
@@ -155,6 +190,37 @@ namespace TabgInstaller.AdminRadar.Client
             {
                 Log?.LogWarning("[AdminRadar.Client] Could not parse radar payload: " + ex.Message);
             }
+        }
+
+        private static void ApplyBotDebug(
+            byte index,
+            string state,
+            string targetName,
+            string weaponName,
+            bool hasLineOfSight,
+            bool isFiring,
+            bool hasMoveGoal,
+            Vector3 moveGoal,
+            bool hasLootGoal,
+            Vector3 lootGoal,
+            string lootName)
+        {
+            RadarPlayer player;
+            if (!Players.TryGetValue(index, out player))
+                return;
+
+            player.BotState = state;
+            player.TargetName = targetName;
+            player.WeaponName = weaponName;
+            player.HasLineOfSight = hasLineOfSight;
+            player.IsFiring = isFiring;
+            player.HasMoveGoal = hasMoveGoal;
+            player.MoveGoal = moveGoal;
+            player.HasLootGoal = hasLootGoal;
+            player.LootGoal = lootGoal;
+            player.LootName = lootName;
+            player.LastDebugSeen = Time.unscaledTime;
+            Players[index] = player;
         }
 
         internal static void MarkDummyPlayersDroppedBeforeAllDrop()
@@ -228,7 +294,18 @@ namespace TabgInstaller.AdminRadar.Client
                         Position = position,
                         Alive = !player.IsDead,
                         LastSeen = Time.unscaledTime,
-                        LastServerSeen = existing.LastServerSeen
+                        LastServerSeen = existing.LastServerSeen,
+                        BotState = existing.BotState,
+                        TargetName = existing.TargetName,
+                        WeaponName = existing.WeaponName,
+                        HasLineOfSight = existing.HasLineOfSight,
+                        IsFiring = existing.IsFiring,
+                        HasMoveGoal = existing.HasMoveGoal,
+                        MoveGoal = existing.MoveGoal,
+                        HasLootGoal = existing.HasLootGoal,
+                        LootGoal = existing.LootGoal,
+                        LootName = existing.LootName,
+                        LastDebugSeen = existing.LastDebugSeen
                     };
                 }
             }
@@ -388,7 +465,37 @@ namespace TabgInstaller.AdminRadar.Client
                 }
             }
 
+            foreach (var player in Players.Values)
+            {
+                if (!player.Alive || !IsDummyName(player.Name) || Time.unscaledTime - player.LastDebugSeen > 2f)
+                    continue;
+
+                if (player.HasMoveGoal)
+                    DrawRadarPoint(x, y, center, range, yaw, localPosition, player.MoveGoal, _goalTexture, new Color(0.3f, 0.9f, 1f, 0.9f), "path");
+                if (player.HasLootGoal)
+                    DrawRadarPoint(x, y, center, range, yaw, localPosition, player.LootGoal, _lootTexture, new Color(0.15f, 1f, 0.45f, 0.95f), string.IsNullOrWhiteSpace(player.LootName) ? "loot" : player.LootName);
+            }
+
             GUI.color = oldColor;
+        }
+
+        private void DrawRadarPoint(float radarX, float radarY, float center, float range, float yaw, Vector3 localPosition, Vector3 worldPosition, Texture2D texture, Color color, string label)
+        {
+            Vector3 offset = worldPosition - localPosition;
+            float cos = Mathf.Cos(-yaw);
+            float sin = Mathf.Sin(-yaw);
+            float rx = offset.x * cos - offset.z * sin;
+            float rz = offset.x * sin + offset.z * cos;
+
+            float px = Mathf.Clamp(rx / range, -1f, 1f) * center;
+            float py = Mathf.Clamp(-rz / range, -1f, 1f) * center;
+            float dotX = radarX + center + px;
+            float dotY = radarY + center + py;
+
+            GUI.color = color;
+            GUI.DrawTexture(new Rect(dotX - 3f, dotY - 3f, 6f, 6f), texture);
+            if (_showNames.Value)
+                GUI.Label(new Rect(dotX + 5f, dotY - 9f, 120f, 18f), label, _smallStyle);
         }
 
         private void DrawStatusLine()
@@ -446,9 +553,17 @@ namespace TabgInstaller.AdminRadar.Client
 
                 GUI.color = markerColor;
                 GUI.DrawTexture(new Rect(point.x - 7f, point.y - 7f, 14f, 14f), _dummyTexture);
+                string debugLine = string.Empty;
+                if (Time.unscaledTime - player.LastDebugSeen <= 2f && !string.IsNullOrWhiteSpace(player.BotState))
+                {
+                    string los = player.HasLineOfSight ? "LOS" : "NO LOS";
+                    string firing = player.IsFiring ? " firing" : string.Empty;
+                    debugLine = $"\n{player.BotState}  {player.TargetName}  {player.WeaponName}  {los}{firing}";
+                }
+
                 GUI.Label(
-                    new Rect(point.x + 10f, point.y - 18f, 360f, 40f),
-                    $"{player.Name}  {distance:0}m  ({player.Position.x:0},{player.Position.y:0},{player.Position.z:0})",
+                    new Rect(point.x + 10f, point.y - 24f, 480f, 58f),
+                    $"{player.Name}  {distance:0}m  ({player.Position.x:0},{player.Position.y:0},{player.Position.z:0}){debugLine}",
                     _markerStyle);
             }
 
@@ -579,6 +694,8 @@ namespace TabgInstaller.AdminRadar.Client
             _selfTexture = MakeTex(new Color(0.2f, 0.85f, 1f, 1f));
             _playerTexture = MakeTex(new Color(1f, 0.2f, 0.15f, 1f));
             _dummyTexture = MakeTex(Color.white);
+            _goalTexture = MakeTex(new Color(0.3f, 0.9f, 1f, 1f));
+            _lootTexture = MakeTex(new Color(0.15f, 1f, 0.45f, 1f));
 
             _labelStyle = new GUIStyle(GUI.skin.label)
             {
@@ -652,6 +769,17 @@ namespace TabgInstaller.AdminRadar.Client
             public bool Alive;
             public float LastSeen;
             public float LastServerSeen;
+            public string BotState;
+            public string TargetName;
+            public string WeaponName;
+            public bool HasLineOfSight;
+            public bool IsFiring;
+            public bool HasMoveGoal;
+            public Vector3 MoveGoal;
+            public bool HasLootGoal;
+            public Vector3 LootGoal;
+            public string LootName;
+            public float LastDebugSeen;
         }
     }
 }

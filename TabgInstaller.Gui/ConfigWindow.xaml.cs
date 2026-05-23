@@ -43,7 +43,7 @@ namespace TabgInstaller.Gui
 
             // Initialize Weapon Spawn Config tab
             // WeaponSpawnGrid.DataContext = new WeaponSpawnViewModel(_serverDir);
-            
+
             // Initialize StarterPack tab
             // StarterPackGrid.Initialize(_serverDir);
 
@@ -54,7 +54,7 @@ namespace TabgInstaller.Gui
             StopButton.Click  += StopButton_Click;
 
             LoadPluginsList();
-            
+
             // Set up file watchers for real-time sync
             SetupFileWatchers();
         }
@@ -64,12 +64,12 @@ namespace TabgInstaller.Gui
             // Temporarily disable file watching to avoid triggering on our own save
             if (_gameSettingsWatcher != null)
                 _gameSettingsWatcher.EnableRaisingEvents = false;
-                
+
             var path = Path.Combine(_serverDir, "game_settings.txt");
             ConfigIO.WriteGameSettings(_vm.ToModel(), path);
-            
+
             StatusTextBlock.Text = "Settings saved to file";
-            
+
             // Re-enable file watching after a short delay
             var timer = new System.Windows.Threading.DispatcherTimer();
             timer.Interval = TimeSpan.FromMilliseconds(1000);
@@ -164,7 +164,7 @@ namespace TabgInstaller.Gui
             StartButton_Click(sender, e);
         }
 
-        
+
 
 
         private void ClearConsole_Click(object sender, RoutedEventArgs e)
@@ -249,9 +249,9 @@ namespace TabgInstaller.Gui
         {
             if ((sender as System.Windows.Controls.CheckBox)?.DataContext is PluginEntry entry)
             {
-                if (entry.Name.Equals("StarterPack.dll", StringComparison.OrdinalIgnoreCase))
+                if (entry.Name.Equals("TabgInstaller.MatchCore.dll", StringComparison.OrdinalIgnoreCase))
                 {
-                    // StarterPack is mandatory – ignore any attempt to disable
+                    // MatchCore is the launcher-owned replacement for the old match plugin stack.
                     (sender as CheckBox)!.IsChecked = true;
                     return;
                 }
@@ -283,7 +283,7 @@ namespace TabgInstaller.Gui
             _datapackWatcher?.Dispose();
             base.OnClosed(e);
         }
-        
+
         private void SetupFileWatchers()
         {
             // Watch game_settings.txt
@@ -298,7 +298,7 @@ namespace TabgInstaller.Gui
                 _gameSettingsWatcher.Changed += OnGameSettingsChanged;
                 _gameSettingsWatcher.EnableRaisingEvents = true;
             }
-            
+
             // Watch datapack.txt
             var datapackPath = Path.Combine(_serverDir, "datapack.txt");
             if (File.Exists(datapackPath))
@@ -312,16 +312,16 @@ namespace TabgInstaller.Gui
                 _datapackWatcher.EnableRaisingEvents = true;
             }
         }
-        
+
         private void OnGameSettingsChanged(object sender, FileSystemEventArgs e)
         {
             // Debounce rapid changes
             var lastWrite = File.GetLastWriteTime(e.FullPath);
             if (lastWrite - _lastWriteTime < TimeSpan.FromMilliseconds(500))
                 return;
-                
+
             _lastWriteTime = lastWrite;
-            
+
             // Reload settings on UI thread
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -337,7 +337,7 @@ namespace TabgInstaller.Gui
                 }
             }));
         }
-        
+
         private void OnDatapackChanged(object sender, FileSystemEventArgs e)
         {
             if (e.ChangeType == WatcherChangeTypes.Changed)
@@ -351,4 +351,4 @@ namespace TabgInstaller.Gui
             }
         }
     }
-} 
+}

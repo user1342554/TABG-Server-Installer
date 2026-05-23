@@ -205,9 +205,6 @@ namespace TabgInstaller.Gui
             clientVm.Initialize();
             BackupsTab.DataContext = _services.GetRequiredService<BackupsPanelViewModel>();
             ReferenceTab.DataContext = _services.GetRequiredService<ReferencePanelViewModel>();
-            var browsePluginsVm = _services.GetRequiredService<BrowsePluginsViewModel>();
-            BrowsePluginsTab.DataContext = browsePluginsVm;
-            _ = browsePluginsVm.LoadPluginsAsync(); // Fire-and-forget on startup
             SettingsTab.DataContext = _services.GetRequiredService<SettingsPanelViewModel>();
             SettingsTab.SuperSecretControl.DataContext = _services.GetRequiredService<SuperSecretSettingsViewModel>();
 

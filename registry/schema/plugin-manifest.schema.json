@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TABG Plugin Manifest",
-  "description": "Schema for plugin manifests in the TABG Server Installer plugin marketplace.",
+  "description": "Schema for bundled plugin metadata in the TABG Server Installer.",
   "type": "object",
   "required": ["id", "name", "version", "description", "author", "dllNames", "type", "kind", "compatibleTabgVersions", "minInstallerVersion", "bepInExVersion"],
   "properties": {
@@ -34,7 +34,7 @@
     "kind": {
       "type": "string",
       "enum": ["bundled", "core-dependency", "community-server", "community"],
-      "description": "How the plugin is distributed. 'bundled' ships with the installer, 'core-dependency' is downloaded during install, 'community' is from the marketplace."
+      "description": "How the plugin is distributed. 'bundled' ships with the installer, 'core-dependency' is downloaded during install, and community values are legacy metadata."
     },
     "defaultChecked": {
       "type": "boolean",

@@ -452,7 +452,7 @@
     <value>Spawn-Koordinaten (eine x,z pro Zeile):</value>
   </data>
   <data name="StarterPackFixes" xml:space="preserve">
-    <value>StarterPack-Korrekturen</value>
+    <value>MatchCore</value>
   </data>
   <data name="EnableLootDrops" xml:space="preserve">
     <value>Loot-Drops aktivieren</value>
@@ -874,15 +874,6 @@
   <data name="NeverAsk" xml:space="preserve">
     <value>Nie fragen</value>
   </data>
-  <data name="TabBrowsePlugins" xml:space="preserve">
-    <value>Plugins durchsuchen</value>
-  </data>
-  <data name="BrowsePluginsTitle" xml:space="preserve">
-    <value>Plugin-Marktplatz</value>
-  </data>
-  <data name="BrowsePluginsSubtitle" xml:space="preserve">
-    <value>Community-Plugins f&#x00FC;r deinen Server entdecken und installieren</value>
-  </data>
   <data name="SearchPlugins" xml:space="preserve">
     <value>Plugins suchen...</value>
   </data>
@@ -903,9 +894,6 @@
   </data>
   <data name="PluginUpdatesAvailable" xml:space="preserve">
     <value>{0} Plugin-Update(s) verf&#x00FC;gbar</value>
-  </data>
-  <data name="MarketplaceUnavailable" xml:space="preserve">
-    <value>Plugin-Marktplatz nicht verf&#x00FC;gbar &#x2014; Internetverbindung pr&#x00FC;fen.</value>
   </data>
   <data name="Uninstall" xml:space="preserve">
     <value>Deinstallieren</value>

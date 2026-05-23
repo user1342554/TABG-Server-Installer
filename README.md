@@ -27,63 +27,73 @@
 
 ## About
 
-This project is **not** an original creation from scratch. It is a **collection and wrapper** around several existing community-made mods, tools, and libraries for TABG, bundled together into a single installer with a configuration GUI. The goal is to make setting up a modded TABG dedicated server as painless as possible, without having to manually download and configure each component separately.
+TABG Server Installer is a launcher, installer, and owned plugin bundle for TABG dedicated servers. It installs BepInEx, Citruslib, and the bundled server/client plugins, then exposes the important server and mod settings through the launcher instead of requiring manual file editing.
 
-I (anonymer_hase) wrote the installer GUI and the glue code that ties everything together. The actual mods and core libraries that make the server work are mostly the hard work of other developers listed in the [Credits](#credits) section below.
+The bundled `TabgInstaller.*` plugins are maintained from source in this repository. Citruslib is kept as the core TABG server modding dependency, and BepInEx/Harmony remain third-party runtime libraries.
+
+## Ownership Model
+
+- The launcher, installer, presets, config editors, and bundled `TabgInstaller.*` plugin code are maintained in this repository.
+- Old marketplace installation and removed third-party plugin DLLs are no longer part of the normal launcher flow.
+- Citruslib, BepInEx, Harmony, and NuGet packages remain external dependencies and keep their own licenses.
+- TABGVR was removed. Citruslib stays because it is the shared TABG modding API dependency.
 
 ## Features
 
 ### Core
 
-- **One-click server setup** — Installs BepInEx, plugins, and generates default configs automatically
-- **Client mod installer** — Creates a modded TABG copy with BepInEx + client plugins (separate from Steam to bypass EAC)
-- **Config editor** — GUI for editing game settings, match rules, ring behavior, spawn points, and loadouts
-- **Config validation** — Real-time validation with warnings before you start the server
-- **Preset templates** — Battle Royale, Deathmatch, Gun Game, Scavenge, and more
-- **Weapon spawn config** — Control weapon spawn rates per category
-- **Admin panel** — In-app player/admin management with known-player tracking
-- **Backup system** — Create and restore server config backups
-- **Auto-updater** — Checks GitHub Releases for new versions on startup
-- **Self-contained** — No .NET installation required, just extract and run
+- **One-click server setup** - installs BepInEx, Citruslib, bundled plugins, and default configs.
+- **Client mod installer** - creates a separate modded TABG client with bundled client plugins.
+- **Config editor** - edits game settings, match rules, ring behavior, spawn points, loadouts, admins, and mod settings.
+- **Preset templates** - Battle Royale, Deathmatch, Gun Game, Scavenge, Juggernaut, and more.
+- **Built-in plugin manager** - installs bundled DLLs directly from the launcher without a marketplace dependency.
+- **Dashboard and console** - server health, player count, uptime, console output, and quick actions.
+- **Backup system** - creates and restores server config backups.
+- **Remote SSH tools** - manages remote dedicated servers where configured.
+- **Auto-updater** - checks GitHub Releases for new versions.
 
-### Plugin Marketplace
+### Config GUI
 
-Browse and manage community-made plugins without leaving the app.
+- **Server Settings** - `game_settings.txt` editor with validation.
+- **Match Settings** - MatchCore-compatible `TheStarterPack.txt` settings for win rules, votes, spell drops, and timeouts.
+- **Rings and Spawns** - ring sizes/speeds, lobby spawn, valid spawn points, and match spawn lists.
+- **Loadouts** - loadout editor with item database support.
+- **Mod Settings** - MatchCore fixes, grenade-on-death, Proximity Chat, ServerLogger, and Juggernaut settings.
+- **Admins** - `PlayerPerms.json` management.
+- **Presets** - apply built-in templates or save custom config sets.
 
-- **Browse tab** — Search, filter by type (server/client/both), and sort by name or date
-- **One-click install** — Download and install plugins with automatic dependency resolution
-- **Update detection** — Dashboard health card shows how many plugin updates are available
-- **Version pinning** — Pin a plugin version to prevent automatic updates
-- **Per-server tracking** — Each server instance tracks its own installed community plugins independently
-- **Uninstall** — Clean removal of plugin DLLs and tracking data
-- **Open registry** — Plugin authors can submit plugins via pull request ([see Contributing](./registry/CONTRIBUTING.md))
+## Bundled Plugins
 
-### Server Management
+### Server Plugins
 
-- **Dashboard** — Health cards for server status, player count, uptime, and plugin updates
-- **Server console** — Integrated console output panel
-- **Health monitoring** — Continuous background health checks with status indicators
-- **Remote SSH** — Connect to and manage remote dedicated servers over SSH
-- **Credential storage** — Securely stores SSH and service credentials
+| Plugin | DLL | Description | Default |
+|--------|-----|-------------|---------|
+| Citruslib | `Citruslib.dll` | Third-party TABG server modding API dependency | Yes |
+| MatchCore | `TabgInstaller.MatchCore.dll` | Rings, loadouts, vote-start, drops, spell drops, timeouts, win rules, and match fixes | Yes |
+| ServerLogger | `TabgInstaller.ServerLogger.dll` | Player name, PlayFab ID, and Epic ID logging with CSV and legacy log support | Yes |
+| UnusedVehicles | `TabgInstaller.UnusedVehicles.dll` | Spawns and manages hidden TABG vehicles | Yes |
+| BigSmoke / MGLFlashbang | `TabgInstaller.CustomGrenades.dll` | Custom grenade gameplay | Yes |
+| ProximityChat | `TabgInstaller.ProximityChat.Server.dll` | Nearby voice relay over the existing game network | Yes |
+| SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
+| HuntMode | `TabgInstaller.HuntMode.dll` | 4v1 survival mode | No |
+| JuggernautMode | `JuggernautMode.Server.dll` | Boss player versus everyone | No |
+| FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets | No |
+| AdminRadar | `TabgInstaller.AdminRadar.Server.dll` | Admin-only player telemetry server | No |
 
-### Appearance & Accessibility
+### Client Plugins
 
-- **Theme system** — Base theme with high-contrast mode
-- **Keyboard navigation** — Full keyboard support across all tabs and dialogs
-- **Screen reader support** — Accessible labels and focus management
-- **Localized strings** — All UI text externalised for translation
-
-### Built-in Plugins
-
-- **Proximity voice chat** — Voice communication through the game's network (no extra ports, works with relay)
-- **Custom vehicles** — Spawns cut vehicles (Helicopter, UFO, Mustang, VW, Hover Bike, Hover Car, Box Car)
-- **Flying controls** — Client mod to steer flying vehicles (W/S/A/D + Space/Ctrl)
-- **Custom grenades** — Giant purple smoke grenades + MGL flashbang rounds
-- **In-game settings menu** — Press # to adjust mod settings in-game
-- **Coords display** — Press F5 to show X/Y/Z position
-- **Hunt Mode** — 4v1 survival game mode (server + client) *(buggy)*
-- **Juggernaut Mode** — One massive player vs everyone (server + client) *(buggy)*
-- **Fake Players** — Spawn dummy players for testing *(buggy)*
+| Plugin | DLL | Description | Default |
+|--------|-----|-------------|---------|
+| FlyingControls | `TabgInstaller.FlyingControls.dll` | Client steering for custom flying vehicles | Yes |
+| CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Client visuals/effects for custom grenades | Yes |
+| CoordsDisplay | `TabgInstaller.CoordsDisplay.dll` | Coordinate overlay | Yes |
+| ModSettings | `TabgInstaller.ModSettings.dll` | In-game mod settings support | Yes |
+| EnhancedClient | `TabgInstaller.EnhancedClient.dll` | LOD, draw distance, haze, and HUD controls | Yes |
+| PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
+| ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
+| HuntModeClient | `TabgInstaller.HuntMode.Client.dll` | Hunt Mode HUD | No |
+| JuggernautClient | `JuggernautMode.Client.dll` | Boss bar, loadout picker, and scoreboard | No |
+| AdminRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Admin-only radar overlay | No |
 
 ## Download
 
@@ -112,171 +122,75 @@ Browse and manage community-made plugins without leaving the app.
 5. Click **INSTALL CLIENT MODS**
 6. Launch the modded TABG from the installer (**NOT** from Steam)
 
-### Installing Community Plugins
+### Managing Bundled Plugins
 
-1. Go to the **Browse Plugins** tab
-2. Search or filter for a plugin
-3. Click **Install** — dependencies are resolved automatically
-4. The plugin is tracked per-server and can be updated or removed at any time
-
-## Plugins
-
-### Server Plugins
-
-Citruslib, StarterPack, StarterPackFixes, CustomSpawnpoints, FreddoTABGCommission, MatchAndPreMatchTimeout, ServerLogger, VoteToStart, UnusedVehicles, BigSmokeGrenade, MGLFlashbang, ProximityChat, HuntMode, JuggernautMode, TABGVR Server, FakePlayers, SoloTesting
-
-### Client Plugins
-
-FlyingControls, Enhanced TABG, BigSmokeGrenade, MGLFlashbang, CoordsDisplay, ModSettings, Pop-up Blocker, ProximityChat, HuntMode Client, JuggernautMode Client, TABGVR
+1. Go to the **Server Mods** or **Client** tab
+2. Select available bundled DLLs
+3. Click install selected
+4. Enable or disable installed DLLs from the same panel
 
 ## Proximity Voice Chat
 
-Voice communication is built directly into the game's existing network connection — no additional ports, no separate voice servers, and it works transparently through a relay.
+Voice communication is built directly into the game's existing network connection. No additional ports or separate voice server are required.
 
-- Voice data travels through the game's relay network — no direct port forwarding required
+- Voice data travels through the game's relay network.
 - The server relays voice packets only to nearby players based on in-game distance
 - Configurable maximum range (default: 50 m)
 - HUD indicator shows who is currently talking
 - Open microphone with noise gate to suppress background noise
 - 16 kHz audio quality
 
-## Publishing Your Own Plugin
+## Server Logger
 
-Want your plugin in the marketplace? Here's the short version — for full details see [`registry/CONTRIBUTING.md`](./registry/CONTRIBUTING.md).
+ServerLogger is bundled as `TabgInstaller.ServerLogger.dll` and configured from the launcher under **Config -> Mod Settings**.
 
-### Requirements
+- Hooks TABG's Epic token verification callback to log new player identities.
+- Uses a fallback connected-player scan so logging still works if another mod changes the callback path.
+- Writes `BepInEx/server-logs/players.csv` by default.
+- Optionally keeps legacy `ServerLogger.txt` in the server root for older tools.
+- Exposes log path, CSV file name, legacy file name, scan interval, and output toggles in the GUI.
 
-- Your plugin is a BepInEx 5.4.22 plugin that works with TABG dedicated servers
-- Your DLLs are hosted as GitHub releases
+## Plugin Development
 
-### Steps
+Bundled plugins are normal BepInEx 5.4.22 projects targeting `netstandard2.0`.
 
-1. **Fork** this repository
-2. **Copy** [`registry/TEMPLATE.json`](./registry/TEMPLATE.json) to `registry/plugins/<your-plugin-id>/manifest.json`
-3. **Fill in** your plugin details:
-
-```json
-{
-  "id": "my-cool-plugin",
-  "name": "My Cool Plugin",
-  "version": "1.0.0",
-  "description": "Does something cool on your TABG server.",
-  "author": "YourGitHubUsername",
-  "downloadUrl": "https://github.com/You/my-cool-plugin/releases/latest",
-  "dllNames": ["MyCoolPlugin.dll"],
-  "type": "server",
-  "compatibleTabgVersions": ["*"],
-  "minInstallerVersion": "5.0.0",
-  "bepInExVersion": "5.4.22"
-}
-```
-
-4. **Open a pull request** — CI validates your manifest automatically (schema, download URL, duplicate check)
-5. Once merged, your plugin appears in the **Browse Plugins** tab for everyone
-
-### Updating Your Plugin
-
-1. Push a new GitHub release with your updated DLLs
-2. Open a PR bumping the `version` field in your manifest
-
-### Plugin Types
-
-| Type | Where it gets installed |
-|------|------------------------|
-| `server` | Server's `BepInEx/plugins/community/<id>/` |
-| `client` | Client's `BepInEx/plugins/community/<id>/` |
-| `both` | Both server and client |
-
-### Registry Details
-
-The marketplace is powered by a GitHub-based registry. Manifests are validated by CI on every pull request and compiled into a single `registry.json` that the app fetches at runtime.
-
-- **Schema**: [`registry/schema/plugin-manifest.schema.json`](./registry/schema/plugin-manifest.schema.json)
-- **Template**: [`registry/TEMPLATE.json`](./registry/TEMPLATE.json)
-- **Full guide**: [`registry/CONTRIBUTING.md`](./registry/CONTRIBUTING.md)
+1. Add the plugin source project to the solution.
+2. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
+3. Register the plugin in `TabgInstaller.Core/PluginRegistry.cs`.
+4. Add or update `registry/plugins/<PluginId>/manifest.json`.
+5. Build the launcher projects and tests project before release.
 
 ## Disclaimer
 
 This software is provided **as-is** with no warranty of any kind. Use at your own risk.
 
 - This project is **not affiliated with, endorsed by, or associated with** [Landfall Games](https://landfall.se/) or Totally Accurate Battlegrounds in any way.
-- This installer bundles third-party mods and tools. While every effort has been made to credit original authors, if you are a mod author and want your work removed or credited differently, please contact me.
+- This installer bundles BepInEx, Citruslib, and owned TABG plugins maintained in this repository.
 - Modifying game servers may violate the game's Terms of Service. The authors of this installer are **not responsible** for any bans, account actions, or other consequences resulting from its use.
 - The anti-cheat bypass component is intended solely for running private dedicated servers and is **not** meant for use in cheating or gaining unfair advantages in public matches.
 
 ## Credits
 
-This project would not exist without the work of these developers and communities. If you contributed something and aren't listed here, want to be credited differently, or **want your work removed from this project**, please contact me and I will do so immediately.
+### Project
 
-### Core Libraries & Frameworks
+- **anonymer_hase** - launcher, installer, configuration editor, presets, dashboard, backup tools, remote management, and bundled `TabgInstaller.*` plugin code.
+
+### Third-Party Runtime Dependencies
 
 | Component | Author | Link |
 |-----------|--------|------|
 | [BepInEx](https://github.com/BepInEx/BepInEx) | BepInEx Team | Unity/Mono game plugin framework (v5.4.22) |
 | [HarmonyLib](https://github.com/pardeike/Harmony) | Andreas Pardeike | Runtime method patching (bundled with BepInEx) |
+| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | [**CyrusTheLesser**](https://github.com/CyrusTheLesser) | Code library for TABG-DS modding - custom chat commands, loot tables, settings, player management |
 
-### TABG Mod Authors
+### NuGet Packages
 
-| Plugin | Author | Description |
-|--------|--------|-------------|
-| StarterPack | [**ContagiouslyStupid**](https://github.com/ContagiouslyStupid) | Server configuration and match mechanics — the backbone of modded TABG servers |
-| MatchAndPreMatchTimeout | [**ContagiouslyStupid**](https://github.com/ContagiouslyStupid) | Ends the game or restarts the lobby after a configurable amount of time |
-| ServerLogger | [**ContagiouslyStupid**](https://github.com/ContagiouslyStupid) | Logs the name, PlayFab ID, and Epic ID of every new player |
-| VoteToStart | [**ContagiouslyStupid**](https://github.com/ContagiouslyStupid) | `/votestart` command to vote-start the server |
-| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | [**CyrusTheLesser**](https://github.com/CyrusTheLesser) | Code library for TABG-DS modding — custom chat commands, loot tables, settings, player management |
-| [ModerationTools](https://github.com/CyrusTheLesser/ModerationTools) | [**CyrusTheLesser**](https://github.com/CyrusTheLesser) | Server moderation — blacklist/whitelist, kick/ban via Epic IDs |
-| FreddoTABGCommission | **Freddo** | Commission/loadout system, bans, curses, grenade-on-kill mechanics *(no public repo)* |
-| FreddoFixStarterPack | **Freddo** | Loot drop fixes for StarterPack *(no public repo)* |
-| FreddoCustomSpawnpoints | **Freddo** | Custom spawn location support *(no public repo)* |
-| Enhanced TABG | **Freddo** | Client-side enhancements *(no public repo)* |
-| Pop-up Blocker | **Freddo** | Disables anti-cheat pop-ups on client *(no public repo)* |
-| [TASM](https://github.com/RedBigz/TASM) | [**RedBigz**](https://github.com/RedBigz) | Totally Accurate Server Mod — plugin support and command system |
-| [TABGVR](https://github.com/RedBigz/TABGVR) | [**RedBigz**](https://github.com/RedBigz) | VR support for TABG (server + client) |
-| [ComputeryLib](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Core server library — CLI handler, chat commands, message logging, visitor tracking, config improvements |
-| [LandfallPlzFixServer](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Server-side game fixes |
-| [LandfallPlzFixClient](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Client-side game fixes |
-| [SteamworksEnforcer](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Steam authentication enforcement |
-| [TokenAuthFixer](https://github.com/C0mputery/ComputerysTabgMods) | [**C0mputery**](https://github.com/C0mputery) | Token authentication fixes |
-| [BinsCinematicMod](https://github.com/C0mputery/ComputerysTabgMods) | **Bins** | Camera/cinematic mod *(hosted in C0mputery's monorepo)* |
-
-### Community Tools & References
-
-| Project | Author | Used For |
-|---------|--------|----------|
-| [ComputerysUltimateTABGServer](https://github.com/C0mputery/ComputerysUltimateTABGServer) | [**C0mputery**](https://github.com/C0mputery) | Full community server rewrite — room management, tick system, packet handling, admin commands |
-| [AntiCheatBootErrorRemover](https://github.com/C0mputery/AntiCheatBootErrorRemover) | [**C0mputery**](https://github.com/C0mputery) | Anti-cheat bypass reference for dedicated servers |
-| [TABGCommunityServer](https://github.com/JIBSIL/TABGCommunityServer) | [**JIBSIL**](https://github.com/JIBSIL) | Original community server foundation (CUTS is based on this) |
-| [Citruslib-FixedUp](https://github.com/RedBigz/Citruslib-FixedUp) | [**RedBigz**](https://github.com/RedBigz) | Modernized fork of Citruslib for newer .NET |
-| [tabg-word-list](https://github.com/landfallgames/tabg-word-list) | [**Landfall Games**](https://github.com/landfallgames) | Official word list for server name validation |
-| [dnSpyEx](https://github.com/dnSpyEx/dnSpy) | dnSpyEx Team | .NET decompiler used for modding research |
-
-### Installer (this project)
-
-- **anonymer_hase** — Installer GUI, configuration editor, backup system, auto-updater, preset system, plugin marketplace, dashboard, SSH remote management, theme system, crash reporter, and all the glue code tying everything together
-
-| Plugin | Author | Description | Status |
-|--------|--------|-------------|--------|
-| UnusedVehicles | anonymer_hase | Spawns cut/unused vehicles on the map | Working |
-| FlyingControls | anonymer_hase | Client-side flying vehicle steering | Working |
-| BigSmokeGrenade | anonymer_hase | Giant purple smoke grenades | Working |
-| MGLFlashbang | anonymer_hase | MGL flashbang rounds | Working |
-| CoordsDisplay | anonymer_hase | In-game coordinate display | Working |
-| ModSettings | anonymer_hase | In-game settings menu for all mods | Working |
-| SoloTesting | anonymer_hase | Solo testing mode | Working |
-| WeaponSpawnConfig | anonymer_hase | Weapon spawn rate configuration | Working |
-| ProximityChat | anonymer_hase | Proximity voice chat (server + client) | Working |
-| HuntMode | anonymer_hase | 4v1 survival game mode (server + client) | Buggy |
-| JuggernautMode | anonymer_hase | One massive player vs everyone (server + client) | Buggy |
-| FakePlayers | anonymer_hase | Spawn dummy players for testing | Buggy |
-
-### Third-Party Libraries
-
-- [Octokit](https://github.com/octokit/octokit.net) — GitHub API (auto-updater, registry fetching)
-- [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) by James Newton-King — JSON handling
-- [Polly](https://github.com/App-vNext/Polly) — Resilience and retry policies
-- [RestSharp](https://github.com/restsharp/RestSharp) — HTTP client
-- [SSH.NET](https://github.com/sshnet/SSH.NET) — SSH remote server management
-- [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM framework for WPF
+- [Octokit](https://github.com/octokit/octokit.net) - GitHub API (auto-updater, registry fetching)
+- [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) by James Newton-King - JSON handling
+- [Polly](https://github.com/App-vNext/Polly) - Resilience and retry policies
+- [RestSharp](https://github.com/restsharp/RestSharp) - HTTP client
+- [SSH.NET](https://github.com/sshnet/SSH.NET) - SSH remote server management
+- [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) - MVVM framework for WPF
 
 > **Know someone who should be credited?** Open an issue or DM me on Discord.
 
@@ -289,6 +203,6 @@ Have questions, feature requests, or found a bug?
 
 ## License
 
-Released under the **MIT License** — see [`LICENSE`](./LICENSE).
+Released under the **MIT License** - see [`LICENSE`](./LICENSE).
 
-This license applies to the installer code only. Bundled third-party components retain their own respective licenses — see [`THIRD-PARTY-LICENSES`](./THIRD-PARTY-LICENSES) for details.
+Bundled third-party libraries retain their own respective licenses.

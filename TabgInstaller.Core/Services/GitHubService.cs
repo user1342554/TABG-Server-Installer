@@ -63,19 +63,19 @@ namespace TabgInstaller.Core.Services
         // Modified DownloadAssetAsync to match compiler error expectation
         public virtual async Task<bool> DownloadAssetAsync(string owner, string repo, string browserDownloadUrl, string destinationPath, string downloadDirectory, string? anotherOptionalString)
         {
-            _log.Report($"• Attempting to download asset from {browserDownloadUrl} to {destinationPath}..."); 
+            _log.Report($"• Attempting to download asset from {browserDownloadUrl} to {destinationPath}...");
             try
             {
                 // The 'owner', 'repo', 'downloadDirectory', and 'anotherOptionalString' parameters are not used in this HttpClient-based download logic.
                 // They are added to match the signature the compiler expects.
                 using var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("TabgInstaller", "1.1"));
-                
+
                 using var response = await httpClient.GetAsync(browserDownloadUrl);
                 response.EnsureSuccessStatusCode();
 
                 var directoryName = Path.GetDirectoryName(destinationPath);
-                if (directoryName != null) 
+                if (directoryName != null)
                 {
                     Directory.CreateDirectory(directoryName);
                 }
@@ -97,9 +97,6 @@ namespace TabgInstaller.Core.Services
                 return false;
             }
         }
-
-        // FindReleaseTagWithAssetAsync (from previous HttpClient version) might need to be re-implemented using Octokit if still needed
-        // For now, it's not in the user's diff for GitHubService.cs
 
         // LoadAllowedWordsAsync (from previous HttpClient version) also not in the user's diff for GitHubService.cs
         // If this functionality is still needed, it must be re-added or moved.
@@ -131,4 +128,4 @@ namespace TabgInstaller.Core.Services
             }
         }
     }
-} 
+}

@@ -58,11 +58,6 @@
                     <tabs:ReferencePanel x:Name="ReferenceTab"/>
                 </TabItem>
 
-                <TabItem Header="{x:Static res:Strings.TabBrowsePlugins}"
-                         AutomationProperties.AutomationId="BrowsePluginsTabItem">
-                    <tabs:BrowsePluginsPanel x:Name="BrowsePluginsTab"/>
-                </TabItem>
-
                 <TabItem Header="{x:Static res:Strings.TabSettings}"
                          AutomationProperties.AutomationId="SettingsTabItem">
                     <tabs:SettingsPanel x:Name="SettingsTab"/>

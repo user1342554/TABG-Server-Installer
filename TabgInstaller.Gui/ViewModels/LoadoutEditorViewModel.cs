@@ -438,7 +438,7 @@ namespace TabgInstaller.Gui.ViewModels
             {
                 _watcherCfg = new FileSystemWatcher(cfgDir)
                 {
-                    Filter = "FreddoTABGCommission.cfg",
+                    Filter = "TabgInstaller.MatchCore.cfg",
                     NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
                     EnableRaisingEvents = true
                 };

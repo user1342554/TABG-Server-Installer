@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using System.Linq;
 using TabgInstaller.Core;
-using TabgInstaller.Core.Model;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
 using Xunit;
@@ -21,30 +19,7 @@ namespace TabgInstaller.Tests.ViewModels
         {
             _serverPath.SetupGet(s => s.ServerPath).Returns("");
 
-            // Load test plugins into the registry (replacing hardcoded fallback)
-            PluginRegistry.LoadFromManifests(new List<PluginManifest>
-            {
-                new() { Id = "Citruslib", Name = "Citruslib", Description = "Core server library",
-                    Kind = "core-dependency", Type = "server", DefaultChecked = true, DllNames = System.Array.Empty<string>() },
-                new() { Id = "StarterPack", Name = "StarterPack", Description = "Match mechanics",
-                    Kind = "core-dependency", Type = "server", DefaultChecked = true, DllNames = System.Array.Empty<string>() },
-                new() { Id = "StarterPackFixes", Name = "StarterPackFixes", Description = "Loot drop control",
-                    Type = "server", DefaultChecked = true, DllNames = new[] { "StarterPackFixes.dll" } },
-                new() { Id = "CustomSpawnpoints", Name = "CustomSpawnpoints", Description = "Custom spawn points",
-                    Type = "server", DefaultChecked = true, DllNames = new[] { "CustomSpawnpoints.dll" } },
-                new() { Id = "FreddoCommission", Name = "FreddoTABGCommission", Description = "Curses, grenades on kill, bans",
-                    Type = "server", DefaultChecked = true, DllNames = new[] { "FreddoTABGCommission.dll" } },
-                new() { Id = "ProximityChat", Name = "ProximityChat", Description = "Proximity voice chat",
-                    Type = "server", DefaultChecked = true, RequiresClientMod = true,
-                    DllNames = new[] { "TabgInstaller.ProximityChat.Server.dll" } },
-                new() { Id = "HuntMode", Name = "Hunt Mode", Description = "4v1 survival",
-                    Type = "server", DefaultChecked = false, RequiresClientMod = true,
-                    DllNames = new[] { "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll" } },
-                new() { Id = "CommunityServer", Name = "TABGCommunityServer", Description = "Community server",
-                    Kind = "community-server", Type = "server", DefaultChecked = false, DllNames = System.Array.Empty<string>() },
-                new() { Id = "FlyingControls", Name = "FlyingControls", Description = "Steer vehicles",
-                    Type = "client", DefaultChecked = true, DllNames = new[] { "TabgInstaller.FlyingControls.dll" } },
-            });
+            PluginRegistry.ResetToBuiltIns();
         }
 
         private InstallerPanelViewModel CreateSut() =>

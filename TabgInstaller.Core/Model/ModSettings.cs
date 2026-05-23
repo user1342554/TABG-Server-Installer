@@ -1,6 +1,6 @@
 namespace TabgInstaller.Core.Model
 {
-    /// <summary>FreddoTABGCommission.cfg settings.</summary>
+    /// <summary>MatchCore commission-style match settings.</summary>
     public class FreddoCommissionSettings
     {
         public string BanList { get; set; } = "";
@@ -21,9 +21,22 @@ namespace TabgInstaller.Core.Model
         public int Lives { get; set; } = 256; // 256 = infinite
     }
 
-    /// <summary>FreddoFixStarterPack.cfg settings.</summary>
+    /// <summary>MatchCore loot-drop compatibility settings.</summary>
     public class StarterPackFixesSettings
     {
         public bool EnableLootDrops { get; set; } = false;
+    }
+
+    /// <summary>ServerLogger player identity logging settings.</summary>
+    public class ServerLoggerSettings
+    {
+        public bool LogToBepInExConsole { get; set; } = true;
+        public bool WriteCsv { get; set; } = true;
+        public bool WriteLegacyServerLoggerTxt { get; set; } = true;
+        public bool FallbackPlayerScan { get; set; } = true;
+        public float FallbackScanIntervalSeconds { get; set; } = 2f;
+        public string LogDirectory { get; set; } = "server-logs";
+        public string CsvFileName { get; set; } = "players.csv";
+        public string LegacyFileName { get; set; } = "ServerLogger.txt";
     }
 }

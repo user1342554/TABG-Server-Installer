@@ -82,6 +82,43 @@ namespace TabgInstaller.Tests.Services
         }
 
         [Fact]
+        public void ReadServerLogger_FileNotFound_ReturnsDefaults()
+        {
+            var result = ModConfigService.ReadServerLogger(_tempDir);
+            result.WriteCsv.Should().BeTrue();
+            result.LogDirectory.Should().Be("server-logs");
+            result.CsvFileName.Should().Be("players.csv");
+        }
+
+        [Fact]
+        public void WriteServerLogger_ThenRead_RoundTrips()
+        {
+            var settings = new ServerLoggerSettings
+            {
+                LogToBepInExConsole = false,
+                WriteCsv = true,
+                WriteLegacyServerLoggerTxt = false,
+                FallbackPlayerScan = true,
+                FallbackScanIntervalSeconds = 3.5f,
+                LogDirectory = "identity-logs",
+                CsvFileName = "joins.csv",
+                LegacyFileName = "legacy-joins.txt"
+            };
+
+            ModConfigService.WriteServerLogger(_tempDir, settings);
+            var reread = ModConfigService.ReadServerLogger(_tempDir);
+
+            reread.LogToBepInExConsole.Should().BeFalse();
+            reread.WriteCsv.Should().BeTrue();
+            reread.WriteLegacyServerLoggerTxt.Should().BeFalse();
+            reread.FallbackPlayerScan.Should().BeTrue();
+            reread.FallbackScanIntervalSeconds.Should().BeApproximately(3.5f, 0.001f);
+            reread.LogDirectory.Should().Be("identity-logs");
+            reread.CsvFileName.Should().Be("joins.csv");
+            reread.LegacyFileName.Should().Be("legacy-joins.txt");
+        }
+
+        [Fact]
         public void ReadCommission_CfgWithSections_ParsesCorrectly()
         {
             var cfgContent = "[Bans]\nBanList = epic123\n\n[GrenadesOnDeath.Attacker]\nEnabled = true\nChance = 0.3\nID = 199\n\n[GrenadesOnDeath.Corpse]\nEnabled = false\nChance = 0.1\nID = 198\n\n[Player]\nLives = 5\n";

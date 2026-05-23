@@ -3,7 +3,6 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
 using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Services;
@@ -113,43 +112,9 @@ namespace TabgInstaller.Gui
             if (themeService.IsHighContrast)
                 themeService.SetHighContrast(true);
 
-            // Load plugin registry — this is the single source of truth for all plugin definitions
-            try
-            {
-                var registryService = _host.Services.GetRequiredService<IRegistryService>();
-                var cached = registryService.GetCachedRegistry();
-                if (cached?.Plugins != null && cached.Plugins.Count > 0)
-                {
-                    PluginRegistry.LoadFromManifests(cached.Plugins);
-
-                    // Refresh from network in background for next session
-                    _ = System.Threading.Tasks.Task.Run(async () =>
-                    {
-                        try
-                        {
-                            var fresh = await registryService.FetchRegistryAsync();
-                            if (fresh?.Plugins != null)
-                                PluginRegistry.LoadFromManifests(fresh.Plugins);
-                        }
-                        catch (Exception ex)
-                        {
-                            Trace.TraceError($"[App] Background registry refresh failed: {ex}");
-                        }
-                    });
-                }
-                else
-                {
-                    // No cache — must fetch from network before UI loads
-                    var fresh = System.Threading.Tasks.Task.Run(
-                        () => registryService.FetchRegistryAsync()).Result;
-                    if (fresh?.Plugins != null)
-                        PluginRegistry.LoadFromManifests(fresh.Plugins);
-                }
-            }
-            catch (Exception regEx)
-            {
-                Trace.TraceError($"[App] Failed to load plugin registry: {regEx}");
-            }
+            // Built-in plugin definitions are owned by the launcher now. Do not
+            // let stale cached registry data override them.
+            PluginRegistry.ResetToBuiltIns();
 
             try
             {
@@ -226,25 +191,6 @@ namespace TabgInstaller.Gui
             // Navigation
             services.AddSingleton<INavigationService, NavigationService>();
 
-            // Marketplace services
-            services.AddSingleton<TabgInstaller.Core.Services.GitHubService>(sp =>
-                new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(msg =>
-                    Debug.WriteLine($"[GitHub] {msg}"))));
-            services.AddSingleton<IRegistryService>(sp =>
-            {
-                var cachePath = Path.Combine(settingsDir, "registry-cache.json");
-                return new RegistryService(sp.GetRequiredService<TabgInstaller.Core.Services.GitHubService>(), cachePath);
-            });
-            services.AddTransient<IInstalledPluginTracker>(sp =>
-            {
-                var active = sp.GetRequiredService<IActiveInstanceService>();
-                return new InstalledPluginTracker(active.ServerPath);
-            });
-            services.AddTransient<IMarketplaceInstallService>(sp =>
-                new MarketplaceInstallService(
-                    sp.GetRequiredService<TabgInstaller.Core.Services.GitHubService>(),
-                    sp.GetRequiredService<IInstalledPluginTracker>()));
-
             // ViewModels — registered as each panel is migrated
             services.AddTransient<SettingsPanelViewModel>();
             services.AddTransient<DashboardViewModel>();
@@ -263,7 +209,6 @@ namespace TabgInstaller.Gui
             services.AddTransient<ReferencePanelViewModel>();
             services.AddTransient<LoadoutEditorViewModel>();
             services.AddTransient<ServerListViewModel>();
-            services.AddTransient<BrowsePluginsViewModel>();
 
             // Windows
             services.AddSingleton<MainWindow>();

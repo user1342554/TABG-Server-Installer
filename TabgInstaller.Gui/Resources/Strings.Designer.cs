@@ -2503,33 +2503,6 @@ namespace TabgInstaller.Gui.Resources {
             }
         }
         /// <summary>
-        ///   Looks up a localized string similar to Browse Plugins.
-        /// </summary>
-        public static string TabBrowsePlugins {
-            get {
-                return ResourceManager.GetString("TabBrowsePlugins", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Plugin Marketplace.
-        /// </summary>
-        public static string BrowsePluginsTitle {
-            get {
-                return ResourceManager.GetString("BrowsePluginsTitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Discover and install community plugins for your server.
-        /// </summary>
-        public static string BrowsePluginsSubtitle {
-            get {
-                return ResourceManager.GetString("BrowsePluginsSubtitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Looks up a localized string similar to Search plugins....
         /// </summary>
         public static string SearchPlugins {

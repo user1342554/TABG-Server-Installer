@@ -1,0 +1,17 @@
+{
+  "id": "MatchCore",
+  "name": "TABG Match Core",
+  "version": "1.0.0",
+  "description": "Owned server match systems: rings, loadouts, vote-start, drop control, timers, spell drops, and win rules.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.MatchCore.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["Citruslib"],
+  "tags": ["core", "match", "rings", "loadouts", "vote-start"]
+}

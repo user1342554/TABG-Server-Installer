@@ -24,8 +24,7 @@ namespace TabgInstaller.Core
             if (message.Contains("PlayerPerms.json")) return 95;
             if (message.Contains("ExtraSettings.json")) return 90;
             if (message.Contains("TheStarterPack.txt")) return 85;
-            if (message.Contains("StarterPackSetup")) return 80;
-            if (message.Contains("StarterPack.dll")) return 75;
+            if (message.Contains("TabgInstaller.MatchCore.dll")) return 75;
 
             // --- Plugin installation ---
             if (message.Contains("bundled plugins copied")) return 65;
@@ -55,7 +54,7 @@ namespace TabgInstaller.Core
             <= 5 => "Preparing...",
             <= 30 => "Installing BepInEx...",
             <= 55 => "Installing plugins...",
-            <= 75 => "Configuring StarterPack...",
+            <= 75 => "Configuring MatchCore...",
             <= 95 => "Finalizing...",
             _ => "Complete!"
         };

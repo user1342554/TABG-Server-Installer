@@ -1,0 +1,17 @@
+{
+  "id": "EnhancedClient",
+  "name": "Enhanced Client",
+  "version": "1.0.0",
+  "description": "Client visual quality-of-life controls for LOD loading, item draw distance, haze, and HUD hiding.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.EnhancedClient.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": ["ModSettings"],
+  "tags": ["client", "visuals", "lod", "hud", "quality-of-life"]
+}

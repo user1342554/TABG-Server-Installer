@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -51,25 +50,6 @@ public sealed class MainWindow : Window
     private readonly StackPanel _pluginChecks = new() { Spacing = 4 };
     private readonly StackPanel _clientModChecks = new() { Spacing = 4 };
     private readonly ListBox _backups = new();
-    private readonly ListBox _marketplace = new();
-    private readonly TextBox _marketplaceSearch = new() { Width = 240, Watermark = "Search plugins" };
-    private readonly ComboBox _marketplaceSort = new()
-    {
-        Width = 150,
-        ItemsSource = new[] { "Type then A-Z", "A-Z", "Installed first", "Updates first" },
-        SelectedIndex = 0,
-    };
-    private readonly ComboBox _marketplaceType = new()
-    {
-        Width = 120,
-        ItemsSource = new[] { "All", "Server", "Client", "Both" },
-        SelectedIndex = 0,
-    };
-    private readonly TextBlock _marketplaceDetails = new()
-    {
-        Text = "Select a plugin to see details.",
-        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-    };
     private readonly Dictionary<string, Control> _gameSettingEditors = new(StringComparer.OrdinalIgnoreCase);
     private readonly ComboBox _spLoadoutMode = new() { Width = 150, ItemsSource = new[] { "Normal", "GunGame", "ReverseGunGame", "KeepInventory" } };
     private readonly ComboBox _spWinCondition = new() { Width = 150, ItemsSource = new[] { "Default", "KillsToWin", "Debug" } };
@@ -97,7 +77,7 @@ public sealed class MainWindow : Window
     private readonly TextBox _validSpawnPoints = SmallBox("6,");
     private readonly TextBox _customSpawnPoint = new() { Width = 260 };
     private readonly TextBox _matchSpawns = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-    private readonly CheckBox _enableLootDrops = new() { Content = "Enable StarterPack loot drops" };
+    private readonly CheckBox _enableLootDrops = new() { Content = "Enable MatchCore loot drops" };
     private readonly CheckBox _attackerGrenadeEnabled = new() { Content = "Attacker grenade" };
     private readonly ComboBox _attackerGrenade = new() { Width = 240 };
     private readonly TextBox _attackerChance = SmallBox("0.2");
@@ -110,6 +90,14 @@ public sealed class MainWindow : Window
     private readonly TextBox _proxMaxRange = SmallBox("50");
     private readonly TextBox _proxMinRange = SmallBox("5");
     private readonly ComboBox _proxFalloff = new() { Width = 140, ItemsSource = new[] { "Linear", "Logarithmic" }, SelectedIndex = 0 };
+    private readonly CheckBox _serverLoggerLogToConsole = new() { Content = "BepInEx console log" };
+    private readonly CheckBox _serverLoggerWriteCsv = new() { Content = "CSV identity log" };
+    private readonly CheckBox _serverLoggerWriteLegacy = new() { Content = "Legacy ServerLogger.txt" };
+    private readonly CheckBox _serverLoggerFallbackScan = new() { Content = "Fallback player scan" };
+    private readonly TextBox _serverLoggerInterval = SmallBox("2");
+    private readonly TextBox _serverLoggerLogDirectory = new() { Width = 220, Text = "server-logs" };
+    private readonly TextBox _serverLoggerCsvFile = new() { Width = 160, Text = "players.csv" };
+    private readonly TextBox _serverLoggerLegacyFile = new() { Width = 180, Text = "ServerLogger.txt" };
     private readonly TextBox _juggPointsToWin = SmallBox("100");
     private readonly TextBox _juggHp = SmallBox("1000");
     private readonly TextBox _juggKillBonus = SmallBox("5");
@@ -135,7 +123,6 @@ public sealed class MainWindow : Window
     private readonly TextBox _consoleSearch = new() { Width = 220, Watermark = "search log" };
     private readonly TextBox _referenceSearch = new() { Width = 240, Watermark = "filter items" };
     private readonly TextBox _settingsSummary = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-    private readonly List<PluginManifest> _registryPlugins = new();
     private readonly ServerPathProvider _serverPathProvider = new();
     private readonly ServerProcessService _serverProcess;
     private readonly string _logPath;
@@ -165,7 +152,6 @@ public sealed class MainWindow : Window
 
         LoadPluginRegistry();
         BuildUi();
-        WireMarketplace();
         WireServerProcess();
         TryAutoDetectPaths();
         Log("Linux GUI started. Log file: " + _logPath);
@@ -188,7 +174,6 @@ public sealed class MainWindow : Window
         _tabs.Items.Add(new TabItem { Header = "Server", Content = BuildServerWorkspaceTab() });
         _tabs.Items.Add(new TabItem { Header = "Config", Content = BuildConfigTab() });
         _tabs.Items.Add(new TabItem { Header = "Mods", Content = BuildModsTab() });
-        _tabs.Items.Add(new TabItem { Header = "Marketplace", Content = BuildMarketplaceTab() });
         _tabs.Items.Add(new TabItem { Header = "Reference", Content = BuildReferenceTab() });
         _tabs.Items.Add(new TabItem { Header = "Settings", Content = BuildSettingsTab() });
         root.Children.Add(_tabs);
@@ -252,8 +237,7 @@ public sealed class MainWindow : Window
                 _citrusTag,
                 Button("Create folder", CreateServerFolder),
                 Button("SteamCMD install/update", InstallOrUpdateDedicatedServerAsync),
-                Button("Detect server", DetectServerPath),
-                Button("Open Marketplace", SelectMarketplaceTab)
+                Button("Detect server", DetectServerPath)
             }
         });
         panel.Children.Add(new StackPanel
@@ -270,7 +254,7 @@ public sealed class MainWindow : Window
                 _steamGuard
             }
         });
-        panel.Children.Add(new TextBlock { Text = "This prepares BepInEx and core server files. Install mods from Marketplace." });
+        panel.Children.Add(new TextBlock { Text = "This prepares BepInEx and bundled core server files." });
         panel.Children.Add(_progress);
         panel.Children.Add(new StackPanel
         {
@@ -280,7 +264,7 @@ public sealed class MainWindow : Window
             {
                 Button("Prepare / repair server", InstallServerAsync),
                 Button("Cancel install", () => _installCts?.Cancel()),
-                Button("Reload registry", () => { LoadPluginRegistry(); RebuildPluginChecks(); RebuildClientModChecks(); RebuildMarketplace(); })
+                Button("Reload plugin list", () => { LoadPluginRegistry(); RebuildPluginChecks(); RebuildClientModChecks(); })
             }
         });
         return panel;
@@ -444,8 +428,7 @@ public sealed class MainWindow : Window
                             Spacing = 8,
                             Children =
                             {
-                                Button("Install selected", InstallBundledServerPlugin),
-                                Button("Open Marketplace", SelectMarketplaceTab)
+                                Button("Install selected", InstallBundledServerPlugin)
                             }
                         }
                     }
@@ -603,7 +586,7 @@ public sealed class MainWindow : Window
                         {
                             Button("Load", LoadRingSpawnSettings),
                             Button("Save", SaveRingSpawnSettings),
-                            Button("Open custom spawn cfg", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "FreddoCustomSpawnpoints.cfg")))
+                            Button("Open MatchCore cfg", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "TabgInstaller.MatchCore.cfg")))
                         }
                     }
                 }
@@ -624,7 +607,7 @@ public sealed class MainWindow : Window
                 Spacing = 8,
                 Children =
                 {
-                    new TextBlock { Text = "StarterPack fixes and Freddo commission" },
+                    new TextBlock { Text = "MatchCore and owned bundled plugin settings" },
                     _enableLootDrops,
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { _attackerGrenadeEnabled, _attackerGrenade, Label("Chance"), _attackerChance } },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { _corpseGrenadeEnabled, _corpseGrenade, Label("Chance"), _corpseChance } },
@@ -633,6 +616,20 @@ public sealed class MainWindow : Window
                     new ScrollViewer { Content = _banList, Height = 90 },
                     new TextBlock { Text = "Proximity chat" },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Max range"), _proxMaxRange, Label("Min range"), _proxMinRange, Label("Falloff"), _proxFalloff } },
+                    new TextBlock { Text = "Server Logger" },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _serverLoggerLogToConsole, _serverLoggerWriteCsv, _serverLoggerWriteLegacy, _serverLoggerFallbackScan } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Scan interval"), _serverLoggerInterval, Label("Log dir"), _serverLoggerLogDirectory, Label("CSV file"), _serverLoggerCsvFile, Label("Legacy file"), _serverLoggerLegacyFile } },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children =
+                        {
+                            Button("Open ServerLogger cfg", () => OpenPath(ModConfigService.ServerLoggerConfigPath(_serverPath.Text ?? ""))),
+                            Button("Open CSV log", () => OpenPath(ModConfigService.GetServerLoggerCsvPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields()))),
+                            Button("Open legacy log", () => OpenPath(ModConfigService.GetServerLoggerLegacyPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields())))
+                        }
+                    },
                     new TextBlock { Text = "Juggernaut" },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Points"), _juggPointsToWin, Label("HP"), _juggHp, Label("Kill bonus"), _juggKillBonus, Label("Jugg kill"), _juggKillPoints, Label("Regular kill"), _juggRegularKillPoints } },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Damage/point"), _juggDamagePerPoint, Label("Choices"), _juggLoadoutChoices, Label("Timeout"), _juggLoadoutTimeout, Label("Min spawn dist"), _juggMinSpawnDistance, Label("Min players"), _juggMinPlayers } },
@@ -731,7 +728,7 @@ public sealed class MainWindow : Window
                     PathRow("TABG Steam folder", _clientPath, BrowseClientAsync),
                     PathRow("Modded copy folder", _moddedClientPath, BrowseModdedClientAsync),
                     Button("Detect TABG client", DetectClientPath),
-                    new TextBlock { Text = "This prepares a modded TABG copy. Install client mods from Marketplace or manage DLLs here." },
+                    new TextBlock { Text = "This prepares a modded TABG copy with bundled client mods." },
                     new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
@@ -739,7 +736,6 @@ public sealed class MainWindow : Window
                         Children =
                         {
                             Button("Prepare / update client", InstallClientModsAsync),
-                            Button("Open Marketplace", SelectMarketplaceTab),
                             Button("Start modded client", StartModdedClient),
                             Button("Open modded folder", () => OpenPath(_moddedClientPath.Text))
                         }
@@ -794,52 +790,11 @@ public sealed class MainWindow : Window
                             Spacing = 8,
                             Children =
                             {
-                                Button("Install selected", InstallBundledClientPlugin),
-                                Button("Open Marketplace", SelectMarketplaceTab)
+                                Button("Install selected", InstallBundledClientPlugin)
                             }
                         }
                     }
                 }, 1)
-            }
-        };
-    }
-
-    private Control BuildMarketplaceTab()
-    {
-        RebuildMarketplace();
-        return new StackPanel
-        {
-            Spacing = 8,
-            Margin = new Avalonia.Thickness(6),
-            Children =
-            {
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
-                    Children =
-                    {
-                        Label("Search"),
-                        _marketplaceSearch,
-                        Label("Type"),
-                        _marketplaceType,
-                        Label("Sort"),
-                        _marketplaceSort,
-                        Button("Refresh registry", () => { LoadPluginRegistry(); RebuildMarketplace(); }),
-                        Button("Install selected", InstallMarketplacePluginAsync),
-                        Button("Update selected", UpdateMarketplacePluginAsync),
-                        Button("Update all", UpdateAllMarketplacePluginsAsync),
-                        Button("Pin / unpin", ToggleMarketplacePin),
-                        Button("Uninstall selected", UninstallMarketplacePlugin)
-                    }
-                },
-                new ScrollViewer { Content = _marketplace, Height = 340 },
-                new Border
-                {
-                    BorderThickness = new Avalonia.Thickness(1),
-                    Padding = new Avalonia.Thickness(8),
-                    Child = _marketplaceDetails
-                }
             }
         };
     }
@@ -1325,6 +1280,15 @@ public sealed class MainWindow : Window
             });
             var falloff = ReadSimpleCfgValue(Path.Combine(dir, "BepInEx", "config", "tabginstaller.proximitychat.server.cfg"), "FalloffCurve");
             SelectComboText(_proxFalloff, string.Equals(falloff, "Logarithmic", StringComparison.OrdinalIgnoreCase) ? "Logarithmic" : "Linear");
+            var loggerSettings = ModConfigService.ReadServerLogger(dir);
+            _serverLoggerLogToConsole.IsChecked = loggerSettings.LogToBepInExConsole;
+            _serverLoggerWriteCsv.IsChecked = loggerSettings.WriteCsv;
+            _serverLoggerWriteLegacy.IsChecked = loggerSettings.WriteLegacyServerLoggerTxt;
+            _serverLoggerFallbackScan.IsChecked = loggerSettings.FallbackPlayerScan;
+            _serverLoggerInterval.Text = loggerSettings.FallbackScanIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            _serverLoggerLogDirectory.Text = loggerSettings.LogDirectory;
+            _serverLoggerCsvFile.Text = loggerSettings.CsvFileName;
+            _serverLoggerLegacyFile.Text = loggerSettings.LegacyFileName;
             LoadSimpleCfg(Path.Combine(dir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg"), new Dictionary<string, TextBox>
             {
                 ["PointsToWin"] = _juggPointsToWin,
@@ -1370,6 +1334,7 @@ public sealed class MainWindow : Window
             ModConfigService.WriteCommission(dir, commission);
             ModConfigService.WriteFixes(dir, new StarterPackFixesSettings { EnableLootDrops = _enableLootDrops.IsChecked == true });
             WriteProximityCfg(dir);
+            ModConfigService.WriteServerLogger(dir, BuildServerLoggerSettingsFromFields());
             WriteJuggernautCfg(dir);
             Log("Saved mod settings.");
         }
@@ -1377,6 +1342,23 @@ public sealed class MainWindow : Window
         {
             Log("Could not save mod settings: " + ex.Message);
         }
+    }
+
+    private ServerLoggerSettings BuildServerLoggerSettingsFromFields()
+    {
+        var settings = new ServerLoggerSettings
+        {
+            LogToBepInExConsole = _serverLoggerLogToConsole.IsChecked == true,
+            WriteCsv = _serverLoggerWriteCsv.IsChecked == true,
+            WriteLegacyServerLoggerTxt = _serverLoggerWriteLegacy.IsChecked == true,
+            FallbackPlayerScan = _serverLoggerFallbackScan.IsChecked == true,
+            LogDirectory = string.IsNullOrWhiteSpace(_serverLoggerLogDirectory.Text) ? "server-logs" : _serverLoggerLogDirectory.Text.Trim(),
+            CsvFileName = string.IsNullOrWhiteSpace(_serverLoggerCsvFile.Text) ? "players.csv" : _serverLoggerCsvFile.Text.Trim(),
+            LegacyFileName = string.IsNullOrWhiteSpace(_serverLoggerLegacyFile.Text) ? "ServerLogger.txt" : _serverLoggerLegacyFile.Text.Trim(),
+        };
+
+        settings.FallbackScanIntervalSeconds = ParseFloat(_serverLoggerInterval.Text, 2f);
+        return settings;
     }
 
     private async void CreateBackupAsync()
@@ -1744,190 +1726,10 @@ public sealed class MainWindow : Window
         }
     }
 
-    private async void InstallMarketplacePluginAsync()
-    {
-        var manifest = GetSelectedMarketplaceManifest();
-        if (manifest == null)
-        {
-            Log("Select a marketplace plugin first.");
-            return;
-        }
-
-        if (!IsMarketplaceInstallable(manifest))
-        {
-            Log($"{manifest.Name} is handled by the main Install tab, not Marketplace.");
-            return;
-        }
-
-        var missingDlls = FindMissingBundledMarketplaceDlls(manifest);
-        if (missingDlls.Length > 0)
-        {
-            Log($"{manifest.Name} cannot be installed because bundled DLLs are missing: {string.Join(", ", missingDlls)}");
-            return;
-        }
-
-        var serverRoot = _serverPath.Text?.Trim() ?? "";
-        var clientPath = _moddedClientPath.Text?.Trim();
-        if (!ValidateMarketplaceTargets(manifest, serverRoot, clientPath))
-            return;
-
-        if (IsMarketplaceInstalled(manifest))
-        {
-            Log($"{manifest.Name} is already installed.");
-            return;
-        }
-
-        var trackerRoot = manifest.Type.Equals("client", StringComparison.OrdinalIgnoreCase)
-            ? clientPath!
-            : serverRoot;
-
-        var tracker = new InstalledPluginTracker(trackerRoot);
-        var service = new MarketplaceInstallService(
-            new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-            tracker);
-
-        Log($"Installing marketplace plugin: {manifest.Name}");
-        var ok = await service.InstallPluginAsync(
-            manifest,
-            _registryPlugins,
-            serverRoot,
-            clientPath);
-
-        if (ok && manifest.RequiresClientMod && !string.IsNullOrWhiteSpace(manifest.ClientPluginId))
-        {
-            var companion = _registryPlugins.FirstOrDefault(p =>
-                p.Id.Equals(manifest.ClientPluginId, StringComparison.OrdinalIgnoreCase));
-            if (companion != null)
-            {
-                Log($"Installing required client plugin: {companion.Name}");
-                var clientTracker = new InstalledPluginTracker(clientPath!);
-                var clientService = new MarketplaceInstallService(
-                    new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-                    clientTracker);
-                ok = await clientService.InstallPluginAsync(companion, _registryPlugins, serverRoot, clientPath);
-            }
-        }
-
-        Log(ok ? $"Installed {manifest.Name}." : $"Failed to install {manifest.Name}.");
-        RebuildMarketplace();
-        UpdateMarketplaceDetails();
-    }
-
-    private void UninstallMarketplacePlugin()
-    {
-        var manifest = GetSelectedMarketplaceManifest();
-        if (manifest == null)
-        {
-            Log("Select a marketplace plugin first.");
-            return;
-        }
-
-        var serverRoot = _serverPath.Text?.Trim() ?? "";
-        var clientPath = _moddedClientPath.Text?.Trim();
-        if (!ValidateMarketplaceTargets(manifest, serverRoot, clientPath))
-            return;
-
-        var trackerRoot = manifest.Type.Equals("client", StringComparison.OrdinalIgnoreCase)
-            ? clientPath!
-            : serverRoot;
-
-        var tracker = new InstalledPluginTracker(trackerRoot);
-        var service = new MarketplaceInstallService(
-            new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-            tracker);
-        var ok = service.UninstallPlugin(manifest.Id, serverRoot, clientPath);
-
-        if (ok && manifest.RequiresClientMod && !string.IsNullOrWhiteSpace(manifest.ClientPluginId) && Directory.Exists(clientPath))
-        {
-            var clientTracker = new InstalledPluginTracker(clientPath!);
-            var clientService = new MarketplaceInstallService(
-                new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-                clientTracker);
-            clientService.UninstallPlugin(manifest.ClientPluginId, serverRoot, clientPath);
-        }
-
-        Log(ok ? $"Uninstalled {manifest.Name}." : $"Could not uninstall {manifest.Name}.");
-        RebuildMarketplace();
-        UpdateMarketplaceDetails();
-    }
-
-    private async void UpdateMarketplacePluginAsync()
-    {
-        var manifest = GetSelectedMarketplaceManifest();
-        if (manifest == null)
-        {
-            Log("Select a marketplace plugin first.");
-            return;
-        }
-
-        var tracker = CreateTrackerForManifest(manifest);
-        if (tracker == null || !MarketplaceInstallService.HasUpdate(manifest, tracker))
-        {
-            Log("No update available for selected plugin.");
-            return;
-        }
-
-        var service = new MarketplaceInstallService(
-            new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-            tracker);
-        var ok = await service.UpdatePluginAsync(manifest, _serverPath.Text?.Trim() ?? "", _moddedClientPath.Text?.Trim());
-        Log(ok ? $"Updated {manifest.Name}." : $"Failed to update {manifest.Name}.");
-        RebuildMarketplace();
-        UpdateMarketplaceDetails();
-    }
-
-    private async void UpdateAllMarketplacePluginsAsync()
-    {
-        var updated = 0;
-        foreach (var manifest in _registryPlugins.Where(IsMarketplaceInstallable).ToList())
-        {
-            var tracker = CreateTrackerForManifest(manifest);
-            if (tracker == null || !MarketplaceInstallService.HasUpdate(manifest, tracker))
-                continue;
-
-            var service = new MarketplaceInstallService(
-                new TabgInstaller.Core.Services.GitHubService(new HttpClient(), new Progress<string>(Log)),
-                tracker);
-            if (await service.UpdatePluginAsync(manifest, _serverPath.Text?.Trim() ?? "", _moddedClientPath.Text?.Trim()))
-                updated++;
-        }
-
-        Log($"Updated {updated} marketplace plugin(s).");
-        RebuildMarketplace();
-    }
-
-    private void ToggleMarketplacePin()
-    {
-        var manifest = GetSelectedMarketplaceManifest();
-        var tracker = manifest == null ? null : CreateTrackerForManifest(manifest);
-        var entry = manifest == null ? null : tracker?.FindById(manifest.Id);
-        if (manifest == null || tracker == null || entry == null)
-        {
-            Log("Install a marketplace plugin before pinning it.");
-            return;
-        }
-
-        tracker.SetPinned(manifest.Id, !entry.Pinned);
-        Log((entry.Pinned ? "Pinned " : "Unpinned ") + manifest.Name);
-        RebuildMarketplace();
-        UpdateMarketplaceDetails();
-    }
-
     private void LoadPluginRegistry()
     {
-        _registryPlugins.Clear();
-        var registryPath = FindFileNearApp(Path.Combine("registry", "registry.json"));
-        if (registryPath == null)
-        {
-            Log("registry/registry.json not found; plugin lists may be empty.");
-            return;
-        }
-
-        var data = JsonConvert.DeserializeObject<PluginRegistryResponse>(File.ReadAllText(registryPath));
-        if (data?.Plugins == null) return;
-        _registryPlugins.AddRange(data.Plugins);
-        PluginRegistry.LoadFromManifests(data.Plugins);
-        Log($"Loaded {_registryPlugins.Count} registry plugins.");
+        PluginRegistry.ResetToBuiltIns();
+        Log("Loaded built-in plugin definitions.");
     }
 
     private void RebuildPluginChecks()
@@ -1967,223 +1769,6 @@ public sealed class MainWindow : Window
                 IsEnabled = available,
             });
         }
-    }
-
-    private void RebuildMarketplace()
-    {
-        var selectedId = GetSelectedMarketplaceManifest()?.Id;
-        _marketplace.Items.Clear();
-        var query = _marketplaceSearch.Text?.Trim();
-        var typeFilter = _marketplaceType.SelectedItem?.ToString() ?? "All";
-
-        var plugins = _registryPlugins
-            .Where(IsMarketplaceInstallable)
-            .Where(p => MarketplaceMatchesFilter(p, query, typeFilter))
-            .ToList();
-        plugins = SortMarketplacePlugins(plugins);
-
-        foreach (var plugin in plugins)
-        {
-            var item = CreateMarketplaceItem(plugin);
-            _marketplace.Items.Add(item);
-            if (selectedId != null && plugin.Id.Equals(selectedId, StringComparison.OrdinalIgnoreCase))
-                _marketplace.SelectedItem = item;
-        }
-
-        Log($"Marketplace loaded {plugins.Count} installable plugins.");
-        UpdateMarketplaceDetails();
-    }
-
-    private List<PluginManifest> SortMarketplacePlugins(List<PluginManifest> plugins)
-    {
-        return (_marketplaceSort.SelectedItem?.ToString() ?? "Type then A-Z") switch
-        {
-            "A-Z" => plugins.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList(),
-            "Installed first" => plugins
-                .OrderByDescending(IsMarketplaceInstalled)
-                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList(),
-            "Updates first" => plugins
-                .OrderByDescending(p =>
-                {
-                    var tracker = CreateTrackerForManifest(p);
-                    return tracker != null && MarketplaceInstallService.HasUpdate(p, tracker);
-                })
-                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList(),
-            _ => plugins
-                .OrderBy(p => p.Type, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList(),
-        };
-    }
-
-    private static bool MarketplaceMatchesFilter(PluginManifest plugin, string? query, string typeFilter)
-    {
-        if (!string.IsNullOrWhiteSpace(query))
-        {
-            var haystack = string.Join(" ", new[]
-            {
-                plugin.Id,
-                plugin.Name,
-                plugin.Description,
-                plugin.Author,
-                string.Join(" ", plugin.Tags ?? Array.Empty<string>()),
-            });
-
-            if (!haystack.Contains(query, StringComparison.OrdinalIgnoreCase))
-                return false;
-        }
-
-        if (!typeFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
-            return plugin.Type.Equals(typeFilter, StringComparison.OrdinalIgnoreCase);
-
-        return true;
-    }
-
-    private MarketplacePluginItem CreateMarketplaceItem(PluginManifest plugin)
-    {
-        var missingDlls = FindMissingBundledMarketplaceDlls(plugin);
-        if (missingDlls.Length > 0)
-            return new MarketplacePluginItem(plugin, "missing DLL");
-
-        if (IsMarketplaceInstalled(plugin))
-            return new MarketplacePluginItem(plugin, "installed");
-
-        return new MarketplacePluginItem(plugin, "available");
-    }
-
-    private static bool IsMarketplaceInstallable(PluginManifest plugin)
-    {
-        if (plugin.Kind.Equals("core-dependency", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        if (plugin.Kind.Equals("community-server", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        return plugin.DllNames.Length > 0
-            && (plugin.Type.Equals("server", StringComparison.OrdinalIgnoreCase)
-                || plugin.Type.Equals("client", StringComparison.OrdinalIgnoreCase)
-                || plugin.Type.Equals("both", StringComparison.OrdinalIgnoreCase));
-    }
-
-    private bool ValidateMarketplaceTargets(PluginManifest manifest, string serverRoot, string? clientPath)
-    {
-        var type = manifest.Type.ToLowerInvariant();
-        var needsServer = type is "server" or "both";
-        var needsClient = type is "client" or "both" || manifest.RequiresClientMod;
-
-        if (needsServer && !Directory.Exists(serverRoot))
-        {
-            Log("Marketplace server plugin install needs a valid server folder. Use SteamCMD install/update first.");
-            return false;
-        }
-
-        if (needsClient && (string.IsNullOrWhiteSpace(clientPath) || !Directory.Exists(clientPath)))
-        {
-            Log("Marketplace client plugin install needs a valid modded client folder. Install client mods first or select the folder.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private void WireMarketplace()
-    {
-        _marketplace.SelectionChanged += (_, _) => UpdateMarketplaceDetails();
-        _marketplaceSearch.TextChanged += (_, _) => RebuildMarketplace();
-        _marketplaceType.SelectionChanged += (_, _) => RebuildMarketplace();
-        _marketplaceSort.SelectionChanged += (_, _) => RebuildMarketplace();
-    }
-
-    private PluginManifest? GetSelectedMarketplaceManifest()
-    {
-        return _marketplace.SelectedItem switch
-        {
-            MarketplacePluginItem item => item.Manifest,
-            PluginManifest manifest => manifest,
-            _ => null
-        };
-    }
-
-    private void UpdateMarketplaceDetails()
-    {
-        var manifest = GetSelectedMarketplaceManifest();
-        if (manifest == null)
-        {
-            _marketplaceDetails.Text = "Select a plugin to see details.";
-            return;
-        }
-
-        var missingDlls = FindMissingBundledMarketplaceDlls(manifest);
-        var tracker = CreateTrackerForManifest(manifest);
-        var status = missingDlls.Length > 0
-            ? "Missing bundled DLLs: " + string.Join(", ", missingDlls)
-            : tracker != null && MarketplaceInstallService.HasUpdate(manifest, tracker) ? "Update available"
-            : IsMarketplaceInstalled(manifest) ? "Installed" : "Available";
-        var installed = tracker?.FindById(manifest.Id);
-
-        var companion = !string.IsNullOrWhiteSpace(manifest.ClientPluginId)
-            ? _registryPlugins.FirstOrDefault(p => p.Id.Equals(manifest.ClientPluginId, StringComparison.OrdinalIgnoreCase))
-            : null;
-
-        var lines = new List<string>
-        {
-            $"{manifest.Name} {manifest.Version}",
-            $"Status: {status}",
-            $"Type: {manifest.Type}",
-            $"Author: {manifest.Author}",
-            $"DLLs: {string.Join(", ", manifest.DllNames)}",
-        };
-
-        if (installed != null)
-            lines.Add($"Installed version: {installed.InstalledVersion}  Pinned: {installed.Pinned}");
-
-        if (manifest.Dependencies.Length > 0)
-            lines.Add($"Dependencies: {string.Join(", ", manifest.Dependencies)}");
-
-        if (companion != null)
-            lines.Add($"Required client plugin: {companion.Name}");
-
-        if (!string.IsNullOrWhiteSpace(manifest.Description))
-            lines.Add(manifest.Description);
-
-        if (!string.IsNullOrWhiteSpace(manifest.Changelog))
-            lines.Add("Changelog: " + manifest.Changelog);
-
-        _marketplaceDetails.Text = string.Join(Environment.NewLine, lines);
-    }
-
-    private bool IsMarketplaceInstalled(PluginManifest manifest)
-    {
-        var tracker = CreateTrackerForManifest(manifest);
-        return tracker?.IsInstalled(manifest.Id) == true;
-    }
-
-    private InstalledPluginTracker? CreateTrackerForManifest(PluginManifest manifest)
-    {
-        var type = manifest.Type.ToLowerInvariant();
-        var root = type == "client"
-            ? _moddedClientPath.Text?.Trim()
-            : _serverPath.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
-            return null;
-
-        return new InstalledPluginTracker(root);
-    }
-
-    private static string[] FindMissingBundledMarketplaceDlls(PluginManifest manifest)
-    {
-        if (!manifest.Kind.Equals("bundled", StringComparison.OrdinalIgnoreCase))
-            return Array.Empty<string>();
-
-        var folder = manifest.Type.Equals("client", StringComparison.OrdinalIgnoreCase)
-            ? "client-plugins"
-            : "plugins";
-
-        return manifest.DllNames
-            .Where(dll => FindFileNearApp(Path.Combine(folder, dll)) == null)
-            .ToArray();
     }
 
     private void WireServerProcess()
@@ -2295,12 +1880,6 @@ public sealed class MainWindow : Window
             if (cb.Tag is PluginDefinition plugin)
                 cb.IsChecked = PluginRegistry.SigmaPresetIds.Contains(plugin.Id);
         }
-    }
-
-    private void SelectMarketplaceTab()
-    {
-        if (_tabs != null)
-            _tabs.SelectedIndex = 4;
     }
 
     private static TextBox SmallBox(string text = "") => new() { Text = text, Width = 80 };
@@ -2523,7 +2102,6 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
             "",
             "Start args used by this GUI: -batchmode -nographics -nolog",
             "Main configs: game_settings.txt, TheStarterPack.txt, BepInEx/config/CitrusLib/PlayerPerms.json",
-            "Marketplace installs community mods into BepInEx/plugins/community/<plugin-id>/",
             "Enable/disable local DLLs by renaming .dll <-> .dll.disabled in the Server Mods or Client panels.",
             "",
             "The dedicated server does not expose a reliable stdin command pipe in this launcher."
@@ -2569,8 +2147,7 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
             $"Client folder: {_clientPath.Text}",
             $"Modded client: {_moddedClientPath.Text}",
             $"Bundled server plugins: {FindFilesNearApp("plugins", "*.dll").Count()}",
-            $"Bundled client plugins: {FindFilesNearApp("client-plugins", "*.dll").Count()}",
-            $"Marketplace entries: {_registryPlugins.Count}"
+            $"Bundled client plugins: {FindFilesNearApp("client-plugins", "*.dll").Count()}"
         });
     }
 
@@ -2586,7 +2163,11 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
     private void OpenPath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
-        var target = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+        var target = File.Exists(path)
+            ? Path.GetDirectoryName(path)
+            : Directory.Exists(path)
+                ? path
+                : Path.GetDirectoryName(path);
         if (string.IsNullOrEmpty(target) || !Directory.Exists(target))
         {
             Log("Path does not exist: " + path);
@@ -3005,24 +2586,6 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
 
         var cwdCandidate = Path.Combine(Environment.CurrentDirectory, relativeDir);
         return Directory.Exists(cwdCandidate) ? Directory.GetFiles(cwdCandidate, pattern) : Array.Empty<string>();
-    }
-
-    private sealed class MarketplacePluginItem
-    {
-        public MarketplacePluginItem(PluginManifest manifest, string status)
-        {
-            Manifest = manifest;
-            Status = status;
-        }
-
-        public PluginManifest Manifest { get; }
-
-        public string Status { get; }
-
-        public override string ToString()
-        {
-            return $"[{Manifest.Type}] [{Status}] {Manifest.Name} {Manifest.Version} - {Manifest.Description}";
-        }
     }
 
     private sealed record AdminEntry(string Name, string Epic, int PermLevel)

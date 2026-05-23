@@ -22,11 +22,31 @@ namespace TabgInstaller.FakePlayers
         public static FakePlayersPlugin Instance { get; private set; }
         public static ServerClient ServerRef { get; set; }
 
+        internal struct GunshotSoundEvent
+        {
+            public int Sequence;
+            public byte ShooterIndex;
+            public Vector3 Position;
+            public FiringMode Mode;
+            public float Time;
+
+            public GunshotSoundEvent(int sequence, byte shooterIndex, Vector3 position, FiringMode mode, float time)
+            {
+                Sequence = sequence;
+                ShooterIndex = shooterIndex;
+                Position = position;
+                Mode = mode;
+                Time = time;
+            }
+        }
+
         internal static readonly List<byte> FakeIndices = new List<byte>();
         internal static readonly List<byte> AiIndices = new List<byte>();
+        internal static readonly List<GunshotSoundEvent> GunshotSounds = new List<GunshotSoundEvent>();
         private static readonly Dictionary<byte, int> PendingAiLevels = new Dictionary<byte, int>();
         private static int _nextAiThrownItemIndex = 50000;
         private static int _nextNumber = 1;
+        internal static int GunshotSoundSequence { get; private set; }
 
         private void Awake()
         {
@@ -104,7 +124,22 @@ namespace TabgInstaller.FakePlayers
                 Citrus.SelfParrot(player, $"Active fake players: {FakeIndices.Count}");
             }, "FakePlayers", "Show fake player count", "", 0);
 
-            Logger.LogInfo("[FakePlayers] Commands registered: /spawndummy, /spawnaidummy, /aidummy, /spawnai, /removedummy, /dummycount");
+            Citrus.AddCommand("inspectbot", (string[] prms, TABGPlayerServer player) =>
+            {
+                var server = ResolveServer();
+                if (server == null || server.GameRoomReference == null) { Citrus.SelfParrot(player, "Server not ready."); return; }
+
+                AiDummyController controller = FindAiController(server.GameRoomReference, prms.Length > 0 ? prms[0] : null);
+                if (controller == null)
+                {
+                    Citrus.SelfParrot(player, "No matching AI dummy found. Use /inspectbot [index|name].");
+                    return;
+                }
+
+                Citrus.SelfParrot(player, controller.GetDebugSummary());
+            }, "FakePlayers", "Inspect one AI dummy", "[index|name]", 0);
+
+            Logger.LogInfo("[FakePlayers] Commands registered: /spawndummy, /spawnaidummy, /aidummy, /spawnai, /removedummy, /dummycount, /inspectbot");
         }
 
         /// <summary>
@@ -226,6 +261,34 @@ namespace TabgInstaller.FakePlayers
             }
         }
 
+        private static AiDummyController FindAiController(GameRoom room, string query)
+        {
+            if (room == null || room.Players == null)
+                return null;
+
+            byte requestedIndex = 0;
+            bool hasIndex = !string.IsNullOrWhiteSpace(query) && byte.TryParse(query, out requestedIndex);
+            string requestedName = query ?? string.Empty;
+
+            for (int i = 0; i < room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = room.Players[i];
+                if (candidate == null || candidate.PlayerObject == null)
+                    continue;
+
+                if (hasIndex && candidate.PlayerIndex != requestedIndex)
+                    continue;
+                if (!hasIndex && !string.IsNullOrWhiteSpace(requestedName) && candidate.PlayerName.IndexOf(requestedName, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                AiDummyController controller = candidate.PlayerObject.GetComponent<AiDummyController>();
+                if (controller != null)
+                    return controller;
+            }
+
+            return null;
+        }
+
         private static byte SpawnOne(ServerClient server, GameRoom room, int number, TABGPlayerServer anchorPlayer, int spawnOffset, bool aiControlled, int aiLevel)
         {
             byte playerIndex = room.GetNewPlayerIndex();
@@ -329,6 +392,33 @@ namespace TabgInstaller.FakePlayers
 
         internal static void BroadcastPlayerUpdate(ServerClient server, TABGPlayerServer player, Vector3 pos)
         {
+            if (player != null && player.IsDriving && player.CurrentCar != null)
+            {
+                TABGCarServer car = player.CurrentCar;
+                byte[] carRotation = NetworkOptimizationHelper.OptimizeQuaternion(car.CarRotation);
+                byte[] carInput = NetworkOptimizationHelper.OptimizeDirection(car.CarInput);
+                using (var ms = new MemoryStream())
+                using (var bw = new BinaryWriter(ms))
+                {
+                    bw.Write(Time.unscaledTime);
+                    bw.Write((byte)1);
+                    bw.Write(player.PlayerIndex);
+                    bw.Write((byte)PacketContainerFlags.All);
+                    bw.Write((byte)DrivingState.Driving);
+                    bw.Write(car.CarPosition.x);
+                    bw.Write(car.CarPosition.y);
+                    bw.Write(car.CarPosition.z);
+                    bw.Write(carRotation);
+                    bw.Write(carInput);
+                    bw.Write(player.PlayerRotation.x);
+                    bw.Write(player.PlayerRotation.y);
+                    bw.Write((byte)car.DrivingState);
+
+                    SendToRealClients(server, EventCode.PlayerUpdate, ms.ToArray(), reliable: false, alsoSendToTeamates: true);
+                }
+                return;
+            }
+
             byte[] direction = NetworkOptimizationHelper.OptimizeDirection(player.MovementDirection);
             using (var ms = new MemoryStream())
             using (var bw = new BinaryWriter(ms))
@@ -352,6 +442,31 @@ namespace TabgInstaller.FakePlayers
             }
         }
 
+        internal static void BroadcastSeatAccepted(ServerClient server, TABGPlayerServer player, TABGCarServer car, TABGCarServerSeat seat, bool getIn)
+        {
+            if (server == null || player == null || car == null || seat == null)
+                return;
+
+            byte[] carRotation = NetworkOptimizationHelper.OptimizeQuaternion(car.CarRotation);
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write(player.PlayerIndex);
+                bw.Write(car.CarIndex);
+                bw.Write(seat.NetworkIndex);
+                bw.Write((byte)(getIn ? SeatAction.GetIn : SeatAction.GetOut));
+                if (getIn)
+                {
+                    bw.Write(car.CarPosition.x);
+                    bw.Write(car.CarPosition.y);
+                    bw.Write(car.CarPosition.z);
+                    bw.Write(carRotation);
+                }
+
+                SendToRealClients(server, EventCode.SeatAccepted, ms.ToArray(), reliable: true, alsoSendToTeamates: true);
+            }
+        }
+
         internal static void BroadcastWeaponChanged(ServerClient server, TABGPlayerServer player)
         {
             using (var ms = new MemoryStream())
@@ -370,6 +485,24 @@ namespace TabgInstaller.FakePlayers
                 bw.Write((short)-1);
 
                 SendToRealClients(server, EventCode.WeaponChanged, ms.ToArray(), reliable: true);
+            }
+        }
+
+        internal static void BroadcastPickupAccepted(ServerClient server, TABGPlayerServer player, NetworkGun loot, byte slot)
+        {
+            if (server == null || player == null || loot == null)
+                return;
+
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write(player.PlayerIndex);
+                bw.Write(loot.Index);
+                bw.Write(loot.UniqueIdentifier);
+                bw.Write(loot.Quantity);
+                bw.Write(slot);
+
+                SendToRealClients(server, EventCode.WeaponPickUpAccepted, ms.ToArray(), reliable: true, alsoSendToTeamates: true);
             }
         }
 
@@ -463,6 +596,26 @@ namespace TabgInstaller.FakePlayers
             }
         }
 
+        internal static void ApplyHeal(ServerClient server, TABGPlayerServer player, float newHealth)
+        {
+            if (server == null || player == null || player.IsDead)
+                return;
+
+            newHealth = Mathf.Clamp(newHealth, player.Health, 100f);
+            if (newHealth <= player.Health)
+                return;
+
+            player.UpdateHealth(newHealth);
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write(player.PlayerIndex);
+                bw.Write(newHealth);
+
+                SendToRealClients(server, EventCode.PlayerHealthStateChanged, ms.ToArray(), reliable: true, alsoSendToTeamates: true);
+            }
+        }
+
         internal static void BroadcastAirplaneDrop(ServerClient server, TABGPlayerServer player, Vector3 position, Vector3 forward)
         {
             if (server == null || player == null)
@@ -510,7 +663,8 @@ namespace TabgInstaller.FakePlayers
                 bw.Write(false);
                 bw.Write(false);
 
-                PlayerDamageCommand.Run(ms.ToArray(), server, attacker.PlayerIndex);
+                // Server-side fake attackers are not real chunk watchers, so report through the victim path.
+                PlayerDamageCommand.Run(ms.ToArray(), server, target.PlayerIndex);
             }
         }
 
@@ -667,6 +821,44 @@ namespace TabgInstaller.FakePlayers
         {
             if (Instance != null)
                 Instance.Logger.LogInfo($"[FakePlayers] {msg}");
+        }
+
+        internal static void RecordGunshot(TABGPlayerServer shooter, FiringMode mode)
+        {
+            if (shooter == null || shooter.Bot || FakeIndices.Contains(shooter.PlayerIndex))
+                return;
+
+            FiringMode audibleModes = FiringMode.Semi | FiringMode.Burst | FiringMode.FullAutoStart;
+            if ((mode & audibleModes) == FiringMode.None)
+                return;
+
+            GunshotSoundSequence++;
+            GunshotSounds.Add(new GunshotSoundEvent(GunshotSoundSequence, shooter.PlayerIndex, shooter.PlayerPosition, mode, Time.unscaledTime));
+
+            float cutoff = Time.unscaledTime - 2.5f;
+            while (GunshotSounds.Count > 0 && (GunshotSounds[0].Time < cutoff || GunshotSounds.Count > 96))
+                GunshotSounds.RemoveAt(0);
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerFireCommand), nameof(PlayerFireCommand.Run))]
+    internal static class PlayerFireSoundPatch
+    {
+        public static void Postfix(byte[] msgData, ServerClient world, byte senderIndex)
+        {
+            try
+            {
+                if (msgData == null || msgData.Length < 2 || world == null || world.GameRoomReference == null)
+                    return;
+
+                FiringMode mode = (FiringMode)msgData[1];
+                TABGPlayerServer shooter = world.GameRoomReference.FindPlayer(senderIndex);
+                FakePlayersPlugin.RecordGunshot(shooter, mode);
+            }
+            catch (Exception ex)
+            {
+                FakePlayersPlugin.Log($"Gunshot sound patch error: {ex.Message}");
+            }
         }
     }
 

@@ -1,17 +1,17 @@
 {
   "id": "ServerLogger",
-  "name": "ServerLogger",
+  "name": "TABG Server Logger",
   "version": "1.0.0",
-  "description": "Player join/leave and event logging for server administration.",
-  "author": "ContagiouslyStupid",
+  "description": "Owned player identity logger that records player names, PlayFab IDs, and Epic IDs.",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
-  "dllNames": ["ServerLogger.dll"],
+  "dllNames": ["TabgInstaller.ServerLogger.dll"],
   "type": "server",
   "kind": "bundled",
   "defaultChecked": true,
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
-  "dependencies": ["Citruslib"],
-  "tags": ["logging", "admin"]
+  "dependencies": [],
+  "tags": ["logging", "players", "identity"]
 }

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -49,6 +50,16 @@ namespace TabgInstaller.Gui.ViewModels
         [ObservableProperty] private string _proxChatMaxRange = "50";
         [ObservableProperty] private string _proxChatMinRange = "5";
         [ObservableProperty] private int _proxChatFalloffIndex = 0; // 0=Linear, 1=Logarithmic
+
+        // ── Server Logger ───────────────────────────────────────────────────────
+        [ObservableProperty] private bool _serverLoggerLogToConsole = true;
+        [ObservableProperty] private bool _serverLoggerWriteCsv = true;
+        [ObservableProperty] private bool _serverLoggerWriteLegacy = true;
+        [ObservableProperty] private bool _serverLoggerFallbackScan = true;
+        [ObservableProperty] private string _serverLoggerFallbackInterval = "2";
+        [ObservableProperty] private string _serverLoggerLogDirectory = "server-logs";
+        [ObservableProperty] private string _serverLoggerCsvFileName = "players.csv";
+        [ObservableProperty] private string _serverLoggerLegacyFileName = "ServerLogger.txt";
 
         // ── Juggernaut Mode ──────────────────────────────────────────────────────
         [ObservableProperty] private string _juggPointsToWin = "100";
@@ -193,6 +204,26 @@ FalloffCurve = {falloff}
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ProxChat save failed: {ex.Message}");
+                }
+
+                // Server Logger cfg
+                try
+                {
+                    var loggerSettings = ModConfigService.ReadServerLogger(serverDir);
+                    loggerSettings.LogToBepInExConsole = ServerLoggerLogToConsole;
+                    loggerSettings.WriteCsv = ServerLoggerWriteCsv;
+                    loggerSettings.WriteLegacyServerLoggerTxt = ServerLoggerWriteLegacy;
+                    loggerSettings.FallbackPlayerScan = ServerLoggerFallbackScan;
+                    if (float.TryParse(ServerLoggerFallbackInterval, NumberStyles.Float, CultureInfo.InvariantCulture, out var scanInterval))
+                        loggerSettings.FallbackScanIntervalSeconds = scanInterval;
+                    loggerSettings.LogDirectory = ServerLoggerLogDirectory?.Trim() ?? "server-logs";
+                    loggerSettings.CsvFileName = ServerLoggerCsvFileName?.Trim() ?? "players.csv";
+                    loggerSettings.LegacyFileName = ServerLoggerLegacyFileName?.Trim() ?? "ServerLogger.txt";
+                    ModConfigService.WriteServerLogger(serverDir, loggerSettings);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ServerLogger save failed: {ex.Message}");
                 }
 
                 // Juggernaut Mode cfg
@@ -376,6 +407,101 @@ MinPlayers = {JuggMinPlayers.Trim()}
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ProxChat load failed: {ex.Message}");
+            }
+
+            // Server Logger
+            try
+            {
+                var loggerSettings = ModConfigService.ReadServerLogger(serverDir);
+                ServerLoggerLogToConsole = loggerSettings.LogToBepInExConsole;
+                ServerLoggerWriteCsv = loggerSettings.WriteCsv;
+                ServerLoggerWriteLegacy = loggerSettings.WriteLegacyServerLoggerTxt;
+                ServerLoggerFallbackScan = loggerSettings.FallbackPlayerScan;
+                ServerLoggerFallbackInterval = loggerSettings.FallbackScanIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+                ServerLoggerLogDirectory = loggerSettings.LogDirectory;
+                ServerLoggerCsvFileName = loggerSettings.CsvFileName;
+                ServerLoggerLegacyFileName = loggerSettings.LegacyFileName;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ServerLogger load failed: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void OpenServerLoggerConfig()
+        {
+            var serverDir = _serverPathProvider.ServerPath;
+            if (string.IsNullOrWhiteSpace(serverDir))
+            {
+                _toast.Warning(Messages.ServerPathNotSet);
+                return;
+            }
+
+            OpenPath(ModConfigService.ServerLoggerConfigPath(serverDir), createParent: true);
+        }
+
+        [RelayCommand]
+        private void OpenServerLoggerCsv()
+        {
+            if (string.IsNullOrWhiteSpace(_serverPathProvider.ServerPath))
+            {
+                _toast.Warning(Messages.ServerPathNotSet);
+                return;
+            }
+
+            var settings = BuildServerLoggerSettingsFromFields();
+            OpenPath(ModConfigService.GetServerLoggerCsvPath(_serverPathProvider.ServerPath, settings), createParent: true);
+        }
+
+        [RelayCommand]
+        private void OpenServerLoggerLegacy()
+        {
+            if (string.IsNullOrWhiteSpace(_serverPathProvider.ServerPath))
+            {
+                _toast.Warning(Messages.ServerPathNotSet);
+                return;
+            }
+
+            var settings = BuildServerLoggerSettingsFromFields();
+            OpenPath(ModConfigService.GetServerLoggerLegacyPath(_serverPathProvider.ServerPath, settings), createParent: true);
+        }
+
+        private ServerLoggerSettings BuildServerLoggerSettingsFromFields()
+        {
+            var settings = ModConfigService.ReadServerLogger(_serverPathProvider.ServerPath);
+            settings.LogDirectory = ServerLoggerLogDirectory?.Trim() ?? "server-logs";
+            settings.CsvFileName = ServerLoggerCsvFileName?.Trim() ?? "players.csv";
+            settings.LegacyFileName = ServerLoggerLegacyFileName?.Trim() ?? "ServerLogger.txt";
+            return settings;
+        }
+
+        private void OpenPath(string path, bool createParent)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            try
+            {
+                var parent = Path.GetDirectoryName(path);
+                if (createParent && !string.IsNullOrWhiteSpace(parent))
+                    Directory.CreateDirectory(parent);
+
+                if (File.Exists(path))
+                {
+                    Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                }
+                else if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+                {
+                    Process.Start("explorer", parent);
+                }
+                else
+                {
+                    _toast.Warning(Messages.ServerPathNotSet);
+                }
+            }
+            catch (Exception ex)
+            {
+                _toast.Error(string.Format(Messages.CouldNotOpenFile, ex.Message));
             }
         }
 

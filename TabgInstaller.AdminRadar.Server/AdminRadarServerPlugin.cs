@@ -15,6 +15,7 @@ namespace TabgInstaller.AdminRadar.Server
     public class AdminRadarServerPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
+        internal const byte BotDebugExtensionMarker = 219;
 
         private static AdminRadarServerPlugin _instance;
         private static ConfigEntry<bool> _enabled;
@@ -128,6 +129,7 @@ namespace TabgInstaller.AdminRadar.Server
                 }
 
                 if (entries.Count == 0) return null;
+                var debugEntries = BuildBotDebugEntries(server);
 
                 using (var ms = new MemoryStream())
                 using (var bw = new BinaryWriter(ms))
@@ -144,8 +146,123 @@ namespace TabgInstaller.AdminRadar.Server
                         bw.Write(entry.Alive);
                     }
 
+                    bw.Write(BotDebugExtensionMarker);
+                    bw.Write((byte)Math.Min(debugEntries.Count, 255));
+                    for (int i = 0; i < debugEntries.Count && i < 255; i++)
+                    {
+                        var entry = debugEntries[i];
+                        bw.Write(entry.Index);
+                        bw.Write(entry.State ?? string.Empty);
+                        bw.Write(entry.TargetName ?? string.Empty);
+                        bw.Write(entry.WeaponName ?? string.Empty);
+                        bw.Write(entry.HasLineOfSight);
+                        bw.Write(entry.IsFiring);
+                        bw.Write(entry.HasMoveGoal);
+                        bw.Write(entry.MoveGoal.x);
+                        bw.Write(entry.MoveGoal.y);
+                        bw.Write(entry.MoveGoal.z);
+                        bw.Write(entry.HasLootGoal);
+                        bw.Write(entry.LootGoal.x);
+                        bw.Write(entry.LootGoal.y);
+                        bw.Write(entry.LootGoal.z);
+                        bw.Write(entry.LootName ?? string.Empty);
+                    }
+
                     return ms.ToArray();
                 }
+            }
+
+            private static List<BotDebugEntry> BuildBotDebugEntries(ServerClient server)
+            {
+                var entries = new List<BotDebugEntry>();
+                if (server == null || server.GameRoomReference == null || server.GameRoomReference.Players == null)
+                    return entries;
+
+                for (int i = 0; i < server.GameRoomReference.Players.Count; i++)
+                {
+                    TABGPlayerServer player = server.GameRoomReference.Players[i];
+                    if (player == null || player.PlayerObject == null)
+                        continue;
+
+                    MonoBehaviour controller = FindAiController(player.PlayerObject);
+                    if (controller == null)
+                        continue;
+
+                    entries.Add(new BotDebugEntry
+                    {
+                        Index = player.PlayerIndex,
+                        State = ReadString(controller, "DebugState"),
+                        TargetName = ReadString(controller, "DebugTargetName"),
+                        WeaponName = ReadString(controller, "DebugWeaponName"),
+                        HasLineOfSight = ReadBool(controller, "DebugHasLineOfSight"),
+                        IsFiring = ReadBool(controller, "DebugIsFiring"),
+                        HasMoveGoal = ReadBool(controller, "DebugHasMoveGoal"),
+                        MoveGoal = ReadVector3(controller, "DebugMoveGoal"),
+                        HasLootGoal = ReadBool(controller, "DebugHasLootGoal"),
+                        LootGoal = ReadVector3(controller, "DebugLootGoal"),
+                        LootName = ReadString(controller, "DebugLootName")
+                    });
+                }
+
+                return entries;
+            }
+
+            private static MonoBehaviour FindAiController(GameObject playerObject)
+            {
+                MonoBehaviour[] behaviours = playerObject.GetComponents<MonoBehaviour>();
+                for (int i = 0; i < behaviours.Length; i++)
+                {
+                    MonoBehaviour behaviour = behaviours[i];
+                    if (behaviour == null)
+                        continue;
+
+                    Type type = behaviour.GetType();
+                    if (type.FullName == "TabgInstaller.FakePlayers.AiDummyController" || type.Name == "AiDummyController")
+                        return behaviour;
+                }
+
+                return null;
+            }
+
+            private static string ReadString(Component component, string propertyName)
+            {
+                try
+                {
+                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
+                    return value != null ? value.ToString() : string.Empty;
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+
+            private static bool ReadBool(Component component, string propertyName)
+            {
+                try
+                {
+                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
+                    return value is bool b && b;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            private static Vector3 ReadVector3(Component component, string propertyName)
+            {
+                try
+                {
+                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
+                    if (value is Vector3 vector)
+                        return vector;
+                }
+                catch
+                {
+                }
+
+                return Vector3.zero;
             }
 
             private static void EnsureResolved(object player)
@@ -243,6 +360,21 @@ namespace TabgInstaller.AdminRadar.Server
                 public string Name;
                 public Vector3 Position;
                 public bool Alive;
+            }
+
+            private struct BotDebugEntry
+            {
+                public byte Index;
+                public string State;
+                public string TargetName;
+                public string WeaponName;
+                public bool HasLineOfSight;
+                public bool IsFiring;
+                public bool HasMoveGoal;
+                public Vector3 MoveGoal;
+                public bool HasLootGoal;
+                public Vector3 LootGoal;
+                public string LootName;
             }
         }
     }

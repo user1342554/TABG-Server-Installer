@@ -1,70 +1,21 @@
-# Contributing a Plugin to the TABG Marketplace
+# Contributing
 
-Want your plugin in the marketplace? Follow the steps below — or see [`registry/CONTRIBUTING.md`](./registry/CONTRIBUTING.md) for the full detailed guide.
+This launcher ships a curated set of bundled plugins. It no longer has a runtime plugin marketplace, so plugin changes should be source changes in this repository instead of remote manifest-only additions.
 
-## Requirements
+## Adding A Bundled Plugin
 
-- Your plugin is a BepInEx 5.4.22 plugin that works with TABG dedicated servers
-- Your DLLs are hosted as GitHub releases
+1. Add the plugin source as a normal project in the solution.
+2. Target BepInEx 5 / `netstandard2.0` unless the surrounding plugin stack changes.
+3. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins` from the project build target.
+4. Register it in `TabgInstaller.Core/PluginRegistry.cs` and the matching launcher plugin list.
+5. Add a `registry/plugins/<id>/manifest.json` only for release metadata and documentation.
+6. Build the plugin plus the launcher projects before opening a PR.
 
-## Steps
+## Compatibility
 
-### 1. Fork this repository
+`TabgInstaller.MatchCore` intentionally keeps reading `TheStarterPack.txt` so existing presets, rings, loadouts, and match settings continue to work while the implementation is owned by this repository.
 
-Fork [`user1342554/TABG-Server-Installer`](https://github.com/user1342554/TABG-Server-Installer) on GitHub.
-
-### 2. Create your manifest
-
-Copy [`registry/TEMPLATE.json`](./registry/TEMPLATE.json) to `registry/plugins/<your-plugin-id>/manifest.json`.
-
-### 3. Fill in your plugin details
-
-```json
-{
-  "id": "my-cool-plugin",
-  "name": "My Cool Plugin",
-  "version": "1.0.0",
-  "description": "Does something cool on your TABG server.",
-  "author": "YourGitHubUsername",
-  "downloadUrl": "https://github.com/You/my-cool-plugin/releases/latest",
-  "dllNames": ["MyCoolPlugin.dll"],
-  "type": "server",
-  "compatibleTabgVersions": ["*"],
-  "minInstallerVersion": "5.0.0",
-  "bepInExVersion": "5.4.22"
-}
-```
-
-### 4. Open a pull request
-
-CI validates your manifest automatically (schema, download URL, duplicate check).
-
-### 5. Done
-
-Once merged, your plugin appears in the **Browse Plugins** tab for everyone.
-
-## Updating Your Plugin
-
-1. Push a new GitHub release with your updated DLLs
-2. Open a PR bumping the `version` field in your manifest
-
-## Plugin Types
-
-| Type | Where it gets installed |
-|------|------------------------|
-| `server` | Server's `BepInEx/plugins/community/<id>/` |
-| `client` | Client's `BepInEx/plugins/community/<id>/` |
-| `both` | Both server and client |
-
-## Registry Details
-
-The marketplace is powered by a GitHub-based registry. Manifests are validated by CI on every pull request and compiled into a single `registry.json` that the app fetches at runtime.
-
-- **Schema**: [`registry/schema/plugin-manifest.schema.json`](./registry/schema/plugin-manifest.schema.json)
-- **Template**: [`registry/TEMPLATE.json`](./registry/TEMPLATE.json)
-- **Full guide**: [`registry/CONTRIBUTING.md`](./registry/CONTRIBUTING.md)
-
-## Questions?
+## Questions
 
 - **Discord:** `anonymer__hase_22156`
 - **GitHub Issues:** [Open an issue](https://github.com/user1342554/TABG-Server-Installer/issues)

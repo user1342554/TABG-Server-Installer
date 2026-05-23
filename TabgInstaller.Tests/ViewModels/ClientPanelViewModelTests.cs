@@ -356,13 +356,15 @@ namespace TabgInstaller.Tests.ViewModels
         public void KnownClientMods_ContainsExpectedEntries()
         {
             ClientPanelViewModel.KnownClientMods.Should().Contain("TabgInstaller.FlyingControls.dll");
-            ClientPanelViewModel.KnownClientMods.Should().Contain("TABGVR.dll");
+            ClientPanelViewModel.KnownClientMods.Should().Contain("TabgInstaller.EnhancedClient.dll");
+            ClientPanelViewModel.KnownClientMods.Should().Contain("TabgInstaller.PopupBlocker.dll");
+            ClientPanelViewModel.KnownClientMods.Should().Contain("TabgInstaller.AdminRadar.Client.dll");
         }
 
         [Fact]
         public void KnownClientMods_HasExpectedCount()
         {
-            ClientPanelViewModel.KnownClientMods.Should().HaveCount(12);
+            ClientPanelViewModel.KnownClientMods.Should().HaveCount(11);
         }
 
         // ── FindDllPath / FindClientPluginsDir ───────────────────────────────────

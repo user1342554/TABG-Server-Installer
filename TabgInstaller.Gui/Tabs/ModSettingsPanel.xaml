@@ -137,6 +137,76 @@
                 </StackPanel>
             </GroupBox>
 
+            <!-- Server Logger -->
+            <GroupBox Header="Server Logger" Margin="0,0,0,8">
+                <StackPanel Margin="8">
+                    <WrapPanel Margin="0,0,0,8">
+                        <CheckBox Content="BepInEx console log" Margin="0,0,16,4"
+                                  IsChecked="{Binding ServerLoggerLogToConsole}"
+                                  AutomationProperties.Name="Server Logger BepInEx console logging"
+                                  AutomationProperties.AutomationId="ServerLoggerLogToConsoleCheckBox"
+                                  TabIndex="60"/>
+                        <CheckBox Content="CSV identity log" Margin="0,0,16,4"
+                                  IsChecked="{Binding ServerLoggerWriteCsv}"
+                                  AutomationProperties.Name="Server Logger CSV logging"
+                                  AutomationProperties.AutomationId="ServerLoggerWriteCsvCheckBox"
+                                  TabIndex="61"/>
+                        <CheckBox Content="Legacy ServerLogger.txt" Margin="0,0,16,4"
+                                  IsChecked="{Binding ServerLoggerWriteLegacy}"
+                                  AutomationProperties.Name="Server Logger legacy text logging"
+                                  AutomationProperties.AutomationId="ServerLoggerWriteLegacyCheckBox"
+                                  TabIndex="62"/>
+                        <CheckBox Content="Fallback player scan" Margin="0,0,16,4"
+                                  IsChecked="{Binding ServerLoggerFallbackScan}"
+                                  AutomationProperties.Name="Server Logger fallback player scan"
+                                  AutomationProperties.AutomationId="ServerLoggerFallbackScanCheckBox"
+                                  TabIndex="63"/>
+                    </WrapPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label x:Name="ServerLoggerIntervalLabel" Content="Scan interval (s)" Width="150"/>
+                        <TextBox Width="80" Text="{Binding ServerLoggerFallbackInterval, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=ServerLoggerIntervalLabel}"
+                                 AutomationProperties.AutomationId="ServerLoggerFallbackIntervalTextBox"
+                                 TabIndex="64"/>
+                        <TextBlock Text="Default 2" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label x:Name="ServerLoggerDirLabel" Content="Log directory" Width="150"/>
+                        <TextBox Width="260" Text="{Binding ServerLoggerLogDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=ServerLoggerDirLabel}"
+                                 AutomationProperties.AutomationId="ServerLoggerLogDirectoryTextBox"
+                                 TabIndex="65"/>
+                        <TextBlock Text="Relative to BepInEx" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="Gray"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Label x:Name="ServerLoggerCsvLabel" Content="CSV file" Width="150"/>
+                        <TextBox Width="180" Text="{Binding ServerLoggerCsvFileName, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=ServerLoggerCsvLabel}"
+                                 AutomationProperties.AutomationId="ServerLoggerCsvFileNameTextBox"
+                                 TabIndex="66"/>
+                        <Label x:Name="ServerLoggerLegacyLabel" Content="Legacy file" Width="100" Margin="12,0,0,0"/>
+                        <TextBox Width="180" Text="{Binding ServerLoggerLegacyFileName, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.LabeledBy="{Binding ElementName=ServerLoggerLegacyLabel}"
+                                 AutomationProperties.AutomationId="ServerLoggerLegacyFileNameTextBox"
+                                 TabIndex="67"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Open cfg" Width="100" Margin="0,0,6,0"
+                                Command="{Binding OpenServerLoggerConfigCommand}"
+                                AutomationProperties.AutomationId="OpenServerLoggerConfigButton"
+                                TabIndex="68"/>
+                        <Button Content="Open CSV" Width="100" Margin="0,0,6,0"
+                                Command="{Binding OpenServerLoggerCsvCommand}"
+                                AutomationProperties.AutomationId="OpenServerLoggerCsvButton"
+                                TabIndex="69"/>
+                        <Button Content="Open legacy" Width="110"
+                                Command="{Binding OpenServerLoggerLegacyCommand}"
+                                AutomationProperties.AutomationId="OpenServerLoggerLegacyButton"
+                                TabIndex="70"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
             <!-- Juggernaut Mode -->
             <GroupBox Header="{x:Static res:Strings.JuggernautMode}" Margin="0,0,0,8">
                 <StackPanel Margin="8">

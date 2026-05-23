@@ -16,8 +16,6 @@ namespace TabgInstaller.Core
     {
         private readonly HttpClient _httpClient;
         private readonly IProgress<string> _log;
-        private const string StarterPackOwner = "ContagiouslyStupid";
-        private const string StarterPackRepo = "TABGStarterPack";
         private const string WordListRawUrl = "https://raw.githubusercontent.com/landfallgames/tabg-word-list/main/all_words.txt";
         private const string CacheDirName = "TabgInstallerCache";
         private static readonly string AppDataCachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CacheDirName);
@@ -33,29 +31,6 @@ namespace TabgInstaller.Core
             Directory.CreateDirectory(AppDataCachePath);
         }
 
-        public async Task<string?> FindReleaseTagWithAssetAsync(string assetName)
-        {
-            try
-            {
-                var releases = await _httpClient.GetFromJsonAsync<List<GitHubRelease>>($"https://api.github.com/repos/{StarterPackOwner}/{StarterPackRepo}/releases?per_page=10");
-                if (releases == null) return null;
-
-                foreach (var release in releases)
-                {
-                    if (release.Assets.Any(a => a.Name.Equals(assetName, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        return release.TagName;
-                    }
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                _log.Report($"[ERROR] Error fetching releases for {StarterPackOwner}/{StarterPackRepo}: {ex.Message}");
-                return null;
-            }
-            return null;
-        }
-        
         public async Task<bool> DownloadAssetAsync(string owner, string repo, string tagName, string assetName, string downloadDirectory, string? browserDownloadUrlOverride = null)
         {
             var assetDownloadUrl = browserDownloadUrlOverride;
@@ -79,7 +54,7 @@ namespace TabgInstaller.Core
                     return false;
                 }
             }
-            
+
             if (string.IsNullOrEmpty(assetDownloadUrl))
             {
                  _log.Report($"[WARN] No download URL could be determined for asset '{assetName}'.");
@@ -134,7 +109,7 @@ namespace TabgInstaller.Core
                     _log.Report("[INFO] Downloading allowed words list...");
                     var response = await _httpClient.GetStringAsync(WordListRawUrl);
                     var lines = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                    
+
                     var wordsToCache = new List<string>();
                     foreach (var line in lines)
                     {
@@ -192,4 +167,4 @@ namespace TabgInstaller.Core
             }
         }
     }
-} 
+}

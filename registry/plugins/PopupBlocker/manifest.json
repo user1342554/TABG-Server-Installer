@@ -1,17 +1,17 @@
 {
   "id": "PopupBlocker",
-  "name": "Pop-up Blocker",
+  "name": "Popup Blocker",
   "version": "1.0.0",
-  "description": "Disable anti-cheat popups when connecting to custom modded servers.",
-  "author": "Freddo",
+  "description": "Suppresses anti-cheat popups in the modded TABG client while keeping normal anti-cheat setup intact when available.",
+  "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
-  "dllNames": ["Pop-up Blocker.dll"],
+  "dllNames": ["TabgInstaller.PopupBlocker.dll"],
   "type": "client",
   "kind": "bundled",
   "defaultChecked": true,
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
-  "dependencies": [],
-  "tags": ["anti-cheat", "quality-of-life"]
+  "dependencies": ["ModSettings"],
+  "tags": ["client", "popup", "anti-cheat", "quality-of-life"]
 }
