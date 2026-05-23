@@ -6,155 +6,223 @@
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Inverse="True"/>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="MutedText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="PanelBorder" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DefaultBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
     </UserControl.Resources>
-    <Grid Margin="10" KeyboardNavigation.TabNavigation="Cycle">
+
+    <Grid Margin="12" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="{x:Static res:Strings.ServerPlugins}" FontSize="18" FontWeight="SemiBold"/>
-            <TextBlock Text="{x:Static res:Strings.ServerPluginsSubtitle}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-        </StackPanel>
-
-        <!-- Installed plugins -->
-        <GroupBox Grid.Row="1" Header="{x:Static res:Strings.InstalledPlugins}">
-            <ListView x:Name="LstPlugins" ItemsSource="{Binding Plugins}" SelectionMode="Single"
-                      AutomationProperties.Name="Installed server plugins"
-                      AutomationProperties.AutomationId="InstalledPluginsListView"
-                      TabIndex="10">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                      Command="{Binding DataContext.TogglePluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                      CommandParameter="{Binding}"
-                                      AutomationProperties.Name="{Binding Name}"/>
-                            <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-        </GroupBox>
-
-        <!-- Actions for installed -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-            <Button Content="{x:Static res:Strings.AddDllFile}" Width="110" Click="AddDll_Click"
-                    AutomationProperties.Name="{x:Static res:Strings.AddDllFile}"
-                    AutomationProperties.AutomationId="AddDllButton"
-                    TabIndex="50"/>
-            <Button Content="{x:Static res:Strings.RemoveSelected}" Width="120" Margin="5,0,0,0"
-                    Command="{Binding RemovePluginCommand}"
-                    CommandParameter="{Binding SelectedItem, ElementName=LstPlugins}"
-                    AutomationProperties.Name="{x:Static res:Strings.RemoveSelected}"
-                    AutomationProperties.AutomationId="RemovePluginButton"
-                    TabIndex="51"/>
-            <Button Content="{x:Static res:Strings.Refresh}" Width="80" Margin="5,0,0,0" Command="{Binding RefreshCommand}"
-                    AutomationProperties.Name="{x:Static res:Strings.Refresh}"
-                    AutomationProperties.AutomationId="RefreshPluginsButton"
-                    TabIndex="52"/>
-            <Button Content="{x:Static res:Strings.OpenFolder}" Width="100" Margin="5,0,0,0" Command="{Binding OpenFolderCommand}"
-                    AutomationProperties.Name="{x:Static res:Strings.OpenFolder}"
-                    AutomationProperties.AutomationId="OpenPluginsFolderButton"
-                    TabIndex="53"/>
-        </StackPanel>
-
-        <!-- Local plugin catalog -->
-        <GroupBox Grid.Row="3" Header="Local Plugin Library" Margin="0,10,0,0">
-            <StackPanel>
-                <ListView x:Name="LstCatalog" ItemsSource="{Binding PluginCatalog}"
-                          SelectedItem="{Binding SelectedCatalogPlugin, Mode=TwoWay}"
-                          MinHeight="180" MaxHeight="260"
-                          AutomationProperties.Name="Local server plugin library"
-                          AutomationProperties.AutomationId="LocalPluginLibraryListView"
-                          TabIndex="60">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Header="Plugin" Width="150">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding Kind}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="Description" Width="320">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding ClientRequirement}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="DLLs" Width="240" DisplayMemberBinding="{Binding Dlls}"/>
-                            <GridViewColumn Header="State" Width="130" DisplayMemberBinding="{Binding StateText}"/>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <Button Content="Install" Width="90"
-                            Command="{Binding InstallCatalogPluginCommand}"
-                            CommandParameter="{Binding SelectedCatalogPlugin}"
-                            AutomationProperties.AutomationId="InstallCatalogPluginButton"
-                            TabIndex="61"/>
-                    <Button Content="Enable" Width="90" Margin="5,0,0,0"
-                            Command="{Binding EnableCatalogPluginCommand}"
-                            CommandParameter="{Binding SelectedCatalogPlugin}"
-                            AutomationProperties.AutomationId="EnableCatalogPluginButton"
-                            TabIndex="62"/>
-                    <Button Content="Disable" Width="90" Margin="5,0,0,0"
-                            Command="{Binding DisableCatalogPluginCommand}"
-                            CommandParameter="{Binding SelectedCatalogPlugin}"
-                            AutomationProperties.AutomationId="DisableCatalogPluginButton"
-                            TabIndex="63"/>
-                </StackPanel>
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock Text="{x:Static res:Strings.ServerPlugins}" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="{x:Static res:Strings.ServerPluginsSubtitle}"
+                           Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
             </StackPanel>
-        </GroupBox>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{x:Static res:Strings.Refresh}" Width="88" Margin="0,0,6,0"
+                        Command="{Binding RefreshCommand}"
+                        AutomationProperties.AutomationId="RefreshPluginsButton"
+                        TabIndex="80"/>
+                <Button Content="{x:Static res:Strings.OpenFolder}" Width="108"
+                        Command="{Binding OpenFolderCommand}"
+                        AutomationProperties.AutomationId="OpenPluginsFolderButton"
+                        TabIndex="81"/>
+            </StackPanel>
+        </DockPanel>
 
-        <!-- Advanced raw bundled DLL install -->
-        <GroupBox Grid.Row="4" Header="Advanced: Raw Bundled DLLs" Margin="0,10,0,0">
-            <StackPanel>
-                <Grid>
-                    <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableMods}"
-                              MaxHeight="120" SelectionMode="Extended" BorderThickness="0"
-                              Visibility="{Binding AllPluginsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
-                              AutomationProperties.Name="Available bundled plugins"
-                              AutomationProperties.AutomationId="AvailablePluginsListView"
-                              TabIndex="70">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource PanelBorder}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock Text="{x:Static res:Strings.InstalledPlugins}"
+                                   Style="{StaticResource SectionTitle}" DockPanel.Dock="Left"/>
+                        <Button Content="{x:Static res:Strings.AddDllFile}" Width="100" HorizontalAlignment="Right"
+                                DockPanel.Dock="Right" Click="AddDll_Click"
+                                AutomationProperties.AutomationId="AddDllButton"
+                                TabIndex="20"/>
+                    </DockPanel>
+
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="{x:Static res:Strings.RemoveSelected}" Width="124"
+                                Command="{Binding RemovePluginCommand}"
+                                CommandParameter="{Binding SelectedItem, ElementName=LstPlugins}"
+                                AutomationProperties.AutomationId="RemovePluginButton"
+                                TabIndex="21"/>
+                    </StackPanel>
+
+                    <ListView x:Name="LstPlugins" ItemsSource="{Binding Plugins}" SelectionMode="Single"
+                              BorderThickness="0"
+                              AutomationProperties.Name="Installed server plugins"
+                              AutomationProperties.AutomationId="InstalledPluginsListView"
+                              TabIndex="10">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                <DockPanel Margin="0,2">
+                                    <CheckBox DockPanel.Dock="Left" Margin="0,0,8,0"
+                                              IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                              Command="{Binding DataContext.TogglePluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              CommandParameter="{Binding}"
                                               AutomationProperties.Name="{Binding Name}"/>
-                                    <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </DockPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <TextBlock Text="{x:Static res:Strings.AllPluginsInstalled}"
-                               Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Visibility="{Binding AllPluginsInstalled, Converter={StaticResource BoolToVisibility}}"/>
-                </Grid>
-                <Button Content="{x:Static res:Strings.InstallSelected}" Width="120" HorizontalAlignment="Left" Margin="0,6,0,0"
-                        Command="{Binding InstallBundledCommand}"
-                        IsEnabled="{Binding CanInstallBundled}"
-                        AutomationProperties.Name="{x:Static res:Strings.InstallSelected}"
-                        AutomationProperties.AutomationId="InstallSelectedPluginsButton"
-                        TabIndex="71"/>
-            </StackPanel>
-        </GroupBox>
+                </DockPanel>
+            </Border>
 
-        <!-- Spacer row so grid doesn't complain -->
-        <StackPanel Grid.Row="5"/>
+            <Border Grid.Column="2" Style="{StaticResource PanelBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Local Plugin Library" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock Text="Bundled plugins maintained with this launcher"
+                                       Style="{StaticResource MutedText}"/>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Install" Width="86" Margin="0,0,6,0"
+                                    Command="{Binding InstallCatalogPluginCommand}"
+                                    CommandParameter="{Binding SelectedCatalogPlugin}"
+                                    AutomationProperties.AutomationId="InstallCatalogPluginButton"
+                                    TabIndex="60"/>
+                            <Button Content="Enable" Width="86" Margin="0,0,6,0"
+                                    Command="{Binding EnableCatalogPluginCommand}"
+                                    CommandParameter="{Binding SelectedCatalogPlugin}"
+                                    AutomationProperties.AutomationId="EnableCatalogPluginButton"
+                                    TabIndex="61"/>
+                            <Button Content="Disable" Width="86"
+                                    Command="{Binding DisableCatalogPluginCommand}"
+                                    CommandParameter="{Binding SelectedCatalogPlugin}"
+                                    AutomationProperties.AutomationId="DisableCatalogPluginButton"
+                                    TabIndex="62"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <ListView x:Name="LstCatalog" Grid.Row="1" ItemsSource="{Binding PluginCatalog}"
+                              SelectedItem="{Binding SelectedCatalogPlugin, Mode=TwoWay}"
+                              BorderThickness="0"
+                              AutomationProperties.Name="Local server plugin library"
+                              AutomationProperties.AutomationId="LocalPluginLibraryListView"
+                              TabIndex="50">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="130"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding DefaultText}" Style="{StaticResource MutedText}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="12,0">
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding Dlls}" Style="{StaticResource MutedText}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding StateText}" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding ClientRequirement}" Style="{StaticResource MutedText}"
+                                                   HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource DefaultBorderBrush}" BorderThickness="1,1,0,0"
+                            Padding="0,10,0,0" Margin="0,10,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding SelectedCatalogPlugin.DisplayName}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding SelectedCatalogPlugin.StateText}" Style="{StaticResource MutedText}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding SelectedCatalogPlugin.Description}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding SelectedCatalogPlugin.Dlls}" Style="{StaticResource MutedText}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Expander Grid.Row="3" Header="Advanced DLL install" Margin="0,10,0,0" IsExpanded="False">
+                        <StackPanel Margin="0,6,0,0">
+                            <Grid>
+                                <ListView x:Name="LstBundled" ItemsSource="{Binding AvailableMods}"
+                                          MaxHeight="120" SelectionMode="Extended" BorderThickness="0"
+                                          Visibility="{Binding AllPluginsInstalled, Converter={StaticResource InverseBoolToVisibility}}"
+                                          AutomationProperties.Name="Available bundled plugins"
+                                          AutomationProperties.AutomationId="AvailablePluginsListView"
+                                          TabIndex="70">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,2">
+                                                <CheckBox DockPanel.Dock="Left" Margin="0,0,8,0"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                          AutomationProperties.Name="{Binding Name}"/>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <TextBlock Text="{x:Static res:Strings.AllPluginsInstalled}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding AllPluginsInstalled, Converter={StaticResource BoolToVisibility}}"/>
+                            </Grid>
+                            <Button Content="{x:Static res:Strings.InstallSelected}" Width="128"
+                                    HorizontalAlignment="Left" Margin="0,6,0,0"
+                                    Command="{Binding InstallBundledCommand}"
+                                    IsEnabled="{Binding CanInstallBundled}"
+                                    AutomationProperties.AutomationId="InstallSelectedPluginsButton"
+                                    TabIndex="71"/>
+                        </StackPanel>
+                    </Expander>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="2" Text="{Binding StatusText}" Margin="0,8,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}"/>
     </Grid>
 </UserControl>

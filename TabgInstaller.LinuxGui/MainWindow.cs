@@ -117,6 +117,10 @@ public sealed class MainWindow : Window
     private readonly TextBox _presetName = new() { Width = 220, Watermark = "preset name" };
     private readonly ListBox _serverPluginList = new();
     private readonly ListBox _serverPluginCatalog = new();
+    private readonly TextBlock _serverPluginCatalogDetails = new()
+    {
+        TextWrapping = Avalonia.Media.TextWrapping.Wrap
+    };
     private readonly ListBox _clientPluginList = new();
     private readonly ListBox _bundledServerPluginList = new();
     private readonly ListBox _bundledClientPluginList = new();
@@ -386,66 +390,82 @@ public sealed class MainWindow : Window
 
     private Control BuildServerModsTab()
     {
+        _serverPluginCatalog.SelectionChanged += (_, _) => UpdateServerPluginCatalogDetails();
         RefreshServerModLists();
         return new Grid
         {
-            Margin = new Avalonia.Thickness(6),
-            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Margin = new Avalonia.Thickness(10),
+            ColumnDefinitions = new ColumnDefinitions("*,1.08*"),
             Children =
             {
-                Put(new StackPanel
-                {
-                    Spacing = 8,
-                    Children =
-                    {
-                        new TextBlock { Text = "Installed server DLLs" },
-                        new ScrollViewer { Content = _serverPluginList, Height = 360 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 8,
-                            Children =
-                            {
-                                Button("Refresh", RefreshServerModLists),
-                                Button("Enable / disable", ToggleSelectedServerPlugin),
-                                Button("Remove", RemoveSelectedServerPlugin),
-                                Button("Add DLL", AddServerPluginAsync),
-                                Button("Open folder", () => OpenPath(ServerPluginDir()))
-                            }
-                        }
-                    }
-                }, 0),
-                Put(new StackPanel
-                {
-                    Spacing = 8,
-                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                    Children =
-                    {
-                        new TextBlock { Text = "Local plugin library" },
-                        new ScrollViewer { Content = _serverPluginCatalog, Height = 250 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 8,
-                            Children =
-                            {
-                                Button("Install", InstallCatalogServerPlugin),
-                                Button("Enable", EnableCatalogServerPlugin),
-                                Button("Disable", DisableCatalogServerPlugin)
-                            }
-                        },
-                        new TextBlock { Text = "Advanced: raw bundled DLLs" },
-                        new ScrollViewer { Content = _bundledServerPluginList, Height = 120 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 8,
-                            Children = { Button("Install selected DLL", InstallBundledServerPlugin) }
-                        }
-                    }
-                }, 1)
+                Put(BuildInstalledServerPluginPanel(), 0),
+                Put(BuildServerPluginLibraryPanel(), 1)
             }
         };
+    }
+
+    private Control BuildInstalledServerPluginPanel()
+    {
+        return ToolPanel(new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock { Text = "Installed server DLLs", FontSize = 16 },
+                new ScrollViewer { Content = _serverPluginList, Height = 390 },
+                new WrapPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Children =
+                    {
+                        FlowButton("Refresh", RefreshServerModLists),
+                        FlowButton("Enable / disable", ToggleSelectedServerPlugin),
+                        FlowButton("Remove", RemoveSelectedServerPlugin),
+                        FlowButton("Add DLL", AddServerPluginAsync),
+                        FlowButton("Open folder", () => OpenPath(ServerPluginDir()))
+                    }
+                }
+            }
+        });
+    }
+
+    private Control BuildServerPluginLibraryPanel()
+    {
+        var panel = ToolPanel(new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock { Text = "Local plugin library", FontSize = 16 },
+                new TextBlock
+                {
+                    Text = "Owned launcher plugins. Install from here first; use raw DLL install only for manual testing.",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                },
+                new ScrollViewer { Content = _serverPluginCatalog, Height = 265 },
+                new WrapPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Children =
+                    {
+                        FlowButton("Install selected", InstallCatalogServerPlugin),
+                        FlowButton("Enable", EnableCatalogServerPlugin),
+                        FlowButton("Disable", DisableCatalogServerPlugin)
+                    }
+                },
+                new TextBlock { Text = "Selected plugin", FontSize = 13 },
+                _serverPluginCatalogDetails,
+                new TextBlock { Text = "Advanced raw DLL install", FontSize = 13 },
+                new ScrollViewer { Content = _bundledServerPluginList, Height = 100 },
+                new WrapPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Children = { FlowButton("Install selected DLL", InstallBundledServerPlugin) }
+                }
+            }
+        });
+        panel.Margin = new Avalonia.Thickness(10, 0, 0, 0);
+        return panel;
     }
 
     private Control BuildGameSettingsTab()
@@ -1605,9 +1625,22 @@ public sealed class MainWindow : Window
 
     private void RefreshServerPluginCatalog()
     {
+        var selectedId = (_serverPluginCatalog.SelectedItem as PluginCatalogItem)?.Plugin.Id;
+        PluginCatalogItem? selected = null;
+        PluginCatalogItem? first = null;
+
         _serverPluginCatalog.Items.Clear();
         foreach (var plugin in PluginRegistry.ServerPlugins)
-            _serverPluginCatalog.Items.Add(BuildCatalogItem(plugin));
+        {
+            var item = BuildCatalogItem(plugin);
+            first ??= item;
+            if (string.Equals(item.Plugin.Id, selectedId, StringComparison.OrdinalIgnoreCase))
+                selected = item;
+            _serverPluginCatalog.Items.Add(item);
+        }
+
+        _serverPluginCatalog.SelectedItem = selected ?? first;
+        UpdateServerPluginCatalogDetails();
     }
 
     private PluginCatalogItem BuildCatalogItem(PluginDefinition plugin)
@@ -1622,6 +1655,27 @@ public sealed class MainWindow : Window
             FindFileNearApp(Path.Combine("plugins", dll)) != null);
 
         return new PluginCatalogItem(plugin, installed, enabled, available);
+    }
+
+    private void UpdateServerPluginCatalogDetails()
+    {
+        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item)
+        {
+            _serverPluginCatalogDetails.Text = "Select a plugin from the library.";
+            return;
+        }
+
+        var clientHint = item.Plugin.RequiresClientMod
+            ? "Client mod required for players."
+            : "Server-side only.";
+        var defaultHint = item.Plugin.DefaultChecked
+            ? "Default server install."
+            : "Optional install.";
+        _serverPluginCatalogDetails.Text =
+            $"{item.Name}\n" +
+            $"{item.Description}\n" +
+            $"State: {item.Status}. {defaultHint} {clientHint}\n" +
+            $"DLLs: {item.Dlls}";
     }
 
     private async void AddServerPluginAsync()
@@ -2342,6 +2396,25 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
         return button;
     }
 
+    private static Button FlowButton(string text, Action action)
+    {
+        var button = Button(text, action);
+        button.Margin = new Avalonia.Thickness(0, 0, 6, 6);
+        return button;
+    }
+
+    private static Border ToolPanel(Control child)
+    {
+        return new Border
+        {
+            Padding = new Avalonia.Thickness(10),
+            BorderBrush = Avalonia.Media.Brushes.Gray,
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(4),
+            Child = child
+        };
+    }
+
     private static TextBlock Label(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center };
 
     private static Control PathRow(string label, TextBox box, Action browse)
@@ -2686,19 +2759,27 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
 
     private sealed record PluginCatalogItem(PluginDefinition Plugin, bool Installed, bool Enabled, bool Available)
     {
-        public string Name => Plugin.Label.Split(" - ", 2, StringSplitOptions.None)[0];
+        public string Name => SplitLabel(Plugin.Label).name;
+        public string Description => SplitLabel(Plugin.Label).description;
+        public string Dlls => Plugin.DllNames.Length == 0 ? "Handled by installer" : string.Join(", ", Plugin.DllNames);
+        public string Status => Enabled
+            ? "Enabled"
+            : Installed
+                ? "Installed disabled"
+                : Available
+                    ? "Ready to install"
+                    : "Missing bundled DLL";
 
         public override string ToString()
         {
-            var state = Enabled
-                ? "on"
-                : Installed
-                    ? "off"
-                    : Available
-                        ? "available"
-                        : "missing";
-            var client = Plugin.RequiresClientMod ? " | client mod" : "";
-            return $"[{state}] {Plugin.Label} | {string.Join(", ", Plugin.DllNames)}{client}";
+            var client = Plugin.RequiresClientMod ? " + client" : "";
+            return $"{Name} [{Status}{client}]";
+        }
+
+        private static (string name, string description) SplitLabel(string label)
+        {
+            var parts = label.Split(" - ", 2, StringSplitOptions.None);
+            return parts.Length == 2 ? (parts[0], parts[1]) : (label, "");
         }
     }
 }

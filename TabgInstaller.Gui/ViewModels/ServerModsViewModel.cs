@@ -33,6 +33,7 @@ namespace TabgInstaller.Gui.ViewModels
         public string Dlls => string.Join(", ", Definition.DllNames);
         public string Kind => Definition.Kind == PluginKind.CoreDependency ? "Dependency" : "Bundled";
         public string ClientRequirement => Definition.RequiresClientMod ? "Client mod required" : "";
+        public string DefaultText => Definition.DefaultChecked ? "Default install" : "Optional";
         public bool DefaultChecked => Definition.DefaultChecked;
 
         [ObservableProperty] private bool _isInstalled;
@@ -226,7 +227,11 @@ namespace TabgInstaller.Gui.ViewModels
 
             PluginCatalog = catalog;
             if (SelectedCatalogPlugin != null)
+            {
                 SelectedCatalogPlugin = PluginCatalog.FirstOrDefault(p => p.Id.Equals(SelectedCatalogPlugin.Id, StringComparison.OrdinalIgnoreCase));
+            }
+
+            SelectedCatalogPlugin ??= PluginCatalog.FirstOrDefault();
         }
 
         [RelayCommand]
