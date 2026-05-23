@@ -46,9 +46,25 @@ namespace TabgInstaller.Gui.ViewModels
             IsAvailable ? "Ready to install" :
             "Missing bundled DLL";
 
-        partial void OnIsInstalledChanged(bool value) => OnPropertyChanged(nameof(StateText));
-        partial void OnIsEnabledChanged(bool value) => OnPropertyChanged(nameof(StateText));
-        partial void OnIsAvailableChanged(bool value) => OnPropertyChanged(nameof(StateText));
+        public bool CanToggle => IsInstalled || IsEnabled || IsAvailable;
+
+        partial void OnIsInstalledChanged(bool value)
+        {
+            OnPropertyChanged(nameof(StateText));
+            OnPropertyChanged(nameof(CanToggle));
+        }
+
+        partial void OnIsEnabledChanged(bool value)
+        {
+            OnPropertyChanged(nameof(StateText));
+            OnPropertyChanged(nameof(CanToggle));
+        }
+
+        partial void OnIsAvailableChanged(bool value)
+        {
+            OnPropertyChanged(nameof(StateText));
+            OnPropertyChanged(nameof(CanToggle));
+        }
 
         private static (string name, string description) SplitLabel(string label)
         {
@@ -297,6 +313,23 @@ namespace TabgInstaller.Gui.ViewModels
                 StatusText = string.Format(Messages.InstalledPluginCount, count);
 
             RefreshAll();
+        }
+
+        [RelayCommand]
+        private void ToggleCatalogPlugin(PluginCatalogEntry? entry)
+        {
+            if (entry == null) return;
+
+            if (entry.IsEnabled)
+            {
+                MoveCatalogPlugin(entry, enable: false);
+                return;
+            }
+
+            if (entry.IsInstalled)
+                MoveCatalogPlugin(entry, enable: true);
+            else
+                InstallCatalogPlugin(entry);
         }
 
         [RelayCommand]

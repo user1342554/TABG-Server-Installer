@@ -116,12 +116,9 @@ public sealed class MainWindow : Window
     private readonly ListBox _builtInPresets = new();
     private readonly TextBox _presetName = new() { Width = 220, Watermark = "preset name" };
     private readonly ListBox _serverPluginList = new();
-    private readonly ListBox _serverPluginCatalog = new();
-    private readonly TextBlock _serverPluginCatalogDetails = new()
-    {
-        TextWrapping = Avalonia.Media.TextWrapping.Wrap
-    };
+    private readonly StackPanel _serverPluginCatalogChecks = new() { Spacing = 4 };
     private readonly ListBox _clientPluginList = new();
+    private readonly StackPanel _clientPluginCatalogChecks = new() { Spacing = 4 };
     private readonly ListBox _bundledServerPluginList = new();
     private readonly ListBox _bundledClientPluginList = new();
     private readonly TextBox _consoleCommand = new() { Width = 360, Watermark = "command text (logged; server stdin is unavailable)" };
@@ -390,7 +387,6 @@ public sealed class MainWindow : Window
 
     private Control BuildServerModsTab()
     {
-        _serverPluginCatalog.SelectionChanged += (_, _) => UpdateServerPluginCatalogDetails();
         RefreshServerModLists();
         return new Grid
         {
@@ -439,22 +435,10 @@ public sealed class MainWindow : Window
                 new TextBlock { Text = "Local plugin library", FontSize = 16 },
                 new TextBlock
                 {
-                    Text = "Owned launcher plugins. Install from here first; use raw DLL install only for manual testing.",
+                    Text = "Small checkbox installs/enables; uncheck disables.",
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap
                 },
-                new ScrollViewer { Content = _serverPluginCatalog, Height = 265 },
-                new WrapPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Children =
-                    {
-                        FlowButton("Install selected", InstallCatalogServerPlugin),
-                        FlowButton("Enable", EnableCatalogServerPlugin),
-                        FlowButton("Disable", DisableCatalogServerPlugin)
-                    }
-                },
-                new TextBlock { Text = "Selected plugin", FontSize = 13 },
-                _serverPluginCatalogDetails,
+                new ScrollViewer { Content = _serverPluginCatalogChecks, Height = 360 },
                 new TextBlock { Text = "Advanced raw DLL install", FontSize = 13 },
                 new ScrollViewer { Content = _bundledServerPluginList, Height = 100 },
                 new WrapPanel
@@ -781,53 +765,66 @@ public sealed class MainWindow : Window
         RefreshClientModLists();
         return new Grid
         {
-            Margin = new Avalonia.Thickness(6),
-            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Margin = new Avalonia.Thickness(10),
+            ColumnDefinitions = new ColumnDefinitions("*,1.08*"),
             Children =
             {
-                Put(new StackPanel
-                {
-                    Spacing = 8,
-                    Children =
-                    {
-                        new TextBlock { Text = "Installed client DLLs" },
-                        new ScrollViewer { Content = _clientPluginList, Height = 360 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 8,
-                            Children =
-                            {
-                                Button("Refresh", RefreshClientModLists),
-                                Button("Enable / disable", ToggleSelectedClientPlugin),
-                                Button("Remove", RemoveSelectedClientPlugin),
-                                Button("Add DLL", AddClientPluginAsync),
-                                Button("Open folder", () => OpenPath(ClientPluginDir()))
-                            }
-                        }
-                    }
-                }, 0),
-                Put(new StackPanel
-                {
-                    Spacing = 8,
-                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                    Children =
-                    {
-                        new TextBlock { Text = "Bundled client DLLs" },
-                        new ScrollViewer { Content = _bundledClientPluginList, Height = 360 },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 8,
-                            Children =
-                            {
-                                Button("Install selected", InstallBundledClientPlugin)
-                            }
-                        }
-                    }
-                }, 1)
+                Put(BuildInstalledClientPluginPanel(), 0),
+                Put(BuildClientPluginLibraryPanel(), 1)
             }
         };
+    }
+
+    private Control BuildInstalledClientPluginPanel()
+    {
+        return ToolPanel(new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock { Text = "Installed client DLLs", FontSize = 16 },
+                new ScrollViewer { Content = _clientPluginList, Height = 390 },
+                new WrapPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Children =
+                    {
+                        FlowButton("Refresh", RefreshClientModLists),
+                        FlowButton("Enable / disable", ToggleSelectedClientPlugin),
+                        FlowButton("Remove", RemoveSelectedClientPlugin),
+                        FlowButton("Add DLL", AddClientPluginAsync),
+                        FlowButton("Open folder", () => OpenPath(ClientPluginDir()))
+                    }
+                }
+            }
+        });
+    }
+
+    private Control BuildClientPluginLibraryPanel()
+    {
+        var panel = ToolPanel(new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock { Text = "Local client library", FontSize = 16 },
+                new TextBlock
+                {
+                    Text = "Small checkbox installs/enables; uncheck disables.",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                },
+                new ScrollViewer { Content = _clientPluginCatalogChecks, Height = 360 },
+                new TextBlock { Text = "Advanced raw DLL install", FontSize = 13 },
+                new ScrollViewer { Content = _bundledClientPluginList, Height = 100 },
+                new WrapPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Children = { FlowButton("Install selected DLL", InstallBundledClientPlugin) }
+                }
+            }
+        });
+        panel.Margin = new Avalonia.Thickness(10, 0, 0, 0);
+        return panel;
     }
 
     private Control BuildReferenceTab()
@@ -1603,6 +1600,7 @@ public sealed class MainWindow : Window
     private void RefreshClientModLists()
     {
         RefreshPluginList(_clientPluginList, ClientPluginDir());
+        RefreshClientPluginCatalog();
         RefreshBundledList(_bundledClientPluginList, "client-plugins");
     }
 
@@ -1625,57 +1623,47 @@ public sealed class MainWindow : Window
 
     private void RefreshServerPluginCatalog()
     {
-        var selectedId = (_serverPluginCatalog.SelectedItem as PluginCatalogItem)?.Plugin.Id;
-        PluginCatalogItem? selected = null;
-        PluginCatalogItem? first = null;
-
-        _serverPluginCatalog.Items.Clear();
+        _serverPluginCatalogChecks.Children.Clear();
         foreach (var plugin in PluginRegistry.ServerPlugins)
-        {
-            var item = BuildCatalogItem(plugin);
-            first ??= item;
-            if (string.Equals(item.Plugin.Id, selectedId, StringComparison.OrdinalIgnoreCase))
-                selected = item;
-            _serverPluginCatalog.Items.Add(item);
-        }
-
-        _serverPluginCatalog.SelectedItem = selected ?? first;
-        UpdateServerPluginCatalogDetails();
+            _serverPluginCatalogChecks.Children.Add(BuildCatalogCheckBox(
+                BuildCatalogItem(plugin, "plugins", ServerPluginDir()),
+                ToggleServerCatalogPlugin));
     }
 
-    private PluginCatalogItem BuildCatalogItem(PluginDefinition plugin)
+    private void RefreshClientPluginCatalog()
     {
-        var pluginDir = ServerPluginDir();
+        _clientPluginCatalogChecks.Children.Clear();
+        foreach (var plugin in PluginRegistry.ClientMods)
+            _clientPluginCatalogChecks.Children.Add(BuildCatalogCheckBox(
+                BuildCatalogItem(plugin, "client-plugins", ClientPluginDir()),
+                ToggleClientCatalogPlugin));
+    }
+
+    private PluginCatalogItem BuildCatalogItem(PluginDefinition plugin, string bundledFolder, string pluginDir)
+    {
         var installed = plugin.DllNames.Length > 0 && plugin.DllNames.All(dll =>
             File.Exists(Path.Combine(pluginDir, dll)) ||
             File.Exists(Path.Combine(pluginDir, dll + ".disabled")));
         var enabled = plugin.DllNames.Length > 0 && plugin.DllNames.All(dll =>
             File.Exists(Path.Combine(pluginDir, dll)));
         var available = plugin.DllNames.Length == 0 || plugin.DllNames.All(dll =>
-            FindFileNearApp(Path.Combine("plugins", dll)) != null);
+            FindFileNearApp(Path.Combine(bundledFolder, dll)) != null);
 
         return new PluginCatalogItem(plugin, installed, enabled, available);
     }
 
-    private void UpdateServerPluginCatalogDetails()
+    private CheckBox BuildCatalogCheckBox(PluginCatalogItem item, Action<PluginCatalogItem> toggle)
     {
-        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item)
+        var checkBox = new CheckBox
         {
-            _serverPluginCatalogDetails.Text = "Select a plugin from the library.";
-            return;
-        }
-
-        var clientHint = item.Plugin.RequiresClientMod
-            ? "Client mod required for players."
-            : "Server-side only.";
-        var defaultHint = item.Plugin.DefaultChecked
-            ? "Default server install."
-            : "Optional install.";
-        _serverPluginCatalogDetails.Text =
-            $"{item.Name}\n" +
-            $"{item.Description}\n" +
-            $"State: {item.Status}. {defaultHint} {clientHint}\n" +
-            $"DLLs: {item.Dlls}";
+            Content = $"{item.Name} - {item.Status}",
+            IsChecked = item.Enabled,
+            IsEnabled = item.CanToggle,
+            Tag = item,
+            Margin = new Avalonia.Thickness(0, 0, 0, 2)
+        };
+        checkBox.Click += (_, _) => toggle(item);
+        return checkBox;
     }
 
     private async void AddServerPluginAsync()
@@ -1701,39 +1689,45 @@ public sealed class MainWindow : Window
         RefreshServerModLists();
     }
 
-    private void InstallCatalogServerPlugin()
+    private void ToggleServerCatalogPlugin(PluginCatalogItem item)
     {
-        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item) return;
+        ToggleCatalogPlugin(item, "plugins", ServerPluginDir(), RefreshServerModLists);
+    }
+
+    private void ToggleClientCatalogPlugin(PluginCatalogItem item)
+    {
+        ToggleCatalogPlugin(item, "client-plugins", ClientPluginDir(), RefreshClientModLists);
+    }
+
+    private void ToggleCatalogPlugin(PluginCatalogItem item, string bundledFolder, string pluginDir, Action refresh)
+    {
+        if (item.Enabled)
+            MoveCatalogPlugin(item, pluginDir, enable: false);
+        else if (item.Installed)
+            MoveCatalogPlugin(item, pluginDir, enable: true);
+        else
+            InstallCatalogPlugin(item, bundledFolder, pluginDir);
+
+        refresh();
+    }
+
+    private void InstallCatalogPlugin(PluginCatalogItem item, string bundledFolder, string pluginDir)
+    {
         foreach (var dll in item.Plugin.DllNames)
         {
-            var file = FindFileNearApp(Path.Combine("plugins", dll));
+            var file = FindFileNearApp(Path.Combine(bundledFolder, dll));
             if (file == null)
             {
                 Log("Bundled DLL not found: " + dll);
                 continue;
             }
 
-            InstallDllToFolder(file, ServerPluginDir());
+            InstallDllToFolder(file, pluginDir);
         }
-
-        RefreshServerModLists();
     }
 
-    private void EnableCatalogServerPlugin()
+    private void MoveCatalogPlugin(PluginCatalogItem item, string pluginDir, bool enable)
     {
-        MoveCatalogServerPlugin(enable: true);
-    }
-
-    private void DisableCatalogServerPlugin()
-    {
-        MoveCatalogServerPlugin(enable: false);
-    }
-
-    private void MoveCatalogServerPlugin(bool enable)
-    {
-        if (_serverPluginCatalog.SelectedItem is not PluginCatalogItem item) return;
-
-        var pluginDir = ServerPluginDir();
         foreach (var dll in item.Plugin.DllNames)
         {
             var enabledPath = Path.Combine(pluginDir, dll);
@@ -1745,7 +1739,6 @@ public sealed class MainWindow : Window
         }
 
         Log((enable ? "Enabled " : "Disabled ") + item.Name);
-        RefreshServerModLists();
     }
 
     private void InstallBundledClientPlugin()
@@ -2769,6 +2762,7 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
                 : Available
                     ? "Ready to install"
                     : "Missing bundled DLL";
+        public bool CanToggle => Installed || Enabled || Available;
 
         public override string ToString()
         {

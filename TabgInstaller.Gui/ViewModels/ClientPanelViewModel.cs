@@ -29,6 +29,8 @@ namespace TabgInstaller.Gui.ViewModels
         [ObservableProperty] private string _moddedPath = "";
         [ObservableProperty] private ObservableCollection<ClientModEntry> _mods = new();
         [ObservableProperty] private ObservableCollection<BundledEntry> _availableClientMods = new();
+        [ObservableProperty] private ObservableCollection<PluginCatalogEntry> _clientModCatalog = new();
+        [ObservableProperty] private PluginCatalogEntry? _selectedClientCatalogMod;
         [ObservableProperty] private string _statusText = "";
         [ObservableProperty] private bool _isSettingUp;
         [ObservableProperty] private bool _allClientModsInstalled;
@@ -254,6 +256,96 @@ namespace TabgInstaller.Gui.ViewModels
         }
 
         [RelayCommand]
+        private void ToggleClientCatalogMod(PluginCatalogEntry? entry)
+        {
+            if (entry == null) return;
+
+            if (entry.IsEnabled)
+            {
+                MoveClientCatalogMod(entry, enable: false);
+                return;
+            }
+
+            if (entry.IsInstalled)
+                MoveClientCatalogMod(entry, enable: true);
+            else
+                InstallClientCatalogMod(entry);
+        }
+
+        private void InstallClientCatalogMod(PluginCatalogEntry entry)
+        {
+            var pluginsDir = PluginsDir;
+            if (string.IsNullOrEmpty(pluginsDir) || !Directory.Exists(pluginsDir))
+            {
+                _toast.Warning(Messages.RunInitialSetupCopy);
+                RefreshAll();
+                return;
+            }
+
+            var count = 0;
+            foreach (var dll in entry.Definition.DllNames)
+            {
+                var srcPath = FindDllPath(dll);
+                if (srcPath == null)
+                {
+                    _toast.Error($"Bundled DLL not found: {dll}");
+                    continue;
+                }
+
+                try
+                {
+                    File.Copy(srcPath, Path.Combine(pluginsDir, dll), overwrite: true);
+                    count++;
+                }
+                catch (Exception ex)
+                {
+                    _toast.Error(string.Format(Messages.FailedToInstallPlugin, dll, ex.Message));
+                }
+            }
+
+            if (count > 0)
+                StatusText = $"Installed {entry.DisplayName}.";
+
+            RefreshAll();
+        }
+
+        private void MoveClientCatalogMod(PluginCatalogEntry entry, bool enable)
+        {
+            var pluginsDir = PluginsDir;
+            if (string.IsNullOrEmpty(pluginsDir) || !Directory.Exists(pluginsDir))
+            {
+                _toast.Warning(Messages.RunInitialSetupCopy);
+                RefreshAll();
+                return;
+            }
+
+            var disabledDir = Path.Combine(pluginsDir, "disabled");
+            Directory.CreateDirectory(disabledDir);
+
+            try
+            {
+                foreach (var dll in entry.Definition.DllNames)
+                {
+                    var src = enable ? Path.Combine(disabledDir, dll) : Path.Combine(pluginsDir, dll);
+                    var dst = enable ? Path.Combine(pluginsDir, dll) : Path.Combine(disabledDir, dll);
+                    if (!File.Exists(src)) continue;
+                    if (File.Exists(dst)) File.Delete(dst);
+                    File.Move(src, dst);
+                }
+
+                StatusText = enable
+                    ? $"Enabled {entry.DisplayName}."
+                    : $"Disabled {entry.DisplayName}.";
+            }
+            catch (Exception ex)
+            {
+                _toast.Error(string.Format(Messages.FailedToToggleMod, ex.Message));
+            }
+
+            RefreshAll();
+        }
+
+        [RelayCommand]
         private void RemoveMod(ClientModEntry? mod)
         {
             if (mod == null) return;
@@ -322,6 +414,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             LoadModsList();
             LoadAvailableList();
+            LoadClientModCatalog();
         }
 
         private void LoadModsList()
@@ -390,6 +483,48 @@ namespace TabgInstaller.Gui.ViewModels
 
             AvailableClientMods = available;
             AllClientModsInstalled = available.Count == 0;
+        }
+
+        private void LoadClientModCatalog()
+        {
+            var enabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var pluginsDir = PluginsDir;
+            var disabledDir = string.IsNullOrEmpty(pluginsDir) ? "" : Path.Combine(pluginsDir, "disabled");
+
+            if (!string.IsNullOrEmpty(pluginsDir) && Directory.Exists(pluginsDir))
+            {
+                foreach (var file in Directory.GetFiles(pluginsDir, "*.dll"))
+                    enabled.Add(Path.GetFileName(file));
+            }
+
+            if (!string.IsNullOrEmpty(disabledDir) && Directory.Exists(disabledDir))
+            {
+                foreach (var file in Directory.GetFiles(disabledDir, "*.dll"))
+                    disabled.Add(Path.GetFileName(file));
+            }
+
+            var catalog = new ObservableCollection<PluginCatalogEntry>();
+            foreach (var definition in PluginRegistry.ClientMods)
+            {
+                var dlls = definition.DllNames ?? Array.Empty<string>();
+                catalog.Add(new PluginCatalogEntry
+                {
+                    Definition = definition,
+                    IsInstalled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll) || disabled.Contains(dll)),
+                    IsEnabled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll)),
+                    IsAvailable = dlls.Length > 0 && dlls.All(dll => FindDllPath(dll) != null)
+                });
+            }
+
+            ClientModCatalog = catalog;
+            if (SelectedClientCatalogMod != null)
+            {
+                SelectedClientCatalogMod = ClientModCatalog.FirstOrDefault(
+                    mod => mod.Id.Equals(SelectedClientCatalogMod.Id, StringComparison.OrdinalIgnoreCase));
+            }
+
+            SelectedClientCatalogMod ??= ClientModCatalog.FirstOrDefault();
         }
 
         public string? FindClientPluginsDir()

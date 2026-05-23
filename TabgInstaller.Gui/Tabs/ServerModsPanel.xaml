@@ -111,25 +111,8 @@
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
                         <StackPanel DockPanel.Dock="Left">
                             <TextBlock Text="Local Plugin Library" Style="{StaticResource SectionTitle}"/>
-                            <TextBlock Text="Bundled plugins maintained with this launcher"
+                            <TextBlock Text="Small checkbox installs/enables; uncheck disables"
                                        Style="{StaticResource MutedText}"/>
-                        </StackPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Install" Width="86" Margin="0,0,6,0"
-                                    Command="{Binding InstallCatalogPluginCommand}"
-                                    CommandParameter="{Binding SelectedCatalogPlugin}"
-                                    AutomationProperties.AutomationId="InstallCatalogPluginButton"
-                                    TabIndex="60"/>
-                            <Button Content="Enable" Width="86" Margin="0,0,6,0"
-                                    Command="{Binding EnableCatalogPluginCommand}"
-                                    CommandParameter="{Binding SelectedCatalogPlugin}"
-                                    AutomationProperties.AutomationId="EnableCatalogPluginButton"
-                                    TabIndex="61"/>
-                            <Button Content="Disable" Width="86"
-                                    Command="{Binding DisableCatalogPluginCommand}"
-                                    CommandParameter="{Binding SelectedCatalogPlugin}"
-                                    AutomationProperties.AutomationId="DisableCatalogPluginButton"
-                                    TabIndex="62"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -141,27 +124,23 @@
                               TabIndex="50">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="170"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="130"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding DefaultText}" Style="{StaticResource MutedText}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="12,0">
-                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
-                                        <TextBlock Text="{Binding Dlls}" Style="{StaticResource MutedText}"
+                                <DockPanel Margin="0,3">
+                                    <CheckBox DockPanel.Dock="Left" Margin="0,0,8,0"
+                                              IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                              IsEnabled="{Binding CanToggle}"
+                                              Command="{Binding DataContext.ToggleCatalogPluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              CommandParameter="{Binding}"
+                                              AutomationProperties.Name="{Binding DisplayName}"/>
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding StateText}" Style="{StaticResource MutedText}"
+                                                       Margin="10,0,0,0"/>
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource MutedText}"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="{Binding StateText}" HorizontalAlignment="Right"/>
-                                        <TextBlock Text="{Binding ClientRequirement}" Style="{StaticResource MutedText}"
-                                                   HorizontalAlignment="Right"/>
-                                    </StackPanel>
-                                </Grid>
+                                </DockPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
