@@ -20,6 +20,7 @@ namespace TabgInstaller.Core
         public static readonly string UnusedVehiclesPlugin = "TabgInstaller.UnusedVehicles.dll";
 
         private static readonly string[] JuggernautPlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll", "JuggernautMode.Server.dll" };
+        private static readonly string MatchCoreConfigRelativePath = Path.Combine("BepInEx", "config", "TabgInstaller.MatchCore.cfg");
 
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
@@ -118,7 +119,6 @@ namespace TabgInstaller.Core
 ]";
 
         static string CfgPath(params string[] parts) => Path.Combine(parts);
-        private static readonly string MatchCoreConfigRelativePath = Path.Combine("BepInEx", "config", "TabgInstaller.MatchCore.cfg");
 
         private static string MatchCoreConfig(params string[] sections)
         {
