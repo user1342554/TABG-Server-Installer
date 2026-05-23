@@ -283,7 +283,7 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             var count = 0;
-            foreach (var dll in entry.Definition.DllNames)
+            foreach (var dll in entry.DllNames)
             {
                 var srcPath = FindDllPath(dll);
                 if (srcPath == null)
@@ -324,7 +324,7 @@ namespace TabgInstaller.Gui.ViewModels
 
             try
             {
-                foreach (var dll in entry.Definition.DllNames)
+                foreach (var dll in entry.DllNames)
                 {
                     var src = enable ? Path.Combine(disabledDir, dll) : Path.Combine(pluginsDir, dll);
                     var dst = enable ? Path.Combine(pluginsDir, dll) : Path.Combine(disabledDir, dll);
@@ -505,12 +505,15 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             var catalog = new ObservableCollection<PluginCatalogEntry>();
-            foreach (var definition in PluginRegistry.ClientMods)
+            foreach (var definitions in ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ClientMods))
             {
-                var dlls = definition.DllNames ?? Array.Empty<string>();
+                var definition = definitions[0];
+                var dlls = ServerModsViewModel.GetCatalogDllNames(definitions);
                 catalog.Add(new PluginCatalogEntry
                 {
                     Definition = definition,
+                    Definitions = definitions,
+                    DllNames = dlls,
                     IsInstalled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll) || disabled.Contains(dll)),
                     IsEnabled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll)),
                     IsAvailable = dlls.Length > 0 && dlls.All(dll => FindDllPath(dll) != null)

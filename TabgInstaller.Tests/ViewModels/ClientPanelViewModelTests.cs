@@ -2,6 +2,7 @@ using FluentAssertions;
 using Moq;
 using System;
 using System.IO;
+using TabgInstaller.Core;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
 using Xunit;
@@ -154,6 +155,18 @@ namespace TabgInstaller.Tests.ViewModels
             sut.RefreshCommand.Execute(null);
 
             sut.Mods.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Initialize_LoadsLocalClientCatalog()
+        {
+            var sut = CreateSut();
+
+            sut.Initialize();
+
+            sut.ClientModCatalog.Should().HaveCount(
+                ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ClientMods).Count);
+            sut.ClientModCatalog.Should().Contain(mod => mod.Id == "PopupBlocker");
         }
 
         // ── AllClientModsInstalled / CanInstallBundled ────────────────────────────

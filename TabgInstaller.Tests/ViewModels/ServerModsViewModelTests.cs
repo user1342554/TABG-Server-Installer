@@ -120,8 +120,22 @@ namespace TabgInstaller.Tests.ViewModels
 
             sut.RefreshCommand.Execute(null);
 
-            sut.PluginCatalog.Should().HaveCount(PluginRegistry.ServerPlugins.Length);
+            sut.PluginCatalog.Should().HaveCount(
+                ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ServerPlugins).Count);
             sut.PluginCatalog.Should().Contain(p => p.Id == "ServerLogger");
+        }
+
+        [Fact]
+        public void RefreshCommand_CollapsesSharedDllCatalogRows()
+        {
+            var sut = CreateSut();
+
+            sut.RefreshCommand.Execute(null);
+
+            sut.PluginCatalog.Should().ContainSingle(p =>
+                p.DisplayName.Contains("Big Smoke Grenade") &&
+                p.DisplayName.Contains("MGL Flashbang") &&
+                p.Dlls == "TabgInstaller.CustomGrenades.dll");
         }
 
         // ── AllPluginsInstalled / CanInstallBundled ──────────────────────────────

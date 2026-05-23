@@ -27,14 +27,24 @@ namespace TabgInstaller.Gui.ViewModels
     public partial class PluginCatalogEntry : ObservableObject
     {
         public PluginDefinition Definition { get; init; } = null!;
+        public IReadOnlyList<PluginDefinition> Definitions { get; init; } = Array.Empty<PluginDefinition>();
+        public string[] DllNames { get; init; } = Array.Empty<string>();
         public string Id => Definition.Id;
-        public string DisplayName => SplitLabel(Definition.Label).name;
-        public string Description => SplitLabel(Definition.Label).description;
-        public string Dlls => string.Join(", ", Definition.DllNames);
+        public string DisplayName => string.Join(" / ", EffectiveDefinitions
+            .Select(definition => SplitLabel(definition.Label).name)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+        public string Description => string.Join("; ", EffectiveDefinitions
+            .Select(definition => SplitLabel(definition.Label).description)
+            .Where(description => !string.IsNullOrWhiteSpace(description))
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+        public string Dlls => DllNames.Length == 0 ? "Handled by installer" : string.Join(", ", DllNames);
         public string Kind => Definition.Kind == PluginKind.CoreDependency ? "Dependency" : "Bundled";
-        public string ClientRequirement => Definition.RequiresClientMod ? "Client mod required" : "";
-        public string DefaultText => Definition.DefaultChecked ? "Default install" : "Optional";
-        public bool DefaultChecked => Definition.DefaultChecked;
+        public string ClientRequirement => EffectiveDefinitions.Any(definition => definition.RequiresClientMod) ? "Client mod required" : "";
+        public string DefaultText => EffectiveDefinitions.All(definition => definition.DefaultChecked) ? "Default install" : "Optional";
+        public bool DefaultChecked => EffectiveDefinitions.Any(definition => definition.DefaultChecked);
+
+        private IReadOnlyList<PluginDefinition> EffectiveDefinitions =>
+            Definitions.Count > 0 ? Definitions : new[] { Definition };
 
         [ObservableProperty] private bool _isInstalled;
         [ObservableProperty] private bool _isEnabled;
@@ -225,9 +235,10 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             var catalog = new ObservableCollection<PluginCatalogEntry>();
-            foreach (var definition in PluginRegistry.ServerPlugins)
+            foreach (var definitions in CollapseDuplicateDefinitions(PluginRegistry.ServerPlugins))
             {
-                var dlls = definition.DllNames ?? Array.Empty<string>();
+                var definition = definitions[0];
+                var dlls = GetCatalogDllNames(definitions);
                 var isInstalled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll) || disabled.Contains(dll));
                 var isEnabled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll));
                 var isAvailable = dlls.Length > 0 && dlls.All(dll => FindDllPath(dll, "plugins") != null);
@@ -235,6 +246,8 @@ namespace TabgInstaller.Gui.ViewModels
                 catalog.Add(new PluginCatalogEntry
                 {
                     Definition = definition,
+                    Definitions = definitions,
+                    DllNames = dlls,
                     IsInstalled = isInstalled,
                     IsEnabled = isEnabled,
                     IsAvailable = isAvailable
@@ -248,6 +261,31 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             SelectedCatalogPlugin ??= PluginCatalog.FirstOrDefault();
+        }
+
+        public static List<PluginDefinition[]> CollapseDuplicateDefinitions(IEnumerable<PluginDefinition> definitions)
+        {
+            return definitions
+                .GroupBy(GetPluginDllKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.ToArray())
+                .ToList();
+        }
+
+        public static string[] GetCatalogDllNames(IReadOnlyList<PluginDefinition> definitions)
+        {
+            return definitions
+                .SelectMany(definition => definition.DllNames ?? Array.Empty<string>())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static string GetPluginDllKey(PluginDefinition definition)
+        {
+            var dlls = definition.DllNames ?? Array.Empty<string>();
+            return dlls.Length == 0
+                ? "id:" + definition.Id
+                : "dll:" + string.Join("|", dlls.OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase));
         }
 
         [RelayCommand]
@@ -341,7 +379,7 @@ namespace TabgInstaller.Gui.ViewModels
             Directory.CreateDirectory(pluginsDir);
 
             var count = 0;
-            foreach (var dll in entry.Definition.DllNames)
+            foreach (var dll in entry.DllNames)
             {
                 var srcPath = FindDllPath(dll, "plugins");
                 if (srcPath == null)
@@ -390,7 +428,7 @@ namespace TabgInstaller.Gui.ViewModels
 
             try
             {
-                foreach (var dll in entry.Definition.DllNames)
+                foreach (var dll in entry.DllNames)
                 {
                     var src = enable ? Path.Combine(disabledDir, dll) : Path.Combine(pluginsDir, dll);
                     var dst = enable ? Path.Combine(pluginsDir, dll) : Path.Combine(disabledDir, dll);
