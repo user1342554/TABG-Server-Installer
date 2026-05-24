@@ -896,6 +896,7 @@ public sealed class MainWindow : Window
         }
 
         Directory.CreateDirectory(serverDir);
+        RefreshServerModLists();
         Log("Server folder ready: " + serverDir);
     }
 
@@ -1016,6 +1017,7 @@ public sealed class MainWindow : Window
             _progress.Value = code == 0 ? 100 : _progress.Value;
             Log(code == 0 ? "Install finished." : $"Install exited with code {code}.");
             SetStatus(code == 0 ? "Install finished" : "Install failed");
+            RefreshServerModLists();
         }
         catch (OperationCanceledException)
         {
@@ -1925,6 +1927,8 @@ public sealed class MainWindow : Window
                 _serverPath.Text = fallback;
             Log("Server path was not auto-detected. Suggested path: " + _serverPath.Text);
         }
+
+        RefreshServerModLists();
     }
 
     private void DetectClientPath()
@@ -1935,13 +1939,29 @@ public sealed class MainWindow : Window
             _clientPath.Text = detected;
             _moddedClientPath.Text = Path.Combine(Path.GetDirectoryName(detected) ?? detected, "TotallyAccurateBattlegrounds-Modded");
         }
+
+        RefreshClientModLists();
     }
 
-    private async void BrowseServerAsync() => await PickFolderInto(_serverPath, "Select TABG server folder");
-    private async void BrowseClientAsync() => await PickFolderInto(_clientPath, "Select TABG Steam folder");
-    private async void BrowseModdedClientAsync() => await PickFolderInto(_moddedClientPath, "Select modded TABG folder");
+    private async void BrowseServerAsync()
+    {
+        if (await PickFolderInto(_serverPath, "Select TABG server folder"))
+            RefreshServerModLists();
+    }
 
-    private async Task PickFolderInto(TextBox target, string title)
+    private async void BrowseClientAsync()
+    {
+        if (await PickFolderInto(_clientPath, "Select TABG Steam folder"))
+            RefreshClientModLists();
+    }
+
+    private async void BrowseModdedClientAsync()
+    {
+        if (await PickFolderInto(_moddedClientPath, "Select modded TABG folder"))
+            RefreshClientModLists();
+    }
+
+    private async Task<bool> PickFolderInto(TextBox target, string title)
     {
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
@@ -1950,7 +1970,12 @@ public sealed class MainWindow : Window
         });
         var path = folders.FirstOrDefault()?.TryGetLocalPath();
         if (!string.IsNullOrEmpty(path))
+        {
             target.Text = path;
+            return true;
+        }
+
+        return false;
     }
 
     private IEnumerable<PluginDefinition> SelectedDefinitions(StackPanel host)
