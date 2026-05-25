@@ -48,6 +48,7 @@ namespace TabgInstaller.UnusedVehicles
 
             _harmony = new Harmony("tabginstaller.unusedvehicles");
             _harmony.PatchAll(typeof(SearchForCarsPatch));
+            PatchHeadlessAudioHooks();
             Logger.LogInfo("[UnusedVehicles] Plugin loaded. Patch applied.");
         }
 
@@ -191,6 +192,46 @@ namespace TabgInstaller.UnusedVehicles
             }
         }
 
+        private void PatchHeadlessAudioHooks()
+        {
+            if (!IsHeadlessDedicatedServer())
+                return;
+
+            var prefix = new HarmonyMethod(
+                typeof(UnusedVehiclesPlugin).GetMethod(nameof(SkipHeadlessAudioPrefix), BindingFlags.NonPublic | BindingFlags.Static));
+
+            PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "stopBrake", prefix);
+            PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "OnDestroy", prefix);
+            PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "Crash", prefix);
+            PatchOptionalHeadlessAudioMethod("CollisionChecker", "Collide", prefix);
+            PatchOptionalHeadlessAudioMethod("PillarSounds", "Start", prefix);
+        }
+
+        private void PatchOptionalHeadlessAudioMethod(string typeName, string methodName, HarmonyMethod prefix)
+        {
+            var type = AccessTools.TypeByName(typeName);
+            var method = type == null ? null : AccessTools.Method(type, methodName);
+            if (method == null)
+            {
+                Logger.LogDebug($"[UnusedVehicles] Headless audio patch target not found: {typeName}.{methodName}");
+                return;
+            }
+
+            _harmony.Patch(method, prefix: prefix);
+            Logger.LogInfo($"[UnusedVehicles] Disabled {typeName}.{methodName} on headless server.");
+        }
+
+        private static bool SkipHeadlessAudioPrefix()
+        {
+            return !IsHeadlessDedicatedServer();
+        }
+
+        private static bool IsHeadlessDedicatedServer()
+        {
+            return Application.isBatchMode &&
+                   SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
+        }
+
         [HarmonyPatch(typeof(GameRoom), "SearchForCars")]
         internal static class SearchForCarsPatch
         {
@@ -244,6 +285,7 @@ namespace TabgInstaller.UnusedVehicles
                         try
                         {
                             var vehicleGO = UnityEngine.Object.Instantiate(entry.prefab, spawnPos, Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0));
+                            string vName = entry.prefab.name;
                             var carComponent = vehicleGO.GetComponent<Car>();
                             if (carComponent == null) { UnityEngine.Object.Destroy(vehicleGO); continue; }
 
@@ -259,7 +301,6 @@ namespace TabgInstaller.UnusedVehicles
                             cars.Add(tabgCar);
                             tabgCar.UpdatePosition(carComponent.transform.position);
 
-                            string vName = entry.prefab.name;
                             if (!SpawnedVehiclePositions.ContainsKey(vName))
                                 SpawnedVehiclePositions[vName] = new List<Vector3>();
                             SpawnedVehiclePositions[vName].Add(spawnPos);

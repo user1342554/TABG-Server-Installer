@@ -182,13 +182,13 @@ BombDefuseTime=5
 GroupsToStart=10
 KillsToWin=20
 RoundsToWin=3
-NumberOfLivesPerTeam=inf
+NumberOfLivesPerTeam=256
 MaxNumberOfTeamsAuto=2
 SpawnBots=0
 UseSouls=0
-NoRing=false
+NoRing=0
 UseKicks=true
-DEBUG_DEATHMATCH=false
+DEBUG_DEATHMATCH=0
 UsePlayFabStats=false
 AntiCheatDebugLogging=false
 AntiCheatEventLogging=false
@@ -844,7 +844,7 @@ WeaponDissapearTime=10
 BombDefuseTime=5
 KillsToWin=65535
 RoundsToWin=3
-NumberOfLivesPerTeam=inf
+NumberOfLivesPerTeam=256
 MaxNumberOfTeamsAuto=2
 SpawnBots=0
 UseSouls=0
@@ -856,7 +856,7 @@ AntiCheatDebugLogging=false
 AntiCheatEventLogging=false
 BombTime=30
 RoundTime=90
-AllowRejoins=true";
+AllowRejoins=1";
 
             // StarterPack: Area 64 centered, large ring, Juggernaut-specific settings
             // Loadouts are handled by JuggernautMode plugin (loadout picker), but StarterPack

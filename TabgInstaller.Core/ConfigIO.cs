@@ -10,6 +10,13 @@ namespace TabgInstaller.Core
 {
     public static class ConfigIO
     {
+        private static readonly HashSet<string> NumericBooleanKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "NoRing",
+            "DEBUG_DEATHMATCH",
+            "AllowRejoins"
+        };
+
         public static GameSettingsData ReadGameSettings(string filePath)
         {
             var obj = new GameSettingsData();
@@ -38,7 +45,7 @@ namespace TabgInstaller.Core
                         Type t when t == typeof(string) => rawValue,
                         Type t when t == typeof(int) => int.Parse(rawValue, CultureInfo.InvariantCulture),
                         Type t when t == typeof(float) => float.Parse(rawValue, CultureInfo.InvariantCulture),
-                        Type t when t == typeof(bool) => bool.Parse(rawValue),
+                        Type t when t == typeof(bool) => ParseBool(rawValue),
                         _ => null
                         };
                     if (converted != null)
@@ -149,6 +156,14 @@ namespace TabgInstaller.Core
                 _ => val.ToString() ?? string.Empty
             };
 
+            static string ToGameSettingValue(string key, object val)
+            {
+                if (val is bool b && NumericBooleanKeys.Contains(key))
+                    return b ? "1" : "0";
+
+                return ToInvariant(val);
+            }
+
             // Update or insert lines for each known key in desired order
             foreach (var key in order)
             {
@@ -158,9 +173,8 @@ namespace TabgInstaller.Core
                 if (val is string s && string.IsNullOrEmpty(s)) continue;
                 if (key == "UseSouls" && val is bool b1 && !b1) continue;
                 if (key == "UseKicks" && val is bool b2 && !b2) continue;
-                if (key == "AllowRejoins" && val is bool b3 && !b3) continue;
 
-                string newLine = $"{key}={ToInvariant(val)}";
+                string newLine = $"{key}={ToGameSettingValue(key, val)}";
 
                 // Try find existing line for this key (ignoring whitespace)
                 int existingIdx = lines.FindIndex(l => !l.TrimStart().StartsWith("//") && l.Split('=')[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase));
@@ -189,7 +203,7 @@ namespace TabgInstaller.Core
                 if (val == null) continue;
                 if (val is string s && string.IsNullOrEmpty(s)) continue;
 
-                string newLine = $"{key}={ToInvariant(val)}";
+                string newLine = $"{key}={ToGameSettingValue(key, val)}";
                 int existingIdx = lines.FindIndex(l => !l.TrimStart().StartsWith("//") && l.Split('=')[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (existingIdx >= 0)
                 {
@@ -210,6 +224,14 @@ namespace TabgInstaller.Core
             }
 
             File.WriteAllLines(filePath, lines);
+        }
+
+        private static bool ParseBool(string value)
+        {
+            var trimmed = value.Trim();
+            if (trimmed == "1") return true;
+            if (trimmed == "0") return false;
+            return bool.Parse(trimmed);
         }
 
         public static TheStarterPackConfig ReadStarterPack(string filePath)
@@ -274,4 +296,4 @@ namespace TabgInstaller.Core
             File.WriteAllText(filePath, json);
         }
     }
-} 
+}

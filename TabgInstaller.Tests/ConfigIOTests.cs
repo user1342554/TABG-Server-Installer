@@ -72,6 +72,33 @@ namespace TabgInstaller.Tests
         }
 
         [Fact]
+        public void ReadGameSettings_NumericBools_ParsesToggles()
+        {
+            File.WriteAllText(TempFile(), "NoRing=1\nDEBUG_DEATHMATCH=0\nAllowRejoins=1\n");
+            var result = ConfigIO.ReadGameSettings(TempFile());
+            result.NoRing.Should().BeTrue();
+            result.DEBUG_DEATHMATCH.Should().BeFalse();
+            result.AllowRejoins.Should().BeTrue();
+        }
+
+        [Fact]
+        public void WriteGameSettings_NumericBoolKeys_WritesTogglesAsNumbers()
+        {
+            var path = TempFile("game_settings.txt");
+            ConfigIO.WriteGameSettings(new GameSettingsData
+            {
+                NoRing = true,
+                DEBUG_DEATHMATCH = false,
+                AllowRejoins = false
+            }, path);
+
+            var text = File.ReadAllText(path);
+            text.Should().Contain("NoRing=1");
+            text.Should().Contain("DEBUG_DEATHMATCH=0");
+            text.Should().Contain("AllowRejoins=0");
+        }
+
+        [Fact]
         public void ReadGameSettings_MalformedValue_UsesDefault()
         {
             File.WriteAllText(TempFile(), "Port=notanumber\n");

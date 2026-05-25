@@ -46,7 +46,7 @@ namespace TabgInstaller.Core.Model
         public int PlayersToStart { get; set; } = 2;
         public int KillsToWin { get; set; } = 20;
         public int RoundsToWin { get; set; } = 3;
-        public string NumberOfLivesPerTeam { get; set; } = "inf";
+        public string NumberOfLivesPerTeam { get; set; } = "256";
         public int MaxNumberOfTeamsAuto { get; set; } = 2;
         public int SpawnBots { get; set; } = 0;
         public int UseSouls { get; set; } = 0;
@@ -94,4 +94,4 @@ namespace TabgInstaller.Core.Model
         // Empty as per previous state, assuming CitrusLib handles defaults
         public List<object> Permissions { get; init; } = new List<object>(); // Example, adjust if known structure
     }
-} 
+}

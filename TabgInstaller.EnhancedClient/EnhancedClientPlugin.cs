@@ -21,6 +21,7 @@ namespace TabgInstaller.EnhancedClient
         internal static ConfigEntry<bool> StartWithLodUnlocked;
         internal static ConfigEntry<bool> StartWithHazeDisabled;
         internal static ConfigEntry<bool> BlockChunkUnloads;
+        internal static ConfigEntry<bool> RenameOfflineButton;
 
         internal static bool LodUnlocked;
         internal static bool UiHidden;
@@ -38,10 +39,12 @@ namespace TabgInstaller.EnhancedClient
             StartWithLodUnlocked = Config.Bind("Visuals", "StartWithLodUnlocked", false, "Load all map/object chunks when the client camera is ready.");
             StartWithHazeDisabled = Config.Bind("Visuals", "StartWithHazeDisabled", false, "Disable haze when the client camera is ready.");
             BlockChunkUnloads = Config.Bind("Visuals", "BlockChunkUnloadsWhenUnlocked", true, "Prevent streamed chunks from unloading while LOD unlock is enabled.");
+            RenameOfflineButton = Config.Bind("Interface", "RenameOfflineButton", true, "Rename the main menu Play Offline button to LAN Mode.");
 
             LodUnlocked = StartWithLodUnlocked.Value;
             HazeDisabled = StartWithHazeDisabled.Value;
 
+            InstallMenuLabelRewriter();
             RegisterSettings();
 
             _harmony = new Harmony("tabginstaller.enhancedclient");
@@ -61,11 +64,131 @@ namespace TabgInstaller.EnhancedClient
                 ModSettingsUI.Register("Enhanced Client", "Start LOD Unlocked", "Enable LOD unlock when the camera loads", StartWithLodUnlocked);
                 ModSettingsUI.Register("Enhanced Client", "Start Haze Disabled", "Disable haze when the camera loads", StartWithHazeDisabled);
                 ModSettingsUI.Register("Enhanced Client", "Block Chunk Unloads", "Keep chunks loaded while LOD unlock is active", BlockChunkUnloads);
+                ModSettingsUI.Register("Enhanced Client", "LAN Menu Label", "Rename Play Offline to LAN Mode in the main menu", RenameOfflineButton);
             }
             catch (Exception ex)
             {
                 Debug.LogWarning("[EnhancedClient] ModSettings registration failed: " + ex.Message);
             }
+        }
+
+        private static void InstallMenuLabelRewriter()
+        {
+            try
+            {
+                if (Object.FindObjectOfType<MainMenuLabelRewriter>() != null)
+                    return;
+
+                var host = new GameObject("TabgInstaller.EnhancedClient.MenuLabelRewriter");
+                host.hideFlags = HideFlags.HideAndDontSave;
+                Object.DontDestroyOnLoad(host);
+                host.AddComponent<MainMenuLabelRewriter>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[EnhancedClient] Could not install menu label rewriter: " + ex.Message);
+            }
+        }
+    }
+
+    internal sealed class MainMenuLabelRewriter : MonoBehaviour
+    {
+        private const float ScanIntervalSeconds = 0.5f;
+        private const string ReplacementLabel = "LAN Mode";
+
+        private Type _unityUiTextType;
+        private PropertyInfo _unityUiTextProperty;
+        private Type _tmpTextType;
+        private PropertyInfo _tmpTextProperty;
+        private float _nextScanAt;
+        private bool _loggedReplacement;
+
+        private void Awake()
+        {
+            _unityUiTextType = FindType("UnityEngine.UI.Text");
+            _unityUiTextProperty = _unityUiTextType?.GetProperty("text", BindingFlags.Instance | BindingFlags.Public);
+            _tmpTextType = FindType("TMPro.TMP_Text");
+            _tmpTextProperty = _tmpTextType?.GetProperty("text", BindingFlags.Instance | BindingFlags.Public);
+        }
+
+        private void Update()
+        {
+            if (!EnhancedClientPlugin.RenameOfflineButton.Value || Time.unscaledTime < _nextScanAt)
+                return;
+
+            _nextScanAt = Time.unscaledTime + ScanIntervalSeconds;
+            RenameLabels(_unityUiTextType, _unityUiTextProperty);
+            RenameLabels(_tmpTextType, _tmpTextProperty);
+        }
+
+        private void RenameLabels(Type textType, PropertyInfo textProperty)
+        {
+            if (textType == null || textProperty == null)
+                return;
+
+            Object[] textObjects;
+            try
+            {
+                textObjects = Resources.FindObjectsOfTypeAll(textType);
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var textObject in textObjects)
+            {
+                if (textObject == null || !IsSceneComponent(textObject))
+                    continue;
+
+                var currentText = textProperty.GetValue(textObject, null) as string;
+                if (!IsOfflineButtonText(currentText))
+                    continue;
+
+                textProperty.SetValue(textObject, ReplacementLabel, null);
+                if (!_loggedReplacement)
+                {
+                    Debug.Log("[EnhancedClient] Renamed Play Offline menu label to LAN Mode.");
+                    _loggedReplacement = true;
+                }
+            }
+        }
+
+        private static bool IsSceneComponent(Object textObject)
+        {
+            var component = textObject as Component;
+            return component != null && component.gameObject.scene.IsValid();
+        }
+
+        private static bool IsOfflineButtonText(string text)
+        {
+            var normalized = NormalizeWhitespace(text);
+            return normalized.Length <= 32 &&
+                   normalized.IndexOf("Play Offline", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string NormalizeWhitespace(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            return string.Join(" ", text.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private static Type FindType(string fullName)
+        {
+            var type = AccessTools.TypeByName(fullName);
+            if (type != null)
+                return type;
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                type = assembly.GetType(fullName, false);
+                if (type != null)
+                    return type;
+            }
+
+            return null;
         }
     }
 

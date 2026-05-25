@@ -250,7 +250,7 @@ namespace TabgInstaller.Core
                     w.WriteLine("GameMode=BattleRoyale");
                     w.WriteLine("TeamMode=SQUAD");
                     w.WriteLine("AllowRespawnMinigame=true");
-                    w.WriteLine("NumberOfLivesPerTeam=inf");
+                    w.WriteLine("NumberOfLivesPerTeam=256");
                     w.WriteLine("MaxNumberOfTeamsAuto=2");
                     w.WriteLine();
 
@@ -261,7 +261,7 @@ namespace TabgInstaller.Core
                     w.WriteLine("Countdown=20.0");
                     w.WriteLine();
 
-                    w.WriteLine("NoRing=false");
+                    w.WriteLine("NoRing=0");
                     w.WriteLine("TimeBeforeFirstRing=70.0");
                     w.WriteLine("BaseRingTime=200.0");
                     w.WriteLine("RingSizes=4240.0,3450.0,1710.0,830.0,360.0,140.0");
@@ -286,11 +286,11 @@ namespace TabgInstaller.Core
                     w.WriteLine("UseSouls=0");
                     w.WriteLine("UseKicks=true");
                     w.WriteLine("SpawnBots=0");
-                    w.WriteLine("DEBUG_DEATHMATCH=false");
+                    w.WriteLine("DEBUG_DEATHMATCH=0");
                     w.WriteLine();
 
                     w.WriteLine("UsePlayFabStats=false");
-                    w.WriteLine("AllowRejoins=false");
+                    w.WriteLine("AllowRejoins=0");
                     w.WriteLine("AntiCheat=false");
                     w.WriteLine("AntiCheatEventLogging=false");
                     w.WriteLine("AntiCheatDebugLogging=false");
