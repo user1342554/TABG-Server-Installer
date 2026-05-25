@@ -108,6 +108,10 @@ public sealed class MainWindow : Window
     private readonly TextBox _juggLoadoutTimeout = SmallBox("10");
     private readonly TextBox _juggMinSpawnDistance = SmallBox("50");
     private readonly TextBox _juggMinPlayers = SmallBox("3");
+    private readonly StackPanel _additionalServerPluginSettings = new() { Spacing = 8 };
+    private readonly StackPanel _clientPluginSettings = new() { Spacing = 8 };
+    private readonly TextBlock _clientPluginSettingsStatus = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly List<PluginSettingEditor> _pluginSettingEditors = new();
     private readonly ListBox _adminList = new();
     private readonly TextBox _adminName = new() { Width = 180, Watermark = "name" };
     private readonly TextBox _adminEpic = new() { Width = 260, Watermark = "Epic ID" };
@@ -645,6 +649,11 @@ public sealed class MainWindow : Window
                     new TextBlock { Text = "Juggernaut" },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Points"), _juggPointsToWin, Label("HP"), _juggHp, Label("Kill bonus"), _juggKillBonus, Label("Jugg kill"), _juggKillPoints, Label("Regular kill"), _juggRegularKillPoints } },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Damage/point"), _juggDamagePerPoint, Label("Choices"), _juggLoadoutChoices, Label("Timeout"), _juggLoadoutTimeout, Label("Min spawn dist"), _juggMinSpawnDistance, Label("Min players"), _juggMinPlayers } },
+                    new TextBlock { Text = "Other server plugin settings" },
+                    _additionalServerPluginSettings,
+                    new TextBlock { Text = "Client plugin settings" },
+                    _clientPluginSettingsStatus,
+                    _clientPluginSettings,
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Load", LoadModSettings), Button("Save", SaveModSettings), Button("Open config folder", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config"))) } }
                 }
             }
@@ -1326,6 +1335,7 @@ public sealed class MainWindow : Window
                 ["MinSpawnDistance"] = _juggMinSpawnDistance,
                 ["MinPlayers"] = _juggMinPlayers,
             });
+            LoadPluginSettingsPanels(dir);
             Log("Loaded mod settings.");
         }
         catch (Exception ex)
@@ -1360,6 +1370,7 @@ public sealed class MainWindow : Window
             WriteProximityCfg(dir);
             ModConfigService.WriteServerLogger(dir, BuildServerLoggerSettingsFromFields());
             WriteJuggernautCfg(dir);
+            SavePluginSettingsFromEditors();
             Log("Saved mod settings.");
         }
         catch (Exception ex)
@@ -1383,6 +1394,200 @@ public sealed class MainWindow : Window
 
         settings.FallbackScanIntervalSeconds = ParseFloat(_serverLoggerInterval.Text, 2f);
         return settings;
+    }
+
+    private void LoadPluginSettingsPanels(string serverDir)
+    {
+        _pluginSettingEditors.Clear();
+        _additionalServerPluginSettings.Children.Clear();
+        _clientPluginSettings.Children.Clear();
+
+        BuildPluginSettingsPanel(
+            _additionalServerPluginSettings,
+            PluginSettingsCatalog.AdditionalServerPlugins,
+            serverDir,
+            "Select a server folder to edit server plugin settings.");
+
+        var clientDir = _moddedClientPath.Text?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(clientDir))
+        {
+            _clientPluginSettingsStatus.Text = "Set a modded client folder to edit client plugin settings.";
+            return;
+        }
+
+        if (!Directory.Exists(clientDir))
+        {
+            _clientPluginSettingsStatus.Text = "Modded client folder not found: " + clientDir;
+            return;
+        }
+
+        _clientPluginSettingsStatus.Text = "";
+        BuildPluginSettingsPanel(
+            _clientPluginSettings,
+            PluginSettingsCatalog.ClientPlugins,
+            clientDir,
+            "Set a modded client folder to edit client plugin settings.");
+    }
+
+    private void BuildPluginSettingsPanel(
+        StackPanel host,
+        IEnumerable<PluginConfigDefinition> definitions,
+        string rootPath,
+        string missingPathText)
+    {
+        if (string.IsNullOrWhiteSpace(rootPath))
+        {
+            host.Children.Add(new TextBlock { Text = missingPathText });
+            return;
+        }
+
+        foreach (var definition in definitions)
+        {
+            var values = ModConfigService.ReadPluginConfigValues(rootPath, definition);
+            var panel = new StackPanel { Spacing = 5 };
+            panel.Children.Add(new TextBlock
+            {
+                Text = definition.DisplayName,
+                FontWeight = Avalonia.Media.FontWeight.SemiBold
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = definition.Description,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            });
+
+            if (definition.Settings.Length == 0)
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "No installer-configurable settings for this bundled plugin yet.",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                });
+            }
+            else
+            {
+                foreach (var setting in definition.Settings)
+                {
+                    values.TryGetValue(setting.FullKey, out var configured);
+                    panel.Children.Add(BuildPluginSettingRow(rootPath, definition, setting, configured ?? setting.DefaultValue));
+                }
+
+                panel.Children.Add(Button("Open cfg", () => OpenPluginConfig(rootPath, definition)));
+            }
+
+            host.Children.Add(ToolPanel(panel));
+        }
+    }
+
+    private Control BuildPluginSettingRow(
+        string rootPath,
+        PluginConfigDefinition definition,
+        PluginSettingDefinition setting,
+        string value)
+    {
+        var editor = CreatePluginSettingEditor(setting, value);
+        _pluginSettingEditors.Add(new PluginSettingEditor(rootPath, definition, setting, editor));
+
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("190,*"),
+            Margin = new Avalonia.Thickness(0, 0, 0, 4)
+        };
+
+        var label = new TextBlock
+        {
+            Text = setting.Label,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        };
+        Grid.SetColumn(label, 0);
+        grid.Children.Add(label);
+
+        var stack = new StackPanel { Spacing = 2 };
+        stack.Children.Add(editor);
+        if (!string.IsNullOrWhiteSpace(setting.Description))
+        {
+            stack.Children.Add(new TextBlock
+            {
+                Text = setting.Description,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            });
+        }
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = string.IsNullOrEmpty(setting.DefaultValue) ? "Default: empty" : "Default: " + setting.DefaultValue
+        });
+        Grid.SetColumn(stack, 1);
+        grid.Children.Add(stack);
+
+        return grid;
+    }
+
+    private static Control CreatePluginSettingEditor(PluginSettingDefinition setting, string value)
+    {
+        if (setting.ValueType == PluginSettingValueType.Boolean)
+        {
+            return new CheckBox
+            {
+                IsChecked = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            };
+        }
+
+        if (setting.Options.Length > 0)
+        {
+            return new ComboBox
+            {
+                Width = 180,
+                ItemsSource = setting.Options,
+                SelectedItem = value
+            };
+        }
+
+        return new TextBox
+        {
+            Width = setting.IsMultiline ? 360 : 180,
+            MinHeight = setting.IsMultiline ? 72 : 0,
+            AcceptsReturn = setting.IsMultiline,
+            TextWrapping = setting.IsMultiline ? Avalonia.Media.TextWrapping.Wrap : Avalonia.Media.TextWrapping.NoWrap,
+            Text = value
+        };
+    }
+
+    private void SavePluginSettingsFromEditors()
+    {
+        foreach (var group in _pluginSettingEditors.GroupBy(e => new { e.RootPath, e.Definition }))
+        {
+            if (string.IsNullOrWhiteSpace(group.Key.RootPath))
+                continue;
+
+            var values = group.ToDictionary(
+                editor => editor.Setting.FullKey,
+                editor => GetPluginSettingEditorValue(editor.Editor),
+                StringComparer.OrdinalIgnoreCase);
+            ModConfigService.WritePluginConfigValues(group.Key.RootPath, group.Key.Definition, values);
+        }
+    }
+
+    private static string GetPluginSettingEditorValue(Control editor)
+    {
+        return editor switch
+        {
+            CheckBox checkBox => (checkBox.IsChecked == true).ToString().ToLowerInvariant(),
+            ComboBox comboBox => comboBox.SelectedItem?.ToString() ?? "",
+            TextBox textBox => textBox.Text ?? "",
+            _ => ""
+        };
+    }
+
+    private void OpenPluginConfig(string rootPath, PluginConfigDefinition definition)
+    {
+        var path = ModConfigService.PluginConfigPath(rootPath, definition);
+        var parent = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(parent))
+            Directory.CreateDirectory(parent);
+
+        OpenPath(path);
     }
 
     private async void CreateBackupAsync()
@@ -1929,6 +2134,7 @@ public sealed class MainWindow : Window
         }
 
         RefreshServerModLists();
+        LoadModSettings();
     }
 
     private void DetectClientPath()
@@ -1941,24 +2147,34 @@ public sealed class MainWindow : Window
         }
 
         RefreshClientModLists();
+        LoadPluginSettingsPanels(_serverPath.Text ?? "");
     }
 
     private async void BrowseServerAsync()
     {
         if (await PickFolderInto(_serverPath, "Select TABG server folder"))
+        {
             RefreshServerModLists();
+            LoadModSettings();
+        }
     }
 
     private async void BrowseClientAsync()
     {
         if (await PickFolderInto(_clientPath, "Select TABG Steam folder"))
+        {
             RefreshClientModLists();
+            LoadPluginSettingsPanels(_serverPath.Text ?? "");
+        }
     }
 
     private async void BrowseModdedClientAsync()
     {
         if (await PickFolderInto(_moddedClientPath, "Select modded TABG folder"))
+        {
             RefreshClientModLists();
+            LoadPluginSettingsPanels(_serverPath.Text ?? "");
+        }
     }
 
     private async Task<bool> PickFolderInto(TextBox target, string title)
@@ -2795,4 +3011,10 @@ MinPlayers = {_juggMinPlayers.Text?.Trim()}
             return parts.Length == 2 ? (parts[0], parts[1]) : (label, "");
         }
     }
+
+    private sealed record PluginSettingEditor(
+        string RootPath,
+        PluginConfigDefinition Definition,
+        PluginSettingDefinition Setting,
+        Control Editor);
 }

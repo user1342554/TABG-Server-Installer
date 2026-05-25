@@ -1,5 +1,6 @@
 using System.Reflection;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using Landfall.Network;
 using Landfall.Network.GameModes;
@@ -16,9 +17,16 @@ namespace TabgInstaller.SoloTesting
     public class SoloTestingPlugin : BaseUnityPlugin
     {
         private static bool _countdownStarted = false;
+        private static ConfigEntry<bool> _enabled;
+        private static ConfigEntry<int> _minimumPlayersToStart;
+        private static ConfigEntry<bool> _preventSoloWinWhenAlone;
 
         private void Awake()
         {
+            _enabled = Config.Bind("SoloTesting", "Enabled", true, "Enable solo-testing game-state patches.");
+            _minimumPlayersToStart = Config.Bind("SoloTesting", "MinimumPlayersToStart", 1, "Minimum players required to start countdown.");
+            _preventSoloWinWhenAlone = Config.Bind("SoloTesting", "PreventSoloWinWhenAlone", true, "Prevent immediate win checks when only one player is present.");
+
             var harmony = new Harmony("tabginstaller.solotesting");
             harmony.PatchAll(typeof(SoloCheckGameStatePatch));
             Logger.LogInfo("[SoloTesting] Solo testing mode loaded.");
@@ -34,6 +42,9 @@ namespace TabgInstaller.SoloTesting
         {
             static bool Prefix(BattleRoyaleGameMode __instance, GameState state)
             {
+                if (_enabled != null && !_enabled.Value)
+                    return true;
+
                 var roomField = typeof(TABGBaseGameMode).GetField("m_GameRoom",
                     BindingFlags.NonPublic | BindingFlags.Instance);
                 var room = roomField?.GetValue(__instance) as GameRoom;
@@ -44,8 +55,9 @@ namespace TabgInstaller.SoloTesting
                 switch (state)
                 {
                     case GameState.WaitingForPlayers:
-                        // Force start with 1 player
-                        if (playerCount >= 1 && !_countdownStarted)
+                        // Force start with the configured minimum player count.
+                        int requiredPlayers = Mathf.Max(1, _minimumPlayersToStart?.Value ?? 1);
+                        if (playerCount >= requiredPlayers && !_countdownStarted)
                         {
                             _countdownStarted = true;
                             room.StartCountDown();
@@ -57,7 +69,7 @@ namespace TabgInstaller.SoloTesting
 
                     case GameState.Started:
                         // Block win condition when solo
-                        if (room.Players.Count <= 1)
+                        if ((_preventSoloWinWhenAlone?.Value ?? true) && room.Players.Count <= 1)
                             return false;
                         return true;
 

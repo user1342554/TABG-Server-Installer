@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using CitrusLib;
 using Landfall.Network;
@@ -47,9 +48,16 @@ namespace TabgInstaller.FakePlayers
         private static int _nextAiThrownItemIndex = 50000;
         private static int _nextNumber = 1;
         internal static int GunshotSoundSequence { get; private set; }
+        internal static ConfigEntry<int> MaxFakeSpawnCount;
+        internal static ConfigEntry<int> MaxAiSpawnCount;
+        internal static ConfigEntry<bool> CommandsUsableByEveryone;
 
         private void Awake()
         {
+            MaxFakeSpawnCount = Config.Bind("Commands", "MaxFakeSpawnCount", 200, "Maximum fake players spawned by one /spawndummy command.");
+            MaxAiSpawnCount = Config.Bind("Commands", "MaxAiSpawnCount", 32, "Maximum AI dummy players spawned by one /spawnaidummy command.");
+            CommandsUsableByEveryone = Config.Bind("Commands", "CommandsUsableByEveryone", true, "Bypass Citrus permissions for FakePlayers commands.");
+
             Instance = this;
             new Harmony(PluginGuid).PatchAll();
             Logger.LogInfo("[FakePlayers] Loaded.");
@@ -63,7 +71,8 @@ namespace TabgInstaller.FakePlayers
             try
             {
                 RegisterCommands();
-                PatchPermissions();
+                if (CommandsUsableByEveryone.Value)
+                    PatchPermissions();
             }
             catch (Exception ex)
             {
@@ -81,7 +90,7 @@ namespace TabgInstaller.FakePlayers
                 int count = 1;
                 if (prms.Length > 0 && !int.TryParse(prms[0], out count))
                     count = 1;
-                count = Math.Max(1, Math.Min(count, 32));
+                count = Math.Max(1, Math.Min(count, Math.Max(1, MaxAiSpawnCount.Value)));
 
                 int level = ParseAiLevel(prms.Length > 1 ? prms[1] : null);
                 int spawned = SpawnFakePlayers(server, count, player, aiControlled: true, aiLevel: level);
@@ -96,7 +105,7 @@ namespace TabgInstaller.FakePlayers
                 int count = 1;
                 if (prms.Length > 0 && !int.TryParse(prms[0], out count))
                     count = 1;
-                count = Math.Max(1, Math.Min(count, 200));
+                count = Math.Max(1, Math.Min(count, Math.Max(1, MaxFakeSpawnCount.Value)));
 
                 int spawned = SpawnFakePlayers(server, count, player);
                 Citrus.SelfParrot(player, $"Spawned {spawned} fake player(s). Total: {FakeIndices.Count}");

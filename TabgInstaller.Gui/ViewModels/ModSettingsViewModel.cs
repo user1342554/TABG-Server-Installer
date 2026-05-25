@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -20,6 +21,7 @@ namespace TabgInstaller.Gui.ViewModels
     {
         private readonly IServerPathProvider _serverPathProvider;
         private readonly IToastService _toast;
+        private readonly IAppSettingsService? _appSettings;
 
         private FileSystemWatcher? _watcher;
         private Timer? _debounce;
@@ -75,6 +77,9 @@ namespace TabgInstaller.Gui.ViewModels
 
         // ── Status ───────────────────────────────────────────────────────────────
         [ObservableProperty] private string _statusText = "";
+        [ObservableProperty] private ObservableCollection<PluginSettingsGroupViewModel> _additionalServerPluginSettings = new();
+        [ObservableProperty] private ObservableCollection<PluginSettingsGroupViewModel> _clientPluginSettings = new();
+        [ObservableProperty] private string _clientPluginSettingsStatus = "Set up a modded client copy to edit client plugin settings here.";
 
         // ── Grenade list (for ComboBox binding) ──────────────────────────────────
         /// <summary>Flat display strings ("Name (Id)") for the two grenade combo boxes.</summary>
@@ -88,9 +93,18 @@ namespace TabgInstaller.Gui.ViewModels
         public ModSettingsViewModel(
             IServerPathProvider serverPathProvider,
             IToastService toast)
+            : this(serverPathProvider, toast, null)
+        {
+        }
+
+        public ModSettingsViewModel(
+            IServerPathProvider serverPathProvider,
+            IToastService toast,
+            IAppSettingsService? appSettings)
         {
             _serverPathProvider = serverPathProvider;
             _toast = toast;
+            _appSettings = appSettings;
 
             _grenades = ItemDatabase.ByCategory("Grenades").OrderBy(g => g.Name).ToList();
             GrenadeDisplayItems = _grenades.Select(g => $"{g.Name} ({g.Id})").ToList();
@@ -170,9 +184,6 @@ namespace TabgInstaller.Gui.ViewModels
                 _saving = true;
                 ModConfigService.WriteCommission(serverDir, commission);
                 ModConfigService.WriteFixes(serverDir, fixes);
-                _saving = false;
-
-                StatusText = Messages.SettingsSaved;
 
                 // Proximity Chat cfg
                 try
@@ -300,6 +311,12 @@ MinPlayers = {JuggMinPlayers.Trim()}
                 {
                     System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] Juggernaut save failed: {ex.Message}");
                 }
+
+                SavePluginSettings(AdditionalServerPluginSettings);
+                SavePluginSettings(ClientPluginSettings);
+                _saving = false;
+
+                StatusText = Messages.SettingsSaved;
             }
             catch (Exception ex)
             {
@@ -426,6 +443,8 @@ MinPlayers = {JuggMinPlayers.Trim()}
             {
                 System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ServerLogger load failed: {ex.Message}");
             }
+
+            LoadPluginSettings(serverDir);
         }
 
         [RelayCommand]
@@ -502,6 +521,81 @@ MinPlayers = {JuggMinPlayers.Trim()}
             catch (Exception ex)
             {
                 _toast.Error(string.Format(Messages.CouldNotOpenFile, ex.Message));
+            }
+        }
+
+        [RelayCommand]
+        private void OpenPluginConfig(PluginSettingsGroupViewModel? group)
+        {
+            if (group == null || string.IsNullOrWhiteSpace(group.ConfigPath))
+                return;
+
+            OpenPath(group.ConfigPath, createParent: true);
+        }
+
+        private void LoadPluginSettings(string serverDir)
+        {
+            AdditionalServerPluginSettings = BuildPluginSettingsGroups(
+                PluginSettingsCatalog.AdditionalServerPlugins,
+                serverDir);
+
+            var clientDir = _appSettings?.Load().ClientModdedPath ?? "";
+            if (string.IsNullOrWhiteSpace(clientDir))
+            {
+                ClientPluginSettings = new ObservableCollection<PluginSettingsGroupViewModel>();
+                ClientPluginSettingsStatus = "Set up a modded client copy to edit client plugin settings here.";
+                return;
+            }
+
+            if (!Directory.Exists(clientDir))
+            {
+                ClientPluginSettings = new ObservableCollection<PluginSettingsGroupViewModel>();
+                ClientPluginSettingsStatus = $"Client modded copy not found: {clientDir}";
+                return;
+            }
+
+            ClientPluginSettings = BuildPluginSettingsGroups(PluginSettingsCatalog.ClientPlugins, clientDir);
+            ClientPluginSettingsStatus = "";
+        }
+
+        private static ObservableCollection<PluginSettingsGroupViewModel> BuildPluginSettingsGroups(
+            IEnumerable<PluginConfigDefinition> definitions,
+            string rootPath)
+        {
+            var groups = new ObservableCollection<PluginSettingsGroupViewModel>();
+            foreach (var definition in definitions)
+            {
+                var values = string.IsNullOrWhiteSpace(rootPath)
+                    ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    : ModConfigService.ReadPluginConfigValues(rootPath, definition);
+
+                var settings = new ObservableCollection<PluginSettingValueViewModel>(
+                    definition.Settings.Select(setting =>
+                    {
+                        var value = values.TryGetValue(setting.FullKey, out var configured)
+                            ? configured
+                            : setting.DefaultValue;
+                        return new PluginSettingValueViewModel(setting, value);
+                    }));
+
+                groups.Add(new PluginSettingsGroupViewModel(definition, rootPath, settings));
+            }
+
+            return groups;
+        }
+
+        private static void SavePluginSettings(IEnumerable<PluginSettingsGroupViewModel> groups)
+        {
+            foreach (var group in groups)
+            {
+                if (!group.HasSettings || string.IsNullOrWhiteSpace(group.RootPath))
+                    continue;
+
+                var values = group.Settings.ToDictionary(
+                    setting => setting.Definition.FullKey,
+                    setting => setting.Value ?? "",
+                    StringComparer.OrdinalIgnoreCase);
+                ModConfigService.WritePluginConfigValues(group.RootPath, group.Definition, values);
             }
         }
 

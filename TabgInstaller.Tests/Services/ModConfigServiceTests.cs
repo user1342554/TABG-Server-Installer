@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
+using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using Xunit;
@@ -130,6 +132,27 @@ namespace TabgInstaller.Tests.Services
             result.GrenadeAttackerId.Should().Be(199);
             result.GrenadeCorpseEnabled.Should().BeFalse();
             result.Lives.Should().Be(5);
+        }
+
+        [Fact]
+        public void WritePluginConfigValues_ThenRead_RoundTripsSectionedSettings()
+        {
+            var definition = PluginSettingsCatalog.AdditionalServerPlugins[0];
+            var values = new Dictionary<string, string>
+            {
+                ["Radar.Enabled"] = "false",
+                ["Radar.BroadcastIntervalSeconds"] = "1.25",
+                ["Radar.Recipients"] = "1,2,3",
+                ["Radar.IncludeDeadPlayers"] = "true"
+            };
+
+            ModConfigService.WritePluginConfigValues(_tempDir, definition, values);
+            var reread = ModConfigService.ReadPluginConfigValues(_tempDir, definition);
+
+            reread["Radar.Enabled"].Should().Be("false");
+            reread["Radar.BroadcastIntervalSeconds"].Should().Be("1.25");
+            reread["Radar.Recipients"].Should().Be("1,2,3");
+            reread["Radar.IncludeDeadPlayers"].Should().Be("true");
         }
     }
 }

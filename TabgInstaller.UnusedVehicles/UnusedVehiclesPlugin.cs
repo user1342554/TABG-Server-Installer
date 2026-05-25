@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using Landfall.Network;
 using UnityEngine;
@@ -28,11 +29,23 @@ namespace TabgInstaller.UnusedVehicles
 
         internal static float SpawnChance = 0.20f;
         internal static int MaxSpawns = 15;
+        internal static bool EnableCommands = true;
+
+        private ConfigEntry<float> _spawnChance;
+        private ConfigEntry<int> _maxSpawns;
+        private ConfigEntry<bool> _enableCommands;
 
         private Harmony _harmony;
 
         private void Awake()
         {
+            _spawnChance = Config.Bind("Spawning", "SpawnChance", 0.20f, "Chance to add an unused vehicle near each normal vehicle spawn.");
+            _maxSpawns = Config.Bind("Spawning", "MaxSpawns", 15, "Maximum unused vehicles to add per match.");
+            _enableCommands = Config.Bind("Commands", "EnableCommands", true, "Register /spawn, /vehicles, and vehicle help commands.");
+            SpawnChance = Mathf.Clamp01(_spawnChance.Value);
+            MaxSpawns = Mathf.Max(0, _maxSpawns.Value);
+            EnableCommands = _enableCommands.Value;
+
             _harmony = new Harmony("tabginstaller.unusedvehicles");
             _harmony.PatchAll(typeof(SearchForCarsPatch));
             Logger.LogInfo("[UnusedVehicles] Plugin loaded. Patch applied.");
@@ -44,8 +57,11 @@ namespace TabgInstaller.UnusedVehicles
             try { DiscoverVehicles(); }
             catch (Exception ex) { Logger.LogError($"[UnusedVehicles] Discovery failed: {ex}"); }
 
-            try { RegisterCommands(); }
-            catch (Exception ex) { Logger.LogWarning($"[UnusedVehicles] Commands failed: {ex.Message}"); }
+            if (EnableCommands)
+            {
+                try { RegisterCommands(); }
+                catch (Exception ex) { Logger.LogWarning($"[UnusedVehicles] Commands failed: {ex.Message}"); }
+            }
         }
 
         private void RegisterCommands()

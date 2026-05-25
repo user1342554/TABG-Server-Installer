@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using TabgInstaller.Core.Model;
 
 namespace TabgInstaller.Core.Services
@@ -28,6 +29,82 @@ namespace TabgInstaller.Core.Services
 
         public static string ServerLoggerConfigPath(string serverDir) =>
             Path.Combine(serverDir, "BepInEx", "config", "tabginstaller.serverlogger.cfg");
+
+        public static string PluginConfigPath(string gameDir, PluginConfigDefinition definition)
+        {
+            if (string.IsNullOrWhiteSpace(definition.ConfigFileName))
+                return "";
+
+            return Path.Combine(gameDir, "BepInEx", "config", definition.ConfigFileName);
+        }
+
+        public static Dictionary<string, string> ReadPluginConfigValues(string gameDir, PluginConfigDefinition definition)
+        {
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var setting in definition.Settings)
+                values[setting.FullKey] = setting.DefaultValue;
+
+            var path = PluginConfigPath(gameDir, definition);
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return values;
+
+            var cfg = ParseCfg(path);
+            foreach (var setting in definition.Settings)
+            {
+                if (cfg.TryGetValue(setting.FullKey, out var value))
+                    values[setting.FullKey] = value;
+                else if (cfg.TryGetValue(setting.Key, out value))
+                    values[setting.FullKey] = value;
+            }
+
+            return values;
+        }
+
+        public static void WritePluginConfigValues(
+            string gameDir,
+            PluginConfigDefinition definition,
+            IReadOnlyDictionary<string, string> values)
+        {
+            if (definition.Settings.Length == 0 || string.IsNullOrWhiteSpace(definition.ConfigFileName))
+                return;
+
+            var path = PluginConfigPath(gameDir, definition);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+            var lines = new List<string>
+            {
+                $"## Settings file for {definition.DisplayName}",
+                "## Managed by TABG Server Installer",
+                ""
+            };
+
+            foreach (var section in definition.Settings.Select(s => s.Section).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(section))
+                {
+                    lines.Add($"[{section}]");
+                    lines.Add("");
+                }
+
+                foreach (var setting in definition.Settings.Where(s => s.Section.Equals(section, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var value = values.TryGetValue(setting.FullKey, out var configured)
+                        ? configured
+                        : setting.DefaultValue;
+
+                    if (!string.IsNullOrWhiteSpace(setting.Description))
+                        lines.Add($"## {setting.Description}");
+
+                    lines.Add($"# Setting type: {ToBepInExSettingType(setting.ValueType)}");
+                    lines.Add($"# Default value: {setting.DefaultValue}");
+                    lines.Add($"{setting.Key} = {NormalizePluginValue(setting.ValueType, value)}");
+                    lines.Add("");
+                }
+            }
+
+            File.WriteAllLines(path, lines);
+        }
 
         public static string GetServerLoggerCsvPath(string serverDir, ServerLoggerSettings settings)
         {
@@ -339,5 +416,26 @@ namespace TabgInstaller.Core.Services
 
         private static bool ParseBool(string value) =>
             value.Equals("true", StringComparison.OrdinalIgnoreCase);
+
+        private static string ToBepInExSettingType(PluginSettingValueType valueType)
+        {
+            return valueType switch
+            {
+                PluginSettingValueType.Boolean => "Boolean",
+                PluginSettingValueType.Int32 => "Int32",
+                PluginSettingValueType.Single => "Single",
+                PluginSettingValueType.KeyCode => "KeyCode",
+                _ => "String"
+            };
+        }
+
+        private static string NormalizePluginValue(PluginSettingValueType valueType, string value)
+        {
+            value ??= "";
+            if (valueType == PluginSettingValueType.Boolean)
+                return ParseBool(value).ToString().ToLowerInvariant();
+
+            return value.Trim();
+        }
     }
 }
