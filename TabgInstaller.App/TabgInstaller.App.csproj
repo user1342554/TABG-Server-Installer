@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
+    <ProjectReference Include="..\TabgInstaller.UI\TabgInstaller.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

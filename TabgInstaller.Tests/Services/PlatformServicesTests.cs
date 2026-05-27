@@ -1,5 +1,5 @@
 using FluentAssertions;
-using TabgInstaller.App.Services;
+using TabgInstaller.UI.Services;
 using Xunit;
 
 namespace TabgInstaller.Tests.Services

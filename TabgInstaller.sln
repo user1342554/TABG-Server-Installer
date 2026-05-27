@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.SoloTesting",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.App", "TabgInstaller.App\TabgInstaller.App.csproj", "{071C7E3F-9666-4557-B7CF-AE9AA88B007F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.UI", "TabgInstaller.UI\TabgInstaller.UI.csproj", "{2B55C863-20E5-414C-9154-596C4B098439}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -309,6 +311,18 @@ Global
 		{071C7E3F-9666-4557-B7CF-AE9AA88B007F}.Release|x64.Build.0 = Release|Any CPU
 		{071C7E3F-9666-4557-B7CF-AE9AA88B007F}.Release|x86.ActiveCfg = Release|Any CPU
 		{071C7E3F-9666-4557-B7CF-AE9AA88B007F}.Release|x86.Build.0 = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|x64.Build.0 = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Debug|x86.Build.0 = Debug|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|x64.ActiveCfg = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|x64.Build.0 = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|x86.ActiveCfg = Release|Any CPU
+		{2B55C863-20E5-414C-9154-596C4B098439}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

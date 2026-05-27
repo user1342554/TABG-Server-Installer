@@ -6,6 +6,7 @@ using System.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
+using TabgInstaller.UI.PluginCatalog;
 using Xunit;
 
 namespace TabgInstaller.Tests.ViewModels
@@ -166,7 +167,7 @@ namespace TabgInstaller.Tests.ViewModels
             sut.Initialize();
 
             sut.ClientModCatalog.Should().HaveCount(
-                ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ClientMods).Count);
+                PluginCatalogGrouper.Collapse(PluginRegistry.ClientMods).Count);
             sut.ClientModCatalog.Should().Contain(mod => mod.Id == "PopupBlocker");
         }
 

@@ -11,6 +11,7 @@ using System.Windows;
 using TabgInstaller.Core;
 using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
+using TabgInstaller.UI.PluginCatalog;
 
 namespace TabgInstaller.Gui.ViewModels
 {
@@ -500,10 +501,11 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             var catalog = new ObservableCollection<PluginCatalogEntry>();
-            foreach (var definitions in ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ClientMods))
+            foreach (var group in PluginCatalogGrouper.Collapse(PluginRegistry.ClientMods))
             {
-                var definition = definitions[0];
-                var dlls = ServerModsViewModel.GetCatalogDllNames(definitions);
+                var definition = group.Primary;
+                var definitions = group.Definitions;
+                var dlls = group.DllNames;
                 catalog.Add(new PluginCatalogEntry
                 {
                     Definition = definition,

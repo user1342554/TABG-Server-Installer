@@ -2,62 +2,25 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TabgInstaller.Core;
+using TabgInstaller.UI.Services;
 
 namespace TabgInstaller.App.Services;
 
-public interface IStoragePickerService
-{
-    Task<string?> PickFolderAsync(Window owner, string title);
-
-    Task<string?> PickFileAsync(Window owner, string title, params string[] patterns);
-}
-
-public interface IConfirmationDialogService
-{
-    Task<bool> ConfirmAsync(Window owner, string title, string message);
-}
-
-public interface IClipboardService
-{
-    Task SetTextAsync(Window owner, string text);
-}
-
-public interface IUiDispatcher
-{
-    void Post(Action action);
-}
-
-public interface IExternalLauncher
-{
-    bool TryOpenPath(string path, out string? error);
-}
-
-public interface ISteamPathDetector
-{
-    string? TryFindServerPath();
-
-    string? TryFindClientPath();
-}
-
-public interface INotificationService
-{
-    void Info(string message);
-
-    void Warning(string message);
-
-    void Error(string message);
-}
-
 public sealed class AvaloniaStoragePickerService : IStoragePickerService
 {
-    public async Task<string?> PickFolderAsync(Window owner, string title)
+    private readonly Window _owner;
+
+    public AvaloniaStoragePickerService(Window owner)
     {
-        var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        _owner = owner;
+    }
+
+    public async Task<string?> PickFolderAsync(string title)
+    {
+        var folders = await _owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = title,
             AllowMultiple = false
@@ -66,9 +29,9 @@ public sealed class AvaloniaStoragePickerService : IStoragePickerService
         return folders.FirstOrDefault()?.TryGetLocalPath();
     }
 
-    public async Task<string?> PickFileAsync(Window owner, string title, params string[] patterns)
+    public async Task<string?> PickFileAsync(string title, params string[] patterns)
     {
-        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await _owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = title,
             AllowMultiple = false,
@@ -84,7 +47,14 @@ public sealed class AvaloniaStoragePickerService : IStoragePickerService
 
 public sealed class AvaloniaConfirmationDialogService : IConfirmationDialogService
 {
-    public async Task<bool> ConfirmAsync(Window owner, string title, string message)
+    private readonly Window _owner;
+
+    public AvaloniaConfirmationDialogService(Window owner)
+    {
+        _owner = owner;
+    }
+
+    public async Task<bool> ConfirmAsync(string title, string message)
     {
         var yes = new Button { Content = "Yes", IsDefault = true, MinWidth = 84 };
         var no = new Button { Content = "No", IsCancel = true, MinWidth = 84 };
@@ -115,16 +85,23 @@ public sealed class AvaloniaConfirmationDialogService : IConfirmationDialogServi
 
         yes.Click += (_, _) => dialog.Close(true);
         no.Click += (_, _) => dialog.Close(false);
-        var result = await dialog.ShowDialog<bool?>(owner);
+        var result = await dialog.ShowDialog<bool?>(_owner);
         return result == true;
     }
 }
 
 public sealed class AvaloniaClipboardService : IClipboardService
 {
-    public async Task SetTextAsync(Window owner, string text)
+    private readonly Window _owner;
+
+    public AvaloniaClipboardService(Window owner)
     {
-        var clipboard = TopLevel.GetTopLevel(owner)?.Clipboard;
+        _owner = owner;
+    }
+
+    public async Task SetTextAsync(string text)
+    {
+        var clipboard = TopLevel.GetTopLevel(_owner)?.Clipboard;
         if (clipboard != null)
         {
             await clipboard.SetTextAsync(text);
@@ -137,58 +114,9 @@ public sealed class AvaloniaUiDispatcher : IUiDispatcher
     public void Post(Action action) => Dispatcher.UIThread.Post(action);
 }
 
-public sealed class ExternalProcessLauncher : IExternalLauncher
-{
-    public bool TryOpenPath(string path, out string? error)
-    {
-        error = null;
-        try
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                error = "Path is empty.";
-                return false;
-            }
-
-            var fileName = OperatingSystem.IsWindows()
-                ? "explorer"
-                : OperatingSystem.IsMacOS()
-                    ? "open"
-                    : "xdg-open";
-
-            var info = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = Quote(path),
-                UseShellExecute = false
-            };
-
-            return Process.Start(info) != null;
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-            return false;
-        }
-    }
-
-    private static string Quote(string value) => "\"" + value.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
-}
-
 public sealed class InstallerSteamPathDetector : ISteamPathDetector
 {
     public string? TryFindServerPath() => Installer.TryFindTabgServerPath();
 
     public string? TryFindClientPath() => Installer.TryFindTabgClientPath();
-}
-
-public sealed class LogNotificationService : INotificationService
-{
-    public event Action<string>? Message;
-
-    public void Info(string message) => Message?.Invoke(message);
-
-    public void Warning(string message) => Message?.Invoke("Warning: " + message);
-
-    public void Error(string message) => Message?.Invoke("Error: " + message);
 }

@@ -16,6 +16,8 @@ using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
 using TabgInstaller.App.Services;
+using TabgInstaller.UI.PluginCatalog;
+using TabgInstaller.UI.Services;
 
 namespace TabgInstaller.App;
 
@@ -120,6 +122,7 @@ public sealed class MainWindow : Window
     private readonly ServerPathProvider _serverPathProvider = new();
     private readonly ServerProcessService _serverProcess;
     private readonly IStoragePickerService _storagePicker;
+    private readonly IConfirmationDialogService _confirmations;
     private readonly IUiDispatcher _dispatcher;
     private readonly IExternalLauncher _externalLauncher;
     private readonly ISteamPathDetector _steamPathDetector;
@@ -133,7 +136,8 @@ public sealed class MainWindow : Window
 
     public MainWindow()
         : this(
-            new AvaloniaStoragePickerService(),
+            null,
+            null,
             new AvaloniaUiDispatcher(),
             new ExternalProcessLauncher(),
             new InstallerSteamPathDetector(),
@@ -142,13 +146,15 @@ public sealed class MainWindow : Window
     }
 
     internal MainWindow(
-        IStoragePickerService storagePicker,
+        IStoragePickerService? storagePicker,
+        IConfirmationDialogService? confirmations,
         IUiDispatcher dispatcher,
         IExternalLauncher externalLauncher,
         ISteamPathDetector steamPathDetector,
         INotificationService notifications)
     {
-        _storagePicker = storagePicker;
+        _storagePicker = storagePicker ?? new AvaloniaStoragePickerService(this);
+        _confirmations = confirmations ?? new AvaloniaConfirmationDialogService(this);
         _dispatcher = dispatcher;
         _externalLauncher = externalLauncher;
         _steamPathDetector = steamPathDetector;
@@ -1624,13 +1630,27 @@ public sealed class MainWindow : Window
     private async void RestoreBackupAsync()
     {
         if (_backups.SelectedItem is not BackupInfo item) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Restore backup",
+                $"Restore backup '{item.Name}' over the current server files?"))
+        {
+            return;
+        }
+
         var backup = new BackupService(new Progress<string>(Log));
         await backup.RestoreBackupAsync(_serverPath.Text ?? "", item);
     }
 
-    private void DeleteBackup()
+    private async void DeleteBackup()
     {
         if (_backups.SelectedItem is not BackupInfo item) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Delete backup",
+                $"Delete backup '{item.Name}'? This cannot be undone."))
+        {
+            return;
+        }
+
         var backup = new BackupService(new Progress<string>(Log));
         backup.DeleteBackup(item);
         RefreshBackups();
@@ -1741,7 +1761,7 @@ public sealed class MainWindow : Window
         }
     }
 
-    private void ApplyBuiltInPreset()
+    private async void ApplyBuiltInPreset()
     {
         if (_builtInPresets.SelectedItem is not BuiltInPresets.BuiltInPreset preset)
         {
@@ -1753,6 +1773,13 @@ public sealed class MainWindow : Window
         if (!Directory.Exists(dir))
         {
             Log("Select a valid server folder first.");
+            return;
+        }
+
+        if (!await _confirmations.ConfirmAsync(
+                "Apply built-in preset",
+                $"Overwrite current config files with built-in preset '{preset.Name}'?"))
+        {
             return;
         }
 
@@ -1776,17 +1803,31 @@ public sealed class MainWindow : Window
         Log("Saved preset: " + name);
     }
 
-    private void LoadUserPreset()
+    private async void LoadUserPreset()
     {
         if (_userPresets.SelectedItem is not string name) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Load preset",
+                $"Overwrite current config files with saved preset '{name}'?"))
+        {
+            return;
+        }
+
         PresetManager.LoadPreset(_serverPath.Text ?? "", name);
         Log("Loaded preset: " + name);
         LoadConfig();
     }
 
-    private void DeleteUserPreset()
+    private async void DeleteUserPreset()
     {
         if (_userPresets.SelectedItem is not string name) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Delete preset",
+                $"Delete preset '{name}'? This cannot be undone."))
+        {
+            return;
+        }
+
         PresetManager.DeletePreset(_serverPath.Text ?? "", name);
         RefreshPresetLists();
         Log("Deleted preset: " + name);
@@ -1841,18 +1882,18 @@ public sealed class MainWindow : Window
     private void RefreshServerPluginCatalog()
     {
         _serverPluginCatalogChecks.Children.Clear();
-        foreach (var plugin in CollapseDuplicateDefinitions(PluginRegistry.ServerPlugins))
+        foreach (var plugin in PluginCatalogGrouper.Collapse(PluginRegistry.ServerPlugins))
             _serverPluginCatalogChecks.Children.Add(BuildCatalogCheckBox(
-                BuildCatalogItem(plugin.Plugin, plugin.Label, "plugins", ServerPluginDir()),
+                BuildCatalogItem(plugin.Primary, plugin.Label, "plugins", ServerPluginDir()),
                 ToggleServerCatalogPlugin));
     }
 
     private void RefreshClientPluginCatalog()
     {
         _clientPluginCatalogChecks.Children.Clear();
-        foreach (var plugin in CollapseDuplicateDefinitions(PluginRegistry.ClientMods))
+        foreach (var plugin in PluginCatalogGrouper.Collapse(PluginRegistry.ClientMods))
             _clientPluginCatalogChecks.Children.Add(BuildCatalogCheckBox(
-                BuildCatalogItem(plugin.Plugin, plugin.Label, "client-plugins", ClientPluginDir()),
+                BuildCatalogItem(plugin.Primary, plugin.Label, "client-plugins", ClientPluginDir()),
                 ToggleClientCatalogPlugin));
     }
 
@@ -1977,15 +2018,33 @@ public sealed class MainWindow : Window
         RefreshClientModLists();
     }
 
-    private void RemoveSelectedServerPlugin()
+    private async void RemoveSelectedServerPlugin()
     {
-        RemovePluginFile(_serverPluginList.SelectedItem as PluginFileItem);
+        var item = _serverPluginList.SelectedItem as PluginFileItem;
+        if (item == null) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Remove server DLL",
+                $"Remove '{Path.GetFileName(item.Path)}'?"))
+        {
+            return;
+        }
+
+        RemovePluginFile(item);
         RefreshServerModLists();
     }
 
-    private void RemoveSelectedClientPlugin()
+    private async void RemoveSelectedClientPlugin()
     {
-        RemovePluginFile(_clientPluginList.SelectedItem as PluginFileItem);
+        var item = _clientPluginList.SelectedItem as PluginFileItem;
+        if (item == null) return;
+        if (!await _confirmations.ConfirmAsync(
+                "Remove client DLL",
+                $"Remove '{Path.GetFileName(item.Path)}'?"))
+        {
+            return;
+        }
+
+        RemovePluginFile(item);
         RefreshClientModLists();
     }
 
@@ -2085,13 +2144,13 @@ public sealed class MainWindow : Window
             .Where(p => p.DefaultChecked && p.Kind != PluginKind.CoreDependency)
             .ToArray();
 
-        foreach (var item in CollapseDuplicateDefinitions(plugins))
+        foreach (var item in PluginCatalogGrouper.Collapse(plugins))
         {
             _pluginChecks.Children.Add(new CheckBox
             {
                 Content = item.Label,
-                Tag = item.Plugin,
-                IsChecked = item.Plugin.DefaultChecked,
+                Tag = item.Primary,
+                IsChecked = item.Primary.DefaultChecked,
             });
         }
     }
@@ -2103,9 +2162,9 @@ public sealed class MainWindow : Window
             .Where(p => p.DefaultChecked)
             .ToArray();
 
-        foreach (var item in CollapseDuplicateDefinitions(plugins))
+        foreach (var item in PluginCatalogGrouper.Collapse(plugins))
         {
-            var plugin = item.Plugin;
+            var plugin = item.Primary;
             var available = IsBundledClientPluginAvailable(plugin);
             _clientModChecks.Children.Add(new CheckBox
             {
@@ -2197,7 +2256,7 @@ public sealed class MainWindow : Window
 
     private async Task<bool> PickFolderInto(TextBox target, string title)
     {
-        var path = await _storagePicker.PickFolderAsync(this, title);
+        var path = await _storagePicker.PickFolderAsync(title);
         if (!string.IsNullOrEmpty(path))
         {
             target.Text = path;
@@ -2212,35 +2271,6 @@ public sealed class MainWindow : Window
             .Where(cb => cb.IsChecked == true)
             .Select(cb => cb.Tag)
             .OfType<PluginDefinition>();
-
-    private static IEnumerable<(PluginDefinition Plugin, string Label)> CollapseDuplicateDefinitions(IEnumerable<PluginDefinition> plugins)
-    {
-        foreach (var group in plugins.GroupBy(GetPluginDllKey, StringComparer.OrdinalIgnoreCase))
-        {
-            var plugin = group.First();
-            if (group.Count() == 1)
-            {
-                yield return (plugin, plugin.Label);
-                continue;
-            }
-
-            var names = group
-                .Select(p => p.Label.Split(" - ", 2, StringSplitOptions.None)[0].Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-            var dlls = plugin.DllNames.Length == 0
-                ? plugin.Id
-                : string.Join(", ", plugin.DllNames);
-
-            yield return (plugin, $"{string.Join(" / ", names)} - {dlls}");
-        }
-    }
-
-    private static string GetPluginDllKey(PluginDefinition plugin)
-    {
-        return plugin.DllNames.Length == 0
-            ? "id:" + plugin.Id
-            : "dll:" + string.Join("|", plugin.DllNames.OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase));
-    }
 
     private static void SetChecks(StackPanel host, bool value)
     {
@@ -2434,7 +2464,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
     private async Task<string?> PickDllAsync(string title)
     {
-        return await _storagePicker.PickFileAsync(this, title, "*.dll");
+        return await _storagePicker.PickFileAsync(title, "*.dll");
     }
 
     private static string BuildCommandsReference()

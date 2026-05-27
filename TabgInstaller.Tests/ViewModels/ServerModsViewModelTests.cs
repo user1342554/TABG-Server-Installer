@@ -6,6 +6,7 @@ using System.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
+using TabgInstaller.UI.PluginCatalog;
 using Xunit;
 
 namespace TabgInstaller.Tests.ViewModels
@@ -122,7 +123,7 @@ namespace TabgInstaller.Tests.ViewModels
             sut.RefreshCommand.Execute(null);
 
             sut.PluginCatalog.Should().HaveCount(
-                ServerModsViewModel.CollapseDuplicateDefinitions(PluginRegistry.ServerPlugins).Count);
+                PluginCatalogGrouper.Collapse(PluginRegistry.ServerPlugins).Count);
             sut.PluginCatalog.Should().Contain(p => p.Id == "ServerLogger");
         }
 

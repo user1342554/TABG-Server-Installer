@@ -9,6 +9,7 @@ using System.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Gui.Resources;
 using TabgInstaller.Gui.Services;
+using TabgInstaller.UI.PluginCatalog;
 
 namespace TabgInstaller.Gui.ViewModels
 {
@@ -230,10 +231,11 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             var catalog = new ObservableCollection<PluginCatalogEntry>();
-            foreach (var definitions in CollapseDuplicateDefinitions(PluginRegistry.ServerPlugins))
+            foreach (var group in PluginCatalogGrouper.Collapse(PluginRegistry.ServerPlugins))
             {
-                var definition = definitions[0];
-                var dlls = GetCatalogDllNames(definitions);
+                var definition = group.Primary;
+                var definitions = group.Definitions;
+                var dlls = group.DllNames;
                 var isInstalled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll) || disabled.Contains(dll));
                 var isEnabled = dlls.Length > 0 && dlls.All(dll => enabled.Contains(dll));
                 var isAvailable = dlls.Length > 0 && dlls.All(dll => FindDllPath(dll, "plugins") != null);
@@ -256,31 +258,6 @@ namespace TabgInstaller.Gui.ViewModels
             }
 
             SelectedCatalogPlugin ??= PluginCatalog.FirstOrDefault();
-        }
-
-        public static List<PluginDefinition[]> CollapseDuplicateDefinitions(IEnumerable<PluginDefinition> definitions)
-        {
-            return definitions
-                .GroupBy(GetPluginDllKey, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.ToArray())
-                .ToList();
-        }
-
-        public static string[] GetCatalogDllNames(IReadOnlyList<PluginDefinition> definitions)
-        {
-            return definitions
-                .SelectMany(definition => definition.DllNames ?? Array.Empty<string>())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-        }
-
-        private static string GetPluginDllKey(PluginDefinition definition)
-        {
-            var dlls = definition.DllNames ?? Array.Empty<string>();
-            return dlls.Length == 0
-                ? "id:" + definition.Id
-                : "dll:" + string.Join("|", dlls.OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase));
         }
 
         [RelayCommand]

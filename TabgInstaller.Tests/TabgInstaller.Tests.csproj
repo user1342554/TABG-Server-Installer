@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
+    <ProjectReference Include="..\TabgInstaller.UI\TabgInstaller.UI.csproj" />
     <ProjectReference Include="..\TabgInstaller.App\TabgInstaller.App.csproj" />
     <ProjectReference Include="..\TabgInstaller.MatchCore\TabgInstaller.MatchCore.csproj" />
     <ProjectReference Include="..\TabgInstaller.AdminRadar.Server\TabgInstaller.AdminRadar.Server.csproj" />
