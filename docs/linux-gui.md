@@ -1,6 +1,6 @@
-# Linux GUI
+# Avalonia App
 
-This repo now includes a functional Avalonia desktop app for Linux:
+This repo now includes a functional cross-platform Avalonia desktop app:
 
 ```bash
 ./run-linux-gui.sh
@@ -9,10 +9,11 @@ This repo now includes a functional Avalonia desktop app for Linux:
 Publish a self-contained Linux build with:
 
 ```bash
-dotnet publish TabgInstaller.LinuxGui/TabgInstaller.LinuxGui.csproj -c Release -r linux-x64 --self-contained true
+dotnet publish TabgInstaller.App/TabgInstaller.App.csproj -c Release -r linux-x64 --self-contained true
+dotnet publish TabgInstaller.App/TabgInstaller.App.csproj -c Release -r win-x64 --self-contained true
 ```
 
-The Linux GUI is intentionally plain. It covers the main installer workflows:
+The Avalonia app covers the main installer workflows:
 
 - server path detection and manual folder selection
 - creating a default server folder
@@ -26,10 +27,10 @@ The Linux GUI is intentionally plain. It covers the main installer workflows:
 - local registry marketplace install/uninstall
 - knowledge/reference JSON viewing
 
-The existing WPF app is still present for Windows. Build the Linux app project directly on Linux instead of relying on the whole solution until every old Windows-only utility project is portable.
+The existing WPF app is still present for Windows until the Avalonia app reaches full parity. `TabgInstaller.LinuxGui` also remains buildable during the migration, but `TabgInstaller.App` is the new cross-platform target.
 
 Runtime logs are written to:
 
 ```text
-~/.local/share/TabgInstaller/linux-gui.log
+~/.local/share/TabgInstaller/tabg-installer-app.log
 ```

@@ -527,28 +527,12 @@ namespace TabgInstaller.Gui.ViewModels
 
         public string? FindClientPluginsDir()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var candidates = new[]
-            {
-                Path.Combine(baseDir, "client-plugins"),
-                Path.Combine(baseDir, "..", "client-plugins"),
-                Path.Combine(baseDir, "..", "..", "client-plugins"),
-                Path.Combine(baseDir, "..", "..", "..", "client-plugins"),
-            };
-            return candidates.FirstOrDefault(d => Directory.Exists(d) && Directory.GetFiles(d, "*.dll").Length > 0);
+            return BundledAssetLocator.FindClientPluginsDirectory();
         }
 
         public string? FindDllPath(string dllName)
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var candidates = new[]
-            {
-                Path.Combine(baseDir, "client-plugins", dllName),
-                Path.Combine(baseDir, "..", "client-plugins", dllName),
-                Path.Combine(baseDir, "..", "..", "client-plugins", dllName),
-                Path.Combine(baseDir, "..", "..", "..", "client-plugins", dllName),
-            };
-            return candidates.FirstOrDefault(File.Exists);
+            return BundledAssetLocator.FindFile(Path.Combine(BundledAssetLocator.ClientPluginsFolder, dllName));
         }
     }
 }

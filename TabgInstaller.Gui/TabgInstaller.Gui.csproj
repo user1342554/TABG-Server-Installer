@@ -79,7 +79,7 @@
 
   <!-- Copy bundled server plugin DLLs to output directory -->
   <ItemGroup>
-    <None Include="plugins\**\*.dll">
+    <None Include="..\bundled\plugins\**\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
@@ -87,7 +87,7 @@
 
   <!-- Copy bundled client plugin DLLs to output directory -->
   <ItemGroup>
-    <None Include="client-plugins\**\*.dll">
+    <None Include="..\bundled\client-plugins\**\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>client-plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>

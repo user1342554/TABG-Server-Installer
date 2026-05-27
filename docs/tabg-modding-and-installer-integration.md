@@ -232,7 +232,7 @@ There are three installer paths.
 
 Built-in server DLLs live in:
 
-`TabgInstaller.Gui/plugins/`
+`bundled/plugins/`
 
 The installer copies selected built-in DLLs into:
 
@@ -243,7 +243,7 @@ The server plugin list is surfaced by `ServerModsViewModel.KnownServerPlugins`, 
 To add a new built-in server mod:
 
 1. Add the plugin project to `TabgInstaller.sln`.
-2. Build the DLL into or copy it to `TabgInstaller.Gui/plugins/`.
+2. Build the DLL into or copy it to `bundled/plugins/`.
 3. Add a manifest under `registry/plugins/<PluginId>/manifest.json` with `"type": "server"` and `"kind": "bundled"`.
 4. Add its DLL to `ServerModsViewModel.KnownServerPlugins` if you want it in the direct server mods panel.
 5. Add dependencies such as `"Citruslib"` if required.
@@ -252,7 +252,7 @@ To add a new built-in server mod:
 
 Built-in client DLLs live in:
 
-`TabgInstaller.Gui/client-plugins/`
+`bundled/client-plugins/`
 
 The client installer creates a separate modded TABG copy, installs BepInEx, removes EasyAntiCheat from that copy, writes `steam_appid.txt`, and copies selected client DLLs into:
 
@@ -261,7 +261,7 @@ The client installer creates a separate modded TABG copy, installs BepInEx, remo
 To add a new built-in client mod:
 
 1. Add the plugin project to `TabgInstaller.sln`.
-2. Build the DLL into or copy it to `TabgInstaller.Gui/client-plugins/`.
+2. Build the DLL into or copy it to `bundled/client-plugins/`.
 3. Add a manifest under `registry/plugins/<PluginId>/manifest.json` with `"type": "client"` and `"kind": "bundled"`.
 4. Add its DLL to `ClientPanelViewModel.KnownClientMods` if you want it in the direct client mods panel.
 
@@ -313,7 +313,7 @@ and create a separate bundled client manifest with `"type": "client"`.
 2. Create a small BepInEx plugin project with only the required DLL references.
 3. Prefer Harmony postfixes for observation and prefixes only when you intentionally replace or consume behavior.
 4. Keep client and server logic separate unless the code is pure shared constants or serializers.
-5. Build and copy the DLL into `TabgInstaller.Gui/plugins/` or `TabgInstaller.Gui/client-plugins/`.
+5. Build and copy the DLL into `bundled/plugins/` or `bundled/client-plugins/`.
 6. Add or update the registry manifest.
 7. Run the installer and verify BepInEx logs in `<game>/BepInEx/LogOutput.log`.
 

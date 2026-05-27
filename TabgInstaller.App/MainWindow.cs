@@ -1,7 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,8 +15,9 @@ using Newtonsoft.Json.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Core.Model;
 using TabgInstaller.Core.Services;
+using TabgInstaller.App.Services;
 
-namespace TabgInstaller.LinuxGui;
+namespace TabgInstaller.App;
 
 public sealed class MainWindow : Window
 {
@@ -120,6 +119,11 @@ public sealed class MainWindow : Window
     private readonly TextBox _settingsSummary = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
     private readonly ServerPathProvider _serverPathProvider = new();
     private readonly ServerProcessService _serverProcess;
+    private readonly IStoragePickerService _storagePicker;
+    private readonly IUiDispatcher _dispatcher;
+    private readonly IExternalLauncher _externalLauncher;
+    private readonly ISteamPathDetector _steamPathDetector;
+    private readonly INotificationService _notifications;
     private readonly string _logPath;
     private readonly object _logBufferLock = new();
     private readonly StringBuilder _pendingLog = new();
@@ -128,15 +132,40 @@ public sealed class MainWindow : Window
     private bool _logFlushQueued;
 
     public MainWindow()
+        : this(
+            new AvaloniaStoragePickerService(),
+            new AvaloniaUiDispatcher(),
+            new ExternalProcessLauncher(),
+            new InstallerSteamPathDetector(),
+            new LogNotificationService())
     {
+    }
+
+    internal MainWindow(
+        IStoragePickerService storagePicker,
+        IUiDispatcher dispatcher,
+        IExternalLauncher externalLauncher,
+        ISteamPathDetector steamPathDetector,
+        INotificationService notifications)
+    {
+        _storagePicker = storagePicker;
+        _dispatcher = dispatcher;
+        _externalLauncher = externalLauncher;
+        _steamPathDetector = steamPathDetector;
+        _notifications = notifications;
+        if (_notifications is LogNotificationService logNotifications)
+        {
+            logNotifications.Message += Log;
+        }
+
         _serverProcess = new ServerProcessService(_serverPathProvider);
         var logDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TabgInstaller");
         Directory.CreateDirectory(logDir);
-        _logPath = Path.Combine(logDir, "linux-gui.log");
+        _logPath = Path.Combine(logDir, "tabg-installer-app.log");
 
-        Title = "TABG Server Installer - Linux";
+        Title = "TABG Server Installer";
         Width = 1180;
         Height = 760;
         MinWidth = 900;
@@ -149,7 +178,7 @@ public sealed class MainWindow : Window
         BuildUi();
         WireServerProcess();
         TryAutoDetectPaths();
-        Log("Linux GUI started. Log file: " + _logPath);
+        Log("Avalonia app started. Log file: " + _logPath);
     }
 
     private void BuildUi()
@@ -1688,7 +1717,7 @@ public sealed class MainWindow : Window
             new JObject
             {
                 ["name"] = "players",
-                ["description"] = "Linux GUI managed player permissions.",
+                ["description"] = "TABG installer managed player permissions.",
                 ["players"] = players
             }
         };
@@ -1964,13 +1993,13 @@ public sealed class MainWindow : Window
     {
         _serverProcess.Stop();
         Task.Delay(1200).ContinueWith(_ =>
-            Dispatcher.UIThread.Post(() => StartServer("-batchmode -nographics -nolog")));
+            _dispatcher.Post(() => StartServer("-batchmode -nographics -nolog")));
         Log("Queued server restart.");
     }
 
     private void ExportVisibleLog()
     {
-        var path = Path.Combine(Path.GetDirectoryName(_logPath) ?? AppContext.BaseDirectory, $"linux-gui-export-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+        var path = Path.Combine(Path.GetDirectoryName(_logPath) ?? AppContext.BaseDirectory, $"tabg-installer-app-export-{DateTime.Now:yyyyMMdd-HHmmss}.log");
         File.WriteAllText(path, _log.Text ?? "");
         Log("Exported visible log to " + path);
     }
@@ -2106,7 +2135,7 @@ public sealed class MainWindow : Window
 
     private void DetectServerPath()
     {
-        var detected = Installer.TryFindTabgServerPath();
+        var detected = _steamPathDetector.TryFindServerPath();
         if (!string.IsNullOrEmpty(detected))
         {
             _serverPath.Text = detected;
@@ -2128,7 +2157,7 @@ public sealed class MainWindow : Window
 
     private void DetectClientPath()
     {
-        var detected = Installer.TryFindTabgClientPath();
+        var detected = _steamPathDetector.TryFindClientPath();
         if (!string.IsNullOrEmpty(detected))
         {
             _clientPath.Text = detected;
@@ -2168,12 +2197,7 @@ public sealed class MainWindow : Window
 
     private async Task<bool> PickFolderInto(TextBox target, string title)
     {
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = title,
-            AllowMultiple = false
-        });
-        var path = folders.FirstOrDefault()?.TryGetLocalPath();
+        var path = await _storagePicker.PickFolderAsync(this, title);
         if (!string.IsNullOrEmpty(path))
         {
             target.Text = path;
@@ -2410,16 +2434,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
     private async Task<string?> PickDllAsync(string title)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = title,
-            AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
-                new FilePickerFileType("DLL") { Patterns = new[] { "*.dll" } }
-            }
-        });
-        return files.FirstOrDefault()?.TryGetLocalPath();
+        return await _storagePicker.PickFileAsync(this, title, "*.dll");
     }
 
     private static string BuildCommandsReference()
@@ -2468,7 +2483,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
     {
         _settingsSummary.Text = string.Join(Environment.NewLine, new[]
         {
-            "Linux GUI status",
+            "Avalonia app status",
             $"App folder: {AppContext.BaseDirectory}",
             $"Log file: {_logPath}",
             $"Server folder: {_serverPath.Text}",
@@ -2504,12 +2519,8 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = OperatingSystem.IsWindows() ? "explorer" : "xdg-open",
-                Arguments = $"\"{target}\"",
-                UseShellExecute = false
-            });
+            if (!_externalLauncher.TryOpenPath(target, out var error))
+                Log("Could not open path: " + (error ?? "unknown launcher error"));
         }
         catch (Exception ex)
         {
@@ -2544,7 +2555,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
             _logFlushQueued = true;
         }
 
-        Dispatcher.UIThread.Post(FlushVisibleLog);
+        _dispatcher.Post(FlushVisibleLog);
     }
 
     private void FlushVisibleLog()
@@ -2573,7 +2584,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
     private void SetStatus(string status)
     {
-        Dispatcher.UIThread.Post(() => _status.Text = status);
+        _dispatcher.Post(() => _status.Text = status);
     }
 
     private static Button Button(string text, Action action)

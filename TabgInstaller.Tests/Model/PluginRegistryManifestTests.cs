@@ -41,8 +41,8 @@ namespace TabgInstaller.Tests.Model
         {
             var root = FindRepositoryRoot();
             var manifests = LoadRepositoryManifests();
-            var serverPayload = Path.Combine(root, "TabgInstaller.Gui", "plugins");
-            var clientPayload = Path.Combine(root, "TabgInstaller.Gui", "client-plugins");
+            var serverPayload = Path.Combine(root, "bundled", "plugins");
+            var clientPayload = Path.Combine(root, "bundled", "client-plugins");
 
             var missing = new List<string>();
             foreach (var manifest in manifests.Where(IsBundledPayload))

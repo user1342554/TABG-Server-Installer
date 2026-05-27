@@ -47,7 +47,7 @@
   </ItemGroup>
 
   <Target Name="CopyAdminRadarClientToBundledClientPlugins" AfterTargets="Build">
-    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" SkipUnchangedFiles="true" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\client-plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\client-plugins" SkipUnchangedFiles="true" />
   </Target>
 </Project>

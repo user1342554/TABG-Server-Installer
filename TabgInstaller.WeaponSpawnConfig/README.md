@@ -1,6 +1,6 @@
 # TABG Weapon Spawn Configuration Mod
 
-Status: source-only experimental work. This project is intentionally not part of `TabgInstaller.sln`, has no registry manifest, and is not copied into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`. Treat it as reference/development code until it is deliberately promoted into the bundled plugin registry.
+Status: source-only experimental work. This project is intentionally not part of `TabgInstaller.sln`, has no registry manifest, and is not copied into `bundled/plugins` or `bundled/client-plugins`. Treat it as reference/development code until it is deliberately promoted into the bundled plugin registry.
 
 This BepInEx plugin allows you to configure the spawn rates of all weapons, items, and blessings in Totally Accurate Battlegrounds.
 

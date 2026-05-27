@@ -2,7 +2,7 @@
 
 `registry/plugins` is release metadata for plugins that ship with this launcher. It is not a public marketplace.
 
-Add or update a manifest only when the plugin DLL is built by this repository or intentionally bundled in `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
+Add or update a manifest only when the plugin DLL is built by this repository or intentionally bundled in `bundled/plugins` or `bundled/client-plugins`.
 
 ## Checklist
 

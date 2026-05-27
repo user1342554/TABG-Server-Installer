@@ -64,33 +64,7 @@ namespace TabgInstaller.Core
         /// <summary>Searches for bundled plugin DLLs directory in known locations.</summary>
         public static string? FindBundledPluginsDir()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var candidates = new List<string>
-            {
-                Path.Combine(baseDir, "plugins"),
-                Path.Combine(baseDir, "Assets", "bundled", "plugins"),
-                Path.Combine(baseDir, "..", "plugins"),
-                Path.Combine(baseDir, "..", "..", "plugins"),
-                Path.Combine(baseDir, "..", "..", "..", "plugins"),
-            };
-
-            // Also search up from base dir for a mods or plugins folder
-            var dir = new DirectoryInfo(baseDir);
-            while (dir?.Parent != null)
-            {
-                var modsDir = Path.Combine(dir.FullName, "mods");
-                if (Directory.Exists(modsDir)) candidates.Add(modsDir);
-                var plugDir = Path.Combine(dir.FullName, "plugins");
-                if (Directory.Exists(plugDir)) candidates.Add(plugDir);
-                dir = dir.Parent;
-            }
-
-            foreach (var c in candidates)
-            {
-                if (Directory.Exists(c) && Directory.GetFiles(c, "*.dll").Length > 0)
-                    return c;
-            }
-            return null;
+            return BundledAssetLocator.FindServerPluginsDirectory();
         }
 
         private static readonly string SharedExtraSettings = @"[

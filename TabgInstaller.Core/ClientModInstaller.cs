@@ -301,22 +301,7 @@ namespace TabgInstaller.Core
         /// </summary>
         private static string? FindClientPluginsDir()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-
-            // Walk up from the app directory looking for a client-plugins folder with DLLs
-            var current = baseDir;
-            for (int i = 0; i < 5; i++)
-            {
-                var candidate = Path.Combine(current, "client-plugins");
-                if (Directory.Exists(candidate) && Directory.GetFiles(candidate, "*.dll").Length > 0)
-                    return Path.GetFullPath(candidate);
-
-                var parent = Directory.GetParent(current)?.FullName;
-                if (parent == null || parent == current) break;
-                current = parent;
-            }
-
-            return null;
+            return BundledAssetLocator.FindClientPluginsDirectory();
         }
     }
 }

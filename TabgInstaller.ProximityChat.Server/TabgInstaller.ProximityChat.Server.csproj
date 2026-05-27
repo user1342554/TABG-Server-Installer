@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <Target Name="CopyProximityChatServerToBundledPlugins" AfterTargets="Build">
-    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" SkipUnchangedFiles="true" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\plugins" SkipUnchangedFiles="true" />
   </Target>
 </Project>

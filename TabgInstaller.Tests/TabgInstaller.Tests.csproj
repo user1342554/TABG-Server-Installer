@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFrameworks>net8.0;net8.0-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
+    <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
+    <EnableWindowsTargeting Condition="'$(TargetFramework)' == 'net8.0-windows'">true</EnableWindowsTargeting>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -18,20 +19,30 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
-    <ProjectReference Include="..\TabgInstaller.Gui\TabgInstaller.Gui.csproj" />
+    <ProjectReference Include="..\TabgInstaller.App\TabgInstaller.App.csproj" />
     <ProjectReference Include="..\TabgInstaller.MatchCore\TabgInstaller.MatchCore.csproj" />
     <ProjectReference Include="..\TabgInstaller.AdminRadar.Server\TabgInstaller.AdminRadar.Server.csproj" />
     <ProjectReference Include="..\TabgInstaller.ProximityChat.Client\TabgInstaller.ProximityChat.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ProjectReference Include="..\TabgInstaller.Gui\TabgInstaller.Gui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <Compile Remove="ViewModels\**\*.cs" />
+    <Compile Remove="Services\ActiveInstanceServiceTests.cs" />
+    <Compile Remove="Services\ServerInstanceManagerTests.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="UnityEngine">
       <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
 </Project>

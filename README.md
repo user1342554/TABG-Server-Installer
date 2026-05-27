@@ -165,7 +165,7 @@ ServerLogger is bundled as `TabgInstaller.ServerLogger.dll` and configured from 
 Bundled plugins are normal BepInEx 5.4.22 projects targeting `netstandard2.0`.
 
 1. Add the plugin source project to the solution.
-2. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
+2. Copy the release DLL into `bundled/plugins` or `bundled/client-plugins`.
 3. Add or update `registry/plugins/<PluginId>/manifest.json`.
 4. Build the launcher projects and tests project before release.
 

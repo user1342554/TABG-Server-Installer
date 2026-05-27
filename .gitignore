@@ -35,10 +35,11 @@ _tabgvr_temp/
 !mods/
 !mods/*.dll
 # Allow bundled plugin DLLs
-!TabgInstaller.Gui/plugins/
-!TabgInstaller.Gui/plugins/*.dll
-!TabgInstaller.Gui/client-plugins/
-!TabgInstaller.Gui/client-plugins/*.dll
+!bundled/
+!bundled/plugins/
+!bundled/plugins/*.dll
+!bundled/client-plugins/
+!bundled/client-plugins/*.dll
 # Allow markdown, config, and scripts
 !*.md
 !*.ps1

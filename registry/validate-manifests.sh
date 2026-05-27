@@ -85,9 +85,9 @@ for manifest in "${manifests[@]}"; do
       payload_owner[$key]="$id"
 
       if [[ "$side" == "server" ]]; then
-        payload_path="TabgInstaller.Gui/plugins/$dll"
+        payload_path="bundled/plugins/$dll"
       else
-        payload_path="TabgInstaller.Gui/client-plugins/$dll"
+        payload_path="bundled/client-plugins/$dll"
       fi
 
       if [[ ! -f "$payload_path" ]]; then

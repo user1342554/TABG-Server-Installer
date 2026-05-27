@@ -13,7 +13,7 @@ namespace TabgInstaller.Core
     /// </summary>
     public enum PluginKind
     {
-        /// <summary>Normal DLL copied from the bundled-plugins directory.</summary>
+        /// <summary>Normal DLL copied from the bundled plugin payload directory.</summary>
         Bundled,
         /// <summary>Core dependency handled separately by the installer.</summary>
         CoreDependency,
