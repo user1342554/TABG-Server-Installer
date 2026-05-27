@@ -1,187 +1,208 @@
-# TABG Server Installer
+<div align="center">
 
-Installer, launcher, and config UI for Totally Accurate Battlegrounds dedicated servers and bundled TABG mods.
+<pre>
+ _____                                                               _____
+( ___ )-------------------------------------------------------------( ___ )
+ |   |                                                               |   |
+ |   |  _____  _    ____   ____      ____                            |   |
+ |   | |_   _|/ \  | __ ) / ___|    / ___|  ___ _ ____   _____ _ __  |   |
+ |   |   | | / _ \ |  _ \| |  _     \___ \ / _ \ '__\ \ / / _ \ '__| |   |
+ |   |   | |/ ___ \| |_) | |_| |     ___) |  __/ |   \ V /  __/ |    |   |
+ |   |  _|_/_/   \_\____/ \____| _  |____/ \___|_|    \_/ \___|_|    |   |
+ |   |                                                               |   |
+ |   |           T A B G   S E R V E R   I N S T A L L E R           |   |
+ |___|                                                               |___|
+(_____)-------------------------------------------------------------(_____)
+</pre>
 
-This repository owns the installer code, Linux UI, Windows UI, config editors, presets, and the bundled `TabgInstaller.*` plugins. It installs BepInEx, Citruslib, and the selected server/client plugin DLLs, then exposes the important settings in the installer so you do not have to edit every config file by hand.
+**A one-click installer and manager for [Totally Accurate Battlegrounds](https://store.steampowered.com/app/823130/Totally_Accurate_Battlegrounds/) dedicated servers.**
 
-## Current Status
+[![GitHub release](https://img.shields.io/github/v/release/user1342554/TABG-Server-Installer)](https://github.com/user1342554/TABG-Server-Installer/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![CI](https://github.com/user1342554/TABG-Server-Installer/actions/workflows/ci.yml/badge.svg)](https://github.com/user1342554/TABG-Server-Installer/actions/workflows/ci.yml)
 
-- Linux GUI and Windows GUI both use the same bundled plugin registry.
-- Server mod settings are available in the installer, including MatchCore, loadouts, rings, spawns, Proximity Chat, ServerLogger, AdminRadar, FakePlayers, SoloTesting, UnusedVehicles, CustomGrenades, Hunt Mode, and Juggernaut Mode settings.
-- Client mod installation is supported for a separate modded TABG client copy.
-- Runtime tested on Linux with every bundled server/client mod except Hunt Mode and Juggernaut Mode. The tested server started, loaded plugins, spawned unused vehicles, and produced relay join codes.
+</div>
 
-## Available Server Mods
+---
 
-| Mod | DLLs | Default | Client mod needed | Notes |
-| --- | --- | --- | --- | --- |
-| Citruslib | `Citruslib.dll` | Yes | No | Required TABG server modding API dependency. |
-| MatchCore | `TabgInstaller.MatchCore.dll` | Yes | No | Match rules, rings, loadouts, vote start, drops, spell drops, timeouts, and win conditions. |
-| ServerLogger | `TabgInstaller.ServerLogger.dll` | Yes | No | Logs player name, PlayFab ID, and Epic ID. |
-| UnusedVehicles | `TabgInstaller.UnusedVehicles.dll` | Yes | No | Spawns hidden TABG vehicles. Patched for Linux headless server audio callbacks. |
-| Big Smoke Grenade | `TabgInstaller.CustomGrenades.dll` | Yes | Yes | Makes smoke grenades use the big smoke behavior. |
-| MGL Flashbang | `TabgInstaller.CustomGrenades.dll` | Yes | Yes | Makes MGL fire flashbang rounds. |
-| Solo Testing | `TabgInstaller.SoloTesting.dll` | No | No | Local testing helpers. |
-| Proximity Chat Server | `TabgInstaller.ProximityChat.Server.dll` | Yes | Yes | Relays nearby voice packets through the game network. |
-| Hunt Mode | `TabgInstaller.HuntMode.dll`, `TabgInstaller.HuntMode.Shared.dll` | No | Yes | 4v1 asymmetric survival mode. |
-| Juggernaut Mode | `JuggernautMode.Server.dll` | No | Yes | Boss player versus everyone mode. |
-| Fake Players | `TabgInstaller.FakePlayers.dll` | No | No | Dummy players and AI test targets. |
-| Admin Radar Server | `TabgInstaller.AdminRadar.Server.dll` | No | Yes | Sends admin-only player telemetry. |
+## About
 
-## Available Client Mods
+TABG Server Installer is a launcher, installer, and owned plugin bundle for TABG dedicated servers. It installs BepInEx, Citruslib, and the bundled server/client plugins, then exposes the important server and mod settings through the launcher instead of requiring manual file editing.
 
-| Mod | DLLs | Default | Notes |
-| --- | --- | --- | --- |
-| Flying Controls | `TabgInstaller.FlyingControls.dll` | Yes | Client controls for flying/unused vehicles. |
-| Custom Grenades Client | `TabgInstaller.CustomGrenades.dll` | Yes | Client visuals and behavior support for custom grenades. |
-| Coords Display | `TabgInstaller.CoordsDisplay.dll` | Yes | Coordinate overlay. |
-| Mod Settings | `TabgInstaller.ModSettings.dll` | Yes | In-game mod settings UI. Press `F9` in-game. |
-| Enhanced Client | `TabgInstaller.EnhancedClient.dll` | Yes | LOD, draw distance, haze, HUD controls, and LAN menu label option. |
-| Popup Blocker | `TabgInstaller.PopupBlocker.dll` | Yes | Suppresses modded-client anti-cheat popups. |
-| Proximity Chat Client | `TabgInstaller.ProximityChat.Client.dll` | Yes | Captures microphone audio and plays nearby voice. |
-| Hunt Mode Client | `TabgInstaller.HuntMode.Client.dll`, `TabgInstaller.HuntMode.Shared.dll` | No | HUD support for Hunt Mode. |
-| Juggernaut Client | `JuggernautMode.Client.dll` | No | Boss bar, loadout picker, and scoreboard support. |
-| Admin Radar Client | `TabgInstaller.AdminRadar.Client.dll` | No | Admin-only radar overlay. |
+The bundled `TabgInstaller.*` plugins are maintained from source in this repository. Citruslib is kept as the core TABG server modding dependency, and BepInEx/Harmony remain third-party runtime libraries.
 
-## Installer Configuration Areas
+## Ownership Model
 
-The installer writes and edits the same files the server reads:
+- The launcher, installer, presets, config editors, and bundled `TabgInstaller.*` plugin code are maintained in this repository.
+- Old marketplace installation and removed third-party plugin DLLs are no longer part of the normal launcher flow.
+- Citruslib, BepInEx, Harmony, and NuGet packages remain external dependencies and keep their own licenses.
+- TABGVR was removed. Citruslib stays because it is the shared TABG modding API dependency.
 
-| Area | Files |
-| --- | --- |
-| Server settings | `game_settings.txt` |
-| Match settings | `TheStarterPack.txt` |
-| Rings and spawns | `game_settings.txt`, `TheStarterPack.txt` |
-| Loadouts | `TheStarterPack.txt` |
-| Admins | `BepInEx/config/CitrusLib/PlayerPerms.json` |
-| Mod settings | `BepInEx/config/*.cfg` |
-| Server logs | `BepInEx/server-logs/players.csv`, optional `ServerLogger.txt` |
+## Features
 
-The generated `game_settings.txt` uses numeric values for TABG settings that the dedicated server parses as numbers, such as `NoRing=0`, `DEBUG_DEATHMATCH=0`, and `AllowRejoins=0`.
+### Core
 
-## Linux Quick Start
+- **One-click server setup** - installs BepInEx, Citruslib, bundled plugins, and default configs.
+- **Client mod installer** - creates a separate modded TABG client with bundled client plugins.
+- **Config editor** - edits game settings, match rules, ring behavior, spawn points, loadouts, admins, and mod settings.
+- **Preset templates** - Battle Royale, Deathmatch, Gun Game, Scavenge, Juggernaut, and more.
+- **Built-in plugin manager** - installs bundled DLLs directly from the launcher without a marketplace dependency.
+- **Dashboard and console** - server health, player count, uptime, console output, and quick actions.
+- **Backup system** - creates and restores server config backups.
+- **Remote SSH tools** - manages remote dedicated servers where configured.
+- **Auto-updater** - checks GitHub Releases for new versions.
 
-1. Build or download the Linux release.
-2. Run the Linux GUI:
+### Config GUI
 
-```bash
-DOTNET_ROOT="$HOME/.dotnet" PATH="$HOME/.dotnet:$PATH" ./TabgInstaller.LinuxGui
-```
+- **Server Settings** - `game_settings.txt` editor with validation.
+- **Match Settings** - MatchCore-compatible `TheStarterPack.txt` settings for win rules, votes, spell drops, and timeouts.
+- **Rings and Spawns** - ring sizes/speeds, lobby spawn, valid spawn points, and match spawn lists.
+- **Loadouts** - loadout editor with item database support.
+- **Mod Settings** - MatchCore fixes, grenade-on-death, Proximity Chat, ServerLogger, and Juggernaut settings.
+- **Admins** - `PlayerPerms.json` management.
+- **Presets** - apply built-in templates or save custom config sets.
 
-3. Pick the TABG dedicated server path.
-4. Select the server mods you want.
-5. Open the config/mod settings panels and configure the selected mods.
-6. Install or update the server.
-7. Start the server from the installer or with the generated server start script.
+## Bundled Plugins
 
-## Windows Quick Start
+### Server Plugins
 
-1. Download the latest release zip.
-2. Extract it.
-3. Run `TabgInstaller.Gui.exe`.
-4. Pick the TABG dedicated server path.
-5. Select server mods and configure them in the config panels.
-6. Install or update the server.
-7. Start the server from the installer.
+| Plugin | DLL | Description | Default |
+|--------|-----|-------------|---------|
+| Citruslib | `Citruslib.dll` | Third-party TABG server modding API dependency | Yes |
+| MatchCore | `TabgInstaller.MatchCore.dll` | Rings, loadouts, vote-start, drops, spell drops, timeouts, win rules, and match fixes | Yes |
+| ServerLogger | `TabgInstaller.ServerLogger.dll` | Player name, PlayFab ID, and Epic ID logging with CSV and legacy log support | Yes |
+| UnusedVehicles | `TabgInstaller.UnusedVehicles.dll` | Spawns and manages hidden TABG vehicles | Yes |
+| BigSmoke / MGLFlashbang | `TabgInstaller.CustomGrenades.dll` | Custom grenade gameplay | Yes |
+| ProximityChat | `TabgInstaller.ProximityChat.Server.dll` | Nearby voice relay over the existing game network | Yes |
+| SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
+| HuntMode | `TabgInstaller.HuntMode.dll` | 4v1 survival mode | No |
+| JuggernautMode | `JuggernautMode.Server.dll` | Boss player versus everyone | No |
+| FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets | No |
+| AdminRadar | `TabgInstaller.AdminRadar.Server.dll` | Admin-only player telemetry server | No |
 
-## Client Mod Setup
+### Client Plugins
 
-1. Open the client mod section in the installer.
-2. Select the Steam TABG install folder.
-3. Choose a separate destination for the modded client copy.
-4. Select client mods.
-5. Install client mods.
-6. Launch the modded client from the installer or through Proton/Wine using the modded copy.
+| Plugin | DLL | Description | Default |
+|--------|-----|-------------|---------|
+| FlyingControls | `TabgInstaller.FlyingControls.dll` | Client steering for custom flying vehicles | Yes |
+| CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Client visuals/effects for custom grenades | Yes |
+| CoordsDisplay | `TabgInstaller.CoordsDisplay.dll` | Coordinate overlay | Yes |
+| ModSettings | `TabgInstaller.ModSettings.dll` | In-game mod settings support | Yes |
+| EnhancedClient | `TabgInstaller.EnhancedClient.dll` | LOD, draw distance, haze, and HUD controls | Yes |
+| PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
+| ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
+| HuntModeClient | `TabgInstaller.HuntMode.Client.dll` | Hunt Mode HUD | No |
+| JuggernautClient | `JuggernautMode.Client.dll` | Boss bar, loadout picker, and scoreboard | No |
+| AdminRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Admin-only radar overlay | No |
 
-Do not launch the modded copy through the normal Steam TABG entry unless you know Steam is pointing at that modded copy.
+## Download
 
-## Proximity Chat
+1. Go to the [latest release](https://github.com/user1342554/TABG-Server-Installer/releases/latest)
+2. Download the `.zip` file
+3. Extract anywhere and run `TabgInstaller.Gui.exe`
 
-Proximity Chat uses the existing game network path. It does not require a separate voice server or extra forwarded ports.
+## Quick Start
 
-- Server plugin relays nearby voice packets.
-- Client plugin captures microphone audio and plays nearby players.
-- Range and audio behavior are configurable in mod settings.
-- The client log should show `Microphone started` when capture is working.
+### Server Setup
 
-## Runtime Test Notes
+1. Download and extract the latest release
+2. Run `TabgInstaller.Gui.exe`
+3. Select your TABG Dedicated Server path (auto-detected from Steam)
+4. Check the plugins you want
+5. Click **INSTALL**
+6. Configure settings in the **Config** tab
+7. Start the server from the installer
 
-The Linux runtime test used:
+### Client Setup (for players)
 
-Server mods enabled:
+1. Go to the **Client** tab
+2. Select your TABG Steam folder
+3. Choose a destination for the modded copy
+4. Check the mods you want (including Proximity Chat)
+5. Click **INSTALL CLIENT MODS**
+6. Launch the modded TABG from the installer (**NOT** from Steam)
 
-- Citruslib
-- MatchCore
-- ServerLogger
-- UnusedVehicles
-- Big Smoke Grenade
-- MGL Flashbang
-- SoloTesting
-- Proximity Chat Server
-- FakePlayers
-- Admin Radar Server
+### Managing Bundled Plugins
 
-Server mods excluded for that test:
+1. Go to the **Server Mods** or **Client** tab
+2. Select available bundled DLLs
+3. Click install selected
+4. Enable or disable installed DLLs from the same panel
 
-- Hunt Mode
-- Juggernaut Mode
+## Proximity Voice Chat
 
-Client mods enabled:
+Voice communication is built directly into the game's existing network connection. No additional ports or separate voice server are required.
 
-- Flying Controls
-- Custom Grenades Client
-- Coords Display
-- Mod Settings
-- Enhanced Client
-- Popup Blocker
-- Proximity Chat Client
-- Admin Radar Client
+- Voice data travels through the game's relay network.
+- The server relays voice packets only to nearby players based on in-game distance
+- Configurable maximum range (default: 50 m)
+- HUD indicator shows who is currently talking
+- Open microphone with noise gate to suppress background noise
+- 16 kHz audio quality
 
-Client mods excluded for that test:
+## Server Logger
 
-- Hunt Mode Client
-- Juggernaut Client
+ServerLogger is bundled as `TabgInstaller.ServerLogger.dll` and configured from the launcher under **Config -> Mod Settings**.
 
-The final test server loaded 10 BepInEx plugin entries and reached a heartbeat/join-code state. The final test client loaded 9 BepInEx plugin entries and started the Proximity Chat microphone.
+- Hooks TABG's Epic token verification callback to log new player identities.
+- Uses a fallback connected-player scan so logging still works if another mod changes the callback path.
+- Writes `BepInEx/server-logs/players.csv` by default.
+- Optionally keeps legacy `ServerLogger.txt` in the server root for older tools.
+- Exposes log path, CSV file name, legacy file name, scan interval, and output toggles in the GUI.
 
-## Development
+## Plugin Development
 
-Bundled plugins are BepInEx 5 plugins targeting `netstandard2.0`.
+Bundled plugins are normal BepInEx 5.4.22 projects targeting `netstandard2.0`.
 
-Common development flow:
-
-```bash
-DOTNET_ROOT="$HOME/.dotnet" PATH="$HOME/.dotnet:$PATH" dotnet build TabgInstaller.sln -c Release /p:EnableWindowsTargeting=true
-```
-
-When adding or changing a bundled plugin:
-
-1. Update the plugin source project.
-2. Build in `Release`.
-3. Copy the DLL into `TabgInstaller.Gui/plugins` for server mods or `TabgInstaller.Gui/client-plugins` for client mods.
-4. Register the mod in `TabgInstaller.Core/PluginRegistry.cs`.
-5. Add installer UI/config support if the mod has settings.
-6. Runtime test the server/client if the change affects BepInEx loading or gameplay startup.
-
-## Known Build Notes
-
-- On Linux, building Windows-targeted projects requires `/p:EnableWindowsTargeting=true`.
-- The full solution build currently completes with warnings.
-- Running the Windows-targeted testhost on Linux requires the Windows Desktop runtime; without it, `dotnet test` can build but the testhost will not start.
+1. Add the plugin source project to the solution.
+2. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
+3. Register the plugin in `TabgInstaller.Core/PluginRegistry.cs`.
+4. Add or update `registry/plugins/<PluginId>/manifest.json`.
+5. Build the launcher projects and tests project before release.
 
 ## Disclaimer
 
-This project is not affiliated with, endorsed by, or associated with Landfall Games or Totally Accurate Battlegrounds.
+This software is provided **as-is** with no warranty of any kind. Use at your own risk.
 
-Use at your own risk. Modifying game servers or clients may violate game terms or platform rules. The anti-cheat bypass component is intended for private dedicated server/modded-client testing, not cheating in public matches.
+- This project is **not affiliated with, endorsed by, or associated with** [Landfall Games](https://landfall.se/) or Totally Accurate Battlegrounds in any way.
+- This installer bundles BepInEx, Citruslib, and owned TABG plugins maintained in this repository.
+- Modifying game servers may violate the game's Terms of Service. The authors of this installer are **not responsible** for any bans, account actions, or other consequences resulting from its use.
+- The anti-cheat bypass component is intended solely for running private dedicated servers and is **not** meant for use in cheating or gaining unfair advantages in public matches.
 
 ## Credits
 
-- `anonymer_hase` - launcher, installer, config UI, presets, remote tools, and bundled `TabgInstaller.*` plugin code.
-- BepInEx Team - BepInEx plugin framework.
-- Andreas Pardeike and Harmony contributors - Harmony runtime patching.
-- CyrusTheLesser - Citruslib TABG server modding API.
+### Project
+
+- **anonymer_hase** - launcher, installer, configuration editor, presets, dashboard, backup tools, remote management, and bundled `TabgInstaller.*` plugin code.
+
+### Third-Party Runtime Dependencies
+
+| Component | Author | Link |
+|-----------|--------|------|
+| [BepInEx](https://github.com/BepInEx/BepInEx) | BepInEx Team | Unity/Mono game plugin framework (v5.4.22) |
+| [HarmonyLib](https://github.com/pardeike/Harmony) | Andreas Pardeike | Runtime method patching (bundled with BepInEx) |
+| [Citruslib](https://github.com/CyrusTheLesser/Citruslib) | [**CyrusTheLesser**](https://github.com/CyrusTheLesser) | Code library for TABG-DS modding - custom chat commands, loot tables, settings, player management |
+
+### NuGet Packages
+
+- [Octokit](https://github.com/octokit/octokit.net) - GitHub API (auto-updater, registry fetching)
+- [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) by James Newton-King - JSON handling
+- [Polly](https://github.com/App-vNext/Polly) - Resilience and retry policies
+- [RestSharp](https://github.com/restsharp/RestSharp) - HTTP client
+- [SSH.NET](https://github.com/sshnet/SSH.NET) - SSH remote server management
+- [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) - MVVM framework for WPF
+
+> **Know someone who should be credited?** Open an issue or DM me on Discord.
+
+## Contact
+
+Have questions, feature requests, or found a bug?
+
+- **Discord:** `anonymer__hase_22156`
+- **GitHub Issues:** [Open an issue](https://github.com/user1342554/TABG-Server-Installer/issues)
 
 ## License
 
-Released under the MIT License. Bundled third-party libraries keep their own licenses.
+Released under the **MIT License** - see [`LICENSE`](./LICENSE).
+
+Bundled third-party libraries retain their own respective licenses.
