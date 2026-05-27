@@ -17,19 +17,35 @@ namespace TabgInstaller.SoloTesting
     public class SoloTestingPlugin : BaseUnityPlugin
     {
         private static bool _countdownStarted = false;
+        private static GameRoom _countdownRoom;
         private static ConfigEntry<bool> _enabled;
+        private static ConfigEntry<bool> _developmentMode;
         private static ConfigEntry<int> _minimumPlayersToStart;
         private static ConfigEntry<bool> _preventSoloWinWhenAlone;
+        private Harmony _harmony;
 
         private void Awake()
         {
             _enabled = Config.Bind("SoloTesting", "Enabled", true, "Enable solo-testing game-state patches.");
+            _developmentMode = Config.Bind("Safety", "DevelopmentMode", false, "Explicitly mark this as a private development/test server. SoloTesting patches are inactive until this is true.");
             _minimumPlayersToStart = Config.Bind("SoloTesting", "MinimumPlayersToStart", 1, "Minimum players required to start countdown.");
             _preventSoloWinWhenAlone = Config.Bind("SoloTesting", "PreventSoloWinWhenAlone", true, "Prevent immediate win checks when only one player is present.");
 
-            var harmony = new Harmony("tabginstaller.solotesting");
-            harmony.PatchAll(typeof(SoloCheckGameStatePatch));
-            Logger.LogInfo("[SoloTesting] Solo testing mode loaded.");
+            _harmony = new Harmony("tabginstaller.solotesting");
+            _harmony.PatchAll(typeof(SoloCheckGameStatePatch));
+            Logger.LogInfo("[SoloTesting] Solo testing mode loaded. Patches require Safety.DevelopmentMode=true.");
+        }
+
+        private void OnDestroy()
+        {
+            _harmony?.UnpatchSelf();
+            ResetCountdownState();
+        }
+
+        private static void ResetCountdownState()
+        {
+            _countdownStarted = false;
+            _countdownRoom = null;
         }
 
         /// <summary>
@@ -44,11 +60,18 @@ namespace TabgInstaller.SoloTesting
             {
                 if (_enabled != null && !_enabled.Value)
                     return true;
+                if (_developmentMode == null || !_developmentMode.Value)
+                    return true;
 
                 var roomField = typeof(TABGBaseGameMode).GetField("m_GameRoom",
                     BindingFlags.NonPublic | BindingFlags.Instance);
                 var room = roomField?.GetValue(__instance) as GameRoom;
                 if (room == null) return true;
+                if (!ReferenceEquals(_countdownRoom, room))
+                {
+                    _countdownRoom = room;
+                    _countdownStarted = false;
+                }
 
                 int playerCount = room.GetNumberOfPlayers();
 

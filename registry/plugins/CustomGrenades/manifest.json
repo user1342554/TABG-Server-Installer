@@ -1,17 +1,17 @@
 {
   "id": "CustomGrenades",
-  "name": "Custom Grenades (Client)",
+  "name": "Custom Grenades",
   "version": "1.0.0",
-  "description": "BigSmokeGrenade + MGLFlashbang visual effects on the client side.",
+  "description": "Combined Big Smoke grenade behavior and client-only MGL flashbang visuals, with per-feature config toggles.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.CustomGrenades.dll"],
-  "type": "client",
+  "type": "both",
   "kind": "bundled",
   "defaultChecked": true,
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
   "dependencies": [],
-  "tags": ["grenades", "effects", "visuals"]
+  "tags": ["grenades", "effects", "visuals", "gameplay"]
 }

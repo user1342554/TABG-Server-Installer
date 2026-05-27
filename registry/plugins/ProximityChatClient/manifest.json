@@ -2,7 +2,7 @@
   "id": "ProximityChatClient",
   "name": "Proximity Chat (Client)",
   "version": "1.0.0",
-  "description": "Client-side proximity voice chat for custom servers.",
+  "description": "Client-side proximity voice chat with voice activation, optional push-to-talk, and immediate mic shutdown when disabled.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.ProximityChat.Client.dll"],

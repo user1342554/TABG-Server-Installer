@@ -94,27 +94,6 @@ namespace TabgInstaller.Tests.ViewModels
         }
 
         [Fact]
-        public void InitialState_JuggPointsToWin_IsDefault()
-        {
-            var sut = CreateSut();
-            sut.JuggPointsToWin.Should().Be("100");
-        }
-
-        [Fact]
-        public void InitialState_JuggHP_IsDefault()
-        {
-            var sut = CreateSut();
-            sut.JuggHP.Should().Be("1000");
-        }
-
-        [Fact]
-        public void InitialState_JuggMinPlayers_IsDefault()
-        {
-            var sut = CreateSut();
-            sut.JuggMinPlayers.Should().Be("3");
-        }
-
-        [Fact]
         public void InitialState_AttackerGrenadeIndex_IsMinusOne()
         {
             var sut = CreateSut();
@@ -210,22 +189,6 @@ namespace TabgInstaller.Tests.ViewModels
             var sut = CreateSut();
             sut.ProxChatFalloffIndex = 1;
             sut.ProxChatFalloffIndex.Should().Be(1);
-        }
-
-        [Fact]
-        public void JuggPointsToWin_CanBeSet()
-        {
-            var sut = CreateSut();
-            sut.JuggPointsToWin = "200";
-            sut.JuggPointsToWin.Should().Be("200");
-        }
-
-        [Fact]
-        public void JuggHP_CanBeSet()
-        {
-            var sut = CreateSut();
-            sut.JuggHP = "500";
-            sut.JuggHP.Should().Be("500");
         }
 
         [Fact]

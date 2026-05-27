@@ -51,7 +51,6 @@ namespace TabgInstaller.Core
         private const string CitrusDllAssetName = "Citruslib.dll";
         private const string AntiCheatBypassDllName = "TabgInstaller.AntiCheatBypass.dll";
         private const string TestModDllName = "tabginstaller.testmod.dll";
-        private const string WeaponSpawnConfigDllName = "TabgInstaller.WeaponSpawnConfig.dll";
         private const string EosDllName = "EOSSDK-Win64-Shipping.dll";
 
         private const string UnityEngineDll = "UnityEngine.dll";

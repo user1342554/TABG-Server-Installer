@@ -2,7 +2,7 @@
   "id": "ProximityChat",
   "name": "ProximityChat Server",
   "version": "1.0.0",
-  "description": "Proximity-based voice chat for custom servers (server-side component).",
+  "description": "Proximity voice relay for custom servers. Uses versioned PCM voice packets with per-sender server rate limiting.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.ProximityChat.Server.dll"],

@@ -43,4 +43,9 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="CopyFakePlayersToBundledPlugins" AfterTargets="Build">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

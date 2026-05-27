@@ -29,6 +29,7 @@ namespace TabgInstaller.AntiCheatBypass
         {
             // Clean up event handler when plugin is destroyed (e.g., on game exit)
             AppDomain.CurrentDomain.AssemblyLoad -= OnAssemblyLoad;
+            _harmony?.UnpatchSelf();
         }
 
         private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
@@ -97,4 +98,4 @@ namespace TabgInstaller.AntiCheatBypass
             return false; // Skip original implementation completely
         }
     }
-} 
+}

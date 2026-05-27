@@ -32,6 +32,8 @@ namespace TabgInstaller.UnusedVehicles
         internal static bool EnableCommands = true;
         internal static bool EnableLegacySpawnAlias;
         internal static bool EnableHeadlessAudioPatches = true;
+        private static readonly FieldInfo GameRoomServerField = typeof(GameRoom).GetField("m_server", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly MethodInfo PopulateSeatNetworkIndexesMethod = typeof(GameRoom).GetMethod("PopulateSeatNetworkIndexes", BindingFlags.NonPublic | BindingFlags.Instance);
 
         private ConfigEntry<float> _spawnChance;
         private ConfigEntry<int> _maxSpawns;
@@ -301,8 +303,7 @@ namespace TabgInstaller.UnusedVehicles
                     if (cars == null || cars.Count == 0) return;
 
                     var carDb = CarDatabase.Instance;
-                    var serverField = typeof(GameRoom).GetField("m_server", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var server = serverField?.GetValue(__instance) as ServerClient;
+                    var server = GameRoomServerField?.GetValue(__instance) as ServerClient;
 
                     SpawnedVehiclePositions.Clear();
 
@@ -337,6 +338,7 @@ namespace TabgInstaller.UnusedVehicles
                             spawnPos = hit.point + Vector3.up * 0.5f;
 
                         GameObject vehicleGO = null;
+                        bool addedToServer = false;
                         string vName = entry.prefab.name;
                         // Wrap in try/catch per vehicle so one broken prefab doesn't kill all spawning.
                         try
@@ -347,8 +349,7 @@ namespace TabgInstaller.UnusedVehicles
 
                             carComponent.transform.position -= carComponent.transform.position - carComponent.mainRig.position;
 
-                            var populateMethod = typeof(GameRoom).GetMethod("PopulateSeatNetworkIndexes", BindingFlags.NonPublic | BindingFlags.Instance);
-                            populateMethod?.Invoke(__instance, new object[] { carComponent });
+                            PopulateSeatNetworkIndexesMethod?.Invoke(__instance, new object[] { carComponent });
 
                             Seat[] seats = carComponent.GetComponentsInChildren<Seat>();
                             int carIndex = AllocateUniqueCarIndex(cars);
@@ -356,6 +357,7 @@ namespace TabgInstaller.UnusedVehicles
                             var tabgCar = new TABGCarServer(carComponent, seats, vehicleIdx, carIndex);
                             cars.Add(tabgCar);
                             tabgCar.UpdatePosition(carComponent.transform.position);
+                            addedToServer = true;
 
                             if (!SpawnedVehiclePositions.ContainsKey(vName))
                                 SpawnedVehiclePositions[vName] = new List<Vector3>();
@@ -384,7 +386,7 @@ namespace TabgInstaller.UnusedVehicles
                         }
                         finally
                         {
-                            if (vehicleGO != null)
+                            if (vehicleGO != null && !addedToServer)
                                 UnityEngine.Object.Destroy(vehicleGO);
                         }
                     }

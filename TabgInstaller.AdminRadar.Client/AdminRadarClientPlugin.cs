@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace TabgInstaller.AdminRadar.Client
 {
-    [BepInPlugin("tabginstaller.adminradar.client", "Admin Radar Client", "1.0.0")]
+    [BepInPlugin("tabginstaller.adminradar.client", "Dummy Debug Radar Client", "1.0.0")]
     public class AdminRadarClientPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
@@ -55,6 +55,8 @@ namespace TabgInstaller.AdminRadar.Client
         private ConfigEntry<float> _markerMaxDistance;
         private ConfigEntry<bool> _syncDummyClientBodies;
         private ConfigEntry<bool> _respawnDummyClientBodies;
+        private ConfigEntry<bool> _markDummiesDroppedBeforeAllDrop;
+        private ConfigEntry<bool> _allowLocalClientPlayerFallback;
 
         private Harmony _harmony;
         private GUIStyle _labelStyle;
@@ -80,8 +82,10 @@ namespace TabgInstaller.AdminRadar.Client
             _showWorldMarkers = Config.Bind("Dummy Highlighter", "ShowWorldMarkers", true, "Show screen-space labels over dummy players.");
             _showOnlyDummies = Config.Bind("Dummy Highlighter", "OnlyDummies", true, "Only draw world markers for AIPlayer dummy names.");
             _markerMaxDistance = Config.Bind("Dummy Highlighter", "MaxDistanceMeters", 2500f, "Maximum distance for dummy world markers.");
-            _syncDummyClientBodies = Config.Bind("Dummy Debug", "SyncClientDummyBodies", true, "Move local dummy bodies after large server radar jumps. This is only for debug display, not general entity sync.");
-            _respawnDummyClientBodies = Config.Bind("Dummy Debug", "RespawnClientDummyBodies", true, "Rebuild missing local dummy bodies after large server radar jumps. This is only for debug display, not general entity sync.");
+            _syncDummyClientBodies = Config.Bind("Dummy Debug", "SyncClientDummyBodies", false, "Compatibility/debug only: move local dummy bodies after large server radar jumps.");
+            _respawnDummyClientBodies = Config.Bind("Dummy Debug", "RespawnClientDummyBodies", false, "Compatibility/debug only: rebuild missing local dummy bodies after large server radar jumps.");
+            _markDummiesDroppedBeforeAllDrop = Config.Bind("Dummy Debug", "MarkDummiesDroppedBeforeAllDrop", false, "Compatibility/debug only: mutate dummy client drop state before vanilla AllDrop handling.");
+            _allowLocalClientPlayerFallback = Config.Bind("Dummy Debug", "AllowLocalClientPlayerFallback", false, "Compatibility/debug only: add locally known players that the server did not broadcast. This can expose real player positions.");
 
             RegisterSettings();
 
@@ -454,6 +458,9 @@ namespace TabgInstaller.AdminRadar.Client
         {
             try
             {
+                if (Instance == null || !Instance._markDummiesDroppedBeforeAllDrop.Value)
+                    return;
+
                 PhotonServerHandler handler = PhotonServerHandler.instance;
                 if (handler == null || handler.Players == null)
                     return;
@@ -498,8 +505,12 @@ namespace TabgInstaller.AdminRadar.Client
                         continue;
 
                     RadarPlayer existing;
+                    bool hasExisting = Players.TryGetValue(player.PlayerIndex, out existing);
+                    if (!hasExisting && (Instance == null || !Instance._allowLocalClientPlayerFallback.Value))
+                        continue;
+
                     string playerName = string.IsNullOrWhiteSpace(player.PlayerName) ? "Player " + player.PlayerIndex : player.PlayerName;
-                    if (Players.TryGetValue(player.PlayerIndex, out existing) && IsDummyName(existing.Name) && HasFreshServerPosition(existing))
+                    if (hasExisting && IsDummyName(existing.Name) && HasFreshServerPosition(existing))
                     {
                         existing.Name = playerName;
                         existing.Alive = !player.IsDead;
@@ -970,16 +981,18 @@ namespace TabgInstaller.AdminRadar.Client
         {
             try
             {
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Toggle Key", "Key to show/hide radar", _toggleKey);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Visible", "Show radar overlay", _visible);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Range", "Radar range in meters", _radarRange);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Size", "Radar size in pixels", _radarSize);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Admin Radar", "Show Names", "Show player names", _showNames);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug Radar", "Toggle Key", "Key to show/hide radar", _toggleKey);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug Radar", "Visible", "Show radar overlay", _visible);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug Radar", "Range", "Radar range in meters", _radarRange);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug Radar", "Size", "Radar size in pixels", _radarSize);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug Radar", "Show Names", "Show player names", _showNames);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "World Markers", "Show labels over dummy players", _showWorldMarkers);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Only Dummies", "Only label AI dummy players", _showOnlyDummies);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Max Distance", "Maximum label distance", _markerMaxDistance);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Sync Bodies", "Move local dummy bodies after large server radar jumps", _syncDummyClientBodies);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Respawn Bodies", "Rebuild missing local dummy bodies after large server radar jumps", _respawnDummyClientBodies);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Drop Compatibility", "Mutate dummy client drop state before vanilla AllDrop", _markDummiesDroppedBeforeAllDrop);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Local Player Fallback", "Add locally known players that server did not broadcast", _allowLocalClientPlayerFallback);
             }
             catch (Exception ex)
             {
@@ -990,8 +1003,22 @@ namespace TabgInstaller.AdminRadar.Client
         private static bool IsDummyName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return false;
-            return name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Player", StringComparison.OrdinalIgnoreCase);
+            if (name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (!name.StartsWith("Player", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (name.Length <= "Player".Length)
+                return false;
+
+            for (int i = "Player".Length; i < name.Length; i++)
+            {
+                if (!char.IsDigit(name[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         private static bool HasFreshServerPosition(RadarPlayer player)

@@ -6,6 +6,7 @@ using UnityEngine;
 namespace TabgInstaller.CoordsDisplay
 {
     [BepInPlugin("tabginstaller.coordsdisplay", "TABG Coords Display", "1.0.0")]
+    [BepInDependency("tabginstaller.modsettings", BepInDependency.DependencyFlags.HardDependency)]
     public class CoordsDisplayPlugin : BaseUnityPlugin
     {
         private ConfigEntry<KeyCode> _toggleKey;

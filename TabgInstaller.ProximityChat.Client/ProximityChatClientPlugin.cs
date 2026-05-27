@@ -16,6 +16,8 @@ namespace TabgInstaller.ProximityChat.Client
         public static ConfigEntry<float> MicSensitivity;
         public static ConfigEntry<float> MasterVolume;
         public static ConfigEntry<string> MicrophoneDevice;
+        public static ConfigEntry<bool> PushToTalkEnabled;
+        public static ConfigEntry<KeyCode> PushToTalkKey;
         public static ConfigEntry<float> MinRange;
         public static ConfigEntry<float> MaxRange;
         public static ConfigEntry<string> FalloffCurve;
@@ -32,18 +34,32 @@ namespace TabgInstaller.ProximityChat.Client
         private void Awake()
         {
             Instance = this;
-            Enabled = Config.Bind("ProximityChat", "Enabled", true, "Enable/disable voice chat");
-            MicSensitivity = Config.Bind("ProximityChat", "MicSensitivity", 0.01f, "Voice activity detection threshold (RMS)");
-            MasterVolume = Config.Bind("ProximityChat", "MasterVolume", 1.0f, "Overall voice chat volume");
+            Enabled = Config.Bind("ProximityChat", "Enabled", true, "Enable/disable voice chat. Turning this off immediately stops microphone recording and network sends.");
+            MicSensitivity = Config.Bind("ProximityChat", "MicSensitivity", 0.01f,
+                new ConfigDescription("Voice activity detection threshold (RMS). Lower values transmit quieter audio.",
+                    new AcceptableValueRange<float>(0.0001f, 0.25f)));
+            MasterVolume = Config.Bind("ProximityChat", "MasterVolume", 1.0f,
+                new ConfigDescription("Overall voice chat volume.", new AcceptableValueRange<float>(0f, 2f)));
             MicrophoneDevice = Config.Bind("ProximityChat", "MicrophoneDevice", "", "Microphone device name (empty = system default)");
-            MinRange = Config.Bind("ProximityChat", "MinRange", 5f, "Distance within which received voice is full volume");
-            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f, "Distance at which received voice becomes inaudible");
+            PushToTalkEnabled = Config.Bind("ProximityChat", "PushToTalkEnabled", false, "Require PushToTalkKey to transmit. When false, MicSensitivity is used as the voice activation threshold.");
+            PushToTalkKey = Config.Bind("ProximityChat", "PushToTalkKey", KeyCode.V, "Key held while transmitting when push-to-talk is enabled.");
+            MinRange = Config.Bind("ProximityChat", "MinRange", 5f,
+                new ConfigDescription("Distance within which received voice is full volume.", new AcceptableValueRange<float>(0f, 500f)));
+            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f,
+                new ConfigDescription("Distance at which received voice becomes inaudible.", new AcceptableValueRange<float>(1f, 1000f)));
             FalloffCurve = Config.Bind("ProximityChat", "FalloffCurve", "Linear", "Volume falloff: Linear or Logarithmic");
+            Enabled.SettingChanged += (_, __) =>
+            {
+                if (!Enabled.Value)
+                    StopVoice();
+            };
 
             try
             {
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Enabled", "Toggle voice chat on/off", Enabled);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Mic Sensitivity", "VAD threshold", MicSensitivity);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Push To Talk", "Hold a key to transmit instead of voice activation", PushToTalkEnabled);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Push Key", "Push-to-talk transmit key", PushToTalkKey);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Proximity Chat", "Master Volume", "Voice chat volume", MasterVolume);
             }
             catch (Exception ex) { Logger.LogDebug($"[ProximityChat] ModSettings registration failed: {ex.Message}"); }
@@ -61,7 +77,12 @@ namespace TabgInstaller.ProximityChat.Client
 
         private void Update()
         {
-            if (!Enabled.Value) return;
+            if (!Enabled.Value)
+            {
+                if (_started)
+                    StopVoice();
+                return;
+            }
 
             // Start mic when entering a game session
             if (!_started && IsInGameSession())
@@ -71,7 +92,9 @@ namespace TabgInstaller.ProximityChat.Client
 
             if (_started)
             {
-                _micCapture?.ProcessMicData(MicSensitivity.Value);
+                bool pushToTalkHeld = PushToTalkEnabled.Value && Input.GetKey(PushToTalkKey.Value);
+                bool transmissionAllowed = !PushToTalkEnabled.Value || pushToTalkHeld;
+                _micCapture?.ProcessMicData(MicSensitivity.Value, transmissionAllowed, PushToTalkEnabled.Value);
                 ApplyPlaybackConfig();
                 _playback?.Tick();
 
@@ -106,6 +129,9 @@ namespace TabgInstaller.ProximityChat.Client
 
         private void StartVoice()
         {
+            if (!Enabled.Value)
+                return;
+
             try
             {
                 if (Microphone.devices.Length > 0)
@@ -132,6 +158,9 @@ namespace TabgInstaller.ProximityChat.Client
         {
             try
             {
+                if (!Enabled.Value)
+                    return;
+
                 var connector = ServerConnector.Instance;
                 if (connector == null) return;
 
@@ -159,8 +188,14 @@ namespace TabgInstaller.ProximityChat.Client
                 try
                 {
                     _recvCount++;
-                    if (Instance == null || Instance._playback == null)
+                if (Instance == null || Instance._playback == null)
+                {
+                    return false;
+                }
+                    if (!Enabled.Value)
                     {
+                        if (Instance._started)
+                            Instance.StopVoice();
                         return false;
                     }
                     // Auto-start if we receive voice but haven't started yet

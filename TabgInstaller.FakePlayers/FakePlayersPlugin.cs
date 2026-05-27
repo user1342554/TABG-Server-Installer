@@ -47,16 +47,23 @@ namespace TabgInstaller.FakePlayers
         internal static int GunshotSoundSequence { get; private set; }
         internal static ConfigEntry<int> MaxFakeSpawnCount;
         internal static ConfigEntry<int> MaxAiSpawnCount;
+        internal static ConfigEntry<int> CommandPermissionLevel;
+        internal static ConfigEntry<bool> DevelopmentMode;
         internal static ConfigEntry<bool> CommandsUsableByEveryone;
+        private Harmony _harmony;
+        private Harmony _permissionHarmony;
 
         private void Awake()
         {
             MaxFakeSpawnCount = Config.Bind("Commands", "MaxFakeSpawnCount", 200, "Maximum fake players spawned by one /spawndummy command.");
             MaxAiSpawnCount = Config.Bind("Commands", "MaxAiSpawnCount", 32, "Maximum AI dummy players spawned by one /spawnaidummy command.");
-            CommandsUsableByEveryone = Config.Bind("Commands", "CommandsUsableByEveryone", true, "Bypass Citrus permissions for FakePlayers commands.");
+            CommandPermissionLevel = Config.Bind("Commands", "CommandPermissionLevel", 2, "Citrus permission level required for FakePlayers commands in normal release mode.");
+            DevelopmentMode = Config.Bind("Safety", "DevelopmentMode", false, "Explicitly mark this server as a private development/test server. Required before test-only permission bypass can activate.");
+            CommandsUsableByEveryone = Config.Bind("Safety", "CommandsUsableByEveryone", false, "Development-only: bypass Citrus permissions for FakePlayers commands. Ignored unless Safety.DevelopmentMode is true.");
 
             Instance = this;
-            new Harmony(PluginGuid).PatchAll();
+            _harmony = new Harmony(PluginGuid);
+            _harmony.PatchAll();
             Logger.LogInfo("[FakePlayers] Loaded.");
         }
 
@@ -64,6 +71,8 @@ namespace TabgInstaller.FakePlayers
         {
             if (ReferenceEquals(Instance, this))
             {
+                _permissionHarmony?.UnpatchSelf();
+                _harmony?.UnpatchSelf();
                 ResetStaticMatchState();
                 ServerRef = null;
                 Instance = null;
@@ -78,8 +87,14 @@ namespace TabgInstaller.FakePlayers
             try
             {
                 RegisterCommands();
-                if (CommandsUsableByEveryone.Value)
+                if (DevelopmentMode.Value && CommandsUsableByEveryone.Value)
+                {
                     PatchPermissions();
+                }
+                else if (CommandsUsableByEveryone.Value)
+                {
+                    Logger.LogWarning("[FakePlayers] CommandsUsableByEveryone is ignored because Safety.DevelopmentMode is false.");
+                }
             }
             catch (Exception ex)
             {
@@ -89,6 +104,8 @@ namespace TabgInstaller.FakePlayers
 
         private void RegisterCommands()
         {
+            int commandPermission = Math.Max(0, CommandPermissionLevel.Value);
+
             Action<string[], TABGPlayerServer> spawnAiCommand = (string[] prms, TABGPlayerServer player) =>
             {
                 var server = ResolveServer();
@@ -116,11 +133,11 @@ namespace TabgInstaller.FakePlayers
 
                 int spawned = SpawnFakePlayers(server, count, player);
                 Citrus.SelfParrot(player, $"Spawned {spawned} fake player(s). Total: {FakeIndices.Count}");
-            }, "FakePlayers", "Spawn fake players", "[count]", 0);
+            }, "FakePlayers", "Spawn fake players", "[count]", commandPermission);
 
-            Citrus.AddCommand("spawnaidummy", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", 0);
-            Citrus.AddCommand("aidummy", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", 0);
-            Citrus.AddCommand("spawnai", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", 0);
+            Citrus.AddCommand("spawnaidummy", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", commandPermission);
+            Citrus.AddCommand("aidummy", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", commandPermission);
+            Citrus.AddCommand("spawnai", spawnAiCommand, "FakePlayers", "Spawn AI dummy players", "[count] [level 1-5]", commandPermission);
 
             Citrus.AddCommand("removedummy", (string[] prms, TABGPlayerServer player) =>
             {
@@ -133,12 +150,12 @@ namespace TabgInstaller.FakePlayers
 
                 int removed = RemoveFakePlayers(server, count);
                 Citrus.SelfParrot(player, $"Removed {removed}. Remaining: {FakeIndices.Count}");
-            }, "FakePlayers", "Remove fake players", "[count]", 0);
+            }, "FakePlayers", "Remove fake players", "[count]", commandPermission);
 
             Citrus.AddCommand("dummycount", (string[] prms, TABGPlayerServer player) =>
             {
                 Citrus.SelfParrot(player, $"Active fake players: {FakeIndices.Count}");
-            }, "FakePlayers", "Show fake player count", "", 0);
+            }, "FakePlayers", "Show fake player count", "", commandPermission);
 
             Citrus.AddCommand("inspectbot", (string[] prms, TABGPlayerServer player) =>
             {
@@ -153,14 +170,16 @@ namespace TabgInstaller.FakePlayers
                 }
 
                 Citrus.SelfParrot(player, controller.GetDebugSummary());
-            }, "FakePlayers", "Inspect one AI dummy", "[index|name]", 0);
+            }, "FakePlayers", "Inspect one AI dummy", "[index|name]", commandPermission);
 
             Logger.LogInfo("[FakePlayers] Commands registered: /spawndummy, /spawnaidummy, /aidummy, /spawnai, /removedummy, /dummycount, /inspectbot");
+            if (commandPermission <= 0)
+                Logger.LogWarning("[FakePlayers] CommandPermissionLevel is 0; FakePlayers commands are available to everyone.");
         }
 
         /// <summary>
-        /// Patches Citruslib's internal Command.Run to skip the permission check,
-        /// so every player can use every command (not just our commands — ALL commands).
+        /// Patches Citruslib's internal Command.Run to skip the permission check
+        /// only for commands registered by this plugin, and only in explicit dev mode.
         /// </summary>
         private void PatchPermissions()
         {
@@ -179,8 +198,9 @@ namespace TabgInstaller.FakePlayers
             }
 
             var prefix = new HarmonyMethod(typeof(PermBypassPatch), nameof(PermBypassPatch.Prefix));
-            new Harmony(PluginGuid + ".perms").Patch(runMethod, prefix: prefix);
-            Logger.LogInfo("[FakePlayers] Permission bypass applied — all commands usable by everyone.");
+            _permissionHarmony = new Harmony(PluginGuid + ".perms");
+            _permissionHarmony.Patch(runMethod, prefix: prefix);
+            Logger.LogWarning("[FakePlayers] Development permission bypass applied for FakePlayers commands only.");
         }
 
         // -----------------------------------------------------------------
@@ -611,8 +631,8 @@ namespace TabgInstaller.FakePlayers
     }
 
     /// <summary>
-    /// Prefix patch for CitrusLib.Command.Run — skips the permission check
-    /// so every player can run every command regardless of perm level.
+    /// Prefix patch for CitrusLib.Command.Run. In explicit development mode it skips
+    /// the permission check for commands owned by this plugin only.
     /// </summary>
     internal static class PermBypassPatch
     {
@@ -620,6 +640,11 @@ namespace TabgInstaller.FakePlayers
         {
             try
             {
+                var modNameField = AccessTools.Field(__instance.GetType(), "modName");
+                var modName = modNameField?.GetValue(__instance) as string;
+                if (!string.Equals(modName, "FakePlayers", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
                 var funcField = AccessTools.Field(__instance.GetType(), "func");
                 if (funcField != null)
                 {

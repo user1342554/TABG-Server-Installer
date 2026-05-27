@@ -16,6 +16,7 @@ namespace TabgInstaller.ProximityChat.Server
         public static ConfigEntry<float> MaxRange;
         public static ConfigEntry<float> MinRange;
         public static ConfigEntry<string> FalloffCurve;
+        public static ConfigEntry<int> MaxPacketsPerSecond;
 
         private Harmony _harmony;
 
@@ -24,9 +25,14 @@ namespace TabgInstaller.ProximityChat.Server
         private void Awake()
         {
             Instance = this;
-            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f, "Distance beyond which audio is not relayed");
-            MinRange = Config.Bind("ProximityChat", "MinRange", 5f, "Distance within which audio is full volume");
+            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f,
+                new ConfigDescription("Distance beyond which audio is not relayed.", new AcceptableValueRange<float>(1f, 1000f)));
+            MinRange = Config.Bind("ProximityChat", "MinRange", 5f,
+                new ConfigDescription("Distance within which audio is full volume.", new AcceptableValueRange<float>(0f, 500f)));
             FalloffCurve = Config.Bind("ProximityChat", "FalloffCurve", "Linear", "Volume falloff: Linear or Logarithmic");
+            MaxPacketsPerSecond = Config.Bind("ProximityChat", "MaxPacketsPerSecond", 60,
+                new ConfigDescription("Server-side per-sender voice packet rate limit. 20 ms PCM frames normally send 50 packets/second.",
+                    new AcceptableValueRange<int>(10, 100)));
 
             _harmony = new Harmony("tabginstaller.proximitychat.server");
             _harmony.PatchAll(typeof(VoiceMessagePatch));
@@ -47,6 +53,7 @@ namespace TabgInstaller.ProximityChat.Server
         internal static class VoiceMessagePatch
         {
             private static int _relayCount;
+            private static readonly Dictionary<byte, RateLimitState> RateLimits = new Dictionary<byte, RateLimitState>();
             static bool Prefix(ServerPackage networkEvent, ServerClient __instance)
             {
                 // Only intercept our custom voice event code (240).
@@ -57,6 +64,11 @@ namespace TabgInstaller.ProximityChat.Server
                     byte senderIndex = networkEvent.SenderPlayerID;
                     byte[] voiceData = networkEvent.Buffer;
                     if (!VoicePacket.TryRead(voiceData, out _, out ushort sequence, out _, out int pcmLength))
+                    {
+                        return false;
+                    }
+
+                    if (!AllowPacket(senderIndex))
                     {
                         return false;
                     }
@@ -113,6 +125,34 @@ namespace TabgInstaller.ProximityChat.Server
                 }
 
                 return false; // Consume the event — no default handler for code 240
+            }
+
+            private static bool AllowPacket(byte senderIndex)
+            {
+                int maxPackets = Math.Max(1, MaxPacketsPerSecond?.Value ?? 60);
+                float now = Time.unscaledTime;
+                RateLimitState state;
+                if (!RateLimits.TryGetValue(senderIndex, out state) || now - state.WindowStartedAt >= 1f)
+                {
+                    RateLimits[senderIndex] = new RateLimitState { WindowStartedAt = now, Count = 1 };
+                    return true;
+                }
+
+                state.Count++;
+                RateLimits[senderIndex] = state;
+                if (state.Count <= maxPackets)
+                    return true;
+
+                if (state.Count == maxPackets + 1 && Instance != null)
+                    Instance.Logger.LogWarning("[ProximityChat] Rate-limited voice sender " + senderIndex + ".");
+
+                return false;
+            }
+
+            private struct RateLimitState
+            {
+                public float WindowStartedAt;
+                public int Count;
             }
         }
     }

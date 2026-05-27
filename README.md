@@ -103,38 +103,52 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | Plugin | DLL | Description | Default |
 |--------|-----|-------------|---------|
 | Citruslib | `Citruslib.dll` | Third-party TABG server modding API dependency | Yes |
+| AntiCheatBypass | `TabgInstaller.AntiCheatBypass.dll` | Private server EAC/EOS compatibility bypass | Yes |
 | MatchCore | `TabgInstaller.MatchCore.dll` | Rings, loadouts, vote-start, drops, spell drops, timeouts, win rules, and match fixes | Yes |
 | ServerLogger | `TabgInstaller.ServerLogger.dll` | Player name, PlayFab ID, and Epic ID logging with CSV and legacy log support | Yes |
 | UnusedVehicles | `TabgInstaller.UnusedVehicles.dll` | Spawns and manages hidden TABG vehicles | Yes |
-| BigSmoke / MGLFlashbang | `TabgInstaller.CustomGrenades.dll` | Custom grenade gameplay | Yes |
+| CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Big Smoke grenade behavior; client-only MGL flashbang code disables itself on headless servers | Yes |
 | ProximityChat | `TabgInstaller.ProximityChat.Server.dll` | Nearby voice relay over the existing game network | Yes |
 | SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
-| FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets | No |
-| AdminRadar | `TabgInstaller.AdminRadar.Server.dll` | Admin-only player telemetry server | No |
+| FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets for private testing | No |
+| DummyDebugRadar | `TabgInstaller.AdminRadar.Server.dll` | Dummy/debug telemetry server, real player positions and real target names disabled by default | No |
 
 ### Client Plugins
 
 | Plugin | DLL | Description | Default |
 |--------|-----|-------------|---------|
 | FlyingControls | `TabgInstaller.FlyingControls.dll` | Client steering for custom flying vehicles | Yes |
-| CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Client visuals/effects for custom grenades | Yes |
+| CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Client visuals/effects for custom grenades and MGL flashbangs | Yes |
 | CoordsDisplay | `TabgInstaller.CoordsDisplay.dll` | Coordinate overlay | Yes |
 | ModSettings | `TabgInstaller.ModSettings.dll` | In-game mod settings support | Yes |
-| EnhancedClient | `TabgInstaller.EnhancedClient.dll` | LOD, draw distance, haze, and HUD controls | Yes |
+| EnhancedClient | `TabgInstaller.EnhancedClient.dll` | Experimental LOD, draw distance, haze, and HUD controls | No |
 | PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
 | ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
-| AdminRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Admin-only radar overlay | No |
+| DummyDebugRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Dummy/debug radar overlay | No |
 
 ## Proximity Voice Chat
 
 Voice communication is built directly into the game's existing network connection. No additional ports or separate voice server are required.
 
-- Voice data travels through the game's relay network.
-- The server relays voice packets only to nearby players based on in-game distance.
+- Voice data travels through the game's relay network as versioned v1 16 kHz unsigned PCM packets.
+- The server relays voice packets only to nearby players based on in-game distance and rate-limits each sender.
 - Configurable maximum range, defaulting to 50 m.
 - HUD indicator shows who is currently talking.
-- Open microphone with noise gate to suppress background noise.
+- Voice activation uses the `MicSensitivity` RMS threshold; optional push-to-talk drains muted mic frames so stale pre-key audio is not sent later.
+- Turning the client config off immediately stops microphone recording and packet sending.
 - 16 kHz audio quality.
+
+### Private Server Safety
+
+Some bundled plugins exist for custom/private server operation and should not be treated as public-server defaults:
+
+- **FakePlayers** commands require Citrus permissions by default. The `CommandsUsableByEveryone` bypass is ignored unless `Safety.DevelopmentMode=true`.
+- **AntiCheatBypass** and **PopupBlocker** are compatibility tooling for this custom server ecosystem, not general-purpose public-server anti-cheat changes.
+- **DummyDebugRadar** defaults to dummy-only broadcasts. Real player positions and real bot target names require `Visibility.IncludeRealPlayers=true`; with it off, bot debug target names are kept only for dummy targets or generic threat markers such as `last-heard`.
+- **SoloTesting** is inactive unless `Safety.DevelopmentMode=true`.
+- **EnhancedClient** is disabled by default and uses bounded draw-distance settings.
+- **ProximityChat** records microphone audio only while enabled and in a game session; disabling it stops capture immediately.
+- **CustomGrenades** is one combined DLL with separate `BigSmoke` and `Flashbang` config sections. The MGL flashbang feature is client-only and disables itself on dedicated/headless servers.
 
 ## Server Logger
 
@@ -154,6 +168,8 @@ Bundled plugins are normal BepInEx 5.4.22 projects targeting `netstandard2.0`.
 2. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
 3. Add or update `registry/plugins/<PluginId>/manifest.json`.
 4. Build the launcher projects and tests project before release.
+
+`TabgInstaller.WeaponSpawnConfig` is currently source-only experimental work. It is not part of `TabgInstaller.sln`, has no registry manifest, and is not copied into the bundled server/client payloads.
 
 ## Disclaimer
 

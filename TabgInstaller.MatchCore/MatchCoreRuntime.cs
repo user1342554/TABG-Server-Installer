@@ -118,7 +118,7 @@ namespace TabgInstaller.MatchCore
             var room = GetRoom(mode);
             if (room == null) return true;
 
-            if (settings.WinCondition == WinConditionMode.Debug)
+            if (settings.WinCondition == WinConditionMode.Debug || settings.WinCondition == WinConditionMode.Endless)
                 return false;
 
             if (settings.WinCondition == WinConditionMode.KillsToWin)

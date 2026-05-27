@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'registry/plugins/**'
+      - 'registry/validate-manifests.sh'
       - '.github/workflows/registry-build.yml'
   workflow_dispatch:
 
@@ -35,6 +36,9 @@ jobs:
 
           # Pretty-print with jq
           jq '.' /tmp/registry_parts.json > registry/registry.json
+
+      - name: Validate registry consistency
+        run: registry/validate-manifests.sh
 
       - name: Commit registry.json
         run: |

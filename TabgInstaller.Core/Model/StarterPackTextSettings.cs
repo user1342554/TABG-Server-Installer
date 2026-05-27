@@ -7,7 +7,7 @@ namespace TabgInstaller.Core.Model
     public class StarterPackTextSettings
     {
         // Match settings
-        public string WinCondition { get; set; } = "Default"; // Default, KillsToWin, Debug
+        public string WinCondition { get; set; } = "Default"; // Default, KillsToWin, Debug, Endless
         public int? KillsToWin { get; set; }
         public bool ForceKillAtStart { get; set; } = false;
 

@@ -2,7 +2,7 @@
   "id": "FakePlayers",
   "name": "FakePlayers",
   "version": "1.0.0",
-  "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
+  "description": "Spawn fake and AI dummy players for private testing. Commands require configured Citrus permissions unless explicit development mode is enabled.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.FakePlayers.dll"],
@@ -13,5 +13,5 @@
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
   "dependencies": ["Citruslib"],
-  "tags": ["testing", "development", "bots"]
+  "tags": ["testing", "development", "bots", "private-server"]
 }

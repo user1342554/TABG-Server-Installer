@@ -1,8 +1,8 @@
 {
   "id": "AdminRadar",
-  "name": "Admin Radar Server",
+  "name": "Dummy Debug Radar Server",
   "version": "1.0.0",
-  "description": "Server-authorized player position radar for custom servers.",
+  "description": "Dummy/debug radar for private servers. Defaults to dummy-only; real player positions and real target names require explicit config.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.AdminRadar.Server.dll"],
@@ -13,7 +13,7 @@
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
   "dependencies": [],
-  "tags": ["admin", "radar", "debug"],
+  "tags": ["dummy", "radar", "debug", "private-server"],
   "requiresClientMod": true,
   "clientPluginId": "AdminRadarClient"
 }

@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TabgInstaller.AdminRadar.Server
 {
-    [BepInPlugin("tabginstaller.adminradar.server", "Admin Radar Server", "1.0.0")]
+    [BepInPlugin("tabginstaller.adminradar.server", "Dummy Debug Radar Server", "1.0.0")]
     public class AdminRadarServerPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
@@ -26,22 +26,31 @@ namespace TabgInstaller.AdminRadar.Server
         private static ConfigEntry<bool> _enabled;
         private static ConfigEntry<float> _broadcastInterval;
         private static ConfigEntry<string> _recipients;
+        private static ConfigEntry<bool> _includeDummyPlayers;
+        private static ConfigEntry<bool> _includeRealPlayers;
         private static ConfigEntry<bool> _includeDeadPlayers;
+        private static ConfigEntry<bool> _includeWorldMarkers;
+        private static ConfigEntry<bool> _includeBotDebug;
 
         private Harmony _harmony;
 
         private void Awake()
         {
             _instance = this;
-            _enabled = Config.Bind("Radar", "Enabled", true, "Broadcast server-authorized radar positions.");
-            _broadcastInterval = Config.Bind("Radar", "BroadcastIntervalSeconds", 0.5f, "How often to send radar updates.");
-            _recipients = Config.Bind("Radar", "Recipients", "*", "Comma-separated player indexes that receive radar, or * for everyone.");
+            _enabled = Config.Bind("Radar", "Enabled", true, "Broadcast server-authorized debug radar positions.");
+            _broadcastInterval = Config.Bind("Radar", "BroadcastIntervalSeconds", 0.5f,
+                new ConfigDescription("How often to send radar updates.", new AcceptableValueRange<float>(0.1f, 10f)));
+            _recipients = Config.Bind("Radar", "Recipients", "*", "Comma-separated player indexes that receive radar, or * for everyone. Use an empty value to send to nobody.");
+            _includeDummyPlayers = Config.Bind("Visibility", "IncludeDummyPlayers", true, "Include FakePlayers/dummy players in radar updates.");
+            _includeRealPlayers = Config.Bind("Visibility", "IncludeRealPlayers", false, "Include real human player positions. Keep false on public servers unless everyone explicitly opted in.");
             _includeDeadPlayers = Config.Bind("Radar", "IncludeDeadPlayers", false, "Include dead players in radar updates.");
+            _includeWorldMarkers = Config.Bind("Visibility", "IncludeWorldMarkers", true, "Allow clients to draw received dummy/debug entries as world markers.");
+            _includeBotDebug = Config.Bind("Visibility", "IncludeBotDebug", true, "Include FakePlayers AI debug state, weapon, goals, and sanitized target metadata. With IncludeRealPlayers=false, real/unknown target names are hidden.");
 
             _harmony = new Harmony("tabginstaller.adminradar.server");
             _harmony.PatchAll(typeof(RadarBroadcastPatch));
 
-            Logger.LogInfo("[AdminRadar.Server] Loaded.");
+            Logger.LogInfo("[DummyDebugRadar.Server] Loaded. Defaults are dummy-only; real player positions require Visibility.IncludeRealPlayers=true.");
         }
 
         private void OnDestroy()
@@ -120,6 +129,12 @@ namespace TabgInstaller.AdminRadar.Server
                 {
                     if (player == null) continue;
 
+                    bool isDummy = IsDummyPlayer(player);
+                    if (isDummy && !_includeDummyPlayers.Value)
+                        continue;
+                    if (!isDummy && !_includeRealPlayers.Value)
+                        continue;
+
                     bool alive = IsAlive(player);
                     if (!alive && !_includeDeadPlayers.Value) continue;
 
@@ -135,16 +150,18 @@ namespace TabgInstaller.AdminRadar.Server
                     });
                 }
 
-                if (entries.Count == 0) return null;
-                var debugEntries = BuildBotDebugEntries(server);
+                var debugEntries = _includeBotDebug.Value && _includeWorldMarkers.Value ? BuildBotDebugEntries(server) : new List<BotDebugEntry>();
+                if (entries.Count == 0 && debugEntries.Count == 0) return null;
 
                 using (var ms = new MemoryStream())
                 using (var bw = new BinaryWriter(ms))
                 {
+                    int sectionCount = (entries.Count > 0 ? 1 : 0) + (debugEntries.Count > 0 ? 1 : 0);
                     bw.Write(RadarPayloadMagic);
                     bw.Write(RadarPayloadVersion);
-                    bw.Write((byte)(debugEntries.Count > 0 ? 2 : 1));
-                    WriteSection(bw, PlayerSectionType, sectionWriter => WritePlayerSection(sectionWriter, entries));
+                    bw.Write((byte)sectionCount);
+                    if (entries.Count > 0)
+                        WriteSection(bw, PlayerSectionType, sectionWriter => WritePlayerSection(sectionWriter, entries));
                     if (debugEntries.Count > 0)
                         WriteSection(bw, BotDebugSectionType, sectionWriter => WriteBotDebugSection(sectionWriter, debugEntries));
 
@@ -223,6 +240,7 @@ namespace TabgInstaller.AdminRadar.Server
                 if (server == null || server.GameRoomReference == null || server.GameRoomReference.Players == null)
                     return entries;
 
+                var dummyTargetNames = BuildDummyTargetNames(server.GameRoomReference.Players);
                 for (int i = 0; i < server.GameRoomReference.Players.Count; i++)
                 {
                     TABGPlayerServer player = server.GameRoomReference.Players[i];
@@ -241,7 +259,10 @@ namespace TabgInstaller.AdminRadar.Server
                     {
                         Index = player.PlayerIndex,
                         State = accessor.ReadString(controller, accessor.DebugState),
-                        TargetName = accessor.ReadString(controller, accessor.DebugTargetName),
+                        TargetName = RadarPrivacy.SanitizeBotDebugTargetName(
+                            accessor.ReadString(controller, accessor.DebugTargetName),
+                            _includeRealPlayers.Value,
+                            dummyTargetNames),
                         WeaponName = accessor.ReadString(controller, accessor.DebugWeaponName),
                         HasLineOfSight = accessor.ReadBool(controller, accessor.DebugHasLineOfSight),
                         IsFiring = accessor.ReadBool(controller, accessor.DebugIsFiring),
@@ -254,6 +275,33 @@ namespace TabgInstaller.AdminRadar.Server
                 }
 
                 return entries;
+            }
+
+            private static HashSet<string> BuildDummyTargetNames(IList<TABGPlayerServer> players)
+            {
+                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (players == null)
+                    return names;
+
+                for (int i = 0; i < players.Count; i++)
+                {
+                    TABGPlayerServer player = players[i];
+                    if (player == null || !IsDummyPlayer(player))
+                        continue;
+
+                    byte index = GetPlayerIndex(player);
+                    if (index != byte.MaxValue)
+                    {
+                        names.Add(index.ToString());
+                        names.Add("Player " + index);
+                    }
+
+                    string name = GetPlayerName(player, index);
+                    if (!string.IsNullOrWhiteSpace(name))
+                        names.Add(name);
+                }
+
+                return names;
             }
 
             private static MonoBehaviour FindAiController(GameObject playerObject)
@@ -271,6 +319,26 @@ namespace TabgInstaller.AdminRadar.Server
                 }
 
                 return null;
+            }
+
+            private static bool IsDummyPlayer(TABGPlayerServer player)
+            {
+                if (player == null)
+                    return false;
+
+                try
+                {
+                    if (player.Bot)
+                        return true;
+                }
+                catch
+                {
+                }
+
+                if (player.PlayerObject != null && FindAiController(player.PlayerObject) != null)
+                    return true;
+
+                return false;
             }
 
             private static BotDebugAccessor GetBotDebugAccessor(Component component)

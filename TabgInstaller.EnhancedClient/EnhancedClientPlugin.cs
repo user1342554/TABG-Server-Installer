@@ -35,10 +35,11 @@ namespace TabgInstaller.EnhancedClient
             ToggleLodKey = Config.Bind("Keybinds", "ToggleLodUnlock", KeyCode.F1, "Toggle full map/object LOD loading.");
             ToggleUiKey = Config.Bind("Keybinds", "ToggleUi", KeyCode.F2, "Toggle in-game UI visibility.");
             ToggleHazeKey = Config.Bind("Keybinds", "ToggleHaze", KeyCode.F3, "Toggle atmospheric haze.");
-            ItemDrawDistance = Config.Bind("Visuals", "ItemDrawDistance", 2147483647f, "Pickup/item draw distance in meters.");
+            ItemDrawDistance = Config.Bind("Visuals", "ItemDrawDistance", 250f,
+                new ConfigDescription("Pickup/item draw distance in meters.", new AcceptableValueRange<float>(25f, 2500f)));
             StartWithLodUnlocked = Config.Bind("Visuals", "StartWithLodUnlocked", false, "Load all map/object chunks when the client camera is ready.");
             StartWithHazeDisabled = Config.Bind("Visuals", "StartWithHazeDisabled", false, "Disable haze when the client camera is ready.");
-            BlockChunkUnloads = Config.Bind("Visuals", "BlockChunkUnloadsWhenUnlocked", true, "Prevent streamed chunks from unloading while LOD unlock is enabled.");
+            BlockChunkUnloads = Config.Bind("Visuals", "BlockChunkUnloadsWhenUnlocked", false, "Prevent streamed chunks from unloading while LOD unlock is enabled. Experimental and disabled by default.");
             RenameOfflineButton = Config.Bind("Interface", "RenameOfflineButton", true, "Rename the main menu Play Offline button to LAN Mode.");
 
             LodUnlocked = StartWithLodUnlocked.Value;

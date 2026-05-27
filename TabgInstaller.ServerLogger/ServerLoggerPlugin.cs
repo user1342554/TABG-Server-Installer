@@ -27,7 +27,7 @@ namespace TabgInstaller.ServerLogger
         private static readonly char[] SpaceSeparator = { ' ' };
         private static readonly char[] CsvQuotedCharacters = { ',', '"', '\r', '\n' };
 
-        private readonly HashSet<TABGPlayerServer> _loggedPlayers = new HashSet<TABGPlayerServer>();
+        private readonly Dictionary<TABGPlayerServer, PlayerIdentity> _loggedPlayers = new Dictionary<TABGPlayerServer, PlayerIdentity>();
         private readonly HashSet<string> _loggedIdentityKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Harmony _harmony;
         private float _nextScanTime;
@@ -143,16 +143,20 @@ namespace TabgInstaller.ServerLogger
             PlayerIdentity identity = PlayerIdentity.From(player);
             string key = identity.IdentityKey;
 
-            if (_loggedPlayers.Contains(player))
+            PlayerIdentity previousIdentity;
+            if (_loggedPlayers.TryGetValue(player, out previousIdentity) && !identity.IsRicherThan(previousIdentity))
                 return;
 
             if (!string.IsNullOrWhiteSpace(key) && _loggedIdentityKeys.Contains(key))
             {
-                _loggedPlayers.Add(player);
-                return;
+                if (!_loggedPlayers.ContainsKey(player))
+                {
+                    _loggedPlayers[player] = identity;
+                    return;
+                }
             }
 
-            _loggedPlayers.Add(player);
+            _loggedPlayers[player] = identity;
             if (!string.IsNullOrWhiteSpace(key))
                 _loggedIdentityKeys.Add(key);
 
@@ -195,9 +199,9 @@ namespace TabgInstaller.ServerLogger
             string path = ResolveLegacyPath();
             EnsureParentDirectory(path);
 
-            string name = RemoveWhitespace(string.IsNullOrWhiteSpace(identity.PlayerName) ? "Player" : identity.PlayerName);
-            string playFab = RemoveWhitespace(identity.PlayFabId);
-            string epic = RemoveWhitespace(identity.EpicId);
+            string name = NormalizeSingleLine(string.IsNullOrWhiteSpace(identity.PlayerName) ? "Player" : identity.PlayerName);
+            string playFab = NormalizeSingleLine(identity.PlayFabId);
+            string epic = NormalizeSingleLine(identity.EpicId);
             string stableIdentity = !string.IsNullOrWhiteSpace(epic) ? epic : playFab;
 
             var lines = new List<string>();
@@ -215,13 +219,10 @@ namespace TabgInstaller.ServerLogger
                 if (string.IsNullOrWhiteSpace(stableIdentity) || !lineIdentity.Equals(stableIdentity, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                for (int n = 0; n < parts.Length - 1; n++)
+                if (line.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    if (parts[n].Equals(name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        File.WriteAllLines(path, lines.ToArray());
-                        return;
-                    }
+                    File.WriteAllLines(path, lines.ToArray());
+                    return;
                 }
 
                 lines[i] = name + " " + line;
@@ -311,18 +312,12 @@ namespace TabgInstaller.ServerLogger
             return quote ? "\"" + value + "\"" : value;
         }
 
-        private static string RemoveWhitespace(string value)
+        private static string NormalizeSingleLine(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return string.Empty;
 
-            var builder = new StringBuilder(value.Length);
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (!char.IsWhiteSpace(value[i]))
-                    builder.Append(value[i]);
-            }
-            return builder.ToString();
+            return value.Replace('\r', ' ').Replace('\n', ' ').Trim();
         }
 
         private static object ReadMember(object instance, string name)
@@ -358,6 +353,20 @@ namespace TabgInstaller.ServerLogger
                         return "playfab:" + PlayFabId;
                     return "slot:" + PlayerIndex + ":" + PlayerName;
                 }
+            }
+
+            public bool IsRicherThan(PlayerIdentity previous)
+            {
+                return Score() > previous.Score();
+            }
+
+            private int Score()
+            {
+                int score = 0;
+                if (!string.IsNullOrWhiteSpace(PlayerName)) score++;
+                if (!string.IsNullOrWhiteSpace(PlayFabId)) score += 2;
+                if (!string.IsNullOrWhiteSpace(EpicId)) score += 4;
+                return score;
             }
 
             public static PlayerIdentity From(TABGPlayerServer player)

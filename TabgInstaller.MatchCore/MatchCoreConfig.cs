@@ -405,9 +405,24 @@ namespace TabgInstaller.MatchCore
 
                 int dataColon = data.IndexOf(':');
                 Vector3 center = dataColon >= 0 ? ParseVector(data.Substring(0, dataColon), Vector3.zero) : ParseVector(data, Vector3.zero);
-                float[] sizes = dataColon >= 0 ? ParseFloatList(data.Substring(dataColon + 1)) : Array.Empty<float>();
+                float[] sizes = Array.Empty<float>();
+                float[] speeds = Array.Empty<float>();
+                if (dataColon >= 0)
+                {
+                    string ringData = data.Substring(dataColon + 1);
+                    int speedColon = ringData.IndexOf(':');
+                    if (speedColon >= 0)
+                    {
+                        sizes = ParseFloatList(ringData.Substring(0, speedColon));
+                        speeds = ParseFloatList(ringData.Substring(speedColon + 1));
+                    }
+                    else
+                    {
+                        sizes = ParseFloatList(ringData);
+                    }
+                }
 
-                rings.Add(new RingProfile { Name = name.Trim(), Rarity = Math.Max(1f, rarity), Center = center, Sizes = sizes });
+                rings.Add(new RingProfile { Name = name.Trim(), Rarity = Math.Max(1f, rarity), Center = center, Sizes = sizes, Speeds = speeds });
             }
             return rings;
         }
@@ -417,7 +432,8 @@ namespace TabgInstaller.MatchCore
     {
         Default,
         KillsToWin,
-        Debug
+        Debug,
+        Endless
     }
 
     internal sealed class RingProfile

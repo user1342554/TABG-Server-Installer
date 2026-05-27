@@ -48,6 +48,7 @@
                         <ComboBoxItem Content="Default"/>
                         <ComboBoxItem Content="KillsToWin"/>
                         <ComboBoxItem Content="Debug"/>
+                        <ComboBoxItem Content="Endless"/>
                     </ComboBox>
                 </Grid>
 

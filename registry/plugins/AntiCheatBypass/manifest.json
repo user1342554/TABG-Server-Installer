@@ -1,0 +1,17 @@
+{
+  "id": "AntiCheatBypass",
+  "name": "Anti-Cheat Bypass",
+  "version": "1.0.0",
+  "description": "Server-side custom/private server compatibility plugin that suppresses TABG EAC/EOS initialization paths.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.AntiCheatBypass.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": true,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["private-server", "anti-cheat", "compatibility"]
+}

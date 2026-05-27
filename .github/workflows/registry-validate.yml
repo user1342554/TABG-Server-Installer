@@ -75,6 +75,9 @@ jobs:
 
           echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
+      - name: Validate registry consistency
+        run: registry/validate-manifests.sh
+
       - name: Comment on PR
         uses: actions/github-script@v7
         with:

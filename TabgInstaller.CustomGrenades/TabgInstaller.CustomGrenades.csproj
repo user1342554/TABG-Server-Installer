@@ -19,4 +19,11 @@
     <Reference Include="Sirenix.Serialization.Config"><HintPath>Libs\Sirenix.Serialization.Config.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="Sirenix.Utilities"><HintPath>Libs\Sirenix.Utilities.dll</HintPath><Private>False</Private></Reference>
   </ItemGroup>
+
+  <Target Name="CopyCustomGrenadesToBundledPlugins" AfterTargets="Build">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\plugins" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

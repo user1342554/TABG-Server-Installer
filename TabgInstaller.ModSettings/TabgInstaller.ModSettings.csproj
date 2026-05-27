@@ -35,4 +35,9 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="CopyModSettingsToBundledClientPlugins" AfterTargets="Build">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\TabgInstaller.Gui\client-plugins" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

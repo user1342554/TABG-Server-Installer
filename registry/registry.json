@@ -4,9 +4,9 @@
   "plugins": [
     {
       "id": "AdminRadar",
-      "name": "Admin Radar Server",
+      "name": "Dummy Debug Radar Server",
       "version": "1.0.0",
-      "description": "Server-authorized player position radar for custom servers.",
+      "description": "Dummy/debug radar for private servers. Defaults to dummy-only; real player positions and real target names require explicit config.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -22,18 +22,19 @@
       "bepInExVersion": "5.4.22",
       "dependencies": [],
       "tags": [
-        "admin",
+        "dummy",
         "radar",
-        "debug"
+        "debug",
+        "private-server"
       ],
       "requiresClientMod": true,
       "clientPluginId": "AdminRadarClient"
     },
     {
       "id": "AdminRadarClient",
-      "name": "Admin Radar Client",
+      "name": "Dummy Debug Radar Client",
       "version": "1.0.0",
-      "description": "Displays server-authorized player positions on a toggleable radar overlay.",
+      "description": "Displays server-authorized dummy/debug radar data. Client mutation compatibility flags are disabled by default.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -49,39 +50,35 @@
       "bepInExVersion": "5.4.22",
       "dependencies": [],
       "tags": [
-        "admin",
+        "dummy",
         "radar",
-        "debug"
+        "debug",
+        "private-server"
       ]
     },
     {
-      "id": "BigSmoke",
-      "name": "Big Smoke Grenade",
+      "id": "AntiCheatBypass",
+      "name": "Anti-Cheat Bypass",
       "version": "1.0.0",
-      "description": "Giant purple smoke grenades (/give 208).",
+      "description": "Server-side custom/private server compatibility plugin that suppresses TABG EAC/EOS initialization paths.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
-        "TabgInstaller.CustomGrenades.dll"
+        "TabgInstaller.AntiCheatBypass.dll"
       ],
       "type": "server",
       "kind": "bundled",
       "defaultChecked": true,
-      "requiresClientMod": true,
-      "clientPluginId": "CustomGrenades",
       "compatibleTabgVersions": [
         "*"
       ],
       "minInstallerVersion": "5.0.0",
       "bepInExVersion": "5.4.22",
-      "dependencies": [
-        "Citruslib",
-        "MatchCore"
-      ],
+      "dependencies": [],
       "tags": [
-        "grenades",
-        "gameplay",
-        "fun"
+        "private-server",
+        "anti-cheat",
+        "compatibility"
       ]
     },
     {
@@ -129,7 +126,9 @@
       ],
       "minInstallerVersion": "5.0.0",
       "bepInExVersion": "5.4.22",
-      "dependencies": [],
+      "dependencies": [
+        "ModSettings"
+      ],
       "tags": [
         "debug",
         "coordinates",
@@ -138,15 +137,15 @@
     },
     {
       "id": "CustomGrenades",
-      "name": "Custom Grenades (Client)",
+      "name": "Custom Grenades",
       "version": "1.0.0",
-      "description": "BigSmokeGrenade + MGLFlashbang visual effects on the client side.",
+      "description": "Combined Big Smoke grenade behavior and client-only MGL flashbang visuals, with per-feature config toggles.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
         "TabgInstaller.CustomGrenades.dll"
       ],
-      "type": "client",
+      "type": "both",
       "kind": "bundled",
       "defaultChecked": true,
       "compatibleTabgVersions": [
@@ -158,14 +157,15 @@
       "tags": [
         "grenades",
         "effects",
-        "visuals"
+        "visuals",
+        "gameplay"
       ]
     },
     {
       "id": "EnhancedClient",
       "name": "Enhanced Client",
       "version": "1.0.0",
-      "description": "Client visual quality-of-life controls for LOD loading, item draw distance, haze, and HUD hiding.",
+      "description": "Experimental client visual controls for LOD loading, item draw distance, haze, and HUD hiding. Disabled by default.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -173,7 +173,7 @@
       ],
       "type": "client",
       "kind": "bundled",
-      "defaultChecked": true,
+      "defaultChecked": false,
       "compatibleTabgVersions": [
         "*"
       ],
@@ -194,7 +194,7 @@
       "id": "FakePlayers",
       "name": "FakePlayers",
       "version": "1.0.0",
-      "description": "Spawn dummy players for solo testing (/spawndummy, /removedummy).",
+      "description": "Spawn fake and AI dummy players for private testing. Commands require configured Citrus permissions unless explicit development mode is enabled.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -214,7 +214,8 @@
       "tags": [
         "testing",
         "development",
-        "bots"
+        "bots",
+        "private-server"
       ]
     },
     {
@@ -240,36 +241,6 @@
         "vehicles",
         "controls",
         "gameplay"
-      ]
-    },
-    {
-      "id": "MGLFlashbang",
-      "name": "MGL Flashbang",
-      "version": "1.0.0",
-      "description": "MGL grenade launcher shoots flashbang rounds instead.",
-      "author": "anonymer_hase",
-      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
-      "dllNames": [
-        "TabgInstaller.CustomGrenades.dll"
-      ],
-      "type": "server",
-      "kind": "bundled",
-      "defaultChecked": true,
-      "requiresClientMod": true,
-      "clientPluginId": "CustomGrenades",
-      "compatibleTabgVersions": [
-        "*"
-      ],
-      "minInstallerVersion": "5.0.0",
-      "bepInExVersion": "5.4.22",
-      "dependencies": [
-        "Citruslib",
-        "MatchCore"
-      ],
-      "tags": [
-        "grenades",
-        "weapons",
-        "fun"
       ]
     },
     {
@@ -358,7 +329,7 @@
       "id": "ProximityChat",
       "name": "ProximityChat Server",
       "version": "1.0.0",
-      "description": "Proximity-based voice chat for custom servers (server-side component).",
+      "description": "Proximity voice relay for custom servers. Uses versioned PCM voice packets with per-sender server rate limiting.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -387,7 +358,7 @@
       "id": "ProximityChatClient",
       "name": "Proximity Chat (Client)",
       "version": "1.0.0",
-      "description": "Client-side proximity voice chat for custom servers.",
+      "description": "Client-side proximity voice chat with voice activation, optional push-to-talk, and immediate mic shutdown when disabled.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -437,7 +408,7 @@
       "id": "SoloTesting",
       "name": "SoloTesting",
       "version": "1.0.0",
-      "description": "Prevents 'You Win' screen when testing a server alone.",
+      "description": "Development-only solo testing helpers. Inactive unless Safety.DevelopmentMode is explicitly enabled.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -456,7 +427,8 @@
       ],
       "tags": [
         "testing",
-        "development"
+        "development",
+        "private-server"
       ]
     },
     {

@@ -357,7 +357,7 @@ Put cursed loadouts at the beginning of 'Loadouts='.
 
 OTHER SETTINGS
 --------------
-WinCondition=Default|KillsToWin|Debug
+WinCondition=Default|KillsToWin|Debug|Endless
 ForceKillAtStart=true|false     - Kill players out of trucks at start
 DropItemsOnDeath=true|false     - Drop items on death
 HealOnKill=true|false           - Heal on kill

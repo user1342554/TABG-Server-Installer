@@ -20,5 +20,18 @@
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
     <ProjectReference Include="..\TabgInstaller.Gui\TabgInstaller.Gui.csproj" />
     <ProjectReference Include="..\TabgInstaller.MatchCore\TabgInstaller.MatchCore.csproj" />
+    <ProjectReference Include="..\TabgInstaller.AdminRadar.Server\TabgInstaller.AdminRadar.Server.csproj" />
+    <ProjectReference Include="..\TabgInstaller.ProximityChat.Client\TabgInstaller.ProximityChat.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>

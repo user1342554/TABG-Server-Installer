@@ -12,6 +12,6 @@
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",
-  "dependencies": [],
+  "dependencies": ["ModSettings"],
   "tags": ["debug", "coordinates", "hud"]
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
@@ -13,7 +15,6 @@ namespace TabgInstaller.ModSettings
     /// </summary>
     [BepInPlugin("tabginstaller.modsettings", "TABG Mod Settings", "1.0.0")]
     [BepInDependency("tabginstaller.flyingcontrols", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("tabginstaller.coordsdisplay", BepInDependency.DependencyFlags.SoftDependency)]
     public class ModSettingsUI : BaseUnityPlugin
     {
         private ConfigEntry<KeyCode> _menuKey;
@@ -21,9 +22,13 @@ namespace TabgInstaller.ModSettings
         private bool _waitingForKey = false;
         private string _waitingForKeyId = null;
         private Vector2 _scrollPos;
+        private bool _savedUsingInterface;
+        private bool _hasSavedUsingInterface;
 
         // All registered settings
         private static readonly List<SettingEntry> _settings = new List<SettingEntry>();
+        private static readonly Dictionary<string, SettingEntry> _settingsById = new Dictionary<string, SettingEntry>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> _editBuffers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private Rect _windowRect;
         private bool _dragging = false;
@@ -61,14 +66,31 @@ namespace TabgInstaller.ModSettings
         /// <summary>Register a config entry to show in the settings menu.</summary>
         public static void Register(string category, string name, string description, ConfigEntryBase entry)
         {
-            _settings.Add(new SettingEntry
+            if (entry == null)
+                return;
+
+            string id = MakeSettingId(category, name, entry);
+            var setting = new SettingEntry
             {
                 Category = category,
                 Name = name,
                 Description = description,
-                Id = category + "." + name,
+                Id = id,
                 Entry = entry
-            });
+            };
+
+            SettingEntry existing;
+            if (_settingsById.TryGetValue(id, out existing))
+            {
+                existing.Category = category;
+                existing.Name = name;
+                existing.Description = description;
+                existing.Entry = entry;
+                return;
+            }
+
+            _settingsById[id] = setting;
+            _settings.Add(setting);
         }
 
         private void Update()
@@ -105,10 +127,10 @@ namespace TabgInstaller.ModSettings
 
             if (Input.GetKeyDown(_menuKey.Value))
             {
-                _isOpen = !_isOpen;
-                // Use Player.usingInterface — this is how the game itself
-                // blocks input and shows cursor (inventory, map, blessings menu, etc.)
-                Player.usingInterface = _isOpen;
+                if (_isOpen)
+                    CloseMenu();
+                else
+                    OpenMenu();
             }
         }
 
@@ -177,8 +199,7 @@ namespace TabgInstaller.ModSettings
             GUILayout.Label("MOD SETTINGS", _headerStyle, GUILayout.Height(30));
             if (GUILayout.Button("X", _buttonStyle, GUILayout.Width(30), GUILayout.Height(30)))
             {
-                _isOpen = false;
-                Player.usingInterface = false;
+                CloseMenu();
             }
             GUILayout.EndHorizontal();
 
@@ -210,30 +231,31 @@ namespace TabgInstaller.ModSettings
                         _waitingForKeyId = s.Id;
                     }
                 }
-                else if (s.Entry is ConfigEntry<float> floatEntry)
-                {
-                    GUILayout.Label(s.Name, _labelStyle, GUILayout.Width(160));
-                    float min = 0f, max = 100f;
-                    if (s.Name.Contains("Speed")) max = 120f;
-                    else if (s.Name.Contains("Force") || s.Name.Contains("Stabilization")) max = 60f;
-                    else if (s.Name.Contains("Font")) { min = 8; max = 40; }
-                    float newVal = GUILayout.HorizontalSlider(floatEntry.Value, min, max, GUILayout.Width(140));
-                    if (Mathf.Abs(newVal - floatEntry.Value) > 0.1f)
-                        floatEntry.Value = Mathf.Round(newVal * 10f) / 10f;
-                    GUILayout.Label(floatEntry.Value.ToString("F1"), _valueStyle, GUILayout.Width(50));
-                }
-                else if (s.Entry is ConfigEntry<int> intEntry)
-                {
-                    GUILayout.Label(s.Name, _labelStyle, GUILayout.Width(160));
-                    float newVal = GUILayout.HorizontalSlider(intEntry.Value, 8, 40, GUILayout.Width(140));
-                    intEntry.Value = Mathf.RoundToInt(newVal);
-                    GUILayout.Label(intEntry.Value.ToString(), _valueStyle, GUILayout.Width(50));
-                }
                 else if (s.Entry is ConfigEntry<bool> boolEntry)
                 {
                     GUILayout.Label(s.Name, _labelStyle, GUILayout.Width(200));
                     bool newVal = GUILayout.Toggle(boolEntry.Value, boolEntry.Value ? "ON" : "OFF", _buttonStyle, GUILayout.Width(60));
                     boolEntry.Value = newVal;
+                }
+                else if (s.Entry.SettingType.IsEnum)
+                {
+                    DrawEnumSetting(s);
+                }
+                else if (s.Entry is ConfigEntry<float> floatEntry)
+                {
+                    DrawFloatSetting(s, floatEntry);
+                }
+                else if (s.Entry is ConfigEntry<int> intEntry)
+                {
+                    DrawIntSetting(s, intEntry);
+                }
+                else if (s.Entry is ConfigEntry<string> stringEntry)
+                {
+                    DrawStringSetting(s, stringEntry);
+                }
+                else
+                {
+                    DrawUnsupportedSetting(s);
                 }
 
                 GUILayout.EndHorizontal();
@@ -255,6 +277,162 @@ namespace TabgInstaller.ModSettings
 
             GUILayout.EndScrollView();
             GUI.DragWindow();
+        }
+
+        private void OpenMenu()
+        {
+            _isOpen = true;
+            _savedUsingInterface = Player.usingInterface;
+            _hasSavedUsingInterface = true;
+            Player.usingInterface = true;
+        }
+
+        private void CloseMenu()
+        {
+            _isOpen = false;
+            _waitingForKey = false;
+            _waitingForKeyId = null;
+
+            if (_hasSavedUsingInterface)
+                Player.usingInterface = _savedUsingInterface;
+
+            _hasSavedUsingInterface = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (_isOpen)
+                CloseMenu();
+        }
+
+        private static string MakeSettingId(string category, string name, ConfigEntryBase entry)
+        {
+            string section = entry.Definition.Section ?? string.Empty;
+            string key = entry.Definition.Key ?? string.Empty;
+            return (category ?? string.Empty) + "." + (name ?? string.Empty) + "." + section + "." + key;
+        }
+
+        private void DrawFloatSetting(SettingEntry setting, ConfigEntry<float> entry)
+        {
+            GUILayout.Label(setting.Name, _labelStyle, GUILayout.Width(160));
+
+            float min;
+            float max;
+            if (TryGetAcceptableRange(entry, out min, out max))
+            {
+                float newVal = GUILayout.HorizontalSlider(entry.Value, min, max, GUILayout.Width(140));
+                if (Mathf.Abs(newVal - entry.Value) > 0.0001f)
+                    entry.Value = Mathf.Clamp(newVal, min, max);
+                GUILayout.Label(entry.Value.ToString("0.###", CultureInfo.InvariantCulture), _valueStyle, GUILayout.Width(70));
+                return;
+            }
+
+            string text = TextBuffer(setting, entry.Value.ToString("0.###", CultureInfo.InvariantCulture));
+            string updated = GUILayout.TextField(text, GUILayout.Width(140));
+            if (!string.Equals(updated, text, StringComparison.Ordinal))
+            {
+                _editBuffers[setting.Id] = updated;
+                float parsed;
+                if (float.TryParse(updated, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed))
+                    entry.Value = parsed;
+            }
+            GUILayout.Label(entry.Value.ToString("0.###", CultureInfo.InvariantCulture), _valueStyle, GUILayout.Width(70));
+        }
+
+        private void DrawIntSetting(SettingEntry setting, ConfigEntry<int> entry)
+        {
+            GUILayout.Label(setting.Name, _labelStyle, GUILayout.Width(160));
+
+            float min;
+            float max;
+            if (TryGetAcceptableRange(entry, out min, out max))
+            {
+                float newVal = GUILayout.HorizontalSlider(entry.Value, min, max, GUILayout.Width(140));
+                int rounded = Mathf.RoundToInt(newVal);
+                if (rounded != entry.Value)
+                    entry.Value = Mathf.Clamp(rounded, Mathf.RoundToInt(min), Mathf.RoundToInt(max));
+                GUILayout.Label(entry.Value.ToString(CultureInfo.InvariantCulture), _valueStyle, GUILayout.Width(70));
+                return;
+            }
+
+            string text = TextBuffer(setting, entry.Value.ToString(CultureInfo.InvariantCulture));
+            string updated = GUILayout.TextField(text, GUILayout.Width(140));
+            if (!string.Equals(updated, text, StringComparison.Ordinal))
+            {
+                _editBuffers[setting.Id] = updated;
+                int parsed;
+                if (int.TryParse(updated, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed))
+                    entry.Value = parsed;
+            }
+            GUILayout.Label(entry.Value.ToString(CultureInfo.InvariantCulture), _valueStyle, GUILayout.Width(70));
+        }
+
+        private void DrawStringSetting(SettingEntry setting, ConfigEntry<string> entry)
+        {
+            GUILayout.Label(setting.Name, _labelStyle, GUILayout.Width(160));
+            string current = entry.Value ?? string.Empty;
+            string updated = GUILayout.TextField(current, GUILayout.Width(210));
+            if (!string.Equals(updated, current, StringComparison.Ordinal))
+                entry.Value = updated;
+        }
+
+        private void DrawEnumSetting(SettingEntry setting)
+        {
+            GUILayout.Label(setting.Name, _labelStyle, GUILayout.Width(160));
+            Array values = Enum.GetValues(setting.Entry.SettingType);
+            string[] names = Enum.GetNames(setting.Entry.SettingType);
+            int selected = Array.IndexOf(values, setting.Entry.BoxedValue);
+            if (selected < 0)
+                selected = 0;
+
+            int next = GUILayout.SelectionGrid(selected, names, Math.Min(names.Length, 4), _buttonStyle, GUILayout.Width(220));
+            if (next >= 0 && next < values.Length && next != selected)
+                setting.Entry.BoxedValue = values.GetValue(next);
+        }
+
+        private void DrawUnsupportedSetting(SettingEntry setting)
+        {
+            GUILayout.Label(setting.Name, _labelStyle, GUILayout.Width(160));
+            GUILayout.Label(setting.Entry.BoxedValue != null ? setting.Entry.BoxedValue.ToString() : "", _valueStyle, GUILayout.Width(210));
+        }
+
+        private static string TextBuffer(SettingEntry setting, string currentValue)
+        {
+            string buffer;
+            if (!_editBuffers.TryGetValue(setting.Id, out buffer))
+            {
+                buffer = currentValue;
+                _editBuffers[setting.Id] = buffer;
+            }
+
+            return buffer;
+        }
+
+        private static bool TryGetAcceptableRange(ConfigEntryBase entry, out float min, out float max)
+        {
+            min = 0f;
+            max = 0f;
+
+            var acceptableValues = entry.Description.AcceptableValues;
+            if (acceptableValues == null)
+                return false;
+
+            Type type = acceptableValues.GetType();
+            PropertyInfo minProperty = type.GetProperty("MinValue");
+            PropertyInfo maxProperty = type.GetProperty("MaxValue");
+            if (minProperty == null || maxProperty == null)
+                return false;
+
+            try
+            {
+                min = Convert.ToSingle(minProperty.GetValue(acceptableValues, null), CultureInfo.InvariantCulture);
+                max = Convert.ToSingle(maxProperty.GetValue(acceptableValues, null), CultureInfo.InvariantCulture);
+                return max > min;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

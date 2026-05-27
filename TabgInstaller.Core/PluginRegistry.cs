@@ -65,7 +65,7 @@ namespace TabgInstaller.Core
         /// <summary>Plugin IDs that make up the "Sigma" preset.</summary>
         public static readonly HashSet<string> SigmaPresetIds = new(StringComparer.OrdinalIgnoreCase)
         {
-            "Citruslib", "MatchCore", "ServerLogger", "BigSmoke", "MGLFlashbang", "UnusedVehicles", "ProximityChat"
+            "Citruslib", "AntiCheatBypass", "MatchCore", "ServerLogger", "CustomGrenades", "UnusedVehicles", "ProximityChat"
         };
 
         // -- Built-in definitions ----------------------------------------
@@ -73,15 +73,15 @@ namespace TabgInstaller.Core
         private static readonly PluginDefinition[] BuiltInServerPlugins =
         {
             new("Citruslib", "Citruslib - required server modding API", new[] { "Citruslib.dll" }, true, PluginKind.CoreDependency),
+            new("AntiCheatBypass", "Anti-Cheat Bypass - private server EAC/EOS compatibility", new[] { "TabgInstaller.AntiCheatBypass.dll" }, true, PluginKind.Bundled),
             new("MatchCore", "TABG Match Core - rings, loadouts, vote-start, drops, timers, win rules", new[] { "TabgInstaller.MatchCore.dll" }, true, PluginKind.Bundled),
             new("ServerLogger", "Server Logger - player name, PlayFab, and Epic identity log", new[] { "TabgInstaller.ServerLogger.dll" }, true, PluginKind.Bundled),
             new("UnusedVehicles", "Unused Vehicles - spawn and manage hidden TABG vehicles", new[] { "TabgInstaller.UnusedVehicles.dll" }, true, PluginKind.Bundled),
-            new("BigSmoke", "Big Smoke Grenade - custom grenade gameplay", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
-            new("MGLFlashbang", "MGL Flashbang - custom grenade gameplay", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
+            new("CustomGrenades", "Custom Grenades - combined Big Smoke and MGL flashbang plugin", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
             new("SoloTesting", "Solo Testing - local testing helpers", new[] { "TabgInstaller.SoloTesting.dll" }, false, PluginKind.Bundled),
             new("ProximityChat", "Proximity Chat Server - relays nearby voice packets", new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
             new("FakePlayers", "Fake Players - dummy players and AI test targets", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
-            new("AdminRadar", "Admin Radar Server - sends admin-only player telemetry", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("AdminRadar", "Dummy Debug Radar Server - dummy/debug telemetry with real-player positions disabled by default", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
         };
 
         private static readonly PluginDefinition[] BuiltInClientMods =
@@ -90,10 +90,10 @@ namespace TabgInstaller.Core
             new("CustomGrenades", "Custom Grenades Client - visuals and effects for custom grenades", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
             new("CoordsDisplay", "Coords Display - client coordinate overlay", new[] { "TabgInstaller.CoordsDisplay.dll" }, true, PluginKind.Bundled),
             new("ModSettings", "Mod Settings - client-side settings support", new[] { "TabgInstaller.ModSettings.dll" }, true, PluginKind.Bundled),
-            new("EnhancedClient", "Enhanced Client - LOD, draw distance, haze, and HUD controls", new[] { "TabgInstaller.EnhancedClient.dll" }, true, PluginKind.Bundled),
+            new("EnhancedClient", "Enhanced Client - experimental LOD, draw distance, haze, and HUD controls", new[] { "TabgInstaller.EnhancedClient.dll" }, false, PluginKind.Bundled),
             new("PopupBlocker", "Popup Blocker - suppresses modded-client anti-cheat popups", new[] { "TabgInstaller.PopupBlocker.dll" }, true, PluginKind.Bundled),
             new("ProximityChatClient", "Proximity Chat Client - captures and plays proximity voice", new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
-            new("AdminRadarClient", "Admin Radar Client - admin-only radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
+            new("AdminRadarClient", "Dummy Debug Radar Client - dummy/debug radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
         };
 
         public static void ResetToBuiltIns()
