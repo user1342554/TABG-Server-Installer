@@ -27,16 +27,49 @@
 
 ## About
 
-TABG Server Installer is a launcher, installer, and owned plugin bundle for TABG dedicated servers. It installs BepInEx, Citruslib, and the bundled server/client plugins, then exposes the important server and mod settings through the launcher instead of requiring manual file editing.
+TABG Server Installer is a launcher, installer, and plugin manager for TABG dedicated servers. It installs BepInEx, Citruslib, and the bundled server/client plugins, then exposes the important server and mod settings through the launcher instead of requiring manual file editing.
 
-The bundled `TabgInstaller.*` plugins are maintained from source in this repository. Citruslib is kept as the core TABG server modding dependency, and BepInEx/Harmony remain third-party runtime libraries.
+## Requirements
 
-## Ownership Model
+- Windows.
+- A Steam installation of TABG.
+- A Steam TABG Dedicated Server installation.
 
-- The launcher, installer, presets, config editors, and bundled `TabgInstaller.*` plugin code are maintained in this repository.
-- Old marketplace installation and removed third-party plugin DLLs are no longer part of the normal launcher flow.
-- Citruslib, BepInEx, Harmony, and NuGet packages remain external dependencies and keep their own licenses.
-- TABGVR was removed. Citruslib stays because it is the shared TABG modding API dependency.
+## Download
+
+1. Go to the [latest release](https://github.com/user1342554/TABG-Server-Installer/releases/latest).
+2. Download the release `.zip` for TABG Server Installer.
+3. Extract the zip anywhere.
+4. Run `TabgInstaller.Gui.exe`.
+
+## Quick Start
+
+### Server Setup
+
+1. Run `TabgInstaller.Gui.exe`.
+2. Select your TABG Dedicated Server path. The launcher will try to auto-detect the Steam path.
+3. Check the server plugins you want to install.
+4. Click **INSTALL**.
+5. Configure settings in the **Config** tab.
+6. Start the server from the installer.
+
+### Client Setup (for players)
+
+Client mods are installed into a separate TABG copy so players do not have to modify their main Steam install.
+
+1. Go to the **Client** tab.
+2. Select your TABG Steam folder.
+3. Choose a destination folder for the modded copy.
+4. Check the client mods you want, including Proximity Chat if your server uses it.
+5. Click **INSTALL CLIENT MODS**.
+6. Launch the modded TABG from the installer, not from Steam.
+
+### Managing Bundled Plugins
+
+1. Go to the **Server Mods** or **Client** tab.
+2. Select the bundled DLLs you want.
+3. Click **Install Selected**.
+4. Enable or disable installed DLLs from the same panel.
 
 ## Features
 
@@ -61,6 +94,7 @@ The bundled `TabgInstaller.*` plugins are maintained from source in this reposit
 - **Mod Settings** - MatchCore fixes, grenade-on-death, Proximity Chat, ServerLogger, and Juggernaut settings.
 - **Admins** - `PlayerPerms.json` management.
 - **Presets** - apply built-in templates or save custom config sets.
+
 
 ## Bundled Plugins
 
@@ -95,50 +129,16 @@ The bundled `TabgInstaller.*` plugins are maintained from source in this reposit
 | JuggernautClient | `JuggernautMode.Client.dll` | Boss bar, loadout picker, and scoreboard | No |
 | AdminRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Admin-only radar overlay | No |
 
-## Download
-
-1. Go to the [latest release](https://github.com/user1342554/TABG-Server-Installer/releases/latest)
-2. Download the `.zip` file
-3. Extract anywhere and run `TabgInstaller.Gui.exe`
-
-## Quick Start
-
-### Server Setup
-
-1. Download and extract the latest release
-2. Run `TabgInstaller.Gui.exe`
-3. Select your TABG Dedicated Server path (auto-detected from Steam)
-4. Check the plugins you want
-5. Click **INSTALL**
-6. Configure settings in the **Config** tab
-7. Start the server from the installer
-
-### Client Setup (for players)
-
-1. Go to the **Client** tab
-2. Select your TABG Steam folder
-3. Choose a destination for the modded copy
-4. Check the mods you want (including Proximity Chat)
-5. Click **INSTALL CLIENT MODS**
-6. Launch the modded TABG from the installer (**NOT** from Steam)
-
-### Managing Bundled Plugins
-
-1. Go to the **Server Mods** or **Client** tab
-2. Select available bundled DLLs
-3. Click install selected
-4. Enable or disable installed DLLs from the same panel
-
 ## Proximity Voice Chat
 
 Voice communication is built directly into the game's existing network connection. No additional ports or separate voice server are required.
 
 - Voice data travels through the game's relay network.
-- The server relays voice packets only to nearby players based on in-game distance
-- Configurable maximum range (default: 50 m)
-- HUD indicator shows who is currently talking
-- Open microphone with noise gate to suppress background noise
-- 16 kHz audio quality
+- The server relays voice packets only to nearby players based on in-game distance.
+- Configurable maximum range, defaulting to 50 m.
+- HUD indicator shows who is currently talking.
+- Open microphone with noise gate to suppress background noise.
+- 16 kHz audio quality.
 
 ## Server Logger
 
@@ -166,14 +166,8 @@ This software is provided **as-is** with no warranty of any kind. Use at your ow
 
 - This project is **not affiliated with, endorsed by, or associated with** [Landfall Games](https://landfall.se/) or Totally Accurate Battlegrounds in any way.
 - This installer bundles BepInEx, Citruslib, and owned TABG plugins maintained in this repository.
-- Modifying game servers may violate the game's Terms of Service. The authors of this installer are **not responsible** for any bans, account actions, or other consequences resulting from its use.
-- The anti-cheat bypass component is intended solely for running private dedicated servers and is **not** meant for use in cheating or gaining unfair advantages in public matches.
 
 ## Credits
-
-### Project
-
-- **anonymer_hase** - launcher, installer, configuration editor, presets, dashboard, backup tools, remote management, and bundled `TabgInstaller.*` plugin code.
 
 ### Third-Party Runtime Dependencies
 
