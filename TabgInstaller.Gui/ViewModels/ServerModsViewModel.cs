@@ -104,16 +104,11 @@ namespace TabgInstaller.Gui.ViewModels
         partial void OnAllPluginsInstalledChanged(bool value) =>
             OnPropertyChanged(nameof(CanInstallBundled));
 
-        // All known bundled server plugin DLLs
-        public static readonly string[] KnownServerPlugins = new[]
-        {
-            "Citruslib.dll", "TabgInstaller.MatchCore.dll", "TabgInstaller.ServerLogger.dll",
-            "TabgInstaller.UnusedVehicles.dll", "TabgInstaller.CustomGrenades.dll",
-            "TabgInstaller.SoloTesting.dll", "TabgInstaller.ProximityChat.Server.dll",
-            "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll",
-            "JuggernautMode.Server.dll", "TabgInstaller.FakePlayers.dll",
-            "TabgInstaller.AdminRadar.Server.dll",
-        };
+        public static string[] KnownServerPlugins => PluginRegistry.ServerPlugins
+            .SelectMany(plugin => plugin.DllNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         public ServerModsViewModel(IServerPathProvider serverPathProvider, IToastService toast)
         {

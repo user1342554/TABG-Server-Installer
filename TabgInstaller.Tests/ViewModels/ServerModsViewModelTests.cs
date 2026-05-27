@@ -2,6 +2,7 @@ using FluentAssertions;
 using Moq;
 using System;
 using System.IO;
+using System.Linq;
 using TabgInstaller.Core;
 using TabgInstaller.Gui.Services;
 using TabgInstaller.Gui.ViewModels;
@@ -282,9 +283,13 @@ namespace TabgInstaller.Tests.ViewModels
         }
 
         [Fact]
-        public void KnownServerPlugins_HasExpectedCount()
+        public void KnownServerPlugins_MatchesRegistryDlls()
         {
-            ServerModsViewModel.KnownServerPlugins.Should().HaveCount(12);
+            var expected = PluginRegistry.ServerPlugins
+                .SelectMany(plugin => plugin.DllNames)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            ServerModsViewModel.KnownServerPlugins.Should().BeEquivalentTo(expected);
         }
 
         // ── FindDllPath / FindBundledPluginsDir ──────────────────────────────────

@@ -71,13 +71,6 @@ namespace TabgInstaller.Tests.ViewModels
         }
 
         [Fact]
-        public void InitialState_CitrusTag_IsDefaultVersion()
-        {
-            var sut = CreateSut();
-            sut.CitrusTag.Should().Be("v0.7");
-        }
-
-        [Fact]
         public void InitialState_LogText_IsEmpty()
         {
             var sut = CreateSut();
@@ -97,7 +90,8 @@ namespace TabgInstaller.Tests.ViewModels
         public void PluginSelections_ContainsAllServerPlugins()
         {
             var sut = CreateSut();
-            sut.PluginSelections.Should().HaveCount(PluginRegistry.ServerPlugins.Length);
+            sut.PluginSelections.Should().HaveCount(
+                PluginRegistry.ServerPlugins.Count(def => def.Kind != PluginKind.CoreDependency));
         }
 
         [Fact]
@@ -105,7 +99,7 @@ namespace TabgInstaller.Tests.ViewModels
         {
             var sut = CreateSut();
 
-            foreach (var def in PluginRegistry.ServerPlugins)
+            foreach (var def in PluginRegistry.ServerPlugins.Where(def => def.Kind != PluginKind.CoreDependency))
             {
                 var sel = sut.PluginSelections.First(p => p.PluginId == def.Id);
                 sel.IsSelected.Should().Be(def.DefaultChecked,
@@ -118,7 +112,7 @@ namespace TabgInstaller.Tests.ViewModels
         {
             var sut = CreateSut();
 
-            foreach (var def in PluginRegistry.ServerPlugins)
+            foreach (var def in PluginRegistry.ServerPlugins.Where(def => def.Kind != PluginKind.CoreDependency))
             {
                 var sel = sut.PluginSelections.First(p => p.PluginId == def.Id);
                 sel.RequiresClientMod.Should().Be(def.RequiresClientMod,
@@ -131,7 +125,7 @@ namespace TabgInstaller.Tests.ViewModels
         {
             var sut = CreateSut();
 
-            foreach (var def in PluginRegistry.ServerPlugins)
+            foreach (var def in PluginRegistry.ServerPlugins.Where(def => def.Kind != PluginKind.CoreDependency))
             {
                 var sel = sut.PluginSelections.First(p => p.PluginId == def.Id);
                 sel.Name.Should().Be(def.Label);
@@ -173,8 +167,8 @@ namespace TabgInstaller.Tests.ViewModels
             sut.DependencyHintVisible.Should().BeFalse();
 
             // Now select one
-            var huntMode = sut.PluginSelections.First(p => p.PluginId == "HuntMode");
-            huntMode.IsSelected = true;
+            var proximityChat = sut.PluginSelections.First(p => p.PluginId == "ProximityChat");
+            proximityChat.IsSelected = true;
             sut.DependencyHintVisible.Should().BeTrue();
         }
 

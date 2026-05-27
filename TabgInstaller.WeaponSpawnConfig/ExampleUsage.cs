@@ -1,6 +1,4 @@
 using BepInEx;
-using HarmonyLib;
-using System.Reflection;
 
 namespace TABGExampleModWithWeaponConfig
 {
@@ -38,31 +36,15 @@ namespace TABGExampleModWithWeaponConfig
         
         private System.Type FindWeaponSpawnConfigPlugin()
         {
-            // Look for the plugin in all loaded assemblies
-            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var plugin in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
             {
-                var type = assembly.GetType("TabgInstaller.WeaponSpawnConfig.WeaponSpawnConfigPlugin");
-                if (type != null)
+                if (plugin.Instance?.GetType().FullName == "TabgInstaller.WeaponSpawnConfig.WeaponSpawnConfigPlugin")
                 {
-                    // Find the plugin instance
-                    var instanceProperty = type.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
-                    if (instanceProperty != null)
-                    {
-                        _weaponSpawnConfigPlugin = instanceProperty.GetValue(null);
-                        return type;
-                    }
-                    
-                    // Alternative: Find through BepInEx plugin manager
-                    foreach (var plugin in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
-                    {
-                        if (plugin.Instance?.GetType() == type)
-                        {
-                            _weaponSpawnConfigPlugin = plugin.Instance;
-                            return type;
-                        }
-                    }
+                    _weaponSpawnConfigPlugin = plugin.Instance;
+                    return plugin.Instance.GetType();
                 }
             }
+
             return null;
         }
         
@@ -97,7 +79,7 @@ namespace TABGExampleModWithWeaponConfig
             var method = _weaponSpawnConfigPlugin.GetType().GetMethod("GetFinalSpawnRate");
             if (method != null)
             {
-                return (float)method.Invoke(_weaponSpawnConfigPlugin, new object[] { weaponName, categoryName });
+                return (float)method.Invoke(_weaponSpawnConfigPlugin, new object[] { weaponName });
             }
             return 1.0f;
         }
@@ -117,4 +99,4 @@ namespace TABGExampleModWithWeaponConfig
             return randomValue < adjustedChance;
         }
     }
-} 
+}

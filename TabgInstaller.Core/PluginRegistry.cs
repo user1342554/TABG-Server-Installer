@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
 using TabgInstaller.Core.Model;
 
 namespace TabgInstaller.Core
@@ -31,9 +34,9 @@ namespace TabgInstaller.Core
     );
 
     /// <summary>
-    /// Single source of truth for all server plugin and client mod definitions.
-    /// The launcher now uses owned bundled definitions directly instead of
-    /// replacing them with runtime registry data at startup.
+    /// In-memory plugin catalog used by the launcher. The preferred source is
+    /// the bundled manifest files under registry/plugins; built-ins are a
+    /// fallback for incomplete development or publish layouts.
     /// </summary>
     public static class PluginRegistry
     {
@@ -48,13 +51,13 @@ namespace TabgInstaller.Core
             ResetToBuiltIns();
         }
 
-        /// <summary>Current server plugin definitions (from registry or hardcoded fallback).</summary>
+        /// <summary>Current server plugin definitions.</summary>
         public static PluginDefinition[] ServerPlugins => _serverPlugins;
 
-        /// <summary>Current client mod definitions (from registry or hardcoded fallback).</summary>
+        /// <summary>Current client mod definitions.</summary>
         public static PluginDefinition[] ClientMods => _clientMods;
 
-        /// <summary>False in the built-in launcher flow; retained for old callers.</summary>
+        /// <summary>True when definitions came from bundled manifest files.</summary>
         public static bool IsLoadedFromRegistry => _loadedFromRegistry;
 
         // -- Sigma Preset --------------------------------------------------
@@ -77,8 +80,6 @@ namespace TabgInstaller.Core
             new("MGLFlashbang", "MGL Flashbang - custom grenade gameplay", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
             new("SoloTesting", "Solo Testing - local testing helpers", new[] { "TabgInstaller.SoloTesting.dll" }, false, PluginKind.Bundled),
             new("ProximityChat", "Proximity Chat Server - relays nearby voice packets", new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
-            new("HuntMode", "Hunt Mode - asymmetric 4v1 survival mode", new[] { "TabgInstaller.HuntMode.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
-            new("JuggernautMode", "Juggernaut Mode - boss player versus everyone", new[] { "JuggernautMode.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
             new("FakePlayers", "Fake Players - dummy players and AI test targets", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
             new("AdminRadar", "Admin Radar Server - sends admin-only player telemetry", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
         };
@@ -92,8 +93,6 @@ namespace TabgInstaller.Core
             new("EnhancedClient", "Enhanced Client - LOD, draw distance, haze, and HUD controls", new[] { "TabgInstaller.EnhancedClient.dll" }, true, PluginKind.Bundled),
             new("PopupBlocker", "Popup Blocker - suppresses modded-client anti-cheat popups", new[] { "TabgInstaller.PopupBlocker.dll" }, true, PluginKind.Bundled),
             new("ProximityChatClient", "Proximity Chat Client - captures and plays proximity voice", new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
-            new("HuntModeClient", "Hunt Mode Client - HUD for Hunt Mode", new[] { "TabgInstaller.HuntMode.Client.dll", "TabgInstaller.HuntMode.Shared.dll" }, false, PluginKind.Bundled),
-            new("JuggernautClient", "Juggernaut Client - boss bar, loadout picker, scoreboard", new[] { "JuggernautMode.Client.dll" }, false, PluginKind.Bundled),
             new("AdminRadarClient", "Admin Radar Client - admin-only radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
         };
 
@@ -104,14 +103,111 @@ namespace TabgInstaller.Core
             _loadedFromRegistry = false;
         }
 
-        /// <summary>
-        /// Registry loading is intentionally disabled. The launcher owns the
-        /// bundled plugin list now, so stale cached registry data cannot
-        /// reintroduce removed third-party DLLs.
-        /// </summary>
+        /// <summary>Loads plugin definitions from manifests and falls back to built-ins when empty.</summary>
         public static void LoadFromManifests(List<PluginManifest> manifests)
         {
-            ResetToBuiltIns();
+            if (manifests == null || manifests.Count == 0)
+            {
+                ResetToBuiltIns();
+                return;
+            }
+
+            var ownedManifests = manifests
+                .Where(m => m.Kind.Equals("bundled", StringComparison.OrdinalIgnoreCase)
+                    || m.Kind.Equals("core-dependency", StringComparison.OrdinalIgnoreCase)
+                    || m.Kind.Equals("community-server", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var serverPlugins = ownedManifests
+                .Where(m => m.Type.Equals("server", StringComparison.OrdinalIgnoreCase)
+                    || m.Type.Equals("both", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(DefinitionSortKey)
+                .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(ToDefinition)
+                .ToArray();
+
+            var clientMods = ownedManifests
+                .Where(m => m.Type.Equals("client", StringComparison.OrdinalIgnoreCase)
+                    || m.Type.Equals("both", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(DefinitionSortKey)
+                .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(ToDefinition)
+                .ToArray();
+
+            if (serverPlugins.Length == 0 && clientMods.Length == 0)
+            {
+                ResetToBuiltIns();
+                return;
+            }
+
+            _serverPlugins = serverPlugins;
+            _clientMods = clientMods;
+            _loadedFromRegistry = true;
+        }
+
+        /// <summary>
+        /// Loads bundled manifests from registry/plugins near the app output or
+        /// from a parent source checkout. Falls back to built-ins if unavailable.
+        /// </summary>
+        public static void LoadBundledManifests()
+        {
+            try
+            {
+                var manifestDir = FindManifestDirectory();
+                if (manifestDir == null)
+                {
+                    ResetToBuiltIns();
+                    return;
+                }
+
+                var manifests = Directory
+                    .GetFiles(manifestDir, "manifest.json", SearchOption.AllDirectories)
+                    .Select(path => JsonConvert.DeserializeObject<PluginManifest>(File.ReadAllText(path)))
+                    .Where(manifest => manifest != null)
+                    .Cast<PluginManifest>()
+                    .ToList();
+
+                LoadFromManifests(manifests);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"[PluginRegistry] Failed to load bundled manifests: {ex}");
+                ResetToBuiltIns();
+            }
+        }
+
+        private static string? FindManifestDirectory()
+        {
+            var candidates = new List<string>();
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            AddCandidate(baseDir);
+            AddCandidate(Directory.GetCurrentDirectory());
+
+            var dir = new DirectoryInfo(baseDir);
+            while (dir != null)
+            {
+                AddCandidate(dir.FullName);
+                dir = dir.Parent;
+            }
+
+            foreach (var candidate in candidates)
+            {
+                if (Directory.Exists(candidate) &&
+                    Directory.GetFiles(candidate, "manifest.json", SearchOption.AllDirectories).Length > 0)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+
+            void AddCandidate(string root)
+            {
+                var candidate = Path.Combine(root, "registry", "plugins");
+                if (!candidates.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+                    candidates.Add(candidate);
+            }
         }
 
         private static PluginDefinition ToDefinition(PluginManifest m)
@@ -125,12 +221,21 @@ namespace TabgInstaller.Core
 
             return new PluginDefinition(
                 Id: m.Id,
-                Label: $"{m.Name} \u2014 {m.Description}",
+                Label: $"{m.Name} - {m.Description}",
                 DllNames: m.DllNames ?? Array.Empty<string>(),
                 DefaultChecked: m.DefaultChecked,
                 Kind: kind,
                 RequiresClientMod: m.RequiresClientMod
             );
+        }
+
+        private static int DefinitionSortKey(PluginManifest manifest)
+        {
+            if (manifest.Id.Equals("Citruslib", StringComparison.OrdinalIgnoreCase))
+                return 0;
+            if (manifest.DefaultChecked)
+                return 10;
+            return 20;
         }
 
         // ── Helpers ─────────────────────────────────────────────────────

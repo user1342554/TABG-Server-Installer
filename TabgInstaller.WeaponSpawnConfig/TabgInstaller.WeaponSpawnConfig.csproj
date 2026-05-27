@@ -18,6 +18,14 @@
     <Reference Include="UnityEngine">
       <HintPath>..\TabgInstaller.AntiCheatBypass\Libs\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
-</Project> 
+</Project>

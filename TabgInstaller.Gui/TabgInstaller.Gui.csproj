@@ -64,6 +64,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Knowledge\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
+    <None Include="..\registry\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>registry\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
     <None Include="sigma-config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -27,6 +27,7 @@ namespace TabgInstaller.FlyingControls
 
         private static readonly Dictionary<int, bool> FlyingCache = new Dictionary<int, bool>();
         private static readonly HashSet<int> DisabledHoverRaycasters = new HashSet<int>();
+        private static float _nextUpdateErrorLogTime;
 
         private void Awake()
         {
@@ -102,9 +103,8 @@ namespace TabgInstaller.FlyingControls
 
                     // Disable HoverRaycasters on this vehicle (they fight our controls)
                     int id = __instance.GetInstanceID();
-                    if (!DisabledHoverRaycasters.Contains(id))
+                    if (DisabledHoverRaycasters.Add(id))
                     {
-                        DisabledHoverRaycasters.Add(id);
                         foreach (var hr in __instance.GetComponentsInChildren<HoverRaycaster>())
                             hr.enabled = false;
                     }
@@ -166,7 +166,16 @@ namespace TabgInstaller.FlyingControls
 
                     return false; // SKIP original Car.FixedUpdate entirely
                 }
-                catch (Exception ex) { Debug.LogWarning($"[FlyingControls] Vehicle update error: {ex.Message}"); return true; }
+                catch (Exception ex)
+                {
+                    if (Time.unscaledTime >= _nextUpdateErrorLogTime)
+                    {
+                        _nextUpdateErrorLogTime = Time.unscaledTime + 5f;
+                        Debug.LogWarning($"[FlyingControls] Vehicle update error: {ex.Message}");
+                    }
+
+                    return true;
+                }
             }
 
             static bool IsFlyingVehicle(Car car)

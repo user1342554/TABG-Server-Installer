@@ -78,7 +78,7 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 - **One-click server setup** - installs BepInEx, Citruslib, bundled plugins, and default configs.
 - **Client mod installer** - creates a separate modded TABG client with bundled client plugins.
 - **Config editor** - edits game settings, match rules, ring behavior, spawn points, loadouts, admins, and mod settings.
-- **Preset templates** - Battle Royale, Deathmatch, Gun Game, Scavenge, Juggernaut, and more.
+- **Preset templates** - Battle Royale, Deathmatch, Gun Game, Scavenge, and more.
 - **Built-in plugin manager** - installs bundled DLLs directly from the launcher without a marketplace dependency.
 - **Dashboard and console** - server health, player count, uptime, console output, and quick actions.
 - **Backup system** - creates and restores server config backups.
@@ -91,7 +91,7 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 - **Match Settings** - MatchCore-compatible `TheStarterPack.txt` settings for win rules, votes, spell drops, and timeouts.
 - **Rings and Spawns** - ring sizes/speeds, lobby spawn, valid spawn points, and match spawn lists.
 - **Loadouts** - loadout editor with item database support.
-- **Mod Settings** - MatchCore fixes, grenade-on-death, Proximity Chat, ServerLogger, and Juggernaut settings.
+- **Mod Settings** - MatchCore fixes, grenade-on-death, Proximity Chat, and ServerLogger settings.
 - **Admins** - `PlayerPerms.json` management.
 - **Presets** - apply built-in templates or save custom config sets.
 
@@ -109,8 +109,6 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | BigSmoke / MGLFlashbang | `TabgInstaller.CustomGrenades.dll` | Custom grenade gameplay | Yes |
 | ProximityChat | `TabgInstaller.ProximityChat.Server.dll` | Nearby voice relay over the existing game network | Yes |
 | SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
-| HuntMode | `TabgInstaller.HuntMode.dll` | 4v1 survival mode | No |
-| JuggernautMode | `JuggernautMode.Server.dll` | Boss player versus everyone | No |
 | FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets | No |
 | AdminRadar | `TabgInstaller.AdminRadar.Server.dll` | Admin-only player telemetry server | No |
 
@@ -125,8 +123,6 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | EnhancedClient | `TabgInstaller.EnhancedClient.dll` | LOD, draw distance, haze, and HUD controls | Yes |
 | PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
 | ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
-| HuntModeClient | `TabgInstaller.HuntMode.Client.dll` | Hunt Mode HUD | No |
-| JuggernautClient | `JuggernautMode.Client.dll` | Boss bar, loadout picker, and scoreboard | No |
 | AdminRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Admin-only radar overlay | No |
 
 ## Proximity Voice Chat
@@ -156,9 +152,8 @@ Bundled plugins are normal BepInEx 5.4.22 projects targeting `netstandard2.0`.
 
 1. Add the plugin source project to the solution.
 2. Copy the release DLL into `TabgInstaller.Gui/plugins` or `TabgInstaller.Gui/client-plugins`.
-3. Register the plugin in `TabgInstaller.Core/PluginRegistry.cs`.
-4. Add or update `registry/plugins/<PluginId>/manifest.json`.
-5. Build the launcher projects and tests project before release.
+3. Add or update `registry/plugins/<PluginId>/manifest.json`.
+4. Build the launcher projects and tests project before release.
 
 ## Disclaimer
 

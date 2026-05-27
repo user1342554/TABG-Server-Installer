@@ -30,7 +30,6 @@ public sealed class MainWindow : Window
     private readonly TextBox _steamUser = new() { Text = "anonymous", Width = 150 };
     private readonly TextBox _steamPassword = new() { Width = 150, PasswordChar = '*' };
     private readonly TextBox _steamGuard = new() { Width = 90, Watermark = "optional" };
-    private readonly TextBox _citrusTag = new() { Text = "v0.7", Width = 90 };
     private readonly TextBox _log = new()
     {
         IsReadOnly = true,
@@ -98,16 +97,6 @@ public sealed class MainWindow : Window
     private readonly TextBox _serverLoggerLogDirectory = new() { Width = 220, Text = "server-logs" };
     private readonly TextBox _serverLoggerCsvFile = new() { Width = 160, Text = "players.csv" };
     private readonly TextBox _serverLoggerLegacyFile = new() { Width = 180, Text = "ServerLogger.txt" };
-    private readonly TextBox _juggPointsToWin = SmallBox("100");
-    private readonly TextBox _juggHp = SmallBox("1000");
-    private readonly TextBox _juggKillBonus = SmallBox("5");
-    private readonly TextBox _juggKillPoints = SmallBox("2");
-    private readonly TextBox _juggRegularKillPoints = SmallBox("1");
-    private readonly TextBox _juggDamagePerPoint = SmallBox("10");
-    private readonly TextBox _juggLoadoutChoices = SmallBox("3");
-    private readonly TextBox _juggLoadoutTimeout = SmallBox("10");
-    private readonly TextBox _juggMinSpawnDistance = SmallBox("50");
-    private readonly TextBox _juggMinPlayers = SmallBox("3");
     private readonly StackPanel _additionalServerPluginSettings = new() { Spacing = 8 };
     private readonly StackPanel _clientPluginSettings = new() { Spacing = 8 };
     private readonly TextBlock _clientPluginSettingsStatus = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
@@ -239,8 +228,6 @@ public sealed class MainWindow : Window
             Spacing = 8,
             Children =
             {
-                Label("Citruslib tag"),
-                _citrusTag,
                 Button("Create folder", CreateServerFolder),
                 Button("SteamCMD install/update", InstallOrUpdateDedicatedServerAsync),
                 Button("Detect server", DetectServerPath)
@@ -646,9 +633,6 @@ public sealed class MainWindow : Window
                             Button("Open legacy log", () => OpenPath(ModConfigService.GetServerLoggerLegacyPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields())))
                         }
                     },
-                    new TextBlock { Text = "Juggernaut" },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Points"), _juggPointsToWin, Label("HP"), _juggHp, Label("Kill bonus"), _juggKillBonus, Label("Jugg kill"), _juggKillPoints, Label("Regular kill"), _juggRegularKillPoints } },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Damage/point"), _juggDamagePerPoint, Label("Choices"), _juggLoadoutChoices, Label("Timeout"), _juggLoadoutTimeout, Label("Min spawn dist"), _juggMinSpawnDistance, Label("Min players"), _juggMinPlayers } },
                     new TextBlock { Text = "Other server plugin settings" },
                     _additionalServerPluginSettings,
                     new TextBlock { Text = "Client plugin settings" },
@@ -991,9 +975,26 @@ public sealed class MainWindow : Window
         _progress.Value = 0;
 
         var bundled = new List<string>();
-        var skipCitrus = true;
         var skipStarter = true;
         var community = false;
+        foreach (var cb in _pluginChecks.Children.OfType<CheckBox>())
+        {
+            if (cb.IsChecked != true || cb.Tag is not PluginDefinition plugin)
+                continue;
+
+            if (plugin.Kind == PluginKind.CommunityServer)
+            {
+                community = true;
+                continue;
+            }
+
+            if (plugin.Kind != PluginKind.Bundled)
+                continue;
+
+            foreach (var dll in plugin.DllNames)
+                if (!bundled.Contains(dll, StringComparer.OrdinalIgnoreCase))
+                    bundled.Add(dll);
+        }
 
         var progress = new Progress<string>(line =>
         {
@@ -1016,9 +1017,9 @@ public sealed class MainWindow : Window
                 "",
                 "",
                 "",
-                _citrusTag.Text?.Trim() ?? "v0.7",
+                "",
                 skipStarter,
-                skipCitrus,
+                false,
                 community,
                 bundled,
                 _installCts.Token);
@@ -1322,19 +1323,6 @@ public sealed class MainWindow : Window
             _serverLoggerLogDirectory.Text = loggerSettings.LogDirectory;
             _serverLoggerCsvFile.Text = loggerSettings.CsvFileName;
             _serverLoggerLegacyFile.Text = loggerSettings.LegacyFileName;
-            LoadSimpleCfg(Path.Combine(dir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg"), new Dictionary<string, TextBox>
-            {
-                ["PointsToWin"] = _juggPointsToWin,
-                ["HP"] = _juggHp,
-                ["JuggernautKillBonus"] = _juggKillBonus,
-                ["JuggernautKillPoints"] = _juggKillPoints,
-                ["RegularKillPoints"] = _juggRegularKillPoints,
-                ["DamagePerPoint"] = _juggDamagePerPoint,
-                ["LoadoutChoices"] = _juggLoadoutChoices,
-                ["LoadoutTimeout"] = _juggLoadoutTimeout,
-                ["MinSpawnDistance"] = _juggMinSpawnDistance,
-                ["MinPlayers"] = _juggMinPlayers,
-            });
             LoadPluginSettingsPanels(dir);
             Log("Loaded mod settings.");
         }
@@ -1369,7 +1357,6 @@ public sealed class MainWindow : Window
             ModConfigService.WriteFixes(dir, new StarterPackFixesSettings { EnableLootDrops = _enableLootDrops.IsChecked == true });
             WriteProximityCfg(dir);
             ModConfigService.WriteServerLogger(dir, BuildServerLoggerSettingsFromFields());
-            WriteJuggernautCfg(dir);
             SavePluginSettingsFromEditors();
             Log("Saved mod settings.");
         }
@@ -2056,15 +2043,17 @@ public sealed class MainWindow : Window
 
     private void LoadPluginRegistry()
     {
-        PluginRegistry.ResetToBuiltIns();
-        Log("Loaded built-in plugin definitions.");
+        PluginRegistry.LoadBundledManifests();
+        Log(PluginRegistry.IsLoadedFromRegistry
+            ? "Loaded plugin definitions from bundled manifests."
+            : "Loaded fallback built-in plugin definitions.");
     }
 
     private void RebuildPluginChecks()
     {
         _pluginChecks.Children.Clear();
         var plugins = PluginRegistry.ServerPlugins
-            .Where(p => p.DefaultChecked || p.Kind == PluginKind.CoreDependency)
+            .Where(p => p.DefaultChecked && p.Kind != PluginKind.CoreDependency)
             .ToArray();
 
         foreach (var item in CollapseDuplicateDefinitions(plugins))
@@ -2391,29 +2380,6 @@ MinRange = {_proxMinRange.Text?.Trim()}
 # Setting type: String
 # Default value: Linear
 FalloffCurve = {_proxFalloff.SelectedItem}
-");
-    }
-
-    private void WriteJuggernautCfg(string serverDir)
-    {
-        var cfg = Path.Combine(serverDir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg");
-        Directory.CreateDirectory(Path.GetDirectoryName(cfg)!);
-        File.WriteAllText(cfg, $@"[Scoring]
-PointsToWin = {_juggPointsToWin.Text?.Trim()}
-DamagePointsPerChunk = 1
-DamagePerPoint = {_juggDamagePerPoint.Text?.Trim()}
-JuggernautKillBonus = {_juggKillBonus.Text?.Trim()}
-JuggernautKillPoints = {_juggKillPoints.Text?.Trim()}
-RegularKillPoints = {_juggRegularKillPoints.Text?.Trim()}
-
-[Juggernaut]
-HP = {_juggHp.Text?.Trim()}
-LoadoutChoices = {_juggLoadoutChoices.Text?.Trim()}
-LoadoutTimeout = {_juggLoadoutTimeout.Text?.Trim()}
-MinSpawnDistance = {_juggMinSpawnDistance.Text?.Trim()}
-
-[General]
-MinPlayers = {_juggMinPlayers.Text?.Trim()}
 ");
     }
 

@@ -1,30 +1,33 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace TabgInstaller.ProximityChat.Client
 {
     public class VoicePlayback : IDisposable
     {
-        private const int SampleRate = 16000;
-        private const int FrameSamples = 320; // 20ms at 16kHz
-        private const int RingBufferSize = SampleRate * 2; // 2 seconds at 16kHz = 32000
         private const int MaxSources = 32;
+        private const int MaxQueuedFrames = 256;
+        private const int MaxFramesPerTick = 128;
 
         private readonly Dictionary<int, PlayerVoiceSource> _sources = new Dictionary<int, PlayerVoiceSource>();
-        private readonly float _masterVolume;
+        private readonly List<int> _sourcesToRemove = new List<int>();
+        private float _masterVolume;
         private float _minRange;
         private float _maxRange;
         private AudioRolloffMode _rolloffMode;
 
         private readonly ConcurrentQueue<QueuedAudio> _audioQueue = new ConcurrentQueue<QueuedAudio>();
+        private int _queuedFrameCount;
 
         private struct QueuedAudio
         {
             public int SenderId;
             public ushort Sequence;
             public byte[] PcmData;
+            public int PcmOffset;
             public int PcmLength;
         }
 
@@ -36,22 +39,33 @@ namespace TabgInstaller.ProximityChat.Client
             _masterVolume = masterVolume;
         }
 
-        public void UpdateConfig(float minRange, float maxRange, byte falloffCurve)
+        public void UpdateConfig(float minRange, float maxRange, byte falloffCurve, float masterVolume)
         {
             _minRange = minRange;
             _maxRange = maxRange;
             _rolloffMode = falloffCurve == 0 ? AudioRolloffMode.Linear : AudioRolloffMode.Logarithmic;
+            _masterVolume = masterVolume;
+
+            foreach (var kvp in _sources)
+                kvp.Value.UpdateConfig(_minRange, _maxRange, _rolloffMode, _masterVolume);
         }
 
-        public void EnqueueAudio(int senderId, ushort sequence, byte[] opusData, int opusLength)
+        public void EnqueueAudio(int senderId, ushort sequence, byte[] pcmData, int pcmOffset, int pcmLength)
         {
             _audioQueue.Enqueue(new QueuedAudio
             {
                 SenderId = senderId,
                 Sequence = sequence,
-                PcmData = opusData,
-                PcmLength = opusLength
+                PcmData = pcmData,
+                PcmOffset = pcmOffset,
+                PcmLength = pcmLength
             });
+
+            if (Interlocked.Increment(ref _queuedFrameCount) > MaxQueuedFrames &&
+                _audioQueue.TryDequeue(out _))
+            {
+                Interlocked.Decrement(ref _queuedFrameCount);
+            }
         }
 
         public void Tick()
@@ -62,9 +76,12 @@ namespace TabgInstaller.ProximityChat.Client
                 _nextPlayerCacheRefresh = Time.unscaledTime + 0.5f;
             }
 
-            while (_audioQueue.TryDequeue(out var queued))
+            int processed = 0;
+            while (processed < MaxFramesPerTick && _audioQueue.TryDequeue(out var queued))
             {
-                ProcessAudioOnMainThread(queued.SenderId, queued.Sequence, queued.PcmData, queued.PcmLength);
+                Interlocked.Decrement(ref _queuedFrameCount);
+                ProcessAudioOnMainThread(queued.SenderId, queued.Sequence, queued.PcmData, queued.PcmOffset, queued.PcmLength);
+                processed++;
             }
 
             foreach (var kvp in _sources)
@@ -73,20 +90,24 @@ namespace TabgInstaller.ProximityChat.Client
                     kvp.Value.AttachToPlayer(transform);
             }
 
-            var toRemove = new List<int>();
+            foreach (var kvp in _sources)
+                kvp.Value.FlushJitterBuffer();
+
+            _sourcesToRemove.Clear();
             foreach (var kvp in _sources)
             {
                 if (Time.unscaledTime - kvp.Value.LastReceiveTime > 0.5f)
-                    toRemove.Add(kvp.Key);
+                    _sourcesToRemove.Add(kvp.Key);
             }
-            foreach (int id in toRemove)
+
+            foreach (int id in _sourcesToRemove)
             {
                 _sources[id].Dispose();
                 _sources.Remove(id);
             }
         }
 
-        private void ProcessAudioOnMainThread(int senderId, ushort sequence, byte[] pcmData, int pcmLength)
+        private void ProcessAudioOnMainThread(int senderId, ushort sequence, byte[] pcmData, int pcmOffset, int pcmLength)
         {
             if (!_sources.TryGetValue(senderId, out var source))
             {
@@ -98,7 +119,7 @@ namespace TabgInstaller.ProximityChat.Client
                     source.AttachToPlayer(transform);
             }
 
-            source.DecodeAndFeed(pcmData, pcmLength);
+            source.BufferPcmFrame(sequence, pcmData, pcmOffset, pcmLength);
             source.LastReceiveTime = Time.unscaledTime;
         }
 
@@ -144,8 +165,17 @@ namespace TabgInstaller.ProximityChat.Client
 
         private class PlayerVoiceSource : IDisposable
         {
+            private const int StartupJitterFrames = 2;
+            private const int MaxJitterFrames = 8;
+
             private readonly GameObject _go;
             private readonly VoiceAudioFilter _filter;
+            private readonly AudioSource _audioSource;
+            private readonly SortedDictionary<ushort, PcmFrame> _jitterBuffer = new SortedDictionary<ushort, PcmFrame>();
+            private ushort _expectedSequence;
+            private ushort _firstBufferedSequence;
+            private bool _hasExpectedSequence;
+            private bool _hasFirstBufferedSequence;
 
             public float LastReceiveTime;
             public bool IsAttached { get; private set; }
@@ -156,19 +186,18 @@ namespace TabgInstaller.ProximityChat.Client
                 UnityEngine.Object.DontDestroyOnLoad(_go);
 
                 // AudioSource needed for OnAudioFilterRead to fire
-                var audioSource = _go.AddComponent<AudioSource>();
-                audioSource.spatialBlend = 0f;
-                audioSource.volume = masterVol;
-                audioSource.loop = true;
-                audioSource.dopplerLevel = 0f;
-                audioSource.bypassEffects = true;
-                audioSource.bypassListenerEffects = true;
-                audioSource.bypassReverbZones = true;
+                _audioSource = _go.AddComponent<AudioSource>();
+                _audioSource.loop = true;
+                _audioSource.dopplerLevel = 0f;
+                _audioSource.bypassEffects = true;
+                _audioSource.bypassListenerEffects = true;
+                _audioSource.bypassReverbZones = true;
+                UpdateConfig(minDist, maxDist, rolloff, masterVol);
 
                 // Play a 1-second silent clip so OnAudioFilterRead gets called continuously
                 // Use 48kHz for the clip so Unity drives the audio thread at 48kHz
-                audioSource.clip = AudioClip.Create($"Silent_{playerId}", 48000, 1, 48000, false);
-                audioSource.Play();
+                _audioSource.clip = AudioClip.Create($"Silent_{playerId}", 48000, 1, 48000, false);
+                _audioSource.Play();
 
                 // VoiceAudioFilter reads from its ring buffer and writes into the audio pipeline
                 _filter = _go.AddComponent<VoiceAudioFilter>();
@@ -176,19 +205,74 @@ namespace TabgInstaller.ProximityChat.Client
                 LastReceiveTime = Time.unscaledTime;
             }
 
-            public void DecodeAndFeed(byte[] pcmData, int pcmLength)
+            public void UpdateConfig(float minDist, float maxDist, AudioRolloffMode rolloff, float masterVol)
             {
-                if (_filter == null) return;
-                // Each byte is 8-bit unsigned PCM: convert back to float[-1, 1]
-                int sampleCount = pcmLength;
-                if (sampleCount <= 0) return;
+                if (_audioSource == null) return;
 
-                float[] samples = new float[sampleCount];
-                for (int i = 0; i < sampleCount; i++)
+                _audioSource.spatialBlend = 1f;
+                _audioSource.volume = masterVol;
+                _audioSource.minDistance = minDist;
+                _audioSource.maxDistance = maxDist;
+                _audioSource.rolloffMode = rolloff;
+            }
+
+            public void BufferPcmFrame(ushort sequence, byte[] pcmData, int pcmOffset, int pcmLength)
+            {
+                if (_filter == null || pcmData == null || pcmLength <= 0) return;
+
+                if (_hasExpectedSequence && IsOlder(sequence, _expectedSequence))
+                    return;
+
+                if (!_jitterBuffer.ContainsKey(sequence))
                 {
-                    samples[i] = (pcmData[i] / 255f) * 2f - 1f;
+                    if (_jitterBuffer.Count >= MaxJitterFrames)
+                        return;
+
+                    _jitterBuffer.Add(sequence, new PcmFrame
+                    {
+                        Data = pcmData,
+                        Offset = pcmOffset,
+                        Length = pcmLength
+                    });
+
+                    if (!_hasFirstBufferedSequence)
+                    {
+                        _firstBufferedSequence = sequence;
+                        _hasFirstBufferedSequence = true;
+                    }
                 }
-                _filter.Feed(samples);
+            }
+
+            public void FlushJitterBuffer()
+            {
+                if (_jitterBuffer.Count == 0)
+                    return;
+
+                if (!_hasExpectedSequence)
+                {
+                    if (_jitterBuffer.Count < StartupJitterFrames)
+                        return;
+
+                    _expectedSequence = _firstBufferedSequence;
+                    _hasExpectedSequence = true;
+                }
+
+                int flushed = 0;
+                while (_jitterBuffer.TryGetValue(_expectedSequence, out var frame))
+                {
+                    FeedFrame(frame);
+                    _jitterBuffer.Remove(_expectedSequence);
+                    _expectedSequence++;
+                    flushed++;
+
+                    if (flushed >= 4)
+                        return;
+                }
+
+                if (_jitterBuffer.Count >= MaxJitterFrames - 2)
+                {
+                    _expectedSequence = FirstSequenceAtOrAfter(_expectedSequence);
+                }
             }
 
             public void AttachToPlayer(Transform playerTransform)
@@ -196,6 +280,7 @@ namespace TabgInstaller.ProximityChat.Client
                 if (_go != null && playerTransform != null)
                 {
                     _go.transform.SetParent(playerTransform, false);
+                    _go.transform.localPosition = Vector3.zero;
                     IsAttached = true;
                 }
             }
@@ -204,6 +289,41 @@ namespace TabgInstaller.ProximityChat.Client
             {
                 if (_go != null) UnityEngine.Object.Destroy(_go);
             }
+
+            private ushort FirstSequenceAtOrAfter(ushort expected)
+            {
+                ushort bestSequence = expected;
+                ushort bestDistance = ushort.MaxValue;
+
+                foreach (ushort sequence in _jitterBuffer.Keys)
+                {
+                    ushort distance = (ushort)(sequence - expected);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestSequence = sequence;
+                    }
+                }
+
+                return bestSequence;
+            }
+
+            private void FeedFrame(PcmFrame frame)
+            {
+                _filter.FeedPcmU8(frame.Data, frame.Offset, frame.Length);
+            }
+
+            private static bool IsOlder(ushort sequence, ushort expected)
+            {
+                return sequence != expected && (ushort)(expected - sequence) < 32768;
+            }
+
+            private struct PcmFrame
+            {
+                public byte[] Data;
+                public int Offset;
+                public int Length;
+            }
         }
     }
 
@@ -211,21 +331,24 @@ namespace TabgInstaller.ProximityChat.Client
     // Must be a public non-nested class so Unity's AddComponent can find it.
     public class VoiceAudioFilter : MonoBehaviour
     {
-        private float[] _buffer = new float[32000]; // 2 sec at 16kHz
+        private readonly float[] _buffer = new float[32000]; // 2 sec at 16kHz
         private int _writePos;
         private int _readPos;
-        private int _available; // how many 8kHz samples are ready to play
+        private int _available; // how many 16kHz samples are ready to play
 
         private int _outputCounter;
         private float _lastSample;
 
-        public void Feed(float[] samples)
+        public void FeedPcmU8(byte[] pcmData, int offset, int length)
         {
+            if (pcmData == null || length <= 0) return;
+
             lock (this)
             {
-                for (int i = 0; i < samples.Length; i++)
+                int end = Math.Min(offset + length, pcmData.Length);
+                for (int i = offset; i < end; i++)
                 {
-                    _buffer[_writePos] = samples[i];
+                    _buffer[_writePos] = (pcmData[i] / 255f) * 2f - 1f;
                     _writePos = (_writePos + 1) % _buffer.Length;
                     _available = Math.Min(_available + 1, _buffer.Length);
                 }

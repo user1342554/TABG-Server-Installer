@@ -24,8 +24,6 @@ namespace TabgInstaller.Gui.Windows
         private readonly IToastService _toast;
         private readonly IAppSettingsService _appSettings;
 
-        private const string DefaultCitrusTag = "v0.7";
-
         public SetupWizardWindow(IToastService? toast = null, IAppSettingsService? appSettings = null)
         {
             _toast = toast ?? ToastService.Instance;
@@ -48,7 +46,7 @@ namespace TabgInstaller.Gui.Windows
 
         private void BuildPluginCheckboxes()
         {
-            foreach (var plugin in PluginRegistry.ServerPlugins)
+            foreach (var plugin in PluginRegistry.ServerPlugins.Where(plugin => plugin.Kind != PluginKind.CoreDependency))
             {
                 var cb = new CheckBox
                 {
@@ -207,19 +205,17 @@ namespace TabgInstaller.Gui.Windows
             try
             {
                 var bundled = new List<string>();
-                bool skipCitrus = true;
                 bool installCommunityServer = false;
 
-                for (int i = 0; i < _pluginCheckboxes.Count && i < PluginRegistry.ServerPlugins.Length; i++)
+                foreach (var checkbox in _pluginCheckboxes)
                 {
-                    if (_pluginCheckboxes[i].IsChecked != true) continue;
-                    var plugin = PluginRegistry.ServerPlugins[i];
+                    if (checkbox.IsChecked != true || checkbox.Tag is not string pluginId) continue;
+                    var plugin = PluginRegistry.ServerPlugins.FirstOrDefault(p =>
+                        p.Id.Equals(pluginId, StringComparison.OrdinalIgnoreCase));
+                    if (plugin == null) continue;
 
                     switch (plugin.Kind)
                     {
-                        case PluginKind.CoreDependency:
-                            if (plugin.Id == "Citruslib") skipCitrus = false;
-                            break;
                         case PluginKind.CommunityServer:
                             installCommunityServer = true;
                             break;
@@ -261,9 +257,9 @@ namespace TabgInstaller.Gui.Windows
                         serverPassword: "enormous",
                         serverDescription: "enormous",
                         starterPackTag: "",
-                        citrusLibTag: DefaultCitrusTag,
+                        citrusLibTag: "",
                         skipStarterPack: true,
-                        skipCitruslib: skipCitrus,
+                        skipCitruslib: false,
                         installCommunityServer: installCommunityServer,
                         bundledPlugins: bundled,
                         ct: _cts.Token);

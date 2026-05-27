@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BepInEx.Logging;
 using UnityEngine;
+
+[assembly: InternalsVisibleTo("TabgInstaller.Tests")]
 
 namespace TabgInstaller.MatchCore
 {
@@ -45,18 +48,7 @@ namespace TabgInstaller.MatchCore
             var cfg = new MatchCoreConfig();
             try
             {
-                foreach (var raw in File.ReadAllLines(path))
-                {
-                    var line = StripComment(raw).Trim();
-                    if (line.Length == 0) continue;
-
-                    int equals = line.IndexOf('=');
-                    if (equals <= 0) continue;
-
-                    string key = line.Substring(0, equals).Trim();
-                    string value = line.Substring(equals + 1).Trim();
-                    cfg.Apply(key, value);
-                }
+                cfg.ApplyLines(File.ReadAllLines(path));
             }
             catch (Exception ex)
             {
@@ -67,6 +59,32 @@ namespace TabgInstaller.MatchCore
             cfg.Normalize();
             logger?.LogInfo("[MatchCore] Loaded config from " + path);
             return cfg;
+        }
+
+        internal static MatchCoreConfig Parse(IEnumerable<string> lines)
+        {
+            var cfg = new MatchCoreConfig();
+            cfg.ApplyLines(lines);
+            cfg.Normalize();
+            return cfg;
+        }
+
+        private void ApplyLines(IEnumerable<string> lines)
+        {
+            if (lines == null) return;
+
+            foreach (var raw in lines)
+            {
+                var line = StripComment(raw ?? string.Empty).Trim();
+                if (line.Length == 0) continue;
+
+                int equals = line.IndexOf('=');
+                if (equals <= 0) continue;
+
+                string key = line.Substring(0, equals).Trim();
+                string value = line.Substring(equals + 1).Trim();
+                Apply(key, value);
+            }
         }
 
         private static string GetConfigPath()
@@ -99,14 +117,12 @@ namespace TabgInstaller.MatchCore
                     foreach (var raw in File.ReadAllLines(path))
                     {
                         var line = StripComment(raw).Trim();
-                        if (line.Length == 0 || line.StartsWith("[") && line.EndsWith("]")) continue;
+                        if (line.Length == 0 || line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal)) continue;
 
                         int equals = line.IndexOf('=');
                         if (equals <= 0) continue;
 
-                        string key = line.Substring(0, equals).Trim();
-                        string value = line.Substring(equals + 1).Trim();
-                        cfg.Apply(key, value);
+                        cfg.Apply(line.Substring(0, equals).Trim(), line.Substring(equals + 1).Trim());
                     }
                 }
                 catch (Exception ex)
@@ -146,7 +162,7 @@ namespace TabgInstaller.MatchCore
                 "MinNumberOfPlayers=1",
                 "TimeToStart=5",
                 "PreMatchTimeout=0",
-                "PeriMatchTimeout=0",
+                "MatchTimeout=0",
                 "WinCondition=Default",
                 "KillsToWin=20",
                 "SpelldropEnabled=true",
@@ -389,7 +405,7 @@ namespace TabgInstaller.MatchCore
 
                 int dataColon = data.IndexOf(':');
                 Vector3 center = dataColon >= 0 ? ParseVector(data.Substring(0, dataColon), Vector3.zero) : ParseVector(data, Vector3.zero);
-                float[] sizes = dataColon >= 0 ? ParseFloatList(data.Substring(dataColon + 1)) : new float[0];
+                float[] sizes = dataColon >= 0 ? ParseFloatList(data.Substring(dataColon + 1)) : Array.Empty<float>();
 
                 rings.Add(new RingProfile { Name = name.Trim(), Rarity = Math.Max(1f, rarity), Center = center, Sizes = sizes });
             }
@@ -409,8 +425,8 @@ namespace TabgInstaller.MatchCore
         public string Name = "Default";
         public float Rarity = 100f;
         public Vector3 Center = Vector3.zero;
-        public float[] Sizes = new float[0];
-        public float[] Speeds = new float[0];
+        public float[] Sizes = Array.Empty<float>();
+        public float[] Speeds = Array.Empty<float>();
     }
 
     internal sealed class LoadoutDefinition

@@ -1,6 +1,6 @@
 {
   "id": "BigSmoke",
-  "name": "BigSmokeGrenade",
+  "name": "Big Smoke Grenade",
   "version": "1.0.0",
   "description": "Giant purple smoke grenades (/give 208).",
   "author": "anonymer_hase",
@@ -9,6 +9,8 @@
   "type": "server",
   "kind": "bundled",
   "defaultChecked": true,
+  "requiresClientMod": true,
+  "clientPluginId": "CustomGrenades",
   "compatibleTabgVersions": ["*"],
   "minInstallerVersion": "5.0.0",
   "bepInExVersion": "5.4.22",

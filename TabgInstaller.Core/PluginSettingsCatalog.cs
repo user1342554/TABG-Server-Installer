@@ -19,22 +19,6 @@ namespace TabgInstaller.Core
                 Setting("Radar", "IncludeDeadPlayers", "Include dead players", "Include dead players in radar updates.", PluginSettingValueType.Boolean, "false")),
 
             Config(
-                "HuntMode",
-                "Hunt Mode",
-                "Server-side 4v1 Hunt Mode match tuning.",
-                PluginSettingScope.Server,
-                "tabginstaller.huntmode.cfg",
-                Setting("HuntMode", "Enabled", "Enabled", "Enable Hunt Mode (4v1).", PluginSettingValueType.Boolean, "true"),
-                Setting("HuntMode", "MatchDuration", "Match duration (s)", "Match duration in seconds.", PluginSettingValueType.Single, "480"),
-                Setting("HuntMode", "ZoneRadius", "Zone radius", "Play zone radius.", PluginSettingValueType.Single, "200"),
-                Setting("HuntMode", "ZoneCenterX", "Zone center X", "Zone center X coordinate.", PluginSettingValueType.Single, "-191"),
-                Setting("HuntMode", "ZoneCenterY", "Zone center Y", "Zone center Y coordinate.", PluginSettingValueType.Single, "132"),
-                Setting("HuntMode", "ZoneCenterZ", "Zone center Z", "Zone center Z coordinate.", PluginSettingValueType.Single, "-205"),
-                Setting("HuntMode", "VehicleSpawnX", "Vehicle spawn X", "Escape vehicle spawn X coordinate.", PluginSettingValueType.Single, "-100"),
-                Setting("HuntMode", "VehicleSpawnY", "Vehicle spawn Y", "Escape vehicle spawn Y coordinate.", PluginSettingValueType.Single, "132"),
-                Setting("HuntMode", "VehicleSpawnZ", "Vehicle spawn Z", "Escape vehicle spawn Z coordinate.", PluginSettingValueType.Single, "-100")),
-
-            Config(
                 "BigSmoke",
                 "Big Smoke Grenade",
                 "Giant purple smoke grenade behavior.",
@@ -66,7 +50,10 @@ namespace TabgInstaller.Core
                 "tabginstaller.unusedvehicles.cfg",
                 Setting("Spawning", "SpawnChance", "Spawn chance", "Chance to add an unused vehicle near each normal vehicle spawn.", PluginSettingValueType.Single, "0.2"),
                 Setting("Spawning", "MaxSpawns", "Max spawns", "Maximum unused vehicles to add per match.", PluginSettingValueType.Int32, "15"),
-                Setting("Commands", "EnableCommands", "Enable commands", "Register /spawn, /vehicles, and vehicle help commands.", PluginSettingValueType.Boolean, "true")),
+                Setting("Spawning", "SkipVehicles", "Skipped vehicles", "Comma-separated prefab names kept disabled. Defaults skip known crash/broken vehicles.", PluginSettingValueType.String, "CannonCar,DeceptionBossCar"),
+                Setting("Commands", "EnableCommands", "Enable commands", "Register /vehicle, /vehicles, and /vehiclehelp commands.", PluginSettingValueType.Boolean, "true"),
+                Setting("Commands", "EnableLegacySpawnAlias", "Legacy /spawn alias", "Also register /spawn as a /vehicle alias. Off by default to avoid admin command collisions.", PluginSettingValueType.Boolean, "false"),
+                Setting("Compatibility", "EnableHeadlessAudioPatches", "Headless audio patches", "Disable vehicle audio hooks only on headless dedicated servers.", PluginSettingValueType.Boolean, "true")),
 
             Config(
                 "SoloTesting",
@@ -200,8 +187,6 @@ namespace TabgInstaller.Core
                 Setting("Flashbang", "BlindIntensity", "Blind intensity", "Maximum visual effect intensity.", PluginSettingValueType.Single, "60"),
                 Setting("Flashbang", "BlindDuration", "Blind duration", "Maximum visual effect duration.", PluginSettingValueType.Single, "60")),
 
-            NoSettings("HuntModeClient", "Hunt Mode Client", "HUD-only companion for Hunt Mode.", PluginSettingScope.Client),
-            NoSettings("JuggernautClient", "Juggernaut Client", "External bundled client companion with no installer-exposed settings.", PluginSettingScope.Client),
         };
 
         private static PluginConfigDefinition Config(

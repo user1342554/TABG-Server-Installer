@@ -12,6 +12,9 @@ namespace TabgInstaller.FakePlayers
     {
         static void Postfix(ServerClient __instance)
         {
+            if (!ReferenceEquals(FakePlayersPlugin.ServerRef, __instance))
+                FakePlayersPlugin.ResetStaticMatchState();
+
             FakePlayersPlugin.ServerRef = __instance;
         }
     }

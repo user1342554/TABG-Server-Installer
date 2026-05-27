@@ -186,7 +186,7 @@ namespace TabgInstaller.MatchCore
 
         private static void Postfix(GameRoom __instance)
         {
-            var field = AccessTools.Field(typeof(GameRoom), "m_server");
+            var field = ReflectionHelpers.Field(typeof(GameRoom), "m_server");
             MatchCoreRuntime.ForceDrop(field?.GetValue(__instance) as ServerClient);
         }
     }

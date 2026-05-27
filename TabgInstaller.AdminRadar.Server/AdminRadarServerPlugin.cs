@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -15,7 +16,11 @@ namespace TabgInstaller.AdminRadar.Server
     public class AdminRadarServerPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
-        internal const byte BotDebugExtensionMarker = 219;
+        private const uint RadarPayloadMagic = 0x52445241; // "ARDR", little-endian
+        private const byte RadarPayloadVersion = 1;
+        private const byte PlayerSectionType = 1;
+        private const byte BotDebugSectionType = 2;
+        private const int MaxSerializedStringBytes = 512;
 
         private static AdminRadarServerPlugin _instance;
         private static ConfigEntry<bool> _enabled;
@@ -59,6 +64,8 @@ namespace TabgInstaller.AdminRadar.Server
             private static PropertyInfo _playerPositionProp;
             private static FieldInfo _isAliveField;
             private static MethodInfo _getPositionMethod;
+            private static BotDebugAccessor _botDebugAccessor;
+            private static string _lastRecipientWarning;
 
             public static void Postfix(BattleRoyaleGameMode __instance)
             {
@@ -134,42 +141,80 @@ namespace TabgInstaller.AdminRadar.Server
                 using (var ms = new MemoryStream())
                 using (var bw = new BinaryWriter(ms))
                 {
-                    bw.Write((byte)Math.Min(entries.Count, 255));
-                    for (int i = 0; i < entries.Count && i < 255; i++)
-                    {
-                        var entry = entries[i];
-                        bw.Write(entry.Index);
-                        bw.Write(entry.Name ?? string.Empty);
-                        bw.Write(entry.Position.x);
-                        bw.Write(entry.Position.y);
-                        bw.Write(entry.Position.z);
-                        bw.Write(entry.Alive);
-                    }
-
-                    bw.Write(BotDebugExtensionMarker);
-                    bw.Write((byte)Math.Min(debugEntries.Count, 255));
-                    for (int i = 0; i < debugEntries.Count && i < 255; i++)
-                    {
-                        var entry = debugEntries[i];
-                        bw.Write(entry.Index);
-                        bw.Write(entry.State ?? string.Empty);
-                        bw.Write(entry.TargetName ?? string.Empty);
-                        bw.Write(entry.WeaponName ?? string.Empty);
-                        bw.Write(entry.HasLineOfSight);
-                        bw.Write(entry.IsFiring);
-                        bw.Write(entry.HasMoveGoal);
-                        bw.Write(entry.MoveGoal.x);
-                        bw.Write(entry.MoveGoal.y);
-                        bw.Write(entry.MoveGoal.z);
-                        bw.Write(entry.HasLootGoal);
-                        bw.Write(entry.LootGoal.x);
-                        bw.Write(entry.LootGoal.y);
-                        bw.Write(entry.LootGoal.z);
-                        bw.Write(entry.LootName ?? string.Empty);
-                    }
+                    bw.Write(RadarPayloadMagic);
+                    bw.Write(RadarPayloadVersion);
+                    bw.Write((byte)(debugEntries.Count > 0 ? 2 : 1));
+                    WriteSection(bw, PlayerSectionType, sectionWriter => WritePlayerSection(sectionWriter, entries));
+                    if (debugEntries.Count > 0)
+                        WriteSection(bw, BotDebugSectionType, sectionWriter => WriteBotDebugSection(sectionWriter, debugEntries));
 
                     return ms.ToArray();
                 }
+            }
+
+            private static void WriteSection(BinaryWriter payloadWriter, byte sectionType, Action<BinaryWriter> writeSection)
+            {
+                using (var sectionStream = new MemoryStream())
+                using (var sectionWriter = new BinaryWriter(sectionStream))
+                {
+                    writeSection(sectionWriter);
+                    sectionWriter.Flush();
+
+                    long sectionLength = sectionStream.Length;
+                    if (sectionLength > ushort.MaxValue)
+                        throw new InvalidOperationException("Radar section exceeded " + ushort.MaxValue + " bytes.");
+
+                    payloadWriter.Write(sectionType);
+                    payloadWriter.Write((ushort)sectionLength);
+                    payloadWriter.Write(sectionStream.ToArray());
+                }
+            }
+
+            private static void WritePlayerSection(BinaryWriter bw, List<PlayerRadarEntry> entries)
+            {
+                bw.Write((byte)Math.Min(entries.Count, 255));
+                for (int i = 0; i < entries.Count && i < 255; i++)
+                {
+                    var entry = entries[i];
+                    bw.Write(entry.Index);
+                    WriteString(bw, entry.Name);
+                    bw.Write(entry.Position.x);
+                    bw.Write(entry.Position.y);
+                    bw.Write(entry.Position.z);
+                    bw.Write(entry.Alive);
+                }
+            }
+
+            private static void WriteBotDebugSection(BinaryWriter bw, List<BotDebugEntry> debugEntries)
+            {
+                bw.Write((byte)Math.Min(debugEntries.Count, 255));
+                for (int i = 0; i < debugEntries.Count && i < 255; i++)
+                {
+                    var entry = debugEntries[i];
+                    bw.Write(entry.Index);
+                    WriteString(bw, entry.State);
+                    WriteString(bw, entry.TargetName);
+                    WriteString(bw, entry.WeaponName);
+                    bw.Write(entry.HasLineOfSight);
+                    bw.Write(entry.IsFiring);
+                    bw.Write(entry.HasMoveGoal);
+                    bw.Write(entry.MoveGoal.x);
+                    bw.Write(entry.MoveGoal.y);
+                    bw.Write(entry.MoveGoal.z);
+                    bw.Write(entry.HasLootGoal);
+                    bw.Write(entry.LootGoal.x);
+                    bw.Write(entry.LootGoal.y);
+                    bw.Write(entry.LootGoal.z);
+                    WriteString(bw, entry.LootName);
+                }
+            }
+
+            private static void WriteString(BinaryWriter bw, string value)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(value ?? string.Empty);
+                int length = Math.Min(bytes.Length, MaxSerializedStringBytes);
+                bw.Write((ushort)length);
+                bw.Write(bytes, 0, length);
             }
 
             private static List<BotDebugEntry> BuildBotDebugEntries(ServerClient server)
@@ -188,19 +233,23 @@ namespace TabgInstaller.AdminRadar.Server
                     if (controller == null)
                         continue;
 
+                    var accessor = GetBotDebugAccessor(controller);
+                    if (accessor == null)
+                        continue;
+
                     entries.Add(new BotDebugEntry
                     {
                         Index = player.PlayerIndex,
-                        State = ReadString(controller, "DebugState"),
-                        TargetName = ReadString(controller, "DebugTargetName"),
-                        WeaponName = ReadString(controller, "DebugWeaponName"),
-                        HasLineOfSight = ReadBool(controller, "DebugHasLineOfSight"),
-                        IsFiring = ReadBool(controller, "DebugIsFiring"),
-                        HasMoveGoal = ReadBool(controller, "DebugHasMoveGoal"),
-                        MoveGoal = ReadVector3(controller, "DebugMoveGoal"),
-                        HasLootGoal = ReadBool(controller, "DebugHasLootGoal"),
-                        LootGoal = ReadVector3(controller, "DebugLootGoal"),
-                        LootName = ReadString(controller, "DebugLootName")
+                        State = accessor.ReadString(controller, accessor.DebugState),
+                        TargetName = accessor.ReadString(controller, accessor.DebugTargetName),
+                        WeaponName = accessor.ReadString(controller, accessor.DebugWeaponName),
+                        HasLineOfSight = accessor.ReadBool(controller, accessor.DebugHasLineOfSight),
+                        IsFiring = accessor.ReadBool(controller, accessor.DebugIsFiring),
+                        HasMoveGoal = accessor.ReadBool(controller, accessor.DebugHasMoveGoal),
+                        MoveGoal = accessor.ReadVector3(controller, accessor.DebugMoveGoal),
+                        HasLootGoal = accessor.ReadBool(controller, accessor.DebugHasLootGoal),
+                        LootGoal = accessor.ReadVector3(controller, accessor.DebugLootGoal),
+                        LootName = accessor.ReadString(controller, accessor.DebugLootName)
                     });
                 }
 
@@ -224,45 +273,16 @@ namespace TabgInstaller.AdminRadar.Server
                 return null;
             }
 
-            private static string ReadString(Component component, string propertyName)
+            private static BotDebugAccessor GetBotDebugAccessor(Component component)
             {
-                try
-                {
-                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
-                    return value != null ? value.ToString() : string.Empty;
-                }
-                catch
-                {
-                    return string.Empty;
-                }
-            }
+                if (component == null)
+                    return null;
 
-            private static bool ReadBool(Component component, string propertyName)
-            {
-                try
-                {
-                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
-                    return value is bool b && b;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
+                Type controllerType = component.GetType();
+                if (_botDebugAccessor == null || _botDebugAccessor.ControllerType != controllerType)
+                    _botDebugAccessor = new BotDebugAccessor(controllerType);
 
-            private static Vector3 ReadVector3(Component component, string propertyName)
-            {
-                try
-                {
-                    object value = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(component, null);
-                    if (value is Vector3 vector)
-                        return vector;
-                }
-                catch
-                {
-                }
-
-                return Vector3.zero;
+                return _botDebugAccessor;
             }
 
             private static void EnsureResolved(object player)
@@ -342,16 +362,120 @@ namespace TabgInstaller.AdminRadar.Server
             private static byte[] ParseRecipients()
             {
                 var raw = _recipients.Value?.Trim();
-                if (string.IsNullOrWhiteSpace(raw) || raw == "*") return null;
+                if (raw == "*")
+                {
+                    _lastRecipientWarning = null;
+                    return null;
+                }
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    WarnRecipientsOnce("empty", "[AdminRadar.Server] Radar.Recipients is empty; no radar packet recipients selected. Use * for everyone.");
+                    return new byte[0];
+                }
 
                 var result = new List<byte>();
                 foreach (var part in raw.Split(','))
                 {
-                    if (byte.TryParse(part.Trim(), out byte playerIndex))
-                        result.Add(playerIndex);
+                    string token = part.Trim();
+                    if (byte.TryParse(token, out byte playerIndex))
+                    {
+                        if (!result.Contains(playerIndex))
+                            result.Add(playerIndex);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        WarnRecipientsOnce(raw, "[AdminRadar.Server] Ignoring invalid radar recipient '" + token + "'.");
+                    }
                 }
 
+                if (result.Count == 0)
+                    WarnRecipientsOnce(raw, "[AdminRadar.Server] Radar.Recipients did not contain any valid player indexes; no radar packet recipients selected.");
+                else
+                    _lastRecipientWarning = null;
+
                 return result.ToArray();
+            }
+
+            private static void WarnRecipientsOnce(string warningKey, string message)
+            {
+                if (_lastRecipientWarning == warningKey)
+                    return;
+
+                _lastRecipientWarning = warningKey;
+                _instance?.Logger.LogWarning(message);
+            }
+
+            private sealed class BotDebugAccessor
+            {
+                private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+                public readonly Type ControllerType;
+                public readonly PropertyInfo DebugState;
+                public readonly PropertyInfo DebugTargetName;
+                public readonly PropertyInfo DebugWeaponName;
+                public readonly PropertyInfo DebugHasLineOfSight;
+                public readonly PropertyInfo DebugIsFiring;
+                public readonly PropertyInfo DebugHasMoveGoal;
+                public readonly PropertyInfo DebugMoveGoal;
+                public readonly PropertyInfo DebugHasLootGoal;
+                public readonly PropertyInfo DebugLootGoal;
+                public readonly PropertyInfo DebugLootName;
+
+                public BotDebugAccessor(Type controllerType)
+                {
+                    ControllerType = controllerType;
+                    DebugState = controllerType.GetProperty("DebugState", Flags);
+                    DebugTargetName = controllerType.GetProperty("DebugTargetName", Flags);
+                    DebugWeaponName = controllerType.GetProperty("DebugWeaponName", Flags);
+                    DebugHasLineOfSight = controllerType.GetProperty("DebugHasLineOfSight", Flags);
+                    DebugIsFiring = controllerType.GetProperty("DebugIsFiring", Flags);
+                    DebugHasMoveGoal = controllerType.GetProperty("DebugHasMoveGoal", Flags);
+                    DebugMoveGoal = controllerType.GetProperty("DebugMoveGoal", Flags);
+                    DebugHasLootGoal = controllerType.GetProperty("DebugHasLootGoal", Flags);
+                    DebugLootGoal = controllerType.GetProperty("DebugLootGoal", Flags);
+                    DebugLootName = controllerType.GetProperty("DebugLootName", Flags);
+                }
+
+                public string ReadString(Component component, PropertyInfo property)
+                {
+                    try
+                    {
+                        object value = property?.GetValue(component, null);
+                        return value != null ? value.ToString() : string.Empty;
+                    }
+                    catch
+                    {
+                        return string.Empty;
+                    }
+                }
+
+                public bool ReadBool(Component component, PropertyInfo property)
+                {
+                    try
+                    {
+                        object value = property?.GetValue(component, null);
+                        return value is bool b && b;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                }
+
+                public Vector3 ReadVector3(Component component, PropertyInfo property)
+                {
+                    try
+                    {
+                        object value = property?.GetValue(component, null);
+                        if (value is Vector3 vector)
+                            return vector;
+                    }
+                    catch
+                    {
+                    }
+
+                    return Vector3.zero;
+                }
             }
 
             private struct PlayerRadarEntry

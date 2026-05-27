@@ -46,7 +46,6 @@ namespace TabgInstaller.Gui.ViewModels
         private CancellationTokenSource? _cts;
 
         [ObservableProperty] private string _serverPath = "";
-        [ObservableProperty] private string _citrusTag = "v0.7";
         [ObservableProperty] private string _statusText = "";
         [ObservableProperty] private double _progress;
         [ObservableProperty] private bool _isInstalling;
@@ -89,7 +88,7 @@ namespace TabgInstaller.Gui.ViewModels
         {
             var selections = new ObservableCollection<PluginSelection>();
 
-            foreach (var def in PluginRegistry.ServerPlugins)
+            foreach (var def in PluginRegistry.ServerPlugins.Where(def => def.Kind != PluginKind.CoreDependency))
             {
                 var sel = new PluginSelection
                 {
@@ -143,8 +142,6 @@ namespace TabgInstaller.Gui.ViewModels
             const string serverPassword = "";
             const string serverDesc = "";
 
-            string citrusTag = CitrusTag.Trim();
-            bool skipCitrus = !GetSelectionById("Citruslib");
             bool installCommunityServer = GetSelectionById("CommunityServer");
             string serverDir = ServerPath.Trim();
 
@@ -167,12 +164,6 @@ namespace TabgInstaller.Gui.ViewModels
                 _toast.Error(string.Format(Messages.PathDoesNotExist, serverDir));
                 return;
             }
-            if (citrusTag.Length == 0 && !skipCitrus)
-            {
-                _toast.Warning(Messages.CitruslibTagRequired);
-                return;
-            }
-
             // Collect bundled plugin DLLs from non-core selections
             var selectedBundledPlugins = new List<string>();
             foreach (var sel in PluginSelections)
@@ -233,9 +224,9 @@ namespace TabgInstaller.Gui.ViewModels
                         serverPassword: serverPassword,
                         serverDescription: serverDesc,
                         starterPackTag: "",
-                        citrusLibTag: citrusTag,
+                        citrusLibTag: "",
                         skipStarterPack: true,
-                        skipCitruslib: skipCitrus,
+                        skipCitruslib: false,
                         installCommunityServer: installCommunityServer,
                         bundledPlugins: selectedBundledPlugins,
                         ct: _cts.Token

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
+using System.Text;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -14,7 +14,12 @@ namespace TabgInstaller.AdminRadar.Client
     public class AdminRadarClientPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
-        private const byte BotDebugExtensionMarker = 219;
+        private const uint RadarPayloadMagic = 0x52445241; // "ARDR", little-endian
+        private const byte RadarPayloadVersion = 1;
+        private const byte PlayerSectionType = 1;
+        private const byte BotDebugSectionType = 2;
+        private const int MaxSerializedStringBytes = 512;
+        private const int MaxLegacyStringBytes = 4096;
 
         internal static AdminRadarClientPlugin Instance;
         internal static BepInEx.Logging.ManualLogSource Log;
@@ -48,6 +53,8 @@ namespace TabgInstaller.AdminRadar.Client
         private ConfigEntry<bool> _showWorldMarkers;
         private ConfigEntry<bool> _showOnlyDummies;
         private ConfigEntry<float> _markerMaxDistance;
+        private ConfigEntry<bool> _syncDummyClientBodies;
+        private ConfigEntry<bool> _respawnDummyClientBodies;
 
         private Harmony _harmony;
         private GUIStyle _labelStyle;
@@ -73,6 +80,8 @@ namespace TabgInstaller.AdminRadar.Client
             _showWorldMarkers = Config.Bind("Dummy Highlighter", "ShowWorldMarkers", true, "Show screen-space labels over dummy players.");
             _showOnlyDummies = Config.Bind("Dummy Highlighter", "OnlyDummies", true, "Only draw world markers for AIPlayer dummy names.");
             _markerMaxDistance = Config.Bind("Dummy Highlighter", "MaxDistanceMeters", 2500f, "Maximum distance for dummy world markers.");
+            _syncDummyClientBodies = Config.Bind("Dummy Debug", "SyncClientDummyBodies", true, "Move local dummy bodies after large server radar jumps. This is only for debug display, not general entity sync.");
+            _respawnDummyClientBodies = Config.Bind("Dummy Debug", "RespawnClientDummyBodies", true, "Rebuild missing local dummy bodies after large server radar jumps. This is only for debug display, not general entity sync.");
 
             RegisterSettings();
 
@@ -112,84 +121,302 @@ namespace TabgInstaller.AdminRadar.Client
         {
             if (data == null || data.Length == 0) return;
 
-            try
+            string error;
+            List<ParsedPlayerEntry> playerEntries;
+            List<ParsedDebugEntry> debugEntries;
+            if (!TryParseRadarPayload(data, out playerEntries, out debugEntries, out error))
             {
-                using (var ms = new MemoryStream(data))
-                using (var br = new BinaryReader(ms))
+                Log?.LogWarning("[AdminRadar.Client] Ignoring malformed radar payload: " + error);
+                return;
+            }
+
+            for (int i = 0; i < playerEntries.Count; i++)
+            {
+                ParsedPlayerEntry entry = playerEntries[i];
+                ApplyPlayerPosition(entry.Index, entry.Name, entry.Position, entry.Alive);
+            }
+
+            for (int i = 0; i < debugEntries.Count; i++)
+            {
+                ParsedDebugEntry entry = debugEntries[i];
+                ApplyBotDebug(entry.Index, entry.State, entry.TargetName, entry.WeaponName, entry.HasLineOfSight, entry.IsFiring, entry.HasMoveGoal, entry.MoveGoal, entry.HasLootGoal, entry.LootGoal, entry.LootName);
+            }
+
+            _serverPayloadCount++;
+            _serverPlayerCount = playerEntries.Count;
+            if (_serverPayloadCount == 1 || _serverPayloadCount % 20 == 0)
+                Log?.LogInfo($"[AdminRadar.Client] Received radar payload #{_serverPayloadCount} with {playerEntries.Count} player(s).");
+        }
+
+        private static bool TryParseRadarPayload(byte[] data, out List<ParsedPlayerEntry> playerEntries, out List<ParsedDebugEntry> debugEntries, out string error)
+        {
+            if (IsVersionedPayload(data))
+                return TryParseVersionedPayload(data, out playerEntries, out debugEntries, out error);
+
+            return TryParseLegacyPayload(data, out playerEntries, out debugEntries, out error);
+        }
+
+        private static bool IsVersionedPayload(byte[] data)
+        {
+            return data.Length >= 4 &&
+                data[0] == (byte)'A' &&
+                data[1] == (byte)'R' &&
+                data[2] == (byte)'D' &&
+                data[3] == (byte)'R';
+        }
+
+        private static bool TryParseVersionedPayload(byte[] data, out List<ParsedPlayerEntry> playerEntries, out List<ParsedDebugEntry> debugEntries, out string error)
+        {
+            playerEntries = new List<ParsedPlayerEntry>();
+            debugEntries = new List<ParsedDebugEntry>();
+            var reader = new BoundedReader(data);
+
+            uint magic;
+            byte version;
+            byte sectionCount;
+            if (!reader.TryReadUInt32(out magic) || magic != RadarPayloadMagic)
+            {
+                error = "invalid radar payload magic";
+                return false;
+            }
+
+            if (!reader.TryReadByte(out version) || version != RadarPayloadVersion)
+            {
+                error = "unsupported radar payload version";
+                return false;
+            }
+
+            if (!reader.TryReadByte(out sectionCount))
+            {
+                error = "missing radar section count";
+                return false;
+            }
+
+            for (int i = 0; i < sectionCount; i++)
+            {
+                byte sectionType;
+                ushort sectionLength;
+                byte[] sectionBytes;
+                if (!reader.TryReadByte(out sectionType) ||
+                    !reader.TryReadUInt16(out sectionLength) ||
+                    !reader.TryReadBytes(sectionLength, out sectionBytes))
                 {
-                    int count = br.ReadByte();
-                    _serverPayloadCount++;
-                    _serverPlayerCount = count;
-                    if (_serverPayloadCount == 1 || _serverPayloadCount % 20 == 0)
-                        Log?.LogInfo($"[AdminRadar.Client] Received radar payload #{_serverPayloadCount} with {count} player(s).");
+                    error = "truncated radar section header or body";
+                    return false;
+                }
 
-                    for (int i = 0; i < count && br.BaseStream.Position < br.BaseStream.Length; i++)
-                    {
-                        byte index = br.ReadByte();
-                        string name = br.ReadString();
-                        float x = br.ReadSingle();
-                        float y = br.ReadSingle();
-                        float z = br.ReadSingle();
-                        bool alive = br.ReadBoolean();
-
-                        RadarPlayer previous;
-                        bool hadPrevious = Players.TryGetValue(index, out previous);
-                        Vector3 serverPosition = new Vector3(x, y, z);
-                        bool largeServerJump = hadPrevious &&
-                            previous.LastServerSeen > 0f &&
-                            Vector3.Distance(previous.Position, serverPosition) > 45f;
-
-                        Players[index] = new RadarPlayer
-                        {
-                            Index = index,
-                            Name = string.IsNullOrWhiteSpace(name) ? "Player " + index : name,
-                            Position = serverPosition,
-                            Alive = alive,
-                            LastSeen = Time.unscaledTime,
-                            LastServerSeen = Time.unscaledTime,
-                            BotState = hadPrevious ? previous.BotState : null,
-                            TargetName = hadPrevious ? previous.TargetName : null,
-                            WeaponName = hadPrevious ? previous.WeaponName : null,
-                            HasLineOfSight = hadPrevious && previous.HasLineOfSight,
-                            IsFiring = hadPrevious && previous.IsFiring,
-                            HasMoveGoal = hadPrevious && previous.HasMoveGoal,
-                            MoveGoal = hadPrevious ? previous.MoveGoal : Vector3.zero,
-                            HasLootGoal = hadPrevious && previous.HasLootGoal,
-                            LootGoal = hadPrevious ? previous.LootGoal : Vector3.zero,
-                            LootName = hadPrevious ? previous.LootName : null,
-                            LastDebugSeen = hadPrevious ? previous.LastDebugSeen : 0f
-                        };
-
-                        if (IsDummyName(name) && largeServerJump)
-                            ForceClientDummyPosition(index, name, serverPosition, largeServerJump);
-                    }
-
-                    if (br.BaseStream.Position < br.BaseStream.Length && br.ReadByte() == BotDebugExtensionMarker)
-                    {
-                        int debugCount = br.ReadByte();
-                        for (int i = 0; i < debugCount && br.BaseStream.Position < br.BaseStream.Length; i++)
-                        {
-                            byte index = br.ReadByte();
-                            string state = br.ReadString();
-                            string targetName = br.ReadString();
-                            string weaponName = br.ReadString();
-                            bool hasLineOfSight = br.ReadBoolean();
-                            bool isFiring = br.ReadBoolean();
-                            bool hasMoveGoal = br.ReadBoolean();
-                            Vector3 moveGoal = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
-                            bool hasLootGoal = br.ReadBoolean();
-                            Vector3 lootGoal = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
-                            string lootName = br.ReadString();
-
-                            ApplyBotDebug(index, state, targetName, weaponName, hasLineOfSight, isFiring, hasMoveGoal, moveGoal, hasLootGoal, lootGoal, lootName);
-                        }
-                    }
+                var sectionReader = new BoundedReader(sectionBytes);
+                switch (sectionType)
+                {
+                    case PlayerSectionType:
+                        if (!TryReadPlayerSection(sectionReader, true, playerEntries, out error))
+                            return false;
+                        break;
+                    case BotDebugSectionType:
+                        if (!TryReadBotDebugSection(sectionReader, true, debugEntries, out error))
+                            return false;
+                        break;
+                    default:
+                        break;
                 }
             }
-            catch (Exception ex)
+
+            if (reader.Remaining != 0)
             {
-                Log?.LogWarning("[AdminRadar.Client] Could not parse radar payload: " + ex.Message);
+                error = "unexpected trailing radar payload bytes";
+                return false;
             }
+
+            error = null;
+            return true;
+        }
+
+        private static bool TryParseLegacyPayload(byte[] data, out List<ParsedPlayerEntry> playerEntries, out List<ParsedDebugEntry> debugEntries, out string error)
+        {
+            playerEntries = new List<ParsedPlayerEntry>();
+            debugEntries = new List<ParsedDebugEntry>();
+            var reader = new BoundedReader(data);
+            if (!TryReadPlayerSection(reader, false, playerEntries, out error))
+                return false;
+
+            if (reader.Remaining == 0)
+                return true;
+
+            byte marker;
+            if (!reader.TryReadByte(out marker))
+            {
+                error = "truncated legacy debug marker";
+                return false;
+            }
+
+            if (marker != 219)
+            {
+                error = "unknown legacy radar extension marker";
+                return false;
+            }
+
+            return TryReadBotDebugSection(reader, false, debugEntries, out error);
+        }
+
+        private static bool TryReadPlayerSection(BoundedReader reader, bool versionedStrings, List<ParsedPlayerEntry> entries, out string error)
+        {
+            byte count;
+            if (!reader.TryReadByte(out count))
+            {
+                error = "missing radar player count";
+                return false;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                byte index;
+                string name;
+                float x;
+                float y;
+                float z;
+                bool alive;
+
+                if (!reader.TryReadByte(out index) ||
+                    !TryReadString(reader, versionedStrings, out name) ||
+                    !reader.TryReadSingle(out x) ||
+                    !reader.TryReadSingle(out y) ||
+                    !reader.TryReadSingle(out z) ||
+                    !reader.TryReadBool(out alive))
+                {
+                    error = "truncated radar player entry";
+                    return false;
+                }
+
+                entries.Add(new ParsedPlayerEntry
+                {
+                    Index = index,
+                    Name = name,
+                    Position = new Vector3(x, y, z),
+                    Alive = alive
+                });
+            }
+
+            if (versionedStrings && reader.Remaining != 0)
+            {
+                error = "unexpected trailing radar player bytes";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private static bool TryReadBotDebugSection(BoundedReader reader, bool versionedStrings, List<ParsedDebugEntry> entries, out string error)
+        {
+            byte debugCount;
+            if (!reader.TryReadByte(out debugCount))
+            {
+                error = "missing radar debug count";
+                return false;
+            }
+
+            for (int i = 0; i < debugCount; i++)
+            {
+                byte index;
+                string state;
+                string targetName;
+                string weaponName;
+                bool hasLineOfSight;
+                bool isFiring;
+                bool hasMoveGoal;
+                float moveX;
+                float moveY;
+                float moveZ;
+                bool hasLootGoal;
+                float lootX;
+                float lootY;
+                float lootZ;
+                string lootName;
+
+                if (!reader.TryReadByte(out index) ||
+                    !TryReadString(reader, versionedStrings, out state) ||
+                    !TryReadString(reader, versionedStrings, out targetName) ||
+                    !TryReadString(reader, versionedStrings, out weaponName) ||
+                    !reader.TryReadBool(out hasLineOfSight) ||
+                    !reader.TryReadBool(out isFiring) ||
+                    !reader.TryReadBool(out hasMoveGoal) ||
+                    !reader.TryReadSingle(out moveX) ||
+                    !reader.TryReadSingle(out moveY) ||
+                    !reader.TryReadSingle(out moveZ) ||
+                    !reader.TryReadBool(out hasLootGoal) ||
+                    !reader.TryReadSingle(out lootX) ||
+                    !reader.TryReadSingle(out lootY) ||
+                    !reader.TryReadSingle(out lootZ) ||
+                    !TryReadString(reader, versionedStrings, out lootName))
+                {
+                    error = "truncated radar debug entry";
+                    return false;
+                }
+
+                entries.Add(new ParsedDebugEntry
+                {
+                    Index = index,
+                    State = state,
+                    TargetName = targetName,
+                    WeaponName = weaponName,
+                    HasLineOfSight = hasLineOfSight,
+                    IsFiring = isFiring,
+                    HasMoveGoal = hasMoveGoal,
+                    MoveGoal = new Vector3(moveX, moveY, moveZ),
+                    HasLootGoal = hasLootGoal,
+                    LootGoal = new Vector3(lootX, lootY, lootZ),
+                    LootName = lootName
+                });
+            }
+
+            if (versionedStrings && reader.Remaining != 0)
+            {
+                error = "unexpected trailing radar debug bytes";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private static bool TryReadString(BoundedReader reader, bool versioned, out string value)
+        {
+            return versioned
+                ? reader.TryReadString16(MaxSerializedStringBytes, out value)
+                : reader.TryReadLegacyString(MaxLegacyStringBytes, out value);
+        }
+
+        private static void ApplyPlayerPosition(byte index, string name, Vector3 serverPosition, bool alive)
+        {
+            RadarPlayer previous;
+            bool hadPrevious = Players.TryGetValue(index, out previous);
+            bool largeServerJump = hadPrevious &&
+                previous.LastServerSeen > 0f &&
+                Vector3.Distance(previous.Position, serverPosition) > 45f;
+
+            Players[index] = new RadarPlayer
+            {
+                Index = index,
+                Name = string.IsNullOrWhiteSpace(name) ? "Player " + index : name,
+                Position = serverPosition,
+                Alive = alive,
+                LastSeen = Time.unscaledTime,
+                LastServerSeen = Time.unscaledTime,
+                BotState = hadPrevious ? previous.BotState : null,
+                TargetName = hadPrevious ? previous.TargetName : null,
+                WeaponName = hadPrevious ? previous.WeaponName : null,
+                HasLineOfSight = hadPrevious && previous.HasLineOfSight,
+                IsFiring = hadPrevious && previous.IsFiring,
+                HasMoveGoal = hadPrevious && previous.HasMoveGoal,
+                MoveGoal = hadPrevious ? previous.MoveGoal : Vector3.zero,
+                HasLootGoal = hadPrevious && previous.HasLootGoal,
+                LootGoal = hadPrevious ? previous.LootGoal : Vector3.zero,
+                LootName = hadPrevious ? previous.LootName : null,
+                LastDebugSeen = hadPrevious ? previous.LastDebugSeen : 0f
+            };
+
+            if (IsDummyName(name) && largeServerJump)
+                ForceClientDummyPosition(index, name, serverPosition, true);
         }
 
         private static void ApplyBotDebug(
@@ -319,6 +546,9 @@ namespace TabgInstaller.AdminRadar.Client
         {
             try
             {
+                if (Instance == null || !Instance._syncDummyClientBodies.Value)
+                    return;
+
                 PhotonServerHandler handler = PhotonServerHandler.instance;
                 if (handler == null || handler.Players == null)
                     return;
@@ -328,7 +558,13 @@ namespace TabgInstaller.AdminRadar.Client
                     if (player == null || player.PlayerIndex != index)
                         continue;
 
-                    if (allowRespawn)
+                    if (!IsDummyName(player.PlayerName))
+                    {
+                        Log?.LogDebug($"[AdminRadar.Client] Ignored radar dummy sync for non-dummy client player {player.PlayerName} ({index}).");
+                        return;
+                    }
+
+                    if (allowRespawn && Instance._respawnDummyClientBodies.Value)
                         TryRespawnClientDummy(handler, player, position);
 
                     ForceClientDummyPosition(player, position);
@@ -742,6 +978,8 @@ namespace TabgInstaller.AdminRadar.Client
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "World Markers", "Show labels over dummy players", _showWorldMarkers);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Only Dummies", "Only label AI dummy players", _showOnlyDummies);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Highlighter", "Max Distance", "Maximum label distance", _markerMaxDistance);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Sync Bodies", "Move local dummy bodies after large server radar jumps", _syncDummyClientBodies);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Dummy Debug", "Respawn Bodies", "Rebuild missing local dummy bodies after large server radar jumps", _respawnDummyClientBodies);
             }
             catch (Exception ex)
             {
@@ -759,6 +997,150 @@ namespace TabgInstaller.AdminRadar.Client
         private static bool HasFreshServerPosition(RadarPlayer player)
         {
             return player.LastServerSeen > 0f && Time.unscaledTime - player.LastServerSeen <= 1.5f;
+        }
+
+        private struct ParsedPlayerEntry
+        {
+            public byte Index;
+            public string Name;
+            public Vector3 Position;
+            public bool Alive;
+        }
+
+        private struct ParsedDebugEntry
+        {
+            public byte Index;
+            public string State;
+            public string TargetName;
+            public string WeaponName;
+            public bool HasLineOfSight;
+            public bool IsFiring;
+            public bool HasMoveGoal;
+            public Vector3 MoveGoal;
+            public bool HasLootGoal;
+            public Vector3 LootGoal;
+            public string LootName;
+        }
+
+        private sealed class BoundedReader
+        {
+            private readonly byte[] _data;
+            private int _position;
+
+            public BoundedReader(byte[] data)
+            {
+                _data = data ?? new byte[0];
+            }
+
+            public int Remaining => _data.Length - _position;
+
+            public bool TryReadByte(out byte value)
+            {
+                value = 0;
+                if (Remaining < 1) return false;
+                value = _data[_position++];
+                return true;
+            }
+
+            public bool TryReadBool(out bool value)
+            {
+                byte raw;
+                if (!TryReadByte(out raw))
+                {
+                    value = false;
+                    return false;
+                }
+
+                value = raw != 0;
+                return true;
+            }
+
+            public bool TryReadUInt16(out ushort value)
+            {
+                value = 0;
+                if (Remaining < 2) return false;
+                value = (ushort)(_data[_position] | (_data[_position + 1] << 8));
+                _position += 2;
+                return true;
+            }
+
+            public bool TryReadUInt32(out uint value)
+            {
+                value = 0;
+                if (Remaining < 4) return false;
+                value = (uint)(_data[_position] |
+                    (_data[_position + 1] << 8) |
+                    (_data[_position + 2] << 16) |
+                    (_data[_position + 3] << 24));
+                _position += 4;
+                return true;
+            }
+
+            public bool TryReadSingle(out float value)
+            {
+                value = 0f;
+                if (Remaining < 4) return false;
+                value = BitConverter.ToSingle(_data, _position);
+                _position += 4;
+                return true;
+            }
+
+            public bool TryReadBytes(int count, out byte[] bytes)
+            {
+                bytes = null;
+                if (count < 0 || Remaining < count) return false;
+                bytes = new byte[count];
+                Buffer.BlockCopy(_data, _position, bytes, 0, count);
+                _position += count;
+                return true;
+            }
+
+            public bool TryReadString16(int maxBytes, out string value)
+            {
+                value = string.Empty;
+                ushort length;
+                if (!TryReadUInt16(out length) || length > maxBytes || Remaining < length)
+                    return false;
+
+                if (length == 0)
+                    return true;
+
+                value = Encoding.UTF8.GetString(_data, _position, length);
+                _position += length;
+                return true;
+            }
+
+            public bool TryReadLegacyString(int maxBytes, out string value)
+            {
+                value = string.Empty;
+                int length = 0;
+                int shift = 0;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    byte b;
+                    if (!TryReadByte(out b))
+                        return false;
+
+                    length |= (b & 0x7F) << shift;
+                    if ((b & 0x80) == 0)
+                    {
+                        if (length < 0 || length > maxBytes || Remaining < length)
+                            return false;
+
+                        if (length == 0)
+                            return true;
+
+                        value = Encoding.UTF8.GetString(_data, _position, length);
+                        _position += length;
+                        return true;
+                    }
+
+                    shift += 7;
+                }
+
+                return false;
+            }
         }
 
         private struct RadarPlayer

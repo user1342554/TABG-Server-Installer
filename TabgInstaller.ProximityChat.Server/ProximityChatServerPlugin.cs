@@ -49,23 +49,29 @@ namespace TabgInstaller.ProximityChat.Server
             private static int _relayCount;
             static bool Prefix(ServerPackage networkEvent, ServerClient __instance)
             {
-                // Only intercept our custom voice event code (240)
-                if ((byte)networkEvent.Code != 240) return true;
+                // Only intercept our custom voice event code (240).
+                if ((byte)networkEvent.Code != VoicePacket.EventCode) return true;
 
                 try
                 {
                     byte senderIndex = networkEvent.SenderPlayerID;
                     byte[] voiceData = networkEvent.Buffer;
+                    if (!VoicePacket.TryRead(voiceData, out _, out ushort sequence, out _, out int pcmLength))
+                    {
+                        return false;
+                    }
+
                     _relayCount++;
                     if (_relayCount % 50 == 1 && Instance != null)
-                        Instance.Logger.LogInfo($"[ProximityChat] Relay #{_relayCount}: voice from player {senderIndex} ({voiceData?.Length ?? 0} bytes)");
+                        Instance.Logger.LogInfo($"[ProximityChat] Relay #{_relayCount}: PCM voice from player {senderIndex} seq {sequence} ({pcmLength} bytes)");
 
                     // Find sender player via GameRoom
                     var senderPlayer = __instance.GameRoomReference.FindPlayer(senderIndex);
                     if (senderPlayer == null) return false;
 
                     Vector3 senderPos = senderPlayer.PlayerPosition;
-                    float maxRange = MaxRange.Value;
+                    float maxRange = Mathf.Max(0f, MaxRange.Value);
+                    float maxRangeSqr = maxRange * maxRange;
 
                     // Find all players in range using Citrus.players
                     var recipients = new List<byte>();
@@ -78,8 +84,8 @@ namespace TabgInstaller.ProximityChat.Server
                         var player = playerRef.player;
                         if (player.PlayerIndex == senderIndex) continue;
 
-                        float dist = Vector3.Distance(senderPos, player.PlayerPosition);
-                        if (dist <= maxRange)
+                        float distSqr = (senderPos - player.PlayerPosition).sqrMagnitude;
+                        if (distSqr <= maxRangeSqr)
                         {
                             recipients.Add(player.PlayerIndex);
                         }
@@ -87,14 +93,12 @@ namespace TabgInstaller.ProximityChat.Server
 
                     if (recipients.Count > 0)
                     {
-                        // Prepend sender index so clients know who is talking
-                        byte[] relayData = new byte[1 + voiceData.Length];
-                        relayData[0] = senderIndex;
-                        Buffer.BlockCopy(voiceData, 0, relayData, 1, voiceData.Length);
+                        // The server is authoritative for sender identity; ignore the client header's sender byte.
+                        byte[] relayData = VoicePacket.WithSender(voiceData, senderIndex);
 
                         // Send unreliably for low-latency voice delivery
                         __instance.SendMessageToClients(
-                            (EventCode)240,
+                            (EventCode)VoicePacket.EventCode,
                             relayData,
                             recipients.ToArray(),
                             false,  // reliable = false (voice doesn't need guaranteed delivery)

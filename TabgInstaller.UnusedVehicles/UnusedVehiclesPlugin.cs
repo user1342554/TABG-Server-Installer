@@ -30,10 +30,15 @@ namespace TabgInstaller.UnusedVehicles
         internal static float SpawnChance = 0.20f;
         internal static int MaxSpawns = 15;
         internal static bool EnableCommands = true;
+        internal static bool EnableLegacySpawnAlias;
+        internal static bool EnableHeadlessAudioPatches = true;
 
         private ConfigEntry<float> _spawnChance;
         private ConfigEntry<int> _maxSpawns;
         private ConfigEntry<bool> _enableCommands;
+        private ConfigEntry<bool> _enableLegacySpawnAlias;
+        private ConfigEntry<string> _skipVehicles;
+        private ConfigEntry<bool> _enableHeadlessAudioPatches;
 
         private Harmony _harmony;
 
@@ -41,10 +46,16 @@ namespace TabgInstaller.UnusedVehicles
         {
             _spawnChance = Config.Bind("Spawning", "SpawnChance", 0.20f, "Chance to add an unused vehicle near each normal vehicle spawn.");
             _maxSpawns = Config.Bind("Spawning", "MaxSpawns", 15, "Maximum unused vehicles to add per match.");
-            _enableCommands = Config.Bind("Commands", "EnableCommands", true, "Register /spawn, /vehicles, and vehicle help commands.");
+            _skipVehicles = Config.Bind("Spawning", "SkipVehicles", "CannonCar,DeceptionBossCar", "Comma-separated prefab names to keep disabled. Defaults skip known crash/broken vehicles.");
+            _enableCommands = Config.Bind("Commands", "EnableCommands", true, "Register /vehicle, /vehicles, and /vehiclehelp commands.");
+            _enableLegacySpawnAlias = Config.Bind("Commands", "EnableLegacySpawnAlias", false, "Also register legacy /spawn as an alias for /vehicle. Off by default to avoid admin command collisions.");
+            _enableHeadlessAudioPatches = Config.Bind("Compatibility", "EnableHeadlessAudioPatches", true, "Disable vehicle audio hooks only on headless dedicated servers.");
             SpawnChance = Mathf.Clamp01(_spawnChance.Value);
             MaxSpawns = Mathf.Max(0, _maxSpawns.Value);
             EnableCommands = _enableCommands.Value;
+            EnableLegacySpawnAlias = _enableLegacySpawnAlias.Value;
+            EnableHeadlessAudioPatches = _enableHeadlessAudioPatches.Value;
+            LoadSkipVehicles(_skipVehicles.Value);
 
             _harmony = new Harmony("tabginstaller.unusedvehicles");
             _harmony.PatchAll(typeof(SearchForCarsPatch));
@@ -65,26 +76,26 @@ namespace TabgInstaller.UnusedVehicles
             }
         }
 
-        private void RegisterCommands()
+        private static void RegisterCommands()
         {
-            Citrus.AddCommand("spawn", (string[] prms, TABGPlayerServer player) =>
+            Action<string[], TABGPlayerServer> vehicleCommand = (string[] prms, TABGPlayerServer player) =>
             {
                 if (prms.Length == 0)
                 {
                     string list = "Available: ";
                     foreach (var kvp in VehicleIndices)
-                        if (!StandardMotorcycles.Contains(kvp.Value))
+                        if (!StandardMotorcycles.Contains(kvp.Value) && !SkipVehicles.Contains(kvp.Key))
                             list += kvp.Key + ", ";
                     Citrus.SelfParrot(player, list.TrimEnd(',', ' '));
                     return;
                 }
 
-                string search = string.Join(" ", prms).ToLower();
+                string search = string.Join(" ", prms);
                 string matchedName = null;
                 int matchedIdx = -1;
                 foreach (var kvp in VehicleIndices)
                 {
-                    if (kvp.Key.ToLower().Contains(search))
+                    if (kvp.Key.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         matchedName = kvp.Key;
                         matchedIdx = kvp.Value;
@@ -113,7 +124,7 @@ namespace TabgInstaller.UnusedVehicles
 
                 if (nearestCar != null)
                 {
-                    // Move the vehicle to the player's position (5m in front)
+                    // Move the nearest matching server-side vehicle to 5m in front of the player.
                     Vector3 forward = Quaternion.Euler(0, player.PlayerRotation.y, 0) * Vector3.forward;
                     Vector3 spawnPos = playerPos + forward * 5f;
                     // Raycast to find ground
@@ -123,13 +134,17 @@ namespace TabgInstaller.UnusedVehicles
                         spawnPos.y = playerPos.y;
 
                     nearestCar.UpdatePosition(spawnPos);
-                    Citrus.SelfParrot(player, $"Spawned {matchedName} in front of you!");
+                    Citrus.SelfParrot(player, $"Moved nearest {matchedName} in front of you.");
                 }
                 else
                 {
-                    Citrus.SelfParrot(player, $"No {matchedName} available. Try another vehicle.");
+                    Citrus.SelfParrot(player, $"No spawned {matchedName} exists to move. Try another vehicle.");
                 }
-            }, "UnusedVehicles", "Spawn a vehicle at your position", "<name>", 2);
+            };
+
+            Citrus.AddCommand("vehicle", vehicleCommand, "UnusedVehicles", "Move nearest spawned vehicle to your position", "<name>", 2);
+            if (EnableLegacySpawnAlias)
+                Citrus.AddCommand("spawn", vehicleCommand, "UnusedVehicles", "Legacy alias for /vehicle; moves an existing vehicle", "<name>", 2);
 
             Citrus.AddCommand("vehicles", (string[] prms, TABGPlayerServer player) =>
             {
@@ -139,12 +154,14 @@ namespace TabgInstaller.UnusedVehicles
                 Citrus.SelfParrot(player, msg);
             }, "UnusedVehicles", "List vehicles on map", "", 1);
 
-            Citrus.AddCommand("help", (string[] prms, TABGPlayerServer player) =>
+            Citrus.AddCommand("vehiclehelp", (string[] prms, TABGPlayerServer player) =>
             {
                 Citrus.SelfParrot(player, "=== Vehicle Commands ===");
-                Citrus.SelfParrot(player, "/spawn <name> - Teleport to vehicle");
-                Citrus.SelfParrot(player, "/spawn - List all vehicle names");
+                Citrus.SelfParrot(player, "/vehicle <name> - Move nearest spawned vehicle to you");
+                Citrus.SelfParrot(player, "/vehicle - List all vehicle names");
                 Citrus.SelfParrot(player, "/vehicles - List spawned vehicles on map");
+                if (EnableLegacySpawnAlias)
+                    Citrus.SelfParrot(player, "/spawn <name> - Legacy alias for /vehicle");
                 Citrus.SelfParrot(player, "=== Admin Commands ===");
                 Citrus.SelfParrot(player, "/give <id> <amount> - Give item");
                 Citrus.SelfParrot(player, "/goto <name> - Teleport to player");
@@ -157,7 +174,21 @@ namespace TabgInstaller.UnusedVehicles
                 Citrus.SelfParrot(player, "=== Vehicle Notes ===");
                 Citrus.SelfParrot(player, "Ground vehicles (Mustang, VW, Bike, BoxCar) drive like motorcycles");
                 Citrus.SelfParrot(player, "Flying vehicles (Heli, UFO, Hover) need a client mod to steer");
-            }, "UnusedVehicles", "Show command help", "", 1);
+            }, "UnusedVehicles", "Show vehicle command help", "", 1);
+        }
+
+        private static void LoadSkipVehicles(string configuredSkipVehicles)
+        {
+            SkipVehicles.Clear();
+            if (string.IsNullOrWhiteSpace(configuredSkipVehicles))
+                return;
+
+            foreach (var name in configuredSkipVehicles.Split(','))
+            {
+                var trimmed = name.Trim();
+                if (trimmed.Length > 0)
+                    SkipVehicles.Add(trimmed);
+            }
         }
 
         internal static void DiscoverVehicles()
@@ -194,12 +225,20 @@ namespace TabgInstaller.UnusedVehicles
 
         private void PatchHeadlessAudioHooks()
         {
+            if (!EnableHeadlessAudioPatches)
+                return;
+
             if (!IsHeadlessDedicatedServer())
                 return;
 
-            var prefix = new HarmonyMethod(
-                typeof(UnusedVehiclesPlugin).GetMethod(nameof(SkipHeadlessAudioPrefix), BindingFlags.NonPublic | BindingFlags.Static));
+            var prefixMethod = typeof(UnusedVehiclesPlugin).GetMethod(nameof(SkipHeadlessAudioPrefix), BindingFlags.NonPublic | BindingFlags.Static);
+            if (prefixMethod == null)
+            {
+                Logger.LogWarning("[UnusedVehicles] Headless audio prefix not found; audio hooks were not patched.");
+                return;
+            }
 
+            var prefix = new HarmonyMethod(prefixMethod);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "stopBrake", prefix);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "OnDestroy", prefix);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "Crash", prefix);
@@ -217,19 +256,35 @@ namespace TabgInstaller.UnusedVehicles
                 return;
             }
 
-            _harmony.Patch(method, prefix: prefix);
-            Logger.LogInfo($"[UnusedVehicles] Disabled {typeName}.{methodName} on headless server.");
+            try
+            {
+                _harmony.Patch(method, prefix: prefix);
+                Logger.LogInfo($"[UnusedVehicles] Disabled {typeName}.{methodName} on headless server.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"[UnusedVehicles] Failed to patch {typeName}.{methodName}: {ex.Message}");
+            }
         }
 
         private static bool SkipHeadlessAudioPrefix()
         {
-            return !IsHeadlessDedicatedServer();
+            return !EnableHeadlessAudioPatches || !IsHeadlessDedicatedServer();
         }
 
         private static bool IsHeadlessDedicatedServer()
         {
-            return Application.isBatchMode &&
-                   SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
+            if (!Application.isBatchMode)
+                return false;
+
+            try
+            {
+                return SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         [HarmonyPatch(typeof(GameRoom), "SearchForCars")]
@@ -281,13 +336,14 @@ namespace TabgInstaller.UnusedVehicles
                         if (Physics.Raycast(spawnPos + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 200f))
                             spawnPos = hit.point + Vector3.up * 0.5f;
 
-                        // Wrap in try/catch per vehicle so one broken prefab doesn't kill all spawning
+                        GameObject vehicleGO = null;
+                        string vName = entry.prefab.name;
+                        // Wrap in try/catch per vehicle so one broken prefab doesn't kill all spawning.
                         try
                         {
-                            var vehicleGO = UnityEngine.Object.Instantiate(entry.prefab, spawnPos, Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0));
-                            string vName = entry.prefab.name;
+                            vehicleGO = UnityEngine.Object.Instantiate(entry.prefab, spawnPos, Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0));
                             var carComponent = vehicleGO.GetComponent<Car>();
-                            if (carComponent == null) { UnityEngine.Object.Destroy(vehicleGO); continue; }
+                            if (carComponent == null) continue;
 
                             carComponent.transform.position -= carComponent.transform.position - carComponent.mainRig.position;
 
@@ -295,7 +351,7 @@ namespace TabgInstaller.UnusedVehicles
                             populateMethod?.Invoke(__instance, new object[] { carComponent });
 
                             Seat[] seats = carComponent.GetComponentsInChildren<Seat>();
-                            int carIndex = totalSpawns + addedCount + 1000;
+                            int carIndex = AllocateUniqueCarIndex(cars);
 
                             var tabgCar = new TABGCarServer(carComponent, seats, vehicleIdx, carIndex);
                             cars.Add(tabgCar);
@@ -305,8 +361,6 @@ namespace TabgInstaller.UnusedVehicles
                                 SpawnedVehiclePositions[vName] = new List<Vector3>();
                             SpawnedVehiclePositions[vName].Add(spawnPos);
 
-                            UnityEngine.Object.Destroy(vehicleGO);
-
                             if (server != null)
                             {
                                 try
@@ -314,8 +368,8 @@ namespace TabgInstaller.UnusedVehicles
                                     var vis = server.DebugVisuals;
                                     if (vis?.VehicleVisualPrefab != null)
                                     {
-                                        var nv = UnityEngine.Object.Instantiate(vis.VehicleVisualPrefab).GetComponent<ServerNetworkVehicle>();
-                                        nv?.Init(tabgCar);
+                                        var visualGO = UnityEngine.Object.Instantiate(vis.VehicleVisualPrefab);
+                                        visualGO.FetchComponent<ServerNetworkVehicle>().Init(tabgCar);
                                     }
                                 }
                                 catch (Exception ex) { Debug.LogWarning($"[UnusedVehicles] Vehicle visual init failed: {ex.Message}"); }
@@ -328,6 +382,11 @@ namespace TabgInstaller.UnusedVehicles
                         {
                             Debug.LogWarning($"[UnusedVehicles] Failed to spawn vehicle idx={vehicleIdx}: {ex.Message}");
                         }
+                        finally
+                        {
+                            if (vehicleGO != null)
+                                UnityEngine.Object.Destroy(vehicleGO);
+                        }
                     }
 
                     Debug.Log($"[UnusedVehicles] Added {addedCount} unused vehicles");
@@ -336,6 +395,25 @@ namespace TabgInstaller.UnusedVehicles
                 {
                     Debug.LogError($"[UnusedVehicles] SearchForCars error: {ex}");
                 }
+            }
+
+            private static int AllocateUniqueCarIndex(List<TABGCarServer> cars)
+            {
+                var usedIndices = new HashSet<int>();
+                int nextIndex = 0;
+                foreach (var car in cars)
+                {
+                    if (car == null) continue;
+
+                    usedIndices.Add(car.CarIndex);
+                    if (car.CarIndex >= nextIndex)
+                        nextIndex = car.CarIndex + 1;
+                }
+
+                while (usedIndices.Contains(nextIndex))
+                    nextIndex++;
+
+                return nextIndex;
             }
         }
     }

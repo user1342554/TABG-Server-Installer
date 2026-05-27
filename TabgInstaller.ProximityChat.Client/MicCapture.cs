@@ -15,10 +15,11 @@ namespace TabgInstaller.ProximityChat.Client
         private AudioClip _micClip;
         private int _lastSamplePos;
         private readonly float[] _sampleBuffer = new float[FrameSamples48k];
+        private readonly byte[] _pcmFrameBuffer = new byte[FrameSamplesTarget];
         private readonly string _deviceName;
         private bool _recording;
 
-        public event Action<byte[], int> OnFrameEncoded;
+        public event Action<byte[], int> OnPcmFrameReady;
 
         public MicCapture(string deviceName)
         {
@@ -71,14 +72,13 @@ namespace TabgInstaller.ProximityChat.Client
                 // Downsample 48kHz -> 16kHz (take every 3rd sample)
                 // Convert float[-1,1] to 8-bit unsigned PCM (0-255, 128=silence)
                 // 320 samples * 1 byte = 320 bytes per frame — well under MTU
-                byte[] pcmBytes = new byte[FrameSamplesTarget];
                 for (int i = 0; i < FrameSamplesTarget; i++)
                 {
                     float s = Mathf.Clamp(_sampleBuffer[i * DownsampleFactor], -1f, 1f);
-                    pcmBytes[i] = (byte)((s * 0.5f + 0.5f) * 255f);
+                    _pcmFrameBuffer[i] = (byte)((s * 0.5f + 0.5f) * 255f);
                 }
 
-                OnFrameEncoded?.Invoke(pcmBytes, pcmBytes.Length);
+                OnPcmFrameReady?.Invoke(_pcmFrameBuffer, _pcmFrameBuffer.Length);
             }
         }
 

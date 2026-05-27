@@ -63,18 +63,6 @@ namespace TabgInstaller.Gui.ViewModels
         [ObservableProperty] private string _serverLoggerCsvFileName = "players.csv";
         [ObservableProperty] private string _serverLoggerLegacyFileName = "ServerLogger.txt";
 
-        // ── Juggernaut Mode ──────────────────────────────────────────────────────
-        [ObservableProperty] private string _juggPointsToWin = "100";
-        [ObservableProperty] private string _juggHP = "1000";
-        [ObservableProperty] private string _juggKillBonus = "5";
-        [ObservableProperty] private string _juggKillPoints = "2";
-        [ObservableProperty] private string _juggRegularKillPoints = "1";
-        [ObservableProperty] private string _juggDamagePerPoint = "10";
-        [ObservableProperty] private string _juggLoadoutChoices = "3";
-        [ObservableProperty] private string _juggLoadoutTimeout = "10";
-        [ObservableProperty] private string _juggMinSpawnDist = "50";
-        [ObservableProperty] private string _juggMinPlayers = "3";
-
         // ── Status ───────────────────────────────────────────────────────────────
         [ObservableProperty] private string _statusText = "";
         [ObservableProperty] private ObservableCollection<PluginSettingsGroupViewModel> _additionalServerPluginSettings = new();
@@ -237,81 +225,6 @@ FalloffCurve = {falloff}
                     System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] ServerLogger save failed: {ex.Message}");
                 }
 
-                // Juggernaut Mode cfg
-                try
-                {
-                    string juggCfgDir = Path.Combine(serverDir, "BepInEx", "config");
-                    Directory.CreateDirectory(juggCfgDir);
-                    string juggCfgPath = Path.Combine(juggCfgDir, "com.gigaschmiga.juggernautmode.cfg");
-
-                    string juggContent = $@"[Scoring]
-
-## Points to win the match
-# Setting type: Int32
-# Default value: 100
-PointsToWin = {JuggPointsToWin.Trim()}
-
-## Points awarded per damage chunk
-# Setting type: Int32
-# Default value: 1
-DamagePointsPerChunk = 1
-
-## Damage required per point chunk
-# Setting type: Int32
-# Default value: 10
-DamagePerPoint = {JuggDamagePerPoint.Trim()}
-
-## Bonus points for killing the Juggernaut
-# Setting type: Int32
-# Default value: 5
-JuggernautKillBonus = {JuggKillBonus.Trim()}
-
-## Points Juggernaut earns per kill
-# Setting type: Int32
-# Default value: 2
-JuggernautKillPoints = {JuggKillPoints.Trim()}
-
-## Points for killing a regular player
-# Setting type: Int32
-# Default value: 1
-RegularKillPoints = {JuggRegularKillPoints.Trim()}
-
-[Juggernaut]
-
-## Juggernaut health points
-# Setting type: Single
-# Default value: 1000
-HP = {JuggHP.Trim()}
-
-## Number of loadout choices on respawn
-# Setting type: Int32
-# Default value: 3
-LoadoutChoices = {JuggLoadoutChoices.Trim()}
-
-## Seconds before auto-picking a loadout
-# Setting type: Single
-# Default value: 10
-LoadoutTimeout = {JuggLoadoutTimeout.Trim()}
-
-## Minimum spawn distance from Juggernaut
-# Setting type: Single
-# Default value: 50
-MinSpawnDistance = {JuggMinSpawnDist.Trim()}
-
-[General]
-
-## Minimum players to start
-# Setting type: Int32
-# Default value: 3
-MinPlayers = {JuggMinPlayers.Trim()}
-";
-                    File.WriteAllText(juggCfgPath, juggContent);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] Juggernaut save failed: {ex.Message}");
-                }
-
                 SavePluginSettings(AdditionalServerPluginSettings);
                 SavePluginSettings(ClientPluginSettings);
                 _saving = false;
@@ -370,36 +283,6 @@ MinPlayers = {JuggMinPlayers.Trim()}
             catch (Exception ex)
             {
                 StatusText = string.Format(Messages.ErrorLoading, ex.Message);
-            }
-
-            // Juggernaut Mode
-            try
-            {
-                string juggCfgPath = Path.Combine(serverDir, "BepInEx", "config", "com.gigaschmiga.juggernautmode.cfg");
-                if (File.Exists(juggCfgPath))
-                {
-                    var lines = File.ReadAllLines(juggCfgPath);
-                    foreach (var line in lines)
-                    {
-                        var trimmed = line.Trim();
-                        if (trimmed.StartsWith("#") || trimmed.StartsWith("[") || trimmed.Length == 0) continue;
-                        if (trimmed.StartsWith("PointsToWin")) JuggPointsToWin = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("HP")) JuggHP = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("JuggernautKillBonus")) JuggKillBonus = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("JuggernautKillPoints")) JuggKillPoints = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("RegularKillPoints")) JuggRegularKillPoints = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("DamagePerPoint")) JuggDamagePerPoint = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("LoadoutChoices")) JuggLoadoutChoices = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("LoadoutTimeout")) JuggLoadoutTimeout = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("MinSpawnDistance")) JuggMinSpawnDist = ExtractCfgValue(trimmed);
-                        else if (trimmed.StartsWith("MinPlayers")) JuggMinPlayers = ExtractCfgValue(trimmed);
-                    }
-                }
-                // else: defaults are already set as field initializers
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ModSettingsVM] Juggernaut load failed: {ex.Message}");
             }
 
             // Proximity Chat

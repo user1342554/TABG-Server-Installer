@@ -112,9 +112,7 @@ namespace TabgInstaller.Gui
             if (themeService.IsHighContrast)
                 themeService.SetHighContrast(true);
 
-            // Built-in plugin definitions are owned by the launcher now. Do not
-            // let stale cached registry data override them.
-            PluginRegistry.ResetToBuiltIns();
+            PluginRegistry.LoadBundledManifests();
 
             try
             {

@@ -32,29 +32,27 @@ namespace TabgInstaller.CustomGrenades
             Logger.LogInfo("[BigSmoke] Loaded! All smoke grenades are now big purple smoke.");
         }
 
-        [HarmonyPatch(typeof(ParticleSystem), "Play", new Type[] { })]
+        [HarmonyPatch(typeof(Grenade), "Start")]
         internal static class SmokePatch
         {
-            static void Postfix(ParticleSystem __instance)
+            static void Postfix(Grenade __instance)
             {
                 try
                 {
                     if (Enabled != null && !Enabled.Value) return;
-
-                    var grenade = __instance.GetComponentInParent<Grenade>();
-                    if (grenade == null) return;
+                    if (__instance == null) return;
 
                     var pickup = __instance.GetComponentInParent<Pickup>();
                     if (pickup == null || pickup.m_itemIndex != 208) return;
 
-                    if (grenade.GetComponent<BigSmokeMarker>() != null) return;
+                    if (__instance.GetComponent<BigSmokeMarker>() != null) return;
 
                     float sizeMultiplier = Mathf.Max(0.1f, SmokeSizeMultiplier?.Value ?? 8f);
                     float lifetimeMultiplier = Mathf.Max(0.1f, SmokeLifetimeMultiplier?.Value ?? 3f);
                     float emissionMultiplier = Mathf.Max(0.1f, SmokeEmissionMultiplier?.Value ?? 3f);
                     float scaleMultiplier = Mathf.Max(0.1f, GrenadeScaleMultiplier?.Value ?? 4f);
 
-                    foreach (var ps in grenade.GetComponentsInChildren<ParticleSystem>(true))
+                    foreach (var ps in __instance.GetComponentsInChildren<ParticleSystem>(true))
                     {
                         var main = ps.main;
                         main.startColor = new ParticleSystem.MinMaxGradient(
@@ -80,8 +78,8 @@ namespace TabgInstaller.CustomGrenades
                             emission.rateOverTime = emission.rateOverTime.constant * emissionMultiplier;
                     }
 
-                    grenade.transform.localScale *= scaleMultiplier;
-                    grenade.gameObject.AddComponent<BigSmokeMarker>();
+                    __instance.transform.localScale *= scaleMultiplier;
+                    __instance.gameObject.AddComponent<BigSmokeMarker>();
                 }
                 catch (Exception ex) { Debug.LogWarning($"[CustomGrenades] Giant smoke creation failed: {ex.Message}"); }
             }

@@ -96,4 +96,10 @@ The mod organizes weapons into these categories:
 
 ## Technical Details
 
-The mod patches loot spawning methods using Harmony. It intercepts spawn attempts and applies the configured multipliers to adjust spawn probabilities. The actual implementation depends on how TABG's loot system works internally and may need adjustments based on game updates. 
+The mod patches TABG's server loot selector directly:
+
+- `LootPreset.GetWeaponToSpawn()` is replaced with the same weighted roll, with configured multipliers applied to each `LootDropWrapper.spawnRate`.
+- `LootDatabase.Init()` builds a runtime map from item IDs, `Pickup.itemName`, and prefab names to the existing config entries.
+- `GameRoom.SearchForGuns()` is only used to reset and print one summary line for map loot generation.
+
+It does not scan every loaded assembly or intercept general `Console.WriteLine` / `Debug.Log` calls.

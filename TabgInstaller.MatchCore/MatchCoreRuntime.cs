@@ -33,9 +33,21 @@ namespace TabgInstaller.MatchCore
             if (world == null || sender == null || settings == null) return false;
 
             var room = world.GameRoomReference;
-            if (room == null || room.CurrentGameState != GameState.WaitingForPlayers) return true;
+            if (room == null || room.Players == null || room.CurrentGameState != GameState.WaitingForPlayers) return true;
 
-            int humanPlayers = Math.Max(1, room.Players.FindAll(p => !p.Bot).Count);
+            var activeHumanIndexes = new HashSet<byte>();
+            foreach (var player in room.Players)
+            {
+                if (player != null && !player.Bot)
+                    activeHumanIndexes.Add(player.PlayerIndex);
+            }
+
+            if (!activeHumanIndexes.Contains(sender.PlayerIndex))
+                return true;
+
+            Votes.RemoveWhere(vote => !activeHumanIndexes.Contains(vote));
+
+            int humanPlayers = activeHumanIndexes.Count;
             if (humanPlayers < settings.VoteMinimumPlayers)
             {
                 Reply(sender, "Need " + settings.VoteMinimumPlayers + " player(s) before vote-start.");
@@ -218,7 +230,7 @@ namespace TabgInstaller.MatchCore
             float delay = settings.SpellDropsEnabled
                 ? UnityEngine.Random.Range(settings.MinSpellDropDelay, settings.MaxSpellDropDelay) + settings.SpellDropOffset
                 : 999999f;
-            var timer = AccessTools2.Field(type, "timeUntilNextDrop");
+            var timer = ReflectionHelpers.Field(type, "timeUntilNextDrop");
             timer?.SetValue(spellDrop, Mathf.Max(0f, delay));
         }
 
@@ -360,7 +372,7 @@ namespace TabgInstaller.MatchCore
         private static GameRoom GetRoom(TABGBaseGameMode mode)
         {
             if (mode == null) return null;
-            return AccessTools2.Field(typeof(TABGBaseGameMode), "m_GameRoom")?.GetValue(mode) as GameRoom;
+            return ReflectionHelpers.FieldValue<GameRoom>(mode, typeof(TABGBaseGameMode), "m_GameRoom");
         }
 
         private static void Reply(TABGPlayerServer player, string message)
@@ -376,11 +388,4 @@ namespace TabgInstaller.MatchCore
         }
     }
 
-    internal static class AccessTools2
-    {
-        public static System.Reflection.FieldInfo Field(Type type, string name)
-        {
-            return HarmonyLib.AccessTools.Field(type, name);
-        }
-    }
 }

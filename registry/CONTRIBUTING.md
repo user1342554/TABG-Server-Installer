@@ -9,5 +9,5 @@ Add or update a manifest only when the plugin DLL is built by this repository or
 1. Keep the manifest `id` equal to the folder name.
 2. Set `dllNames` to the exact bundled DLL names.
 3. Use `type` to describe where the bundled DLL is installed: `server`, `client`, or `both`.
-4. Regenerate `registry/registry.json` after changing manifests.
+4. Regenerate `registry/registry.json` after changing manifests when release metadata needs to be refreshed.
 5. Build the affected plugin and launcher project.

@@ -16,12 +16,16 @@ namespace TabgInstaller.ProximityChat.Client
         public static ConfigEntry<float> MicSensitivity;
         public static ConfigEntry<float> MasterVolume;
         public static ConfigEntry<string> MicrophoneDevice;
+        public static ConfigEntry<float> MinRange;
+        public static ConfigEntry<float> MaxRange;
+        public static ConfigEntry<string> FalloffCurve;
 
         private MicCapture _micCapture;
         private VoicePlayback _playback;
         private SpeakerIcon _speakerIcon;
         private Harmony _harmony;
         private bool _started;
+        private ushort _nextSequence;
 
         internal static ProximityChatClientPlugin Instance;
 
@@ -32,6 +36,9 @@ namespace TabgInstaller.ProximityChat.Client
             MicSensitivity = Config.Bind("ProximityChat", "MicSensitivity", 0.01f, "Voice activity detection threshold (RMS)");
             MasterVolume = Config.Bind("ProximityChat", "MasterVolume", 1.0f, "Overall voice chat volume");
             MicrophoneDevice = Config.Bind("ProximityChat", "MicrophoneDevice", "", "Microphone device name (empty = system default)");
+            MinRange = Config.Bind("ProximityChat", "MinRange", 5f, "Distance within which received voice is full volume");
+            MaxRange = Config.Bind("ProximityChat", "MaxRange", 50f, "Distance at which received voice becomes inaudible");
+            FalloffCurve = Config.Bind("ProximityChat", "FalloffCurve", "Linear", "Volume falloff: Linear or Logarithmic");
 
             try
             {
@@ -43,6 +50,7 @@ namespace TabgInstaller.ProximityChat.Client
 
             _speakerIcon = new SpeakerIcon();
             _playback = new VoicePlayback(MasterVolume.Value);
+            ApplyPlaybackConfig();
 
             // Patch client message receiving to intercept voice packets
             _harmony = new Harmony("tabginstaller.proximitychat.client");
@@ -64,6 +72,7 @@ namespace TabgInstaller.ProximityChat.Client
             if (_started)
             {
                 _micCapture?.ProcessMicData(MicSensitivity.Value);
+                ApplyPlaybackConfig();
                 _playback?.Tick();
 
                 if (_playback != null)
@@ -102,7 +111,7 @@ namespace TabgInstaller.ProximityChat.Client
                 if (Microphone.devices.Length > 0)
                 {
                     _micCapture = new MicCapture(MicrophoneDevice.Value);
-                    _micCapture.OnFrameEncoded += OnVoiceFrameEncoded;
+                    _micCapture.OnPcmFrameReady += OnPcmFrameReady;
                     _micCapture.StartRecording();
                     Logger.LogInfo("[ProximityChat] Microphone started.");
                 }
@@ -119,26 +128,25 @@ namespace TabgInstaller.ProximityChat.Client
         }
 
         private int _sendCount;
-        private void OnVoiceFrameEncoded(byte[] opusData, int opusLength)
+        private void OnPcmFrameReady(byte[] pcmData, int pcmLength)
         {
             try
             {
                 var connector = ServerConnector.Instance;
                 if (connector == null) return;
 
-                byte[] buffer = new byte[opusLength];
-                Buffer.BlockCopy(opusData, 0, buffer, 0, opusLength);
-                connector.SendMessageToServer((EventCode)240, buffer, false);
+                byte[] packet = VoicePacket.Create(VoicePacket.UnknownSender, _nextSequence++, pcmData, pcmLength);
+                connector.SendMessageToServer((EventCode)VoicePacket.EventCode, packet, false);
                 _sendCount++;
                 if (_sendCount % 250 == 1)
-                    Logger.LogInfo($"[ProximityChat] Sent voice frame #{_sendCount} ({opusLength} bytes)");
+                    Logger.LogInfo($"[ProximityChat] Sent PCM voice frame #{_sendCount} ({pcmLength} bytes)");
             }
             catch (Exception ex) { Logger.LogDebug($"[ProximityChat] Voice send failed: {ex.Message}"); }
         }
 
         /// <summary>
         /// Harmony prefix patch on ServerConnector.OnEvent to intercept incoming voice packets (EventCode 240).
-        /// Extracts sender index and opus data, then enqueues for playback.
+        /// Parses PCM voice packets and enqueues them for jitter-buffered playback.
         /// </summary>
         [HarmonyPatch(typeof(ServerConnector), "OnEvent")]
         internal static class VoiceReceivePatch
@@ -146,7 +154,7 @@ namespace TabgInstaller.ProximityChat.Client
             private static int _recvCount;
             static bool Prefix(ClientPackage clientPackage)
             {
-                if ((byte)clientPackage.Code != 240) return true;
+                if ((byte)clientPackage.Code != VoicePacket.EventCode) return true;
 
                 try
                 {
@@ -163,15 +171,14 @@ namespace TabgInstaller.ProximityChat.Client
                     }
 
                     byte[] data = clientPackage.Buffer;
-                    if (data == null || data.Length < 2) return false;
+                    if (!VoicePacket.TryRead(data, out byte senderIndex, out ushort sequence, out int pcmOffset, out int pcmLength))
+                    {
+                        return false;
+                    }
 
-                    byte senderIndex = data[0];
-                    byte[] opusData = new byte[data.Length - 1];
-                    Buffer.BlockCopy(data, 1, opusData, 0, opusData.Length);
-
-                    Instance._playback.EnqueueAudio(senderIndex, 0, opusData, opusData.Length);
+                    Instance._playback.EnqueueAudio(senderIndex, sequence, data, pcmOffset, pcmLength);
                     if (_recvCount % 50 == 1)
-                        Instance.Logger.LogInfo($"[ProximityChat] Received voice #{_recvCount} from player {senderIndex} ({opusData.Length} bytes)");
+                        Instance.Logger.LogInfo($"[ProximityChat] Received PCM voice #{_recvCount} from player {senderIndex} seq {sequence} ({pcmLength} bytes)");
                 }
                 catch (Exception ex)
                 {
@@ -188,7 +195,16 @@ namespace TabgInstaller.ProximityChat.Client
             _micCapture = null;
             _playback?.Dispose();
             _playback = new VoicePlayback(MasterVolume.Value); // Reset for next game
+            ApplyPlaybackConfig();
             _started = false;
+        }
+
+        private void ApplyPlaybackConfig()
+        {
+            float minRange = Mathf.Max(0f, MinRange.Value);
+            float maxRange = Mathf.Max(minRange + 1f, MaxRange.Value);
+            byte falloff = string.Equals(FalloffCurve.Value, "Logarithmic", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)0;
+            _playback?.UpdateConfig(minRange, maxRange, falloff, MasterVolume.Value);
         }
 
         private void OnGUI()

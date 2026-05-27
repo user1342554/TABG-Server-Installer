@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Landfall.Network;
 using UnityEngine;
 
 namespace TabgInstaller.WeaponSpawnConfig
@@ -15,24 +15,13 @@ namespace TabgInstaller.WeaponSpawnConfig
         public static WeaponSpawnConfigPlugin Instance { get; private set; }
         private Harmony _harmony;
         private Dictionary<string, ConfigEntry<float>> _weaponSpawnRates = new Dictionary<string, ConfigEntry<float>>();
-        private int _modifiedWeapons = 0;
+        private readonly Dictionary<string, string> _itemNameAliases = new Dictionary<string, string>();
+        private readonly Dictionary<int, string> _itemIndexToConfigName = new Dictionary<int, string>();
+        private readonly HashSet<string> _unknownLogged = new HashSet<string>();
+        private int _modifiedRolls;
+        private int _zeroWeightRolls;
+        private int _lootRolls;
         
-        // Loot pool entry structure based on user's example
-        [Serializable]
-        public class LootPoolEntry
-        {
-            public string name;
-            public float weight;
-            public List<ItemEntry> entries;
-        }
-        
-        [Serializable]
-        public class ItemEntry
-        {
-            public int id;
-            public int amount;
-        }
-
         // Weapon categories and their items
         private static readonly Dictionary<string, List<string>> WeaponCategories = new Dictionary<string, List<string>>
         {
@@ -185,6 +174,8 @@ namespace TabgInstaller.WeaponSpawnConfig
         
         private void CreateConfigurations()
         {
+            RegisterConfiguredNames();
+
             // Global multiplier
             _weaponSpawnRates["Global"] = Config.Bind("Global", "Global Spawn Multiplier", 1.0f,
                 new ConfigDescription("Global multiplier for all weapon spawns", 
@@ -216,248 +207,257 @@ namespace TabgInstaller.WeaponSpawnConfig
         
         private void ApplyPatches()
         {
-            // Hook into server messages to detect when loot is being generated
-            HookServerMessages();
-            
-            // Scan for loot pool related types
-            AppDomain.CurrentDomain.AssemblyLoad += OnAssemblyLoad;
-            ScanForLootPoolTypes();
-        }
-        
-        private void HookServerMessages()
-        {
-            try
-            {
-                // Patch Console.WriteLine to intercept server messages
-                var writeLineMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
-                if (writeLineMethod != null)
-                {
-                    _harmony.Patch(writeLineMethod, 
-                        postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(ConsoleWriteLinePostfix))));
-                }
-                
-                // Patch Debug.Log
-                var logMethod = typeof(Debug).GetMethod("Log", new[] { typeof(object) });
-                if (logMethod != null)
-                {
-                    _harmony.Patch(logMethod, 
-                        postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(DebugLogPostfix))));
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.LogWarning($"[WeaponSpawnConfig] Could not hook server messages: {e.Message}");
-            }
-        }
-        
-        public static void ConsoleWriteLinePostfix(string value)
-        {
-            if (Instance == null || string.IsNullOrEmpty(value)) return;
-            
-            // Look for the "Searching for guns..." message
-            if (value.Contains("Searching for guns"))
-            {
-                Instance.Logger.LogMessage("[WeaponSpawnConfig] >>> Server is searching for guns! Weapon spawn config is active!");
-            }
-            else if (value.Contains("Found:") && value.Contains("Weapons"))
-            {
-                Instance.Logger.LogMessage($"[WeaponSpawnConfig] >>> {value}");
-                Instance.Logger.LogMessage($"[WeaponSpawnConfig] >>> Modified {Instance._modifiedWeapons} weapon spawn rates");
-            }
-        }
-        
-        public static void DebugLogPostfix(object message)
-        {
-            if (Instance == null || message == null) return;
-            
-            var msgStr = message.ToString();
-            if (msgStr.Contains("loot") || msgStr.Contains("Loot") || msgStr.Contains("spawn") || msgStr.Contains("Spawn"))
-            {
-                Instance.Logger.LogInfo($"[WeaponSpawnConfig] Game message: {msgStr}");
-            }
-        }
-        
-        private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
-        {
-            var assemblyName = args.LoadedAssembly.GetName().Name;
-            if (assemblyName.Contains("Assembly-CSharp") || assemblyName.Contains("TABG") || assemblyName.Contains("Game"))
-            {
-                Logger.LogInfo($"[WeaponSpawnConfig] Game assembly loaded: {assemblyName}");
-                ScanAssemblyForLootPool(args.LoadedAssembly);
-            }
-        }
-        
-        private void ScanForLootPoolTypes()
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                var name = assembly.GetName().Name;
-                if (name.Contains("Assembly-CSharp") || name.Contains("TABG") || name.Contains("Game") || 
-                    name.Contains("Server") || name.Contains("Landfall"))
-                {
-                    ScanAssemblyForLootPool(assembly);
-                }
-            }
-        }
-        
-        private void ScanAssemblyForLootPool(Assembly assembly)
-        {
-            try
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    // Look for types that might handle loot pools
-                    if (type.Name.Contains("Loot") || type.Name.Contains("Item") || type.Name.Contains("Spawn") || 
-                        type.Name.Contains("Weapon") || type.Name.Contains("Drop") || type.Name.Contains("Generate"))
-                    {
-                        // Check fields for loot pool structures
-                        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-                        {
-                            var fieldType = field.FieldType;
-                            
-                            // Look for arrays/lists that might contain loot pool entries
-                            if (fieldType.IsArray || (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>)))
-                            {
-                                Logger.LogInfo($"[WeaponSpawnConfig] Found potential loot pool field: {type.Name}.{field.Name} ({fieldType})");
-                                
-                                // Try to patch getter/setter if it's a property
-                                var property = type.GetProperty(field.Name);
-                                if (property != null && property.GetMethod != null)
-                                {
-                                    try
-                                    {
-                                        _harmony.Patch(property.GetMethod, 
-                                            postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(LootPoolGetterPostfix))));
-                                        Logger.LogInfo($"[WeaponSpawnConfig] Patched property getter: {type.Name}.{property.Name}");
-                                    }
-                                    catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
-                                }
-                            }
-                        }
-                        
-                        // Look for methods that might generate or modify loot
-                        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-                        {
-                            var methodName = method.Name.ToLower();
-                            if (methodName.Contains("spawn") || methodName.Contains("generate") || methodName.Contains("create") ||
-                                methodName.Contains("loot") || methodName.Contains("drop") || methodName.Contains("search"))
-                            {
-                                try
-                                {
-                                    _harmony.Patch(method, 
-                                        prefix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(UniversalLootPrefix))),
-                                        postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin).GetMethod(nameof(UniversalLootPostfix))));
-                                    Logger.LogInfo($"[WeaponSpawnConfig] Patched method: {type.Name}.{method.Name}");
-                                }
-                                catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.LogError($"[WeaponSpawnConfig] Error scanning assembly {assembly.GetName().Name}: {e.Message}");
-            }
-        }
-        
-        public static void LootPoolGetterPostfix(ref object __result)
-        {
-            if (__result == null || Instance == null) return;
-            
-            try
-            {
-                // Check if this is a collection of loot pool entries
-                if (__result is System.Collections.IEnumerable enumerable)
-                {
-                    foreach (var item in enumerable)
-                    {
-                        ProcessPotentialLootPoolEntry(item);
-                    }
-                }
-            }
-            catch (Exception ex) { Instance?.Logger.LogDebug($"[WeaponSpawnConfig] Reflection operation failed: {ex.Message}"); }
+            _harmony.Patch(
+                AccessTools.Method(typeof(LootPreset), nameof(LootPreset.GetWeaponToSpawn)),
+                prefix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin), nameof(LootPresetGetWeaponToSpawnPrefix)));
+
+            _harmony.Patch(
+                AccessTools.Method(typeof(LootDatabase), nameof(LootDatabase.Init)),
+                postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin), nameof(LootDatabaseInitPostfix)));
+
+            _harmony.Patch(
+                AccessTools.Method(typeof(GameRoom), nameof(GameRoom.SearchForGuns)),
+                prefix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin), nameof(SearchForGunsPrefix)),
+                postfix: new HarmonyMethod(typeof(WeaponSpawnConfigPlugin), nameof(SearchForGunsPostfix)));
+
+            Logger.LogInfo("[WeaponSpawnConfig] Patched LootPreset.GetWeaponToSpawn, LootDatabase.Init, and GameRoom.SearchForGuns");
         }
 
-        public static void UniversalLootPrefix(MethodBase __originalMethod)
+        public static bool LootPresetGetWeaponToSpawnPrefix(LootPreset __instance, ref Loot[] __result)
         {
-            if (Instance != null)
+            if (Instance == null || __instance == null || __instance.loot == null)
             {
-                Instance.Logger.LogInfo($"[WeaponSpawnConfig] Pre-hook: {__originalMethod.DeclaringType?.Name}.{__originalMethod.Name}");
+                return true;
             }
-        }
-        
-        public static void UniversalLootPostfix(MethodBase __originalMethod, object __result)
-        {
-            if (Instance == null) return;
-            
-            Instance.Logger.LogInfo($"[WeaponSpawnConfig] Post-hook: {__originalMethod.DeclaringType?.Name}.{__originalMethod.Name}");
-            
-            if (__result != null)
-            {
-                ProcessPotentialLootPoolEntry(__result);
-            }
-        }
-        
-        private static void ProcessPotentialLootPoolEntry(object obj)
-        {
-            if (obj == null || Instance == null) return;
-            
+
             try
             {
-                var type = obj.GetType();
-                
-                // Check for "name" and "weight" fields/properties
-                var nameField = type.GetField("name") ?? type.GetField("Name");
-                var nameProp = type.GetProperty("name") ?? type.GetProperty("Name");
-                var weightField = type.GetField("weight") ?? type.GetField("Weight");
-                var weightProp = type.GetProperty("weight") ?? type.GetProperty("Weight");
-                
-                string itemName = null;
-                float? currentWeight = null;
-                
-                // Get name
-                if (nameField != null)
-                    itemName = nameField.GetValue(obj) as string;
-                else if (nameProp != null)
-                    itemName = nameProp.GetValue(obj) as string;
-                
-                // Get weight
-                if (weightField != null && weightField.FieldType == typeof(float))
-                    currentWeight = (float)weightField.GetValue(obj);
-                else if (weightProp != null && weightProp.PropertyType == typeof(float))
-                    currentWeight = (float)weightProp.GetValue(obj);
-                
-                // If we found both name and weight, this is likely a loot pool entry
-                if (!string.IsNullOrEmpty(itemName) && currentWeight.HasValue)
+                var weightedEntries = new List<WeightedLootEntry>(__instance.loot.Count);
+                float totalWeight = 0f;
+
+                foreach (var entry in __instance.loot)
                 {
-                    var multiplier = Instance.GetFinalSpawnRate(itemName);
-                    if (Math.Abs(multiplier - 1.0f) > 0.001f) // If multiplier is not 1.0
+                    if (entry == null)
                     {
-                        var newWeight = currentWeight.Value * multiplier;
-                        
-                        // Set new weight
-                        if (weightField != null && !weightField.IsInitOnly && !weightField.IsLiteral)
-                        {
-                            weightField.SetValue(obj, newWeight);
-                            Instance._modifiedWeapons++;
-                            Instance.Logger.LogMessage($"[WeaponSpawnConfig] Modified {itemName}: {currentWeight.Value} -> {newWeight} (x{multiplier})");
-                        }
-                        else if (weightProp != null && weightProp.CanWrite)
-                        {
-                            weightProp.SetValue(obj, newWeight);
-                            Instance._modifiedWeapons++;
-                            Instance.Logger.LogMessage($"[WeaponSpawnConfig] Modified {itemName}: {currentWeight.Value} -> {newWeight} (x{multiplier})");
-                        }
+                        continue;
+                    }
+
+                    string configName = Instance.ResolveConfigName(entry);
+                    float multiplier = Instance.GetFinalSpawnRate(configName);
+                    float adjustedWeight = Mathf.Max(0f, entry.spawnRate * multiplier);
+
+                    if (Math.Abs(multiplier - 1f) > 0.001f)
+                    {
+                        Instance._modifiedRolls++;
+                    }
+
+                    if (adjustedWeight <= 0f)
+                    {
+                        Instance._zeroWeightRolls++;
+                        continue;
+                    }
+
+                    weightedEntries.Add(new WeightedLootEntry(entry, adjustedWeight));
+                    totalWeight += adjustedWeight;
+                }
+
+                Instance._lootRolls++;
+
+                if (weightedEntries.Count == 0 || totalWeight <= 0f)
+                {
+                    __result = new Loot[0];
+                    return false;
+                }
+
+                float roll = UnityEngine.Random.Range(0f, totalWeight);
+                float cursor = 0f;
+                for (int i = 0; i < weightedEntries.Count; i++)
+                {
+                    cursor += weightedEntries[i].Weight;
+                    if (roll < cursor)
+                    {
+                        __result = weightedEntries[i].Entry.m_loot ?? new Loot[0];
+                        return false;
                     }
                 }
+
+                __result = weightedEntries[weightedEntries.Count - 1].Entry.m_loot ?? new Loot[0];
+                return false;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Instance?.Logger.LogWarning($"[WeaponSpawnConfig] Error processing potential loot entry: {e.Message}");
+                Instance.Logger.LogWarning($"[WeaponSpawnConfig] Loot roll patch failed; falling back to original selector: {ex.Message}");
+                return true;
             }
         }
+
+        public static void LootDatabaseInitPostfix(LootDatabase __instance)
+        {
+            Instance?.BuildRuntimeItemMap(__instance);
+        }
+
+        public static void SearchForGunsPrefix()
+        {
+            if (Instance == null) return;
+
+            Instance._modifiedRolls = 0;
+            Instance._zeroWeightRolls = 0;
+            Instance._lootRolls = 0;
+        }
+
+        public static void SearchForGunsPostfix(GameRoom __instance)
+        {
+            if (Instance == null) return;
+
+            int spawned = __instance?.Weapons?.Count ?? 0;
+            Instance.Logger.LogInfo(
+                $"[WeaponSpawnConfig] Map loot generated: rolls={Instance._lootRolls}, adjusted={Instance._modifiedRolls}, disabledChoices={Instance._zeroWeightRolls}, spawnedNetworkLoot={spawned}");
+        }
         
+        private void RegisterConfiguredNames()
+        {
+            _itemNameAliases.Clear();
+
+            foreach (var category in WeaponCategories)
+            {
+                foreach (var itemName in category.Value)
+                {
+                    RegisterAlias(itemName, itemName);
+                }
+            }
+        }
+
+        private void BuildRuntimeItemMap(LootDatabase database)
+        {
+            if (database == null) return;
+
+            int mapped = 0;
+            _itemIndexToConfigName.Clear();
+
+            var itemsField = AccessTools.Field(typeof(LootDatabase), "items");
+            var items = itemsField?.GetValue(database) as Dictionary<int, ItemDataEntry>;
+            if (items == null)
+            {
+                Logger.LogWarning("[WeaponSpawnConfig] Could not read LootDatabase item dictionary; runtime ID mapping will be populated lazily.");
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                var pickup = item.Value.pickup;
+                if (pickup == null)
+                {
+                    continue;
+                }
+
+                string configName = ResolveConfigName(pickup);
+                if (string.IsNullOrEmpty(configName))
+                {
+                    continue;
+                }
+
+                _itemIndexToConfigName[item.Key] = configName;
+                RegisterAlias(pickup.itemName, configName);
+                RegisterAlias(pickup.name, configName);
+                RegisterAlias(item.Value.prefab != null ? item.Value.prefab.name : null, configName);
+                mapped++;
+            }
+
+            Logger.LogInfo($"[WeaponSpawnConfig] Item map ready: {mapped} loot IDs mapped to config entries");
+        }
+
+        private string ResolveConfigName(LootDropWrapper entry)
+        {
+            if (entry?.m_loot == null) return null;
+
+            foreach (var loot in entry.m_loot)
+            {
+                if (loot.loot == null) continue;
+
+                var pickup = loot.loot.GetComponent<Pickup>();
+                string configName = ResolveConfigName(pickup);
+                if (!string.IsNullOrEmpty(configName))
+                {
+                    return configName;
+                }
+
+                configName = ResolveConfigName(loot.loot.name);
+                if (!string.IsNullOrEmpty(configName))
+                {
+                    return configName;
+                }
+            }
+
+            return null;
+        }
+
+        private string ResolveConfigName(Pickup pickup)
+        {
+            if (pickup == null) return null;
+
+            if (_itemIndexToConfigName.TryGetValue(pickup.m_itemIndex, out var mappedName))
+            {
+                return mappedName;
+            }
+
+            string configName = ResolveConfigName(pickup.itemName) ?? ResolveConfigName(pickup.name);
+            if (!string.IsNullOrEmpty(configName))
+            {
+                _itemIndexToConfigName[pickup.m_itemIndex] = configName;
+            }
+
+            return configName;
+        }
+
+        private string ResolveConfigName(string itemName)
+        {
+            if (string.IsNullOrWhiteSpace(itemName)) return null;
+
+            string normalized = NormalizeName(itemName);
+            if (_itemNameAliases.TryGetValue(normalized, out var configName))
+            {
+                return configName;
+            }
+
+            if (_itemNameAliases.TryGetValue(CompactName(normalized), out configName))
+            {
+                return configName;
+            }
+
+            if (_unknownLogged.Add(normalized))
+            {
+                Logger.LogDebug($"[WeaponSpawnConfig] No config mapping for loot item '{itemName}'");
+            }
+
+            return null;
+        }
+
+        private void RegisterAlias(string alias, string configName)
+        {
+            if (string.IsNullOrWhiteSpace(alias) || string.IsNullOrWhiteSpace(configName))
+            {
+                return;
+            }
+
+            _itemNameAliases[NormalizeName(alias)] = configName;
+            _itemNameAliases[CompactName(NormalizeName(alias))] = configName;
+        }
+
+        private static string NormalizeName(string name)
+        {
+            return name
+                .Replace("(Clone)", string.Empty)
+                .Replace("_", " ")
+                .Replace("-", " ")
+                .Trim()
+                .ToLowerInvariant();
+        }
+
+        private static string CompactName(string normalizedName)
+        {
+            return normalizedName.Replace(" ", string.Empty);
+        }
+
         private string SanitizeWeaponName(string name)
         {
             return name.Replace(" ", "_").Replace("-", "_");
@@ -472,6 +472,11 @@ namespace TabgInstaller.WeaponSpawnConfig
                 multiplier *= globalConfig.Value;
             
             // Category multiplier
+            if (string.IsNullOrWhiteSpace(weaponName))
+            {
+                return multiplier;
+            }
+
             string category = GetCategoryForWeapon(weaponName);
             if (!string.IsNullOrEmpty(category))
             {
@@ -486,6 +491,28 @@ namespace TabgInstaller.WeaponSpawnConfig
                 multiplier *= weaponConfig.Value;
             
             return multiplier;
+        }
+
+        public float GetSpawnRateMultiplier(string weaponName)
+        {
+            if (string.IsNullOrWhiteSpace(weaponName))
+            {
+                return 1f;
+            }
+
+            var weaponKey = SanitizeWeaponName(weaponName);
+            return _weaponSpawnRates.TryGetValue(weaponKey, out var weaponConfig) ? weaponConfig.Value : 1f;
+        }
+
+        public float GetCategoryMultiplier(string categoryName)
+        {
+            if (string.IsNullOrWhiteSpace(categoryName))
+            {
+                return 1f;
+            }
+
+            var categoryKey = $"Category_{SanitizeWeaponName(categoryName)}";
+            return _weaponSpawnRates.TryGetValue(categoryKey, out var categoryConfig) ? categoryConfig.Value : 1f;
         }
         
         private string GetCategoryForWeapon(string weaponName)
@@ -502,8 +529,21 @@ namespace TabgInstaller.WeaponSpawnConfig
         
         private void OnDestroy()
         {
-            Logger.LogMessage($"[WeaponSpawnConfig] Shutting down. Modified {_modifiedWeapons} weapon spawn rates during session.");
+            Logger.LogMessage("[WeaponSpawnConfig] Shutting down.");
             _harmony?.UnpatchSelf();
         }
+
+        private readonly struct WeightedLootEntry
+        {
+            public WeightedLootEntry(LootDropWrapper entry, float weight)
+            {
+                Entry = entry;
+                Weight = weight;
+            }
+
+            public LootDropWrapper Entry { get; }
+
+            public float Weight { get; }
+        }
     }
-} 
+}

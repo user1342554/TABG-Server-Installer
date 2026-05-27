@@ -43,16 +43,11 @@ namespace TabgInstaller.Gui.ViewModels
         private string PluginsDir =>
             string.IsNullOrEmpty(ModdedPath) ? "" : Path.Combine(ModdedPath, "BepInEx", "plugins");
 
-        // All known bundled client mod DLLs
-        public static readonly string[] KnownClientMods = new[]
-        {
-            "TabgInstaller.FlyingControls.dll", "TabgInstaller.CustomGrenades.dll",
-            "TabgInstaller.CoordsDisplay.dll", "TabgInstaller.ModSettings.dll",
-            "TabgInstaller.EnhancedClient.dll", "TabgInstaller.PopupBlocker.dll",
-            "TabgInstaller.ProximityChat.Client.dll", "TabgInstaller.HuntMode.Client.dll",
-            "TabgInstaller.HuntMode.Shared.dll", "JuggernautMode.Client.dll",
-            "TabgInstaller.AdminRadar.Client.dll",
-        };
+        public static string[] KnownClientMods => PluginRegistry.ClientMods
+            .SelectMany(mod => mod.DllNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(dll => dll, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         public ClientPanelViewModel(IAppSettingsService appSettings, IToastService toast)
         {
