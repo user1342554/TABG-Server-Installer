@@ -128,15 +128,15 @@ namespace TabgInstaller.Tests.ViewModels
         }
 
         [Fact]
-        public void RefreshCommand_CollapsesSharedDllCatalogRows()
+        public void RefreshCommand_LoadsCustomGrenadesAsSingleCatalogRow()
         {
             var sut = CreateSut();
 
             sut.RefreshCommand.Execute(null);
 
             sut.PluginCatalog.Should().ContainSingle(p =>
-                p.DisplayName.Contains("Big Smoke Grenade") &&
-                p.DisplayName.Contains("MGL Flashbang") &&
+                p.Id == "CustomGrenades" &&
+                p.DisplayName.Contains("Custom Grenades") &&
                 p.Dlls == "TabgInstaller.CustomGrenades.dll");
         }
 
