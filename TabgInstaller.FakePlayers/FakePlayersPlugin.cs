@@ -43,13 +43,20 @@ namespace TabgInstaller.FakePlayers
         internal static readonly List<byte> AiIndices = new List<byte>();
         internal static readonly List<GunshotSoundEvent> GunshotSounds = new List<GunshotSoundEvent>();
         private static readonly Dictionary<byte, int> PendingAiLevels = new Dictionary<byte, int>();
+        private const float AutoSpawnInitialDelaySeconds = 25.0f;
+        private const int AutoSpawnMaxReadinessAttempts = 60;
+        private const float AutoSpawnRetryDelaySeconds = 1.0f;
         private static int _nextNumber = 1;
         internal static int GunshotSoundSequence { get; private set; }
         internal static ConfigEntry<int> MaxFakeSpawnCount;
         internal static ConfigEntry<int> MaxAiSpawnCount;
+        internal static ConfigEntry<int> AutoSpawnAiCount;
+        internal static ConfigEntry<int> AutoSpawnAiLevel;
         internal static ConfigEntry<int> CommandPermissionLevel;
         internal static ConfigEntry<bool> DevelopmentMode;
         internal static ConfigEntry<bool> CommandsUsableByEveryone;
+        private static bool _autoSpawnQueued;
+        private static bool _autoSpawnCompleted;
         private Harmony _harmony;
         private Harmony _permissionHarmony;
 
@@ -57,6 +64,8 @@ namespace TabgInstaller.FakePlayers
         {
             MaxFakeSpawnCount = Config.Bind("Commands", "MaxFakeSpawnCount", 200, "Maximum fake players spawned by one /spawndummy command.");
             MaxAiSpawnCount = Config.Bind("Commands", "MaxAiSpawnCount", 32, "Maximum AI dummy players spawned by one /spawnaidummy command.");
+            AutoSpawnAiCount = Config.Bind("AutoSpawn", "AiCount", 0, "AI dummy players to spawn automatically when the game room is ready. Set to 0 to disable.");
+            AutoSpawnAiLevel = Config.Bind("AutoSpawn", "AiLevel", 3, "Skill level used for automatically spawned AI dummy players, from 1 to 5.");
             CommandPermissionLevel = Config.Bind("Commands", "CommandPermissionLevel", 2, "Citrus permission level required for FakePlayers commands in normal release mode.");
             DevelopmentMode = Config.Bind("Safety", "DevelopmentMode", false, "Explicitly mark this server as a private development/test server. Required before test-only permission bypass can activate.");
             CommandsUsableByEveryone = Config.Bind("Safety", "CommandsUsableByEveryone", false, "Development-only: bypass Citrus permissions for FakePlayers commands. Ignored unless Safety.DevelopmentMode is true.");
@@ -263,10 +272,9 @@ namespace TabgInstaller.FakePlayers
             for (int i = 0; i < toRemove; i++)
             {
                 byte idx = FakeIndices[FakeIndices.Count - 1];
-                ForgetFakePlayer(idx);
-
                 TABGPlayerServer player = room.FindPlayer(idx);
-                if (player == null) continue;
+                ForgetFakePlayer(idx);
+                if (!LooksLikeTrackedFakePlayer(player)) continue;
 
                 try
                 {
@@ -289,11 +297,38 @@ namespace TabgInstaller.FakePlayers
 
             for (int i = FakeIndices.Count - 1; i >= 0; i--)
             {
-                if (room.FindPlayer(FakeIndices[i]) == null)
-                {
+                TABGPlayerServer player = room.FindPlayer(FakeIndices[i]);
+                if (!LooksLikeTrackedFakePlayer(player))
                     ForgetFakePlayer(FakeIndices[i]);
-                }
             }
+        }
+
+        internal static bool IsTrackedFakePlayer(GameRoom room, byte playerIndex)
+        {
+            if (room == null || !FakeIndices.Contains(playerIndex))
+                return false;
+
+            return LooksLikeTrackedFakePlayer(room.FindPlayer(playerIndex));
+        }
+
+        internal static bool IsTrackedFakePlayer(TABGPlayerServer player)
+        {
+            return player != null &&
+                FakeIndices.Contains(player.PlayerIndex) &&
+                LooksLikeTrackedFakePlayer(player);
+        }
+
+        private static bool LooksLikeTrackedFakePlayer(TABGPlayerServer player)
+        {
+            if (player == null || !player.Bot)
+                return false;
+
+            string name = player.PlayerName ?? string.Empty;
+            if (name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("Player", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return player.PlayerObject != null && player.PlayerObject.GetComponent<AiDummyController>() != null;
         }
 
         internal static void ResetStaticMatchState()
@@ -304,7 +339,83 @@ namespace TabgInstaller.FakePlayers
             GunshotSounds.Clear();
             GunshotSoundSequence = 0;
             _nextNumber = 1;
+            _autoSpawnQueued = false;
+            _autoSpawnCompleted = false;
             ServerMessages.ResetTransientState();
+        }
+
+        internal static void QueueAutoSpawn(ServerClient server)
+        {
+            if (_autoSpawnQueued || _autoSpawnCompleted || server == null || AutoSpawnAiCount == null)
+                return;
+
+            int count = Math.Max(0, Math.Min(AutoSpawnAiCount.Value, MaxAiSpawnCount.Value));
+            if (count <= 0)
+                return;
+
+            _autoSpawnQueued = true;
+            int level = Mathf.Clamp(AutoSpawnAiLevel?.Value ?? 3, 1, 5);
+            Log($"Auto-spawn AI queued: {count} AI dummy player(s), level {level}.");
+            ScheduleAutoSpawnAttempt(server, count, level, 0, AutoSpawnInitialDelaySeconds);
+        }
+
+        private static void ScheduleAutoSpawnAttempt(ServerClient server, int count, int level, int attempt, float delaySeconds)
+        {
+            server.WaitThenDoAction(delaySeconds, () =>
+            {
+                RunAutoSpawnAttempt(server, count, level, attempt);
+            });
+        }
+
+        private static void RunAutoSpawnAttempt(ServerClient queuedServer, int count, int level, int attempt)
+        {
+            try
+            {
+                var currentServer = ResolveServer() ?? queuedServer;
+                if (currentServer == null || currentServer.GameRoomReference == null)
+                {
+                    if (attempt < AutoSpawnMaxReadinessAttempts)
+                    {
+                        ScheduleAutoSpawnAttempt(queuedServer, count, level, attempt + 1, AutoSpawnRetryDelaySeconds);
+                        return;
+                    }
+
+                    _autoSpawnQueued = false;
+                    Log("Auto-spawn AI skipped: server room not ready after waiting.");
+                    return;
+                }
+
+                if (!IsRoomReadyForAutoSpawn(currentServer.GameRoomReference))
+                {
+                    if (attempt < AutoSpawnMaxReadinessAttempts)
+                    {
+                        ScheduleAutoSpawnAttempt(queuedServer, count, level, attempt + 1, AutoSpawnRetryDelaySeconds);
+                        return;
+                    }
+
+                    _autoSpawnQueued = false;
+                    Log("Auto-spawn AI skipped: game room did not finish initialization.");
+                    return;
+                }
+
+                int spawned = SpawnFakePlayers(currentServer, count, aiControlled: true, aiLevel: level);
+                _autoSpawnCompleted = spawned > 0;
+                _autoSpawnQueued = false;
+                Log($"Auto-spawned {spawned} AI dummy player(s), level {level}.");
+            }
+            catch (Exception ex)
+            {
+                _autoSpawnQueued = false;
+                Log($"Auto-spawn AI failed: {ex.Message}");
+            }
+        }
+
+        private static bool IsRoomReadyForAutoSpawn(GameRoom room)
+        {
+            return room != null &&
+                room.Players != null &&
+                room.CurrentGameSettings.MaxPlayers > 0 &&
+                room.CurrentGameMode != null;
         }
 
         private static void TrackFakePlayer(byte playerIndex, bool aiControlled)
@@ -534,7 +645,6 @@ namespace TabgInstaller.FakePlayers
                     if (!PendingAiLevels.TryGetValue(playerIndex, out level))
                         level = 1;
                     PendingAiLevels.Remove(playerIndex);
-
                     current.PlayerObject.AddComponent<AiDummyController>().Init(server, current, level);
                     Log($"AI dummy {current.PlayerName} initialized at level {level}.");
                 }
@@ -593,7 +703,7 @@ namespace TabgInstaller.FakePlayers
 
         internal static void RecordGunshot(TABGPlayerServer shooter, FiringMode mode)
         {
-            if (shooter == null || shooter.Bot || FakeIndices.Contains(shooter.PlayerIndex))
+            if (shooter == null || shooter.Bot || IsTrackedFakePlayer(shooter))
                 return;
 
             FiringMode audibleModes = FiringMode.Semi | FiringMode.Burst | FiringMode.FullAutoStart;
@@ -668,7 +778,7 @@ namespace TabgInstaller.FakePlayers
     [HarmonyPatch(typeof(ServerClient), nameof(ServerClient.SendMessageToClients), new[] { typeof(EventCode), typeof(byte[]), typeof(byte[]), typeof(bool), typeof(bool) })]
     internal static class FilterFakeRecipientsPatch
     {
-        public static bool Prefix(ref byte[] recipents)
+        public static bool Prefix(ServerClient __instance, ref byte[] recipents)
         {
             if (recipents == null || recipents.Length == 0 || FakePlayersPlugin.FakeIndices.Count == 0)
                 return true;
@@ -676,10 +786,18 @@ namespace TabgInstaller.FakePlayers
             if (recipents.Length == 1 && recipents[0] == byte.MaxValue)
                 return true;
 
+            GameRoom room = __instance != null ? __instance.GameRoomReference : null;
+            if (room == null)
+                return true;
+
+            FakePlayersPlugin.PruneMissingFakePlayers(room);
+            if (FakePlayersPlugin.FakeIndices.Count == 0)
+                return true;
+
             int write = 0;
             for (int i = 0; i < recipents.Length; i++)
             {
-                if (!FakePlayersPlugin.FakeIndices.Contains(recipents[i]))
+                if (!FakePlayersPlugin.IsTrackedFakePlayer(room, recipents[i]))
                     recipents[write++] = recipents[i];
             }
 

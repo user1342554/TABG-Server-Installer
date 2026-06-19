@@ -21,6 +21,9 @@ namespace TabgInstaller.MatchCore
         public bool CanLockOut = true;
         public bool HealOnKill = false;
         public float HealOnKillAmount = 100f;
+        public bool ServerRingDamage = true;
+        public float ServerRingDamagePerSecond = 8f;
+        public float ServerRingDamageTickSeconds = 1f;
         public bool SpellDropsEnabled = true;
         public float MinSpellDropDelay = 60f;
         public float MaxSpellDropDelay = 100f;
@@ -151,6 +154,9 @@ namespace TabgInstaller.MatchCore
                 "CanLockOut=true",
                 "HealOnKill=false",
                 "HealOnKillAmount=100",
+                "ServerRingDamage=true",
+                "ServerRingDamagePerSecond=8",
+                "ServerRingDamageTickSeconds=1",
                 "ItemsGiven=",
                 "Loadouts=Default:100%1:1,2:30/",
                 "ValidSpawnPoints=-1",
@@ -194,6 +200,15 @@ namespace TabgInstaller.MatchCore
                     break;
                 case "healonkillamount":
                     HealOnKillAmount = ParseFloat(value, HealOnKillAmount);
+                    break;
+                case "serverringdamage":
+                    ServerRingDamage = ParseBool(value, ServerRingDamage);
+                    break;
+                case "serverringdamagepersecond":
+                    ServerRingDamagePerSecond = ParseFloat(value, ServerRingDamagePerSecond);
+                    break;
+                case "serverringdamagetickseconds":
+                    ServerRingDamageTickSeconds = ParseFloat(value, ServerRingDamageTickSeconds);
                     break;
                 case "itemsgiven":
                     ItemsGiven = ParseLootItems(value);
@@ -271,6 +286,8 @@ namespace TabgInstaller.MatchCore
             MatchTimeout = Math.Max(0f, MatchTimeout);
             KillsToWin = Math.Max(1, KillsToWin);
             HealOnKillAmount = Math.Max(0f, HealOnKillAmount);
+            ServerRingDamagePerSecond = Math.Max(0f, ServerRingDamagePerSecond);
+            ServerRingDamageTickSeconds = Math.Max(0.2f, ServerRingDamageTickSeconds);
             MinSpellDropDelay = Math.Max(0f, MinSpellDropDelay);
             MaxSpellDropDelay = Math.Max(MinSpellDropDelay, MaxSpellDropDelay);
             if (Rings.Count == 0)

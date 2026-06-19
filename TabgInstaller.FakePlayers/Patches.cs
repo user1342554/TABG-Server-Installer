@@ -16,6 +16,7 @@ namespace TabgInstaller.FakePlayers
                 FakePlayersPlugin.ResetStaticMatchState();
 
             FakePlayersPlugin.ServerRef = __instance;
+            FakePlayersPlugin.QueueAutoSpawn(__instance);
         }
     }
 

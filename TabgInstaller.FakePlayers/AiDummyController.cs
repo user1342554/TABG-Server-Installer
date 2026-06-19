@@ -31,6 +31,15 @@ namespace TabgInstaller.FakePlayers
             Head
         }
 
+        private const float PlayableMinX = -900f;
+        private const float PlayableMaxX = 850f;
+        private const float PlayableMinZ = -850f;
+        private const float PlayableMaxZ = 750f;
+        private const float MaxFairGunDamageRange = 58f;
+        private const float MaxPendingShotTargetDrift = 2.6f;
+        private const float RingUnsafeRadiusFraction = 1.03f;
+        private const float RingDestinationRadiusFraction = 0.82f;
+
         private struct GroundProbe
         {
             public bool Found;
@@ -44,12 +53,16 @@ namespace TabgInstaller.FakePlayers
         {
             public TABGPlayerServer Target;
             public Vector3 AimPoint;
+            public Vector3 TargetPosition;
+            public float MaxRange;
             public float Timer;
 
-            public PendingShot(TABGPlayerServer target, Vector3 aimPoint, float timer)
+            public PendingShot(TABGPlayerServer target, Vector3 aimPoint, Vector3 targetPosition, float maxRange, float timer)
             {
                 Target = target;
                 AimPoint = aimPoint;
+                TargetPosition = targetPosition;
+                MaxRange = maxRange;
                 Timer = timer;
             }
         }
@@ -132,10 +145,12 @@ namespace TabgInstaller.FakePlayers
         private float _burstShotTimer;
         private float _poiTimer;
         private float _dropPositionLockTimer;
+        private float _physicalHookRetryTimer;
         private float _lastLootDistance = float.MaxValue;
         private float _bestPlaneDropDistance = float.MaxValue;
         private Vector3 _pendingGrenadePosition;
         private string _lastTargetName;
+        private string _lastPhysicalHookLog;
         private int _lastLootIndex = int.MinValue;
         private int _equippedWeaponId = -1;
         private int _equippedWeaponScore;
@@ -166,6 +181,7 @@ namespace TabgInstaller.FakePlayers
         private bool _dropFinished;
         private NavMeshPath _navPath;
         private WeaponProfile _weaponProfile;
+        private static readonly Dictionary<int, byte> LootClaims = new Dictionary<int, byte>();
         private readonly List<PendingShot> _pendingShots = new List<PendingShot>();
         private readonly Dictionary<byte, Vector3> _lastSoundPositions = new Dictionary<byte, Vector3>();
 
@@ -182,6 +198,8 @@ namespace TabgInstaller.FakePlayers
             InitTerrainOffset();
             _navPath = new NavMeshPath();
             _dropTarget = PickDropTarget();
+            if (!ShouldHandleRoundDrop())
+                StartDrop();
             _lastGunshotSequence = FakePlayersPlugin.GunshotSoundSequence;
             PickNewWanderTarget();
             PickMovementNoise();
@@ -237,6 +255,13 @@ namespace TabgInstaller.FakePlayers
             _fireAnimationTimer -= dt;
             _burstShotTimer -= dt;
             _poiTimer -= dt;
+            _physicalHookRetryTimer -= dt;
+
+            if ((_physicalInput == null || _physicalHip == null || _physicalRotationTarget == null) && _physicalHookRetryTimer <= 0f)
+            {
+                InitPhysicalEnemyAiHooks();
+                _physicalHookRetryTimer = 1.0f;
+            }
 
             if (!_dropFinished && ShouldHandleRoundDrop())
             {
@@ -448,15 +473,45 @@ namespace TabgInstaller.FakePlayers
 
         private Vector3 PickDropTarget()
         {
-            Vector3 target = DropTargets[UnityEngine.Random.Range(0, DropTargets.Length)];
-            Vector2 offset = UnityEngine.Random.insideUnitCircle * UnityEngine.Random.Range(4f, 18f);
-            target.x += offset.x;
-            target.z += offset.y;
+            for (int i = 0; i < 40; i++)
+            {
+                Vector3 target = DropTargets[UnityEngine.Random.Range(0, DropTargets.Length)];
+                Vector2 offset = UnityEngine.Random.insideUnitCircle * UnityEngine.Random.Range(4f, 22f);
+                target.x += offset.x;
+                target.z += offset.y;
 
-            float groundY;
-            if (TryFindGroundY(target, out groundY))
-                target.y = groundY + _terrainHeightOffset;
-            return target;
+                if (TryResolveSafeGround(target, out target))
+                    return target;
+            }
+
+            for (int i = 0; i < PoiTargets.Length; i++)
+            {
+                Vector3 target = PoiTargets[UnityEngine.Random.Range(0, PoiTargets.Length)];
+                Vector2 offset = UnityEngine.Random.insideUnitCircle * UnityEngine.Random.Range(8f, 30f);
+                target.x += offset.x;
+                target.z += offset.y;
+
+                if (TryResolveSafeGround(target, out target))
+                    return target;
+            }
+
+            Vector3 fallback = _player != null ? _player.PlayerPosition : Vector3.zero;
+            if (TryResolveSafeGround(fallback, out fallback))
+                return fallback;
+
+            return _player != null ? _player.PlayerPosition : Vector3.zero;
+        }
+
+        private bool TryResolveSafeGround(Vector3 target, out Vector3 grounded)
+        {
+            grounded = target;
+
+            GroundProbe probe;
+            if (!TryFindGroundInfo(target, out probe) || probe.BadTerrain)
+                return false;
+
+            grounded.y = probe.Y + _terrainHeightOffset;
+            return true;
         }
 
         private Vector3 BuildDropStartNearLanding(Vector3 landing)
@@ -546,6 +601,7 @@ namespace TabgInstaller.FakePlayers
             }
 
             FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} picked up {_wantedLoot.WeaponName} ({pickupType}).");
+            ReleaseLootClaim();
             _wantedLoot = null;
             _lootTimer = 0.35f;
         }
@@ -564,6 +620,7 @@ namespace TabgInstaller.FakePlayers
                 return;
 
             FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} gave up on blocked loot {_wantedLoot.WeaponName}.");
+            ReleaseLootClaim();
             _wantedLoot = null;
             _lootTimer = 0f;
             _lootProgressTimer = 0f;
@@ -688,7 +745,7 @@ namespace TabgInstaller.FakePlayers
                     continue;
 
                 newestSequence = Mathf.Max(newestSequence, sound.Sequence);
-                if (sound.ShooterIndex == _player.PlayerIndex || FakePlayersPlugin.FakeIndices.Contains(sound.ShooterIndex))
+                if (sound.ShooterIndex == _player.PlayerIndex || FakePlayersPlugin.IsTrackedFakePlayer(_room, sound.ShooterIndex))
                     continue;
 
                 TABGPlayerServer shooter = _room.FindPlayer(sound.ShooterIndex);
@@ -817,12 +874,14 @@ namespace TabgInstaller.FakePlayers
 
             if (nextLoot != _wantedLoot)
             {
+                ReleaseLootClaim();
                 _wantedLoot = nextLoot;
                 _lastLootDistance = float.MaxValue;
                 _lootProgressTimer = 0f;
                 _lastLootIndex = _wantedLoot != null ? _wantedLoot.Index : int.MinValue;
                 if (_wantedLoot != null)
                 {
+                    ClaimLoot(_wantedLoot);
                     _hasPoiTarget = false;
                     FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} moving to {_wantedLoot.WeaponName} ({_wantedLoot.UniqueIdentifier}).");
                 }
@@ -1051,7 +1110,7 @@ namespace TabgInstaller.FakePlayers
 
         private bool NeedsAmmo()
         {
-            return HasUsableWeapon() && _magazineAmmo <= 0 && _reserveAmmo <= 0;
+            return HasCombatWeapon() && _magazineAmmo <= 0 && _reserveAmmo <= 0;
         }
 
         private bool CanRiskUnarmedLoot(bool hasLoot)
@@ -1228,7 +1287,11 @@ namespace TabgInstaller.FakePlayers
             Vector3 side = Vector3.Cross(Vector3.up, away) * (UnityEngine.Random.value < 0.5f ? -1f : 1f);
             Vector3 direction = (away * 0.65f + side * 0.75f).normalized;
             _unstuckTarget = _player.PlayerPosition + direction * UnityEngine.Random.Range(10f, 18f);
-            _unstuckTarget.y = _player.PlayerPosition.y;
+            if (!TryResolveSafeGround(_unstuckTarget, out _unstuckTarget))
+            {
+                _unstuckTarget = _player.PlayerPosition + direction * 6f;
+                _unstuckTarget.y = _player.PlayerPosition.y;
+            }
             PickMovementNoise();
             FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} unstuck target {_unstuckTarget}.");
         }
@@ -1289,6 +1352,16 @@ namespace TabgInstaller.FakePlayers
 
         private Vector3 ChooseDestination()
         {
+            Vector3 ringDestination;
+            if (TryGetRingEscapeDestination(out ringDestination))
+            {
+                ReleaseLootClaim();
+                _wantedLoot = null;
+                _wantedCar = null;
+                _hasPoiTarget = false;
+                return ringDestination;
+            }
+
             if ((_state == AiState.Looting || _state == AiState.Scavenging) && _wantedLoot != null && _room.Weapons.Contains(_wantedLoot))
                 return _wantedLoot.Position;
 
@@ -1306,16 +1379,6 @@ namespace TabgInstaller.FakePlayers
                 {
                     return _currentPoiTarget;
                 }
-            }
-
-            Vector3 ringCenter;
-            float ringRadius;
-            if (TryGetRing(out ringCenter, out ringRadius))
-            {
-                Vector3 flat = Flat(_player.PlayerPosition - ringCenter);
-                float safeRadius = ringRadius * 0.48f;
-                if (flat.magnitude > safeRadius)
-                    return ringCenter + flat.normalized * Mathf.Max(10f, safeRadius * 0.6f);
             }
 
             switch (_state)
@@ -1344,6 +1407,51 @@ namespace TabgInstaller.FakePlayers
                 PickNewWanderTarget();
 
             return _wanderTarget;
+        }
+
+        private bool TryGetRingEscapeDestination(out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            if (_player == null)
+                return false;
+
+            Vector3 ringCenter;
+            float ringRadius;
+            if (!TryGetRing(out ringCenter, out ringRadius))
+                return false;
+
+            Vector3 fromCenter = Flat(_player.PlayerPosition - ringCenter);
+            float distance = fromCenter.magnitude;
+            float unsafeRadius = Mathf.Max(18f, ringRadius * RingUnsafeRadiusFraction);
+            if (distance <= unsafeRadius)
+                return false;
+
+            Vector3 direction = distance > 0.1f ? fromCenter / distance : Vector3.forward;
+            float targetRadius = Mathf.Clamp(
+                ringRadius * RingDestinationRadiusFraction,
+                8f,
+                Mathf.Max(8f, unsafeRadius - 10f));
+
+            float[] angles = { 0f, 18f, -18f, 38f, -38f, 70f, -70f, 115f, -115f, 180f };
+            for (int i = 0; i < angles.Length; i++)
+            {
+                Vector3 rotated = Quaternion.Euler(0f, angles[i], 0f) * direction;
+                Vector3 candidate = ringCenter + rotated * targetRadius;
+                if (TryResolveSafeGround(candidate, out destination))
+                    return true;
+            }
+
+            Vector3 towardCenter = Flat(ringCenter - _player.PlayerPosition);
+            if (towardCenter.sqrMagnitude > 0.1f)
+            {
+                Vector3 candidate = _player.PlayerPosition + towardCenter.normalized * Mathf.Min(35f, distance - unsafeRadius + 8f);
+                if (TryResolveSafeGround(candidate, out destination))
+                    return true;
+            }
+
+            destination = ringCenter;
+            destination.y = _player.PlayerPosition.y;
+            return true;
         }
 
         private Vector3 ChooseEvadeDestination()
@@ -1688,7 +1796,17 @@ namespace TabgInstaller.FakePlayers
                 next.y = ResolveTerrainY(current, next, dt);
             }
 
-            if (IsBadTerrain(next))
+            if (IsOutsidePlayableBounds(next))
+            {
+                next = PickDropTarget();
+                _lastProgressPosition = next;
+                _smoothedDirection = Vector3.zero;
+                _hasNavPath = false;
+                _localAvoidTimer = 0f;
+                PickNewWanderTarget();
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} corrected off-map movement to {next}.");
+            }
+            else if (IsBadTerrain(next))
             {
                 Vector3 avoidDirection = _smoothedDirection != Vector3.zero ? -_smoothedDirection : Flat(current - destination);
                 if (avoidDirection.sqrMagnitude < 0.1f)
@@ -2015,7 +2133,8 @@ namespace TabgInstaller.FakePlayers
             if (!EnableGunDamage || target == null)
                 return;
 
-            _pendingShots.Add(new PendingShot(target, aimPoint, ShotDamageDelay));
+            float maxRange = Mathf.Min(GetDamageRange(), MaxFairGunDamageRange);
+            _pendingShots.Add(new PendingShot(target, aimPoint, target.PlayerPosition, maxRange, ShotDamageDelay));
         }
 
         private void TickPendingShots(float dt)
@@ -2033,7 +2152,7 @@ namespace TabgInstaller.FakePlayers
                 if (shot.Target != null && !shot.Target.IsDead && !shot.Target.IsDowned)
                 {
                     float damage;
-                    if (TryResolveShotDamage(shot.Target, shot.AimPoint, out damage))
+                    if (TryResolveShotDamage(shot, out damage))
                         FakePlayersPlugin.ApplyDamage(_server, _player, shot.Target, damage);
                 }
 
@@ -2089,15 +2208,21 @@ namespace TabgInstaller.FakePlayers
             _shootTimer = _reloadTimer;
         }
 
-        private bool TryResolveShotDamage(TABGPlayerServer target, Vector3 aimPoint, out float damage)
+        private bool TryResolveShotDamage(PendingShot shot, out float damage)
         {
             damage = 0f;
+            TABGPlayerServer target = shot.Target;
+            Vector3 aimPoint = shot.AimPoint;
             if ((_fireAnimationTimer <= 0f && !_isFullAutoFiring) || target == null)
                 return false;
 
             float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
-            float range = GetDamageRange();
+            float range = Mathf.Min(GetDamageRange(), Mathf.Max(1f, shot.MaxRange));
             if (distance > range)
+                return false;
+            if (Flat(target.PlayerPosition - shot.TargetPosition).magnitude > MaxPendingShotTargetDrift)
+                return false;
+            if (!HasShotLine(target) || !IsAimingAt(target, Mathf.Min(GetAimCone(), 14f)))
                 return false;
 
             float hitChance = GetWeaponHitChance(distance, range);
@@ -2273,7 +2398,9 @@ namespace TabgInstaller.FakePlayers
                     continue;
 
                 bool visible = HasLineToPoint(loot.Position + Vector3.up * 0.4f, allowGround: true);
-                float score = distance - value + (visible ? 0f : 55f);
+                float score = distance - value + (visible ? 0f : 55f) + GetLootJitter(loot.Index);
+                if (IsLootClaimedByOther(loot.Index))
+                    score += 180f;
                 if (_target != null && _canSeeTarget)
                     score += Mathf.Clamp(Flat(loot.Position - _target.PlayerPosition).magnitude * 0.12f, 0f, 20f);
                 if (!_hasWeapon && hasThreatPosition)
@@ -2306,6 +2433,52 @@ namespace TabgInstaller.FakePlayers
             return best;
         }
 
+        private void ClaimLoot(NetworkGun loot)
+        {
+            if (loot == null || _player == null)
+                return;
+
+            LootClaims[loot.Index] = _player.PlayerIndex;
+        }
+
+        private void ReleaseLootClaim()
+        {
+            if (_wantedLoot == null || _player == null)
+                return;
+
+            byte owner;
+            if (LootClaims.TryGetValue(_wantedLoot.Index, out owner) && owner == _player.PlayerIndex)
+                LootClaims.Remove(_wantedLoot.Index);
+        }
+
+        private bool IsLootClaimedByOther(int lootIndex)
+        {
+            byte owner;
+            if (!LootClaims.TryGetValue(lootIndex, out owner))
+                return false;
+
+            if (_player != null && owner == _player.PlayerIndex)
+                return false;
+
+            if (_room == null || _room.FindPlayer(owner) == null)
+            {
+                LootClaims.Remove(lootIndex);
+                return false;
+            }
+
+            return true;
+        }
+
+        private float GetLootJitter(int lootIndex)
+        {
+            int playerIndex = _player != null ? _player.PlayerIndex : 0;
+            unchecked
+            {
+                int hash = (lootIndex * 73856093) ^ (playerIndex * 19349663);
+                return Mathf.Abs(hash % 37);
+            }
+        }
+
         private float ScoreLootValue(NetworkGun loot, Pickup pickup)
         {
             if (loot == null)
@@ -2325,33 +2498,31 @@ namespace TabgInstaller.FakePlayers
                 case Pickup.WeaponType.Grenade:
                     if (!_hasWeapon)
                         return 0f;
-                    return _grenadeCount < 2 ? 58f : 0f;
+                    return EnableGrenadeThrows && _grenadeCount < 1 && (_target == null || !_canSeeTarget) ? 28f : 0f;
 
                 case Pickup.WeaponType.Health:
                     if (!_hasWeapon && _player.Health >= 45f)
                         return 0f;
-                    if (_player.Health < 75f)
+                    if (_player.Health < 55f)
                         return 68f;
-                    return _healingItemCount < 2 ? 32f : 0f;
+                    if (_player.Health < 75f && _healingItemCount <= 0)
+                        return 36f;
+                    return 0f;
 
                 case Pickup.WeaponType.Ammo:
                     if (!_hasWeapon)
                         return 0f;
                     if (NeedsAmmo())
                         return 95f;
-                    return _reserveAmmo < _weaponProfile.MagazineSize * 2 ? 46f : 18f;
+                    return _reserveAmmo < _weaponProfile.MagazineSize ? 34f : 0f;
 
                 case Pickup.WeaponType.Armor:
                 case Pickup.WeaponType.Blessing:
                 case Pickup.WeaponType.WeaponAttatchment:
-                    if (!_hasWeapon)
-                        return 0f;
-                    return _target == null || !_canSeeTarget ? 24f : 0f;
+                    return 0f;
 
                 case Pickup.WeaponType.OtherConsumable:
-                    if (!_hasWeapon)
-                        return 0f;
-                    return _target == null ? 14f : 0f;
+                    return 0f;
             }
 
             return 0f;
@@ -2701,6 +2872,11 @@ namespace TabgInstaller.FakePlayers
 
         private bool HasUsableWeapon()
         {
+            return HasCombatWeapon() && (_magazineAmmo > 0 || _reserveAmmo > 0 || _isReloading);
+        }
+
+        private bool HasCombatWeapon()
+        {
             return _hasWeapon && _equippedWeaponId >= 0 && _weaponProfile.CombatClass != WeaponCombatClass.Unarmed;
         }
 
@@ -2711,7 +2887,8 @@ namespace TabgInstaller.FakePlayers
 
         private float GetDamageRange()
         {
-            return Mathf.Lerp(_weaponProfile.MaxRange * 0.72f, _weaponProfile.MaxRange, GetSkillT());
+            float weaponRange = Mathf.Lerp(_weaponProfile.MaxRange * 0.72f, _weaponProfile.MaxRange, GetSkillT());
+            return Mathf.Min(weaponRange, MaxFairGunDamageRange);
         }
 
         private float GetPreferredFightRange()
@@ -2815,14 +2992,27 @@ namespace TabgInstaller.FakePlayers
             if (_player == null || _player.PlayerObject == null)
                 return;
 
-            _physicalInput = _player.PlayerObject.GetComponent<InputHandler>();
-            Hip hip = _player.PlayerObject.GetComponentInChildren<Hip>();
-            RotationTarget rotationTarget = _player.PlayerObject.GetComponentInChildren<RotationTarget>();
+            _physicalInput =
+                _player.PlayerObject.GetComponent<InputHandler>() ??
+                _player.PlayerObject.GetComponentInChildren<InputHandler>() ??
+                _player.PlayerObject.GetComponentInParent<InputHandler>();
+            Hip hip =
+                _player.PlayerObject.GetComponent<Hip>() ??
+                _player.PlayerObject.GetComponentInChildren<Hip>() ??
+                _player.PlayerObject.GetComponentInParent<Hip>();
+            RotationTarget rotationTarget =
+                _player.PlayerObject.GetComponent<RotationTarget>() ??
+                _player.PlayerObject.GetComponentInChildren<RotationTarget>() ??
+                _player.PlayerObject.GetComponentInParent<RotationTarget>();
             _physicalHip = hip != null ? hip.transform : null;
             _physicalRotationTarget = rotationTarget != null ? rotationTarget.transform : null;
 
-            FakePlayersPlugin.Log(
-                $"AI dummy {_player.PlayerName} physical hooks: input={_physicalInput != null}, hip={_physicalHip != null}, rotationTarget={_physicalRotationTarget != null}.");
+            string hookState = $"input={_physicalInput != null}, hip={_physicalHip != null}, rotationTarget={_physicalRotationTarget != null}";
+            if (!string.Equals(_lastPhysicalHookLog, hookState, StringComparison.Ordinal))
+            {
+                _lastPhysicalHookLog = hookState;
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} physical hooks: {hookState}.");
+            }
         }
 
         private void InitTerrainOffset()
@@ -2837,10 +3027,6 @@ namespace TabgInstaller.FakePlayers
 
         private bool TryDrivePhysicalEnemyAi(Vector3 destination)
         {
-            ClearPhysicalInput();
-            return false;
-
-#pragma warning disable CS0162
             if (_physicalInput == null || _physicalHip == null || _physicalRotationTarget == null)
                 return false;
 
@@ -2872,7 +3058,6 @@ namespace TabgInstaller.FakePlayers
                 _physicalRotationTarget.rotation = Quaternion.LookRotation(Flat(direction).normalized);
 
             return Vector3.Distance(_physicalHip.position, _player.PlayerPosition) > 0.04f;
-#pragma warning restore CS0162
         }
 
         private void ClearPhysicalInput()
@@ -3179,6 +3364,9 @@ namespace TabgInstaller.FakePlayers
 
         private bool IsBadTerrain(Vector3 nearPosition)
         {
+            if (IsOutsidePlayableBounds(nearPosition))
+                return true;
+
             GroundProbe probe;
             if (!TryFindGroundInfo(nearPosition, out probe))
                 return true;
@@ -3209,6 +3397,9 @@ namespace TabgInstaller.FakePlayers
                 Normal = Vector3.up,
                 SurfaceName = string.Empty
             };
+
+            if (IsOutsidePlayableBounds(nearPosition))
+                return false;
 
             Vector3 origin = nearPosition + Vector3.up * TerrainProbeUp;
             RaycastHit[] hits = Physics.RaycastAll(
@@ -3262,9 +3453,17 @@ namespace TabgInstaller.FakePlayers
                 surface.Contains("river");
         }
 
+        private static bool IsOutsidePlayableBounds(Vector3 position)
+        {
+            return position.x < PlayableMinX ||
+                position.x > PlayableMaxX ||
+                position.z < PlayableMinZ ||
+                position.z > PlayableMaxZ;
+        }
+
         private static bool IsShootableWeapon(NetworkGun loot)
         {
-            return loot != null && IsShootableWeapon(loot.UniqueIdentifier);
+            return loot != null && AiDummyCatalog.IsShootableWeapon(loot.UniqueIdentifier);
         }
 
         public string GetDebugSummary()
@@ -3348,6 +3547,7 @@ namespace TabgInstaller.FakePlayers
 
         private void OnDestroy()
         {
+            ReleaseLootClaim();
             StopFullAuto();
             LeaveVehicle();
         }

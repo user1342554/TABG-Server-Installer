@@ -12,6 +12,7 @@ namespace TabgInstaller.MatchCore
         private static readonly HashSet<byte> Votes = new HashSet<byte>();
         private static readonly Dictionary<GameRoom, float> WaitingSince = new Dictionary<GameRoom, float>();
         private static readonly Dictionary<GameRoom, float> StartedSince = new Dictionary<GameRoom, float>();
+        private static readonly Dictionary<GameRoom, float> RingDamageSince = new Dictionary<GameRoom, float>();
         private static RingProfile _selectedRing;
 
         public static void Reset()
@@ -19,6 +20,7 @@ namespace TabgInstaller.MatchCore
             Votes.Clear();
             WaitingSince.Clear();
             StartedSince.Clear();
+            RingDamageSince.Clear();
             _selectedRing = null;
         }
 
@@ -108,6 +110,11 @@ namespace TabgInstaller.MatchCore
             {
                 StartedSince.Remove(room);
             }
+
+            if (state == GameState.Started)
+                TickServerRingDamage(room, settings);
+            else
+                RingDamageSince.Remove(room);
         }
 
         public static bool HandleWinCondition(BattleRoyaleGameMode mode, GameState state)
@@ -360,6 +367,61 @@ namespace TabgInstaller.MatchCore
             var highest = room.CurrentGameKills.GetHighestKillingTeam();
             var team = room.CurrentGameStats.GetTeam(highest.Key);
             return team ?? room.CurrentGameStats.GetWinningTeam();
+        }
+
+        private static void TickServerRingDamage(GameRoom room, MatchCoreConfig settings)
+        {
+            if (room?.Players == null || settings == null || !settings.ServerRingDamage || settings.ServerRingDamagePerSecond <= 0f)
+                return;
+
+            TheRing ring = TheRing.Instance;
+            if (ring == null || !ring.hasStarted || ring.currentBlueSize <= 0f)
+                return;
+
+            float now = Time.unscaledTime;
+            float lastTick;
+            if (RingDamageSince.TryGetValue(room, out lastTick) && now - lastTick < settings.ServerRingDamageTickSeconds)
+                return;
+
+            RingDamageSince[room] = now;
+
+            Vector3 center = ring.currentBluePosition;
+            float radius = Mathf.Max(0f, ring.currentBlueSize * 0.5f + 25f);
+            float progress = Mathf.Clamp01(1f - radius / 2200f);
+            float damage = settings.ServerRingDamagePerSecond * settings.ServerRingDamageTickSeconds * Mathf.Lerp(1f, 3f, progress);
+            if (ring.currentRingID >= ring.ringSpeeds.Length - 1)
+                damage *= 2f;
+
+            var players = room.Players.ToArray();
+            for (int i = 0; i < players.Length; i++)
+            {
+                TABGPlayerServer player = players[i];
+                if (player == null || player.IsDead || !player.HasDropped)
+                    continue;
+
+                Vector3 offset = player.PlayerPosition - center;
+                offset.y = 0f;
+                if (offset.magnitude <= radius)
+                    continue;
+
+                ApplyRingDamage(room, player, damage);
+            }
+        }
+
+        private static void ApplyRingDamage(GameRoom room, TABGPlayerServer player, float damage)
+        {
+            ServerClient world = ReflectionHelpers.FieldValue<ServerClient>(room, typeof(GameRoom), "m_server");
+            if (player.IsDowned || player.Health <= damage)
+            {
+                player.UpdateHealth(0f);
+                room.CurrentGameMode.KillPlayer(player, null);
+                room.CheckGameState();
+                MatchCorePlugin.LoggerSafe("Ring killed " + player.PlayerName + ".");
+                return;
+            }
+
+            player.TakeDamage(damage);
+            world?.DamagePlayer(player);
         }
 
         private static void EndMatch(GameRoom room, TeamStanding winner)

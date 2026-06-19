@@ -95,8 +95,8 @@ namespace TabgInstaller.FakePlayers
         public const float PoiArriveDistance = 18f;
         public const float BadTerrainRepathPenalty = 65f;
         public const bool EnableGunDamage = true;
-        public const bool EnableGrenadeThrows = true;
-        public const bool EnableGrenadeDamage = true;
+        public const bool EnableGrenadeThrows = false;
+        public const bool EnableGrenadeDamage = false;
         public const float WarmupTime = 4f;
         public const float WallProbeDistance = 3.0f;
         public const float WallProbeRadius = 0.55f;
