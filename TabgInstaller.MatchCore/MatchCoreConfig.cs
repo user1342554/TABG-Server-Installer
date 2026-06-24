@@ -24,6 +24,8 @@ namespace TabgInstaller.MatchCore
         public bool ServerRingDamage = true;
         public float ServerRingDamagePerSecond = 8f;
         public float ServerRingDamageTickSeconds = 1f;
+        public float RingBaseTime = 0f;
+        public float MaxRingWaitSeconds = 0f;
         public bool SpellDropsEnabled = true;
         public float MinSpellDropDelay = 60f;
         public float MaxSpellDropDelay = 100f;
@@ -157,6 +159,8 @@ namespace TabgInstaller.MatchCore
                 "ServerRingDamage=true",
                 "ServerRingDamagePerSecond=8",
                 "ServerRingDamageTickSeconds=1",
+                "RingBaseTime=0",
+                "MaxRingWaitSeconds=0",
                 "ItemsGiven=",
                 "Loadouts=Default:100%1:1,2:30/",
                 "ValidSpawnPoints=-1",
@@ -210,6 +214,14 @@ namespace TabgInstaller.MatchCore
                 case "serverringdamagetickseconds":
                     ServerRingDamageTickSeconds = ParseFloat(value, ServerRingDamageTickSeconds);
                     break;
+                case "ringbasetime":
+                case "baseringtime":
+                    RingBaseTime = ParseFloat(value, RingBaseTime);
+                    break;
+                case "maxringwaitseconds":
+                case "ringwaitseconds":
+                    MaxRingWaitSeconds = ParseFloat(value, MaxRingWaitSeconds);
+                    break;
                 case "itemsgiven":
                     ItemsGiven = ParseLootItems(value);
                     break;
@@ -228,7 +240,9 @@ namespace TabgInstaller.MatchCore
                     MatchSpawnPoints = ParseSpawnPoints(value, CustomSpawnPoint.y > 0f ? CustomSpawnPoint.y : 150f);
                     break;
                 case "ringsettings":
-                    Rings = ParseRingProfiles(value);
+                    var parsedRings = ParseRingProfiles(value);
+                    if (parsedRings.Count > 0)
+                        Rings = parsedRings;
                     break;
                 case "ringlocation":
                     EnsureDefaultRing().Center = ParseVector(value, EnsureDefaultRing().Center);
@@ -288,6 +302,8 @@ namespace TabgInstaller.MatchCore
             HealOnKillAmount = Math.Max(0f, HealOnKillAmount);
             ServerRingDamagePerSecond = Math.Max(0f, ServerRingDamagePerSecond);
             ServerRingDamageTickSeconds = Math.Max(0.2f, ServerRingDamageTickSeconds);
+            RingBaseTime = Math.Max(0f, RingBaseTime);
+            MaxRingWaitSeconds = Math.Max(0f, MaxRingWaitSeconds);
             MinSpellDropDelay = Math.Max(0f, MinSpellDropDelay);
             MaxSpellDropDelay = Math.Max(MinSpellDropDelay, MaxSpellDropDelay);
             if (Rings.Count == 0)
@@ -411,6 +427,12 @@ namespace TabgInstaller.MatchCore
             var rings = new List<RingProfile>();
             foreach (var chunk in value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries))
             {
+                if (TryParseLegacyRingProfile(chunk, out RingProfile legacy))
+                {
+                    rings.Add(legacy);
+                    continue;
+                }
+
                 int percent = chunk.IndexOf('%');
                 if (percent <= 0) continue;
 
@@ -442,6 +464,33 @@ namespace TabgInstaller.MatchCore
                 rings.Add(new RingProfile { Name = name.Trim(), Rarity = Math.Max(1f, rarity), Center = center, Sizes = sizes, Speeds = speeds });
             }
             return rings;
+        }
+
+        private static bool TryParseLegacyRingProfile(string value, out RingProfile ring)
+        {
+            ring = null;
+            if (string.IsNullOrWhiteSpace(value) || value.IndexOf('|') < 0 || value.IndexOf('%') >= 0)
+                return false;
+
+            var parts = value.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
+                return false;
+
+            var center = ParseVector(parts[0], Vector3.zero);
+            var sizes = ParseFloatList(parts[1]);
+            var speeds = parts.Length > 2 ? ParseFloatList(parts[2]) : Array.Empty<float>();
+            if (sizes.Length == 0)
+                return false;
+
+            ring = new RingProfile
+            {
+                Name = "Default",
+                Rarity = 100f,
+                Center = center,
+                Sizes = sizes,
+                Speeds = speeds
+            };
+            return true;
         }
     }
 

@@ -245,11 +245,39 @@ namespace TabgInstaller.MatchCore
         {
             var profile = SelectedRing();
             if (ring == null || profile == null) return;
+            var settings = MatchCorePlugin.Settings;
 
             if (profile.Sizes != null && profile.Sizes.Length > 0)
                 ring.ringSizes = profile.Sizes;
             if (profile.Speeds != null && profile.Speeds.Length > 0)
                 ring.ringSpeeds = profile.Speeds;
+            if (settings != null && settings.RingBaseTime > 0f)
+                ring.SetBaseTime(settings.RingBaseTime);
+
+            MatchCorePlugin.LoggerSafe(
+                "Applied ring profile " + profile.Name +
+                " center=" + FormatVector(profile.Center) +
+                " sizes=" + (profile.Sizes?.Length ?? 0) +
+                " speeds=" + (profile.Speeds?.Length ?? 0) +
+                " baseTime=" + ring.RingBaseTime.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + ".");
+        }
+
+        public static void ClampRingWait(TheRing ring)
+        {
+            var settings = MatchCorePlugin.Settings;
+            if (ring == null || settings == null || settings.MaxRingWaitSeconds <= 0f)
+                return;
+
+            float oldWait = ring.timeBetweenRings;
+            float newWait = Mathf.Min(oldWait, settings.MaxRingWaitSeconds);
+            if (newWait >= oldWait - 0.1f)
+                return;
+
+            ring.timeBetweenRings = newWait;
+            MatchCorePlugin.LoggerSafe(
+                "Clamped ring wait for ring " + ring.currentRingID +
+                " from " + oldWait.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                "s to " + newWait.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "s.");
         }
 
         public static bool TryOverrideRingPosition(TheRing ring, float newCircleSize)
@@ -367,6 +395,13 @@ namespace TabgInstaller.MatchCore
             var highest = room.CurrentGameKills.GetHighestKillingTeam();
             var team = room.CurrentGameStats.GetTeam(highest.Key);
             return team ?? room.CurrentGameStats.GetWinningTeam();
+        }
+
+        private static string FormatVector(Vector3 value)
+        {
+            return "(" + value.x.ToString("0", System.Globalization.CultureInfo.InvariantCulture) +
+                "," + value.y.ToString("0", System.Globalization.CultureInfo.InvariantCulture) +
+                "," + value.z.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + ")";
         }
 
         private static void TickServerRingDamage(GameRoom room, MatchCoreConfig settings)

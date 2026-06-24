@@ -318,6 +318,21 @@ namespace TabgInstaller.FakePlayers
                 LooksLikeTrackedFakePlayer(player);
         }
 
+        internal static bool IsTrackedAiPlayer(GameRoom room, byte playerIndex)
+        {
+            if (room == null || !AiIndices.Contains(playerIndex))
+                return false;
+
+            return LooksLikeTrackedFakePlayer(room.FindPlayer(playerIndex));
+        }
+
+        internal static bool IsTrackedAiPlayer(TABGPlayerServer player)
+        {
+            return player != null &&
+                AiIndices.Contains(player.PlayerIndex) &&
+                LooksLikeTrackedFakePlayer(player);
+        }
+
         private static bool LooksLikeTrackedFakePlayer(TABGPlayerServer player)
         {
             if (player == null || !player.Bot)
@@ -556,11 +571,13 @@ namespace TabgInstaller.FakePlayers
         internal static void BroadcastFire(ServerClient server, TABGPlayerServer player, Vector3 target)
         {
             ServerMessages.SendFire(server, player, target, FiringMode.Semi);
+            RecordGunshot(player, FiringMode.Semi);
         }
 
         internal static void BroadcastFullAutoStart(ServerClient server, TABGPlayerServer player, Vector3 target)
         {
             ServerMessages.SendFire(server, player, target, FiringMode.FullAutoStart);
+            RecordGunshot(player, FiringMode.FullAutoStart);
         }
 
         internal static void BroadcastFullAutoStop(ServerClient server, TABGPlayerServer player, int bulletsFired)
@@ -593,27 +610,70 @@ namespace TabgInstaller.FakePlayers
 
         internal static void ApplyDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target, float damage)
         {
-            if (target == null || attacker == null || target.IsDead || target.IsDowned)
+            if (server == null || !IsCombatTargetAlive(attacker) || !IsCombatTargetAlive(target))
+                return;
+
+            damage = Mathf.Max(0f, damage);
+            if (damage <= 0f)
                 return;
 
             float newHealth = Mathf.Max(0f, target.Health - damage);
+            if (newHealth <= 0f)
+            {
+                ApplyLethalDamage(server, attacker, target);
+                return;
+            }
+
             byte[] damageCommand = ServerMessages.MakeDamageCommand(attacker, target, newHealth);
 
             // Server-side fake attackers are not real chunk watchers, so report through the victim path.
             PlayerDamageCommand.Run(damageCommand, server, target.PlayerIndex);
         }
 
+        internal static bool IsCombatTargetAlive(TABGPlayerServer player)
+        {
+            return player != null &&
+                !player.IsDead &&
+                !player.IsDowned &&
+                player.Health > 0f &&
+                player.HasDropped;
+        }
+
+        private static void ApplyLethalDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target)
+        {
+            GameRoom room = server?.GameRoomReference;
+            if (room?.CurrentGameMode == null || attacker == null || target == null || target.IsDead)
+                return;
+
+            try
+            {
+                target.UpdateLastAttacker(attacker.PlayerIndex);
+                target.UpdateHealth(0f);
+                room.CurrentGameMode.KillPlayer(target, attacker);
+                room.CheckGameState();
+                Log($"AI dummy {attacker.PlayerName} killed {target.PlayerName}.");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying lethal AI damage to {target.PlayerName}: {ex.Message}");
+            }
+        }
+
         internal static void ApplyDirectDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target, float damage)
         {
-            if (server == null || attacker == null || target == null || target.IsDead || target.IsDowned)
+            if (server == null || !IsCombatTargetAlive(attacker) || !IsCombatTargetAlive(target))
+                return;
+
+            damage = Mathf.Max(0f, damage);
+            if (damage <= 0f)
                 return;
 
             target.UpdateLastAttacker(attacker.PlayerIndex);
-            target.TakeDamage(Mathf.Max(0f, damage));
+            target.TakeDamage(damage);
             ServerMessages.SendDirectDamage(server, attacker, target);
 
-            if (target.Health <= 0f && !target.IsDead)
-                server.KillPlayer(target);
+            if (target.Health <= 0f)
+                ApplyLethalDamage(server, attacker, target);
         }
 
         private static void BroadcastLeave(ServerClient server, byte playerIndex)
@@ -703,7 +763,13 @@ namespace TabgInstaller.FakePlayers
 
         internal static void RecordGunshot(TABGPlayerServer shooter, FiringMode mode)
         {
-            if (shooter == null || shooter.Bot || IsTrackedFakePlayer(shooter))
+            if (shooter == null)
+                return;
+
+            bool trackedAi = IsTrackedAiPlayer(shooter);
+            if (shooter.Bot && !trackedAi)
+                return;
+            if (IsTrackedFakePlayer(shooter) && !trackedAi)
                 return;
 
             FiringMode audibleModes = FiringMode.Semi | FiringMode.Burst | FiringMode.FullAutoStart;

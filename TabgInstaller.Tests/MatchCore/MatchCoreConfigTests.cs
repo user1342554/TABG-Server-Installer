@@ -64,6 +64,48 @@ namespace TabgInstaller.Tests.MatchCore
             cfg.Rings[0].Speeds.Should().Equal(12f, 6f, 3f);
         }
 
+        [Fact]
+        public void Parse_RingSettings_ReadsLegacyPipeFormat()
+        {
+            var cfg = MatchCoreConfig.Parse(new[]
+            {
+                "RingSettings=0,160,0|4240,3450,1710|25,3,1.5"
+            });
+
+            cfg.Rings.Should().ContainSingle();
+            cfg.Rings[0].Center.Should().Be(new UnityEngine.Vector3(0f, 160f, 0f));
+            cfg.Rings[0].Sizes.Should().Equal(4240f, 3450f, 1710f);
+            cfg.Rings[0].Speeds.Should().Equal(25f, 3f, 1.5f);
+        }
+
+        [Fact]
+        public void Parse_MalformedRingSettings_DoesNotEraseExistingRing()
+        {
+            var cfg = MatchCoreConfig.Parse(new[]
+            {
+                "RingLocation=0,160,0",
+                "RingSizes=4240,3450,1710",
+                "RingSettings=broken"
+            });
+
+            cfg.Rings.Should().ContainSingle();
+            cfg.Rings[0].Center.Should().Be(new UnityEngine.Vector3(0f, 160f, 0f));
+            cfg.Rings[0].Sizes.Should().Equal(4240f, 3450f, 1710f);
+        }
+
+        [Fact]
+        public void Parse_RingTimingSettings_ClampsToNonNegativeValues()
+        {
+            var cfg = MatchCoreConfig.Parse(new[]
+            {
+                "RingBaseTime=-90",
+                "MaxRingWaitSeconds=25"
+            });
+
+            cfg.RingBaseTime.Should().Be(0f);
+            cfg.MaxRingWaitSeconds.Should().Be(25f);
+        }
+
         [Theory]
         [InlineData("Debug")]
         [InlineData("Endless")]

@@ -24,6 +24,21 @@ namespace TabgInstaller.FakePlayers
             Dropping
         }
 
+        private enum AiAction
+        {
+            None,
+            Fight,
+            Reload,
+            TakeCover,
+            Push,
+            RunToRing,
+            LootWeapon,
+            LootAmmo,
+            Heal,
+            SearchLastSeen,
+            Flee
+        }
+
         private enum HitZone
         {
             Limb,
@@ -31,14 +46,60 @@ namespace TabgInstaller.FakePlayers
             Head
         }
 
+        private struct UtilityOption
+        {
+            public AiAction Action;
+            public AiState State;
+            public float Score;
+            public string Reason;
+
+            public UtilityOption(AiAction action, AiState state, float score, string reason)
+            {
+                Action = action;
+                State = state;
+                Score = score;
+                Reason = reason;
+            }
+        }
+
+        private struct RingContext
+        {
+            public bool HasRing;
+            public Vector3 Center;
+            public float Radius;
+            public float Distance;
+            public float Fraction;
+            public float Danger;
+            public bool IsMoving;
+            public bool IsClosing;
+            public bool IsLateGame;
+            public bool ShouldRotate;
+        }
+
         private const float PlayableMinX = -900f;
         private const float PlayableMaxX = 850f;
         private const float PlayableMinZ = -850f;
         private const float PlayableMaxZ = 750f;
         private const float MaxFairGunDamageRange = 58f;
+        private const float MaxPendingShotAge = 0.22f;
         private const float MaxPendingShotTargetDrift = 2.6f;
+        private const float MeleeStartRange = 1.8f;
+        private const float MeleeHitRange = 1.45f;
+        private const float MeleeAimAngle = 42f;
         private const float RingUnsafeRadiusFraction = 1.03f;
         private const float RingDestinationRadiusFraction = 0.82f;
+        private const float RingEarlyRotateFraction = 0.68f;
+        private const float RingHardRotateFraction = 0.86f;
+        private const float LateGameRingRadius = 95f;
+        private const float UtilitySwitchMargin = 9f;
+        private const float UtilityCurrentActionBonus = 5f;
+        private const float SearchGiveUpSeconds = 7.5f;
+        private const float HealHealthThreshold = 64f;
+        private const float HealCriticalThreshold = 42f;
+        private const float RepositionAfterShotsDistance = 4.5f;
+        private const float BlockedLootCooldownSeconds = 24f;
+        private const float EmergencyLootSearchRange = 2600f;
+        private const int MaxBlockedLootEntries = 40;
 
         private struct GroundProbe
         {
@@ -55,14 +116,16 @@ namespace TabgInstaller.FakePlayers
             public Vector3 AimPoint;
             public Vector3 TargetPosition;
             public float MaxRange;
+            public float FireTime;
             public float Timer;
 
-            public PendingShot(TABGPlayerServer target, Vector3 aimPoint, Vector3 targetPosition, float maxRange, float timer)
+            public PendingShot(TABGPlayerServer target, Vector3 aimPoint, Vector3 targetPosition, float maxRange, float fireTime, float timer)
             {
                 Target = target;
                 AimPoint = aimPoint;
                 TargetPosition = targetPosition;
                 MaxRange = maxRange;
+                FireTime = fireTime;
                 Timer = timer;
             }
         }
@@ -141,6 +204,10 @@ namespace TabgInstaller.FakePlayers
         private float _reactionDelayTimer;
         private float _targetStickinessTimer;
         private float _reloadTimer;
+        private float _healTimer;
+        private float _peekDelayTimer;
+        private float _postShotRepositionTimer;
+        private float _searchGiveUpTimer;
         private float _fireAnimationTimer;
         private float _burstShotTimer;
         private float _poiTimer;
@@ -148,9 +215,15 @@ namespace TabgInstaller.FakePlayers
         private float _physicalHookRetryTimer;
         private float _lastLootDistance = float.MaxValue;
         private float _bestPlaneDropDistance = float.MaxValue;
+        private float _lastRingDanger;
+        private float _currentUtilityScore;
         private Vector3 _pendingGrenadePosition;
+        private Vector3 _lastFirePosition;
         private string _lastTargetName;
         private string _lastPhysicalHookLog;
+        private string _stateReason = "warmup";
+        private string _topUtilityScores = "none";
+        private string _wantedLootKind = "none";
         private int _lastLootIndex = int.MinValue;
         private int _equippedWeaponId = -1;
         private int _equippedWeaponScore;
@@ -162,6 +235,8 @@ namespace TabgInstaller.FakePlayers
         private int _healingItemId = -1;
         private int _healingItemCount;
         private int _autoBulletsFired;
+        private int _sameFireSpotShots;
+        private int _searchSweepIndex;
         private int _lastGunshotSequence;
         private int _skillLevel = 1;
         private int _pathCornerIndex = 1;
@@ -176,14 +251,19 @@ namespace TabgInstaller.FakePlayers
         private bool _navMeshDisabled;
         private bool _isFullAutoFiring;
         private bool _isReloading;
+        private bool _isHealing;
         private bool _hasPoiTarget;
         private bool _dropStarted;
         private bool _dropFinished;
+        private AiAction _currentAction = AiAction.None;
+        private AiAction _lastLoggedAction = AiAction.None;
         private NavMeshPath _navPath;
         private WeaponProfile _weaponProfile;
         private static readonly Dictionary<int, byte> LootClaims = new Dictionary<int, byte>();
         private readonly List<PendingShot> _pendingShots = new List<PendingShot>();
         private readonly Dictionary<byte, Vector3> _lastSoundPositions = new Dictionary<byte, Vector3>();
+        private readonly Dictionary<int, float> _blockedLootUntil = new Dictionary<int, float>();
+        private readonly List<int> _blockedLootScratch = new List<int>();
 
         public void Init(ServerClient server, TABGPlayerServer player, int skillLevel = 1)
         {
@@ -252,6 +332,10 @@ namespace TabgInstaller.FakePlayers
             _reactionDelayTimer -= dt;
             _targetStickinessTimer -= dt;
             _reloadTimer -= dt;
+            _healTimer -= dt;
+            _peekDelayTimer -= dt;
+            _postShotRepositionTimer -= dt;
+            _searchGiveUpTimer -= dt;
             _fireAnimationTimer -= dt;
             _burstShotTimer -= dt;
             _poiTimer -= dt;
@@ -305,11 +389,11 @@ namespace TabgInstaller.FakePlayers
             TickSoundAwareness(dt);
             TickLootChoice();
             TickVehicleChoice();
-            TickHealing();
-            TickReload();
-            TickGrenade();
             TickPendingShots(dt);
             DecideState();
+            TickReload();
+            TickHealing(dt);
+            TickGrenade();
 
             Vector3 destination = ChooseDestination();
             _currentDestination = destination;
@@ -318,7 +402,9 @@ namespace TabgInstaller.FakePlayers
 
             TryPickupLoot();
 
-            if (_state == AiState.Fighting && _hasWeapon && _target != null)
+            if ((_state == AiState.Fighting || _state == AiState.Advancing) && ShouldTryMeleeAttack(_target))
+                TryMeleeAttack(_target);
+            else if (_state == AiState.Fighting && _hasWeapon && _target != null)
                 TryShoot(_target);
             else
                 StopFullAuto();
@@ -514,7 +600,7 @@ namespace TabgInstaller.FakePlayers
             return true;
         }
 
-        private Vector3 BuildDropStartNearLanding(Vector3 landing)
+        private static Vector3 BuildDropStartNearLanding(Vector3 landing)
         {
             Vector2 lateral = UnityEngine.Random.insideUnitCircle.normalized;
             if (lateral.sqrMagnitude < 0.01f)
@@ -620,22 +706,32 @@ namespace TabgInstaller.FakePlayers
                 return;
 
             FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} gave up on blocked loot {_wantedLoot.WeaponName}.");
+            MarkLootTemporarilyBlocked(_wantedLoot);
             ReleaseLootClaim();
             _wantedLoot = null;
-            _lootTimer = 0f;
+            _lootTimer = 0.35f;
             _lootProgressTimer = 0f;
             PickNewWanderTarget();
         }
 
         private void TickTargeting()
         {
+            if (_searchGiveUpTimer <= 0f && _state == AiState.Searching && !_canSeeTarget)
+            {
+                _hasThreatMemory = false;
+                _hasLastSeenTarget = false;
+                _threatTarget = null;
+                _target = null;
+                _targetStickinessTimer = 0f;
+            }
+
             if (_threatMemoryTimer <= 0f && _lastSeenTimer <= 0f)
             {
                 _hasThreatMemory = false;
                 _threatTarget = null;
             }
 
-            if (_retargetTimer <= 0f || _target == null || _target.IsDead || _target.IsDowned)
+            if (_retargetTimer <= 0f || !IsValidEnemyTarget(_target))
             {
                 TABGPlayerServer previous = _target;
                 TABGPlayerServer next = FindTarget();
@@ -745,11 +841,11 @@ namespace TabgInstaller.FakePlayers
                     continue;
 
                 newestSequence = Mathf.Max(newestSequence, sound.Sequence);
-                if (sound.ShooterIndex == _player.PlayerIndex || FakePlayersPlugin.IsTrackedFakePlayer(_room, sound.ShooterIndex))
+                if (sound.ShooterIndex == _player.PlayerIndex)
                     continue;
 
                 TABGPlayerServer shooter = _room.FindPlayer(sound.ShooterIndex);
-                if (shooter == null || shooter.Bot || shooter.IsDead || shooter.IsDowned)
+                if (!IsValidEnemyTarget(shooter))
                     continue;
 
                 float distance = Flat(sound.Position - _player.PlayerPosition).magnitude;
@@ -777,7 +873,7 @@ namespace TabgInstaller.FakePlayers
             for (int i = 0; i < _room.Players.Count; i++)
             {
                 TABGPlayerServer candidate = _room.Players[i];
-                if (candidate == null || candidate == _player || candidate.Bot || candidate.IsDead || candidate.IsDowned)
+                if (!IsValidEnemyTarget(candidate))
                     continue;
 
                 Vector3 previous;
@@ -807,7 +903,7 @@ namespace TabgInstaller.FakePlayers
 
         private void RememberThreat(TABGPlayerServer target, Vector3 position, float seconds, bool suppressLoot)
         {
-            if (target == null || target.IsDead || target.IsDowned)
+            if (!IsValidEnemyTarget(target))
                 return;
 
             _target = target;
@@ -821,12 +917,18 @@ namespace TabgInstaller.FakePlayers
             _targetStickinessTimer = Mathf.Max(_targetStickinessTimer, TargetStickinessSeconds);
             _hasPoiTarget = false;
             _searchRepathTimer = 0f;
+            _searchGiveUpTimer = Mathf.Max(_searchGiveUpTimer, SearchGiveUpSeconds);
+            _searchSweepIndex = 0;
 
+            float threatDistance = Flat(_lastKnownThreatPosition - _player.PlayerPosition).magnitude;
+            bool unarmed = !HasUsableWeapon();
             if (!suppressLoot)
+                return;
+            if (unarmed && threatDistance > UnarmedDangerRange)
                 return;
 
             _lootThreatSuppressionTimer = Mathf.Max(_lootThreatSuppressionTimer, LootThreatSuppressionSeconds);
-            if (!HasUsableWeapon())
+            if (unarmed)
                 _unarmedPanicTimer = Mathf.Max(_unarmedPanicTimer, UnarmedPanicSeconds);
         }
 
@@ -970,16 +1072,45 @@ namespace TabgInstaller.FakePlayers
             ThrowGrenadeAt(_target);
         }
 
-        private void TickHealing()
+        private void TickHealing(float dt)
         {
-            if (_healingItemCount <= 0 || _healingItemId < 0 || _player.Health >= 62f)
+            if (_isHealing)
+            {
+                StopFullAuto();
+                if (_target != null && _canSeeTarget && !HasCoverFromTarget(_player.PlayerPosition))
+                {
+                    _isHealing = false;
+                    _healTimer = 0f;
+                    return;
+                }
+
+                if (_healTimer > 0f)
+                    return;
+
+                _isHealing = false;
+                if (_healingItemCount <= 0 || _healingItemId < 0 || _player.Health >= HealHealthThreshold)
+                    return;
+
+                _healingItemCount--;
+                _player.RemoveLoot(_healingItemId, 1);
+                float healed = Mathf.Lerp(18f, 32f, GetSkillT());
+                if (_player.Health <= HealCriticalThreshold)
+                    healed += 8f;
+                float newHealth = Mathf.Min(100f, _player.Health + healed);
+                FakePlayersPlugin.ApplyHeal(_server, _player, newHealth);
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} used healing item; health {newHealth:0}.");
+                return;
+            }
+
+            if (_currentAction != AiAction.Heal || _healingItemCount <= 0 || _healingItemId < 0 || _player.Health >= HealHealthThreshold)
                 return;
 
-            _healingItemCount--;
-            _player.RemoveLoot(_healingItemId, 1);
-            float newHealth = Mathf.Min(100f, _player.Health + Mathf.Lerp(18f, 32f, GetSkillT()));
-            FakePlayersPlugin.ApplyHeal(_server, _player, newHealth);
-            FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} used healing item; health {newHealth:0}.");
+            if (_target != null && _canSeeTarget && !HasCoverFromTarget(_player.PlayerPosition))
+                return;
+
+            StopFullAuto();
+            _isHealing = true;
+            _healTimer = Mathf.Lerp(1.55f, 0.85f, GetSkillT());
         }
 
         private void ThrowGrenadeAt(TABGPlayerServer target)
@@ -1005,7 +1136,7 @@ namespace TabgInstaller.FakePlayers
             for (int i = 0; i < _room.Players.Count; i++)
             {
                 TABGPlayerServer candidate = _room.Players[i];
-                if (candidate == null || candidate == _player || candidate.Bot || candidate.IsDead || candidate.IsDowned)
+                if (!IsValidEnemyTarget(candidate))
                     continue;
 
                 float distance = Flat(candidate.PlayerPosition - _pendingGrenadePosition).magnitude;
@@ -1027,62 +1158,571 @@ namespace TabgInstaller.FakePlayers
             if (_decisionTimer > 0f)
                 return;
 
+            UtilityOption next = SelectUtilityAction();
+            _currentAction = next.Action;
+            _currentUtilityScore = next.Score;
+            _stateReason = next.Reason;
+            SetState(next.State, GetActionMinimumTime(next.Action));
+            if (_lastLoggedAction != next.Action)
+            {
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} action: {next.Action} ({next.Reason}); top={_topUtilityScores}.");
+                _lastLoggedAction = next.Action;
+            }
+
+            _decisionTimer = 0.25f;
+        }
+
+        private UtilityOption SelectUtilityAction()
+        {
+            List<UtilityOption> options = BuildUtilityOptions();
+            if (options.Count == 0)
+                return new UtilityOption(AiAction.SearchLastSeen, AiState.Wandering, 0f, "no-options");
+
+            options.Sort((a, b) => b.Score.CompareTo(a.Score));
+            _topUtilityScores = FormatTopUtilityScores(options);
+
+            UtilityOption best = options[0];
+            UtilityOption current;
+            if (_currentAction != AiAction.None && TryFindUtilityOption(options, _currentAction, out current))
+            {
+                float currentScore = current.Score + UtilityCurrentActionBonus;
+                bool currentStillRelevant = current.Score > 4f && _stateTimer > 0f;
+                if (currentStillRelevant && best.Action != _currentAction && best.Score < currentScore + UtilitySwitchMargin)
+                {
+                    current.Score = currentScore;
+                    current.Reason += ", hysteresis";
+                    return current;
+                }
+            }
+
+            return best;
+        }
+
+        private List<UtilityOption> BuildUtilityOptions()
+        {
+            var options = new List<UtilityOption>(10);
             bool hasLoot = _wantedLoot != null && _room.Weapons.Contains(_wantedLoot);
             bool hasThreat = HasActiveThreatMemory();
             bool hasVisibleTarget = _target != null && _canSeeTarget;
             bool hasUsableWeapon = HasUsableWeapon();
-            AiState next;
-            if (ShouldRetreat())
+            bool hasCombatWeapon = HasCombatWeapon();
+            bool needsReload = hasCombatWeapon && _magazineAmmo <= 0 && _reserveAmmo > 0;
+            bool needsAmmo = NeedsAmmo();
+            bool canRiskLoot = CanRiskUnarmedLoot(hasLoot);
+            Vector3 threatPosition;
+            bool hasThreatPosition = TryGetThreatPosition(out threatPosition);
+            float threatDistance = hasThreatPosition ? Flat(threatPosition - _player.PlayerPosition).magnitude : float.MaxValue;
+            float targetDistance = _target != null ? Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude : threatDistance;
+            bool hasShot = hasVisibleTarget && _target != null && HasShotLine(_target);
+            RingContext ring = GetRingContext();
+            _lastRingDanger = ring.Danger;
+
+            Pickup lootPickup = hasLoot ? GetPickup(_wantedLoot) : null;
+            Pickup.WeaponType lootType = lootPickup != null ? lootPickup.weaponType : Pickup.WeaponType.OtherConsumable;
+            _wantedLootKind = hasLoot ? GetLootDebugKind(_wantedLoot, lootPickup) : "none";
+
+            float fightScore = ScoreFight(hasVisibleTarget, hasUsableWeapon, needsReload, targetDistance, hasShot, ring, threatPosition);
+            options.Add(new UtilityOption(AiAction.Fight, AiState.Fighting, fightScore, GetFightReason(targetDistance, hasShot)));
+
+            float reloadScore = ScoreReload(needsReload, hasThreat, hasVisibleTarget, ring);
+            options.Add(new UtilityOption(AiAction.Reload, AiState.Evading, reloadScore, needsReload ? "empty mag, reserve ammo" : "no reload needed"));
+
+            float coverScore = ScoreTakeCover(hasThreat, hasVisibleTarget, hasShot, threatDistance, needsReload, ring);
+            options.Add(new UtilityOption(AiAction.TakeCover, AiState.Evading, coverScore, GetCoverReason(hasVisibleTarget, hasShot, needsReload)));
+
+            float pushScore = ScorePush(hasVisibleTarget, hasThreatPosition, hasUsableWeapon, targetDistance, ring, threatPosition);
+            options.Add(new UtilityOption(AiAction.Push, targetDistance <= GetDamageRange() ? AiState.Fighting : AiState.Advancing, pushScore, GetPushReason(targetDistance)));
+
+            float ringScore = ScoreRunToRing(ring, hasVisibleTarget, threatPosition);
+            options.Add(new UtilityOption(AiAction.RunToRing, AiState.Scavenging, ringScore, GetRingReason(ring)));
+
+            float lootWeaponScore = ScoreLootAction(hasLoot, lootType, Pickup.WeaponType.Weapon, hasThreat, hasVisibleTarget, needsAmmo, ring, canRiskLoot);
+            options.Add(new UtilityOption(AiAction.LootWeapon, hasUsableWeapon ? AiState.Scavenging : AiState.Looting, lootWeaponScore, GetLootReason(lootType, Pickup.WeaponType.Weapon)));
+
+            float lootAmmoScore = ScoreLootAction(hasLoot, lootType, Pickup.WeaponType.Ammo, hasThreat, hasVisibleTarget, needsAmmo, ring, canRiskLoot);
+            options.Add(new UtilityOption(AiAction.LootAmmo, AiState.Scavenging, lootAmmoScore, GetLootReason(lootType, Pickup.WeaponType.Ammo)));
+
+            bool wantedHealthLoot = hasLoot && lootType == Pickup.WeaponType.Health && ScoreLootValue(_wantedLoot, lootPickup) > 0f;
+            float healScore = ScoreHeal(hasThreat, hasVisibleTarget, ring, wantedHealthLoot);
+            options.Add(new UtilityOption(AiAction.Heal, wantedHealthLoot ? AiState.Scavenging : (hasThreat ? AiState.Evading : AiState.Wandering), healScore, GetHealReason(hasVisibleTarget, wantedHealthLoot)));
+
+            float searchScore = ScoreSearchLastSeen(hasThreat, hasVisibleTarget, hasUsableWeapon, ring);
+            options.Add(new UtilityOption(AiAction.SearchLastSeen, hasThreat ? AiState.Searching : (_hasPoiTarget ? AiState.Scavenging : AiState.Wandering), searchScore, GetSearchReason(hasThreat)));
+
+            float fleeScore = ScoreFlee(hasThreat, hasThreatPosition, hasUsableWeapon, threatDistance, ring, hasLoot, canRiskLoot);
+            options.Add(new UtilityOption(AiAction.Flee, AiState.Evading, fleeScore, GetFleeReason(threatDistance)));
+
+            return options;
+        }
+
+        private float ScoreFight(bool hasVisibleTarget, bool hasUsableWeapon, bool needsReload, float targetDistance, bool hasShot, RingContext ring, Vector3 threatPosition)
+        {
+            bool canMelee = !hasUsableWeapon && targetDistance <= MeleeStartRange;
+            if (!hasVisibleTarget || needsReload || _isReloading || _isHealing || (!hasUsableWeapon && !canMelee))
+                return 0f;
+
+            if (!hasUsableWeapon)
             {
-                next = AiState.Evading;
-            }
-            else if (!hasUsableWeapon && hasThreat && !CanRiskUnarmedLoot(hasLoot))
-            {
-                next = AiState.Evading;
-            }
-            else if (hasVisibleTarget && !hasUsableWeapon)
-            {
-                next = AiState.Evading;
-            }
-            else if (hasVisibleTarget && hasUsableWeapon && Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude <= GetDamageRange())
-            {
-                next = AiState.Fighting;
-            }
-            else if (hasVisibleTarget && hasUsableWeapon)
-            {
-                next = AiState.Advancing;
-            }
-            else if (hasThreat && hasUsableWeapon)
-            {
-                next = AiState.Searching;
-            }
-            else if (NeedsAmmo() && hasLoot)
-            {
-                next = AiState.Scavenging;
-            }
-            else if (!hasUsableWeapon && hasLoot)
-            {
-                next = AiState.Looting;
-            }
-            else if (hasLoot && (!hasThreat || _lootThreatSuppressionTimer <= 0f))
-            {
-                next = AiState.Scavenging;
-            }
-            else if (hasThreat || _hasLastSeenTarget)
-            {
-                next = hasUsableWeapon ? AiState.Searching : AiState.Evading;
-            }
-            else if (_hasPoiTarget)
-            {
-                next = AiState.Scavenging;
-            }
-            else
-            {
-                next = AiState.Wandering;
+                float meleeFit = Mathf.Clamp01(1f - targetDistance / Mathf.Max(0.1f, MeleeStartRange));
+                float meleeScore = 26f + meleeFit * 28f;
+                if (hasShot)
+                    meleeScore += 10f;
+                if (_player.Health <= LowHealthRetreatThreshold)
+                    meleeScore -= 24f;
+                if (ring.Danger > 0.55f && IsThreatWorseRingSide(ring, threatPosition))
+                    meleeScore -= 20f;
+                return Mathf.Max(0f, meleeScore);
             }
 
-            SetState(next, UnityEngine.Random.Range(0.75f, 1.2f));
-            _decisionTimer = 0.25f;
+            float damageRange = GetDamageRange();
+            if (targetDistance > damageRange + GetWeaponRangeTolerance())
+                return _weaponProfile.CombatClass == WeaponCombatClass.Shotgun || _weaponProfile.CombatClass == WeaponCombatClass.Pistol ? 4f : 16f;
+
+            float score = 38f + GetWeaponRangeFit(targetDistance) * 34f;
+            if (hasShot)
+                score += 15f;
+            else
+                score -= 18f;
+
+            if (_player.Health <= LowHealthRetreatThreshold)
+                score -= Mathf.Lerp(24f, 12f, GetSkillT());
+            if (_peekDelayTimer > 0f)
+                score -= 18f;
+            if (_postShotRepositionTimer > 0f)
+                score -= 20f;
+            if (ring.Danger > 0.55f && IsThreatWorseRingSide(ring, threatPosition))
+                score -= 28f;
+
+            switch (_weaponProfile.CombatClass)
+            {
+                case WeaponCombatClass.Shotgun:
+                    if (targetDistance > _weaponProfile.MaxRange)
+                        score -= 35f;
+                    else if (targetDistance <= _weaponProfile.PreferredRange + 4f)
+                        score += 16f;
+                    break;
+                case WeaponCombatClass.Sniper:
+                    if (targetDistance < GetMinimumFightRange() + 4f)
+                        score -= 45f;
+                    else if (hasShot && _aimSettleTimer <= 0f)
+                        score += 14f;
+                    break;
+                case WeaponCombatClass.Smg:
+                case WeaponCombatClass.AssaultRifle:
+                case WeaponCombatClass.Lmg:
+                    if (targetDistance >= GetMinimumFightRange() && targetDistance <= GetPreferredFightRange() + 12f)
+                        score += 10f;
+                    break;
+                case WeaponCombatClass.Pistol:
+                    if (targetDistance > _weaponProfile.PreferredRange + 8f)
+                        score -= 30f;
+                    break;
+            }
+
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreReload(bool needsReload, bool hasThreat, bool hasVisibleTarget, RingContext ring)
+        {
+            if (!needsReload && !_isReloading)
+                return 0f;
+
+            float score = _isReloading ? 83f : 72f;
+            if (hasThreat)
+                score += 10f;
+            if (hasVisibleTarget && !HasCoverFromTarget(_player.PlayerPosition))
+                score -= 10f;
+            if (ring.Danger > 0.7f)
+                score += 8f;
+            return score;
+        }
+
+        private float ScoreTakeCover(bool hasThreat, bool hasVisibleTarget, bool hasShot, float threatDistance, bool needsReload, RingContext ring)
+        {
+            if (!hasThreat && !hasVisibleTarget && !_isReloading && !_isHealing)
+                return ring.IsLateGame ? 12f : 0f;
+
+            float score = 22f;
+            if (hasVisibleTarget)
+                score += 20f;
+            if (!hasShot && hasVisibleTarget)
+                score += 20f;
+            if (_player.Health <= LowHealthRetreatThreshold)
+                score += 26f;
+            if (needsReload || _isReloading || _isHealing)
+                score += 34f;
+            if (_weaponProfile.CombatClass == WeaponCombatClass.Sniper && threatDistance < GetMinimumFightRange() + 5f)
+                score += 22f;
+            if (ring.IsLateGame)
+                score += 10f;
+            return Mathf.Max(0f, score - ring.Danger * 12f);
+        }
+
+        private float ScorePush(bool hasVisibleTarget, bool hasThreatPosition, bool hasUsableWeapon, float targetDistance, RingContext ring, Vector3 threatPosition)
+        {
+            if ((!hasVisibleTarget && !hasThreatPosition) || _isReloading || _isHealing)
+                return 0f;
+
+            if (ring.Danger > 0.5f && IsThreatWorseRingSide(ring, threatPosition))
+                return 0f;
+
+            if (!hasUsableWeapon)
+                return targetDistance <= MeleeStartRange ? 16f : 0f;
+
+            float score = 0f;
+            switch (_weaponProfile.CombatClass)
+            {
+                case WeaponCombatClass.Shotgun:
+                    if (targetDistance > _weaponProfile.MaxRange + 16f)
+                        score = 8f;
+                    else
+                        score = 48f + Mathf.Clamp(targetDistance - _weaponProfile.PreferredRange, 0f, 22f);
+                    break;
+                case WeaponCombatClass.Smg:
+                    if (targetDistance > GetPreferredFightRange() + 8f && targetDistance <= GetDamageRange())
+                        score = 36f;
+                    break;
+                case WeaponCombatClass.AssaultRifle:
+                case WeaponCombatClass.Lmg:
+                    if (targetDistance > GetPreferredFightRange() + 15f && targetDistance <= GetDamageRange())
+                        score = 24f;
+                    break;
+            }
+
+            if (_player.Health <= LowHealthRetreatThreshold)
+                score -= 22f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreRunToRing(RingContext ring, bool hasVisibleTarget, Vector3 threatPosition)
+        {
+            if (!ring.HasRing)
+                return 0f;
+            if (!ring.ShouldRotate)
+                return 0f;
+
+            float score = ring.Danger * 72f;
+            if (ring.ShouldRotate)
+                score += 24f;
+            if (ring.IsClosing)
+                score += 14f;
+            if (hasVisibleTarget && IsThreatWorseRingSide(ring, threatPosition))
+                score += 22f;
+            if (ring.IsLateGame && ring.Fraction > 0.56f)
+                score += 10f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreLootAction(
+            bool hasLoot,
+            Pickup.WeaponType lootType,
+            Pickup.WeaponType wantedType,
+            bool hasThreat,
+            bool hasVisibleTarget,
+            bool needsAmmo,
+            RingContext ring,
+            bool canRiskLoot)
+        {
+            if (!hasLoot || lootType != wantedType || _isReloading || _isHealing)
+                return 0f;
+
+            float distance = Flat(_wantedLoot.Position - _player.PlayerPosition).magnitude;
+            float lootValue = ScoreLootValue(_wantedLoot, GetPickup(_wantedLoot));
+            if (lootValue <= 0f)
+                return 0f;
+
+            float score = Mathf.Clamp(lootValue, 0f, 150f) - Mathf.Clamp(distance * 0.18f, 0f, 32f);
+            if (wantedType == Pickup.WeaponType.Weapon && !_hasWeapon)
+                score += 36f;
+            if (wantedType == Pickup.WeaponType.Ammo && needsAmmo)
+                score += 46f;
+            if (hasVisibleTarget)
+                score -= wantedType == Pickup.WeaponType.Ammo && needsAmmo ? 18f : 38f;
+            if (hasThreat && !canRiskLoot)
+                score -= 46f;
+            if (ring.Danger > 0.45f)
+                score -= ring.Danger * 46f;
+            if (IsLootClaimedByOther(_wantedLoot.Index))
+                score -= 55f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreHeal(bool hasThreat, bool hasVisibleTarget, RingContext ring, bool wantedHealthLoot)
+        {
+            if ((_healingItemCount <= 0 || _healingItemId < 0) && !wantedHealthLoot)
+                return _isHealing ? 80f : 0f;
+            if (_player.Health >= HealHealthThreshold)
+                return _isHealing ? 80f : 0f;
+
+            bool watched = hasVisibleTarget && !HasCoverFromTarget(_player.PlayerPosition);
+            if (wantedHealthLoot && watched && _player.Health > HealCriticalThreshold)
+                return 0f;
+
+            float missing = 100f - _player.Health;
+            float score = 24f + Mathf.Clamp(missing * 0.82f, 0f, 58f);
+            if (_player.Health <= HealCriticalThreshold)
+                score += 22f;
+            if (wantedHealthLoot)
+                score += _healingItemCount <= 0 ? 34f : 8f;
+            if (_isHealing)
+                score += 30f;
+            if (hasThreat)
+                score += 8f;
+            if (watched)
+                score -= 26f;
+            if (ring.Danger > 0.7f)
+                score -= 10f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreSearchLastSeen(bool hasThreat, bool hasVisibleTarget, bool hasUsableWeapon, RingContext ring)
+        {
+            if (hasVisibleTarget)
+                return 0f;
+
+            if (!hasThreat && !_hasLastSeenTarget)
+                return _hasPoiTarget ? 22f : 10f;
+
+            if (_searchGiveUpTimer <= 0f)
+                return _hasPoiTarget ? 16f : 8f;
+
+            float score = hasUsableWeapon ? 48f : 18f;
+            score += Mathf.Clamp(_searchGiveUpTimer * 2.2f, 0f, 15f);
+            if (ring.Danger > 0.5f)
+                score -= ring.Danger * 35f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreFlee(bool hasThreat, bool hasThreatPosition, bool hasUsableWeapon, float threatDistance, RingContext ring, bool hasLoot, bool canRiskLoot)
+        {
+            if (!hasThreat && !hasThreatPosition)
+                return 0f;
+
+            float score = 0f;
+            if (ShouldRetreat())
+                score += 74f;
+            if (!hasUsableWeapon)
+                score += threatDistance <= UnarmedDangerRange ? 64f : 24f;
+            if (_player.Health <= CriticalHealthRetreatThreshold)
+                score += 42f;
+            else if (_player.Health <= LowHealthRetreatThreshold)
+                score += 18f;
+            if (hasLoot && canRiskLoot)
+                score -= 18f;
+            if (ring.Danger > 0.65f)
+                score -= 14f;
+            return Mathf.Max(0f, score);
+        }
+
+        private static bool TryFindUtilityOption(List<UtilityOption> options, AiAction action, out UtilityOption option)
+        {
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i].Action != action)
+                    continue;
+
+                option = options[i];
+                return true;
+            }
+
+            option = default(UtilityOption);
+            return false;
+        }
+
+        private static string FormatTopUtilityScores(List<UtilityOption> options)
+        {
+            int count = Mathf.Min(3, options.Count);
+            string[] parts = new string[count];
+            for (int i = 0; i < count; i++)
+                parts[i] = string.Format(CultureInfo.InvariantCulture, "{0}:{1:0}", options[i].Action, options[i].Score);
+            return string.Join(", ", parts);
+        }
+
+        private static float GetActionMinimumTime(AiAction action)
+        {
+            switch (action)
+            {
+                case AiAction.Fight:
+                    return UnityEngine.Random.Range(0.45f, 0.85f);
+                case AiAction.Reload:
+                case AiAction.Heal:
+                case AiAction.TakeCover:
+                    return UnityEngine.Random.Range(0.75f, 1.25f);
+                case AiAction.RunToRing:
+                    return UnityEngine.Random.Range(0.95f, 1.55f);
+                case AiAction.SearchLastSeen:
+                    return UnityEngine.Random.Range(0.85f, 1.35f);
+                default:
+                    return UnityEngine.Random.Range(0.65f, 1.15f);
+            }
+        }
+
+        private string GetFightReason(float targetDistance, bool hasShot)
+        {
+            if (_target == null || !_canSeeTarget)
+                return "no visible target";
+            if (!HasUsableWeapon())
+            {
+                float distance = Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude;
+                return distance <= MeleeStartRange
+                    ? string.Format(CultureInfo.InvariantCulture, "fists at {0:0.0}m", distance)
+                    : "no usable weapon";
+            }
+            if (_magazineAmmo <= 0)
+                return "empty magazine";
+            return string.Format(CultureInfo.InvariantCulture, "{0} at {1:0}m, shot={2}", _weaponProfile.CombatClass, targetDistance, hasShot);
+        }
+
+        private string GetCoverReason(bool hasVisibleTarget, bool hasShot, bool needsReload)
+        {
+            if (_isHealing)
+                return "healing behind cover";
+            if (_isReloading || needsReload)
+                return "reload needs line-of-sight break";
+            if (_player.Health <= LowHealthRetreatThreshold)
+                return "low health";
+            if (hasVisibleTarget && !hasShot)
+                return "target sees bot but shot is blocked";
+            return hasVisibleTarget ? "under watch" : "hold safe angle";
+        }
+
+        private string GetPushReason(float targetDistance)
+        {
+            if (_weaponProfile.CombatClass == WeaponCombatClass.Shotgun)
+                return string.Format(CultureInfo.InvariantCulture, "shotgun closes to {0:0}m", GetPreferredFightRange());
+            if (!HasUsableWeapon())
+                return targetDistance <= MeleeStartRange ? "fists only at point blank" : "unarmed push blocked";
+            return string.Format(CultureInfo.InvariantCulture, "{0} pressure at {1:0}m", _weaponProfile.CombatClass, targetDistance);
+        }
+
+        private static string GetRingReason(RingContext ring)
+        {
+            if (!ring.HasRing)
+                return "no ring";
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "ring danger {0:0.00}, fraction {1:0.00}, moving={2}, closing={3}",
+                ring.Danger,
+                ring.Fraction,
+                ring.IsMoving,
+                ring.IsClosing);
+        }
+
+        private string GetLootReason(Pickup.WeaponType lootType, Pickup.WeaponType wantedType)
+        {
+            if (_wantedLoot == null)
+                return "no wanted loot";
+            if (lootType != wantedType)
+                return string.Format(CultureInfo.InvariantCulture, "wanted loot is {0}", lootType);
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1}", wantedType, _wantedLoot.WeaponName);
+        }
+
+        private string GetHealReason(bool hasVisibleTarget, bool wantedHealthLoot)
+        {
+            if (wantedHealthLoot && _wantedLoot != null)
+                return "get health item " + _wantedLoot.WeaponName;
+            if (_healingItemCount <= 0 || _healingItemId < 0)
+                return "no heal item";
+            if (_player.Health >= HealHealthThreshold)
+                return "health ok";
+            return hasVisibleTarget ? "heal after cover" : "safe heal";
+        }
+
+        private string GetSearchReason(bool hasThreat)
+        {
+            if (!hasThreat && !_hasLastSeenTarget)
+                return _hasPoiTarget ? "rotate to poi" : "wander";
+            return string.Format(CultureInfo.InvariantCulture, "last known contact, giveup={0:0.0}s", Mathf.Max(0f, _searchGiveUpTimer));
+        }
+
+        private string GetFleeReason(float threatDistance)
+        {
+            if (!HasUsableWeapon())
+                return string.Format(CultureInfo.InvariantCulture, "unarmed danger at {0:0}m", threatDistance);
+            if (_player.Health <= CriticalHealthRetreatThreshold)
+                return "critical health";
+            return string.Format(CultureInfo.InvariantCulture, "retreat check at {0:0}m", threatDistance);
+        }
+
+        private float GetWeaponRangeFit(float distance)
+        {
+            float min = GetMinimumFightRange();
+            float preferred = Mathf.Max(min + 0.1f, GetPreferredFightRange());
+            float max = Mathf.Max(preferred + 0.1f, GetDamageRange());
+            if (distance < min)
+                return Mathf.Clamp01(distance / min) * 0.55f;
+            if (distance <= preferred)
+                return Mathf.Lerp(0.76f, 1f, Mathf.InverseLerp(min, preferred, distance));
+            return Mathf.Lerp(1f, 0.25f, Mathf.InverseLerp(preferred, max, distance));
+        }
+
+        private RingContext GetRingContext()
+        {
+            RingContext context = new RingContext();
+            Vector3 center;
+            float radius;
+            if (!TryGetRing(out center, out radius))
+                return context;
+
+            context.HasRing = true;
+            context.Center = center;
+            context.Radius = Mathf.Max(1f, radius);
+            context.Distance = Flat(_player.PlayerPosition - center).magnitude;
+            context.Fraction = context.Distance / context.Radius;
+            context.IsLateGame = context.Radius <= LateGameRingRadius;
+
+            TheRing ring = TheRing.Instance;
+            if (ring != null)
+            {
+                context.IsMoving = ring.isMoving;
+                context.IsClosing = ring.isClosing;
+            }
+
+            float danger = 0f;
+            if (context.Fraction > 1f)
+                danger = 1f + Mathf.Clamp01((context.Fraction - 1f) * 1.5f) * 0.35f;
+            else if (context.Fraction > RingHardRotateFraction)
+                danger = Mathf.Lerp(0.62f, 0.95f, Mathf.InverseLerp(RingHardRotateFraction, 1f, context.Fraction));
+            else if (context.Fraction > RingEarlyRotateFraction)
+                danger = Mathf.Lerp(0.24f, 0.58f, Mathf.InverseLerp(RingEarlyRotateFraction, RingHardRotateFraction, context.Fraction));
+            else if (context.IsLateGame && context.Fraction > 0.52f)
+                danger = 0.18f;
+
+            if (context.IsMoving)
+                danger += 0.16f;
+            if (context.IsClosing)
+                danger += 0.2f;
+
+            context.Danger = Mathf.Clamp(danger, 0f, 1.35f);
+            context.ShouldRotate = context.Danger >= 0.34f || context.Fraction >= RingHardRotateFraction || context.IsClosing;
+            return context;
+        }
+
+        private bool IsThreatWorseRingSide(RingContext ring, Vector3 threatPosition)
+        {
+            if (!ring.HasRing || threatPosition == Vector3.zero)
+                return false;
+
+            float ownFraction = Flat(_player.PlayerPosition - ring.Center).magnitude / Mathf.Max(1f, ring.Radius);
+            float threatFraction = Flat(threatPosition - ring.Center).magnitude / Mathf.Max(1f, ring.Radius);
+            return threatFraction > ownFraction + 0.08f || threatFraction > RingHardRotateFraction;
+        }
+
+        private string GetLootDebugKind(NetworkGun loot, Pickup pickup)
+        {
+            if (loot == null)
+                return "none";
+
+            Pickup.WeaponType type = pickup != null ? pickup.weaponType : Pickup.WeaponType.Weapon;
+            if (type != Pickup.WeaponType.Weapon)
+                return type.ToString();
+
+            WeaponProfile profile = GetWeaponProfile(loot.UniqueIdentifier, loot.WeaponName);
+            if (!_hasWeapon)
+                return "weapon:any";
+            if (GetWeaponScore(loot.UniqueIdentifier, loot.WeaponName) > _equippedWeaponScore + 8)
+                return "weapon:upgrade:" + profile.CombatClass;
+            return "weapon:" + profile.CombatClass;
         }
 
         private bool ShouldRetreat()
@@ -1131,7 +1771,7 @@ namespace TabgInstaller.FakePlayers
             Vector3 current = _player.PlayerPosition;
             float threatDistance = Flat(threatPosition - current).magnitude;
             float lootDistance = Flat(_wantedLoot.Position - current).magnitude;
-            if (threatDistance <= UnarmedDangerRange + 14f && lootDistance > 8f)
+            if (threatDistance <= Mathf.Max(3f, UnarmedDangerRange + 1.5f) && lootDistance > 8f)
                 return false;
 
             Vector3 toLoot = Flat(_wantedLoot.Position - current);
@@ -1152,7 +1792,7 @@ namespace TabgInstaller.FakePlayers
 
         private bool TryGetThreatPosition(out Vector3 threatPosition)
         {
-            if (_target != null && !_target.IsDead && !_target.IsDowned && _canSeeTarget)
+            if (IsValidEnemyTarget(_target) && _canSeeTarget)
             {
                 threatPosition = _target.PlayerPosition;
                 return true;
@@ -1166,7 +1806,7 @@ namespace TabgInstaller.FakePlayers
                 return true;
             }
 
-            if (_threatTarget != null && !_threatTarget.IsDead && !_threatTarget.IsDowned)
+            if (IsValidEnemyTarget(_threatTarget))
             {
                 threatPosition = _lastKnownThreatPosition;
                 return true;
@@ -1235,6 +1875,7 @@ namespace TabgInstaller.FakePlayers
             if (_state == next && _stateTimer > 0f)
                 return;
 
+            AiState previous = _state;
             _state = next;
             _stateTimer = minTime;
             if (_lastLoggedState != next)
@@ -1244,7 +1885,11 @@ namespace TabgInstaller.FakePlayers
             }
 
             if (next == AiState.Fighting)
+            {
+                if (previous == AiState.Evading || previous == AiState.Searching)
+                    _peekDelayTimer = UnityEngine.Random.Range(0.28f, Mathf.Lerp(0.85f, 0.45f, GetSkillT()));
                 PickCombatStrafe();
+            }
         }
 
         private void TrackStuck(Vector3 destination)
@@ -1299,8 +1944,33 @@ namespace TabgInstaller.FakePlayers
         private void PickCombatStrafe()
         {
             _combatStrafeSign = UnityEngine.Random.value < 0.5f ? -1f : 1f;
-            _combatStrafeDistance = UnityEngine.Random.Range(2.0f, 4.8f);
-            _combatForwardBias = UnityEngine.Random.Range(0.25f, 1.6f);
+            switch (_weaponProfile.CombatClass)
+            {
+                case WeaponCombatClass.Shotgun:
+                    _combatStrafeDistance = UnityEngine.Random.Range(4.2f, 7.6f);
+                    _combatForwardBias = UnityEngine.Random.Range(1.6f, 3.8f);
+                    break;
+                case WeaponCombatClass.Sniper:
+                case WeaponCombatClass.AutoSniper:
+                    _combatStrafeDistance = UnityEngine.Random.Range(5.0f, 9.0f);
+                    _combatForwardBias = UnityEngine.Random.Range(-2.8f, 0.4f);
+                    break;
+                case WeaponCombatClass.Smg:
+                case WeaponCombatClass.AssaultRifle:
+                case WeaponCombatClass.Lmg:
+                    _combatStrafeDistance = UnityEngine.Random.Range(3.2f, 6.2f);
+                    _combatForwardBias = UnityEngine.Random.Range(-0.4f, 1.1f);
+                    break;
+                case WeaponCombatClass.Pistol:
+                    _combatStrafeDistance = UnityEngine.Random.Range(2.4f, 4.6f);
+                    _combatForwardBias = UnityEngine.Random.Range(-0.8f, 0.7f);
+                    break;
+                default:
+                    _combatStrafeDistance = UnityEngine.Random.Range(2.0f, 4.8f);
+                    _combatForwardBias = UnityEngine.Random.Range(0.25f, 1.6f);
+                    break;
+            }
+
             _combatStrafeTimer = UnityEngine.Random.Range(0.85f, 1.65f);
             if (_state == AiState.Fighting && UnityEngine.Random.value < 0.18f)
                 QueueJump();
@@ -1308,7 +1978,7 @@ namespace TabgInstaller.FakePlayers
 
         private TABGPlayerServer FindTarget()
         {
-            TABGPlayerServer current = _target != null && !_target.IsDead && !_target.IsDowned ? _target : null;
+            TABGPlayerServer current = IsValidEnemyTarget(_target) ? _target : null;
             float currentDistance = current != null ? Flat(current.PlayerPosition - _player.PlayerPosition).magnitude : float.MaxValue;
             bool keepCurrent = current != null &&
                 (_canSeeTarget || _hasLastSeenTarget) &&
@@ -1321,7 +1991,7 @@ namespace TabgInstaller.FakePlayers
             for (int i = 0; i < _room.Players.Count; i++)
             {
                 TABGPlayerServer candidate = _room.Players[i];
-                if (candidate == null || candidate == _player || candidate.Bot || candidate.IsDead || candidate.IsDowned)
+                if (!IsValidEnemyTarget(candidate))
                     continue;
 
                 float distance = (candidate.PlayerPosition - _player.PlayerPosition).sqrMagnitude;
@@ -1350,9 +2020,26 @@ namespace TabgInstaller.FakePlayers
             return best;
         }
 
+        private bool IsValidEnemyTarget(TABGPlayerServer candidate)
+        {
+            if (candidate == null || candidate == _player || !FakePlayersPlugin.IsCombatTargetAlive(candidate))
+                return false;
+
+            return !candidate.Bot || FakePlayersPlugin.IsTrackedAiPlayer(candidate);
+        }
+
         private Vector3 ChooseDestination()
         {
             Vector3 ringDestination;
+            if (_currentAction == AiAction.RunToRing && TryGetRingRotationDestination(out ringDestination))
+            {
+                ReleaseLootClaim();
+                _wantedLoot = null;
+                _wantedCar = null;
+                _hasPoiTarget = false;
+                return ringDestination;
+            }
+
             if (TryGetRingEscapeDestination(out ringDestination))
             {
                 ReleaseLootClaim();
@@ -1360,6 +2047,12 @@ namespace TabgInstaller.FakePlayers
                 _wantedCar = null;
                 _hasPoiTarget = false;
                 return ringDestination;
+            }
+
+            if ((_currentAction == AiAction.Heal && _isHealing && !HasActiveThreatMemory()) ||
+                (_currentAction == AiAction.Reload && _isReloading && !HasActiveThreatMemory()))
+            {
+                return _player.PlayerPosition;
             }
 
             if ((_state == AiState.Looting || _state == AiState.Scavenging) && _wantedLoot != null && _room.Weapons.Contains(_wantedLoot))
@@ -1407,6 +2100,49 @@ namespace TabgInstaller.FakePlayers
                 PickNewWanderTarget();
 
             return _wanderTarget;
+        }
+
+        private bool TryGetRingRotationDestination(out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            RingContext ring = GetRingContext();
+            if (!ring.HasRing || !ring.ShouldRotate)
+                return false;
+
+            Vector3 fromCenter = Flat(_player.PlayerPosition - ring.Center);
+            if (fromCenter.sqrMagnitude < 0.1f)
+            {
+                Vector3 threatPosition;
+                if (TryGetThreatPosition(out threatPosition))
+                    fromCenter = Flat(_player.PlayerPosition - threatPosition);
+            }
+
+            if (fromCenter.sqrMagnitude < 0.1f)
+                fromCenter = UnityEngine.Random.insideUnitSphere;
+            fromCenter = Flat(fromCenter).normalized;
+
+            float targetFraction = ring.IsLateGame ? 0.58f : RingDestinationRadiusFraction;
+            float targetRadius = Mathf.Clamp(ring.Radius * targetFraction, 10f, Mathf.Max(10f, ring.Radius - 8f));
+            float[] angles = { 0f, 18f, -18f, 36f, -36f, 62f, -62f, 100f, -100f };
+            for (int i = 0; i < angles.Length; i++)
+            {
+                Vector3 direction = Quaternion.Euler(0f, angles[i], 0f) * fromCenter;
+                Vector3 candidate = ring.Center + direction * targetRadius;
+                if (TryResolveSafeGround(candidate, out destination))
+                    return true;
+            }
+
+            Vector3 towardCenter = Flat(ring.Center - _player.PlayerPosition);
+            if (towardCenter.sqrMagnitude > 0.1f)
+            {
+                Vector3 candidate = _player.PlayerPosition + towardCenter.normalized * Mathf.Min(40f, Mathf.Max(8f, ring.Distance - targetRadius));
+                if (TryResolveSafeGround(candidate, out destination))
+                    return true;
+            }
+
+            destination = ring.Center;
+            destination.y = _player.PlayerPosition.y;
+            return true;
         }
 
         private bool TryGetRingEscapeDestination(out Vector3 destination)
@@ -1542,40 +2278,42 @@ namespace TabgInstaller.FakePlayers
                 fromThreat = UnityEngine.Random.insideUnitSphere;
             fromThreat = Flat(fromThreat).normalized;
 
-            Vector3 side = Vector3.Cross(Vector3.up, fromThreat);
-            float[] forwardSteps = { 5f, 10f, 15f };
-            float[] sideSteps = { -SearchSweepRadius, -SearchSweepRadius * 0.5f, SearchSweepRadius * 0.5f, SearchSweepRadius };
+            Vector3 side = Vector3.Cross(Vector3.up, fromThreat).normalized;
             Vector3 best = _lastSeenTargetPosition;
             float bestScore = float.MinValue;
 
-            for (int f = 0; f < forwardSteps.Length; f++)
+            for (int i = 0; i < 12; i++)
             {
-                for (int s = 0; s < sideSteps.Length; s++)
-                {
-                    Vector3 candidate = _lastSeenTargetPosition + fromThreat * forwardSteps[f] + side * sideSteps[s];
-                    float groundY;
-                    if (!TryFindGroundY(candidate, out groundY))
-                        continue;
-                    candidate.y = groundY + _terrainHeightOffset;
-                    if (IsBadTerrain(candidate))
-                        continue;
+                int step = _searchSweepIndex + i;
+                float radius = Mathf.Min(SearchSweepRadius * 2.2f, 6f + step * 2.8f);
+                float angle = step * 78f;
+                float sin = Mathf.Sin(angle * Mathf.Deg2Rad);
+                float cos = Mathf.Cos(angle * Mathf.Deg2Rad);
+                Vector3 candidate = _lastSeenTargetPosition + fromThreat * (cos * radius) + side * (sin * radius);
 
-                    Vector3 moveDir = Flat(candidate - current);
-                    if (moveDir.sqrMagnitude < 4f || IsBlocked(current, moveDir.normalized))
-                        continue;
+                float groundY;
+                if (!TryFindGroundY(candidate, out groundY))
+                    continue;
+                candidate.y = groundY + _terrainHeightOffset;
+                if (IsBadTerrain(candidate))
+                    continue;
 
-                    float score = UnityEngine.Random.Range(0f, 8f) - Flat(candidate - current).magnitude * 0.04f;
-                    if (HasLineToPoint(candidate + Vector3.up * 1.0f, allowGround: true))
-                        score += 5f;
-                    if (score <= bestScore)
-                        continue;
+                Vector3 moveDir = Flat(candidate - current);
+                if (moveDir.sqrMagnitude < 4f || IsBlocked(current, moveDir.normalized))
+                    continue;
 
-                    best = candidate;
-                    bestScore = score;
-                }
+                float score = UnityEngine.Random.Range(0f, 8f) - Flat(candidate - current).magnitude * 0.04f;
+                if (HasLineToPoint(candidate + Vector3.up * 1.0f, allowGround: true))
+                    score += 5f;
+                if (score <= bestScore)
+                    continue;
+
+                best = candidate;
+                bestScore = score;
             }
 
             _searchDestination = best;
+            _searchSweepIndex += 3;
             _searchRepathTimer = UnityEngine.Random.Range(SearchRepathInterval, SearchRepathInterval + 0.8f);
         }
 
@@ -1583,6 +2321,12 @@ namespace TabgInstaller.FakePlayers
         {
             if (_target == null)
                 return _player.PlayerPosition;
+
+            if ((_isReloading || _isHealing) && _coverTimer <= 0f && TryFindCoverDestination(out _coverTarget))
+            {
+                _coverTimer = CoverRefreshInterval;
+                return _coverTarget;
+            }
 
             if (_combatStrafeTimer <= 0f)
                 PickCombatStrafe();
@@ -1602,10 +2346,26 @@ namespace TabgInstaller.FakePlayers
             float minRange = GetMinimumFightRange();
             float stableShotRange = Mathf.Max(minRange + 2f, Mathf.Min(GetDamageRange() - 1f, preferredRange + GetWeaponRangeTolerance()));
 
+            if (_postShotRepositionTimer > 0f)
+                return ChoosePostShotRepositionDestination(toward, strafe);
+
             if ((_player.Health <= LowHealthRetreatThreshold || !hasShot) && _coverTimer <= 0f && TryFindCoverDestination(out _coverTarget))
             {
                 _coverTimer = CoverRefreshInterval;
                 return _coverTarget;
+            }
+
+            if (_weaponProfile.CombatClass == WeaponCombatClass.Shotgun && distance > GetDamageRange() + 8f)
+            {
+                if (_coverTimer <= 0f && TryFindCoverDestination(out _coverTarget))
+                {
+                    _coverTimer = CoverRefreshInterval;
+                    return _coverTarget;
+                }
+
+                destination = _player.PlayerPosition - toward * 5f + strafe * _combatStrafeDistance;
+                destination.y = _player.PlayerPosition.y;
+                return destination;
             }
 
             if (hasShot && distance >= minRange + 1f && distance <= stableShotRange)
@@ -1647,6 +2407,27 @@ namespace TabgInstaller.FakePlayers
             return destination;
         }
 
+        private Vector3 ChoosePostShotRepositionDestination(Vector3 toward, Vector3 strafe)
+        {
+            Vector3 away = -toward;
+            Vector3 destination;
+            if (_weaponProfile.CombatClass == WeaponCombatClass.Sniper || _weaponProfile.CombatClass == WeaponCombatClass.AutoSniper)
+                destination = _player.PlayerPosition + strafe * Mathf.Max(7f, _combatStrafeDistance) + away * 4f;
+            else
+                destination = _player.PlayerPosition + strafe * Mathf.Max(4f, _combatStrafeDistance) + away * 2f;
+
+            float groundY;
+            if (TryFindGroundY(destination, out groundY))
+                destination.y = groundY + _terrainHeightOffset;
+            else
+                destination.y = _player.PlayerPosition.y;
+
+            if (!IsBadTerrain(destination) && !IsBlocked(_player.PlayerPosition, Flat(destination - _player.PlayerPosition).normalized))
+                return destination;
+
+            return _player.PlayerPosition + strafe * 4f;
+        }
+
         private void PickNewWanderTarget()
         {
             if (_wantedLoot == null && !HasActiveThreatMemory() && (_target == null || !_canSeeTarget) && PickUsefulPoiTarget())
@@ -1666,7 +2447,9 @@ namespace TabgInstaller.FakePlayers
                 Vector3 currentToCenter = Flat(_player.PlayerPosition - ringCenter);
                 if (currentToCenter.magnitude > ringRadius * 0.5f)
                     center = ringCenter;
-                radius = Mathf.Clamp(ringRadius * 0.35f, 25f, 90f);
+                radius = ringRadius <= LateGameRingRadius
+                    ? Mathf.Clamp(ringRadius * 0.18f, 12f, 28f)
+                    : Mathf.Clamp(ringRadius * 0.35f, 25f, 90f);
             }
 
             for (int i = 0; i < 8; i++)
@@ -1876,6 +2659,9 @@ namespace TabgInstaller.FakePlayers
 
         private Vector3 KeepCombatMovementAggressive(Vector3 current, Vector3 direction)
         {
+            if (_weaponProfile.CombatClass != WeaponCombatClass.Shotgun && _weaponProfile.CombatClass != WeaponCombatClass.Unarmed)
+                return direction;
+
             Vector3 toTarget = Flat(_target.PlayerPosition - current);
             if (toTarget.sqrMagnitude < 0.1f)
                 return direction;
@@ -1973,6 +2759,37 @@ namespace TabgInstaller.FakePlayers
             return null;
         }
 
+        private bool ShouldTryMeleeAttack(TABGPlayerServer target)
+        {
+            if (target == null || _isReloading || _isHealing || HasUsableWeapon())
+                return false;
+
+            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
+            return distance <= MeleeStartRange && _canSeeTarget;
+        }
+
+        private void TryMeleeAttack(TABGPlayerServer target)
+        {
+            if (target == null)
+                return;
+
+            StopFullAuto();
+            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
+            Vector3 aimPoint = target.PlayerPosition + Vector3.up * 1.05f;
+            FacePoint(aimPoint);
+            FakePlayersPlugin.BroadcastPlayerUpdate(_server, _player, _player.PlayerPosition);
+
+            if (_shootTimer > 0f || distance > MeleeHitRange)
+                return;
+            if (!HasLineOfSight(target) || !IsAimingAt(target, MeleeAimAngle))
+                return;
+
+            float damage = Mathf.Lerp(4.5f, 8.5f, GetSkillT());
+            FakePlayersPlugin.ApplyDirectDamage(_server, _player, target, damage);
+            FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} melee hit {target.PlayerName} at {distance:0.0}m for {damage:0.0}.");
+            _shootTimer = Mathf.Lerp(0.95f, 0.62f, GetSkillT());
+        }
+
         private void TryShoot(TABGPlayerServer target)
         {
             if (!HasUsableWeapon())
@@ -1983,7 +2800,7 @@ namespace TabgInstaller.FakePlayers
 
             float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
             float damageRange = GetDamageRange();
-            if (distance > damageRange || _reactionDelayTimer > 0f || _isReloading)
+            if (distance > damageRange || _reactionDelayTimer > 0f || _peekDelayTimer > 0f || _postShotRepositionTimer > 0f || _isReloading || _isHealing)
             {
                 StopFullAuto();
                 return;
@@ -2033,6 +2850,7 @@ namespace TabgInstaller.FakePlayers
             FakePlayersPlugin.BroadcastFire(_server, _player, aimPoint);
             _fireAnimationTimer = FireAnimationWindow;
             QueueShotDamage(target, aimPoint);
+            NoteShotFired();
 
             _shootTimer = GetSemiFireInterval();
         }
@@ -2068,6 +2886,8 @@ namespace TabgInstaller.FakePlayers
                 _autoBulletsFired++;
                 _fireAnimationTimer = Mathf.Max(_fireAnimationTimer, FireAnimationWindow);
                 QueueShotDamage(target, aimPoint);
+                if (_autoBulletsFired == 1 || _autoBulletsFired % 6 == 0)
+                    NoteShotFired();
                 _autoDamageTimer = Mathf.Max(0.045f, _weaponProfile.FireInterval);
             }
 
@@ -2114,6 +2934,7 @@ namespace TabgInstaller.FakePlayers
             FakePlayersPlugin.BroadcastFire(_server, _player, aimPoint);
             _fireAnimationTimer = FireAnimationWindow;
             QueueShotDamage(target, aimPoint);
+            NoteShotFired();
 
             _burstShotsRemaining--;
             if (_burstShotsRemaining > 0 && _magazineAmmo > 0)
@@ -2134,7 +2955,30 @@ namespace TabgInstaller.FakePlayers
                 return;
 
             float maxRange = Mathf.Min(GetDamageRange(), MaxFairGunDamageRange);
-            _pendingShots.Add(new PendingShot(target, aimPoint, target.PlayerPosition, maxRange, ShotDamageDelay));
+            _pendingShots.Add(new PendingShot(target, aimPoint, target.PlayerPosition, maxRange, Time.unscaledTime, ShotDamageDelay));
+        }
+
+        private void NoteShotFired()
+        {
+            Vector3 current = _player.PlayerPosition;
+            if (_lastFirePosition == Vector3.zero || Flat(current - _lastFirePosition).magnitude > RepositionAfterShotsDistance)
+            {
+                _lastFirePosition = current;
+                _sameFireSpotShots = 1;
+            }
+            else
+            {
+                _sameFireSpotShots++;
+            }
+
+            bool sniper = _weaponProfile.CombatClass == WeaponCombatClass.Sniper || _weaponProfile.CombatClass == WeaponCombatClass.AutoSniper;
+            int shotLimit = sniper ? 1 : (_weaponProfile.FirePlan == FirePlan.FullAuto ? 8 : 5);
+            if (_sameFireSpotShots < shotLimit)
+                return;
+
+            _postShotRepositionTimer = sniper ? UnityEngine.Random.Range(1.2f, 2.0f) : UnityEngine.Random.Range(0.8f, 1.35f);
+            _sameFireSpotShots = 0;
+            PickCombatStrafe();
         }
 
         private void TickPendingShots(float dt)
@@ -2149,7 +2993,7 @@ namespace TabgInstaller.FakePlayers
                     continue;
                 }
 
-                if (shot.Target != null && !shot.Target.IsDead && !shot.Target.IsDowned)
+                if (FakePlayersPlugin.IsCombatTargetAlive(shot.Target))
                 {
                     float damage;
                     if (TryResolveShotDamage(shot, out damage))
@@ -2162,6 +3006,9 @@ namespace TabgInstaller.FakePlayers
 
         private void TickReload()
         {
+            if (!_isReloading && _currentAction == AiAction.Reload && HasCombatWeapon() && _magazineAmmo <= 0 && _reserveAmmo > 0)
+                StartReload();
+
             if (!_isReloading)
                 return;
 
@@ -2214,6 +3061,8 @@ namespace TabgInstaller.FakePlayers
             TABGPlayerServer target = shot.Target;
             Vector3 aimPoint = shot.AimPoint;
             if ((_fireAnimationTimer <= 0f && !_isFullAutoFiring) || target == null)
+                return false;
+            if (Time.unscaledTime - shot.FireTime > MaxPendingShotAge)
                 return false;
 
             float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
@@ -2375,17 +3224,30 @@ namespace TabgInstaller.FakePlayers
 
         private NetworkGun FindLoot()
         {
-            NetworkGun best = null;
-            float bestScore = float.MaxValue;
             float maxDistance = _hasWeapon ? LootSearchRange : WeaponlessLootSearchRange;
             bool threatActive = HasActiveThreatMemory();
             Vector3 threatPosition = Vector3.zero;
             bool hasThreatPosition = threatActive && TryGetThreatPosition(out threatPosition);
+            PruneBlockedLoot();
+
+            NetworkGun best = FindBestLootInRange(maxDistance, hasThreatPosition, threatPosition, requireVisibleFallback: false);
+            if (best != null || !NeedsEmergencyLoot())
+                return best;
+
+            return FindBestLootInRange(EmergencyLootSearchRange, hasThreatPosition, threatPosition, requireVisibleFallback: true);
+        }
+
+        private NetworkGun FindBestLootInRange(float maxDistance, bool hasThreatPosition, Vector3 threatPosition, bool requireVisibleFallback)
+        {
+            NetworkGun best = null;
+            float bestScore = float.MaxValue;
 
             for (int i = 0; i < _room.Weapons.Count; i++)
             {
                 NetworkGun loot = _room.Weapons[i];
                 if (loot == null)
+                    continue;
+                if (IsLootTemporarilyBlocked(loot.Index))
                     continue;
 
                 float distance = Flat(loot.Position - _player.PlayerPosition).magnitude;
@@ -2398,12 +3260,15 @@ namespace TabgInstaller.FakePlayers
                     continue;
 
                 bool visible = HasLineToPoint(loot.Position + Vector3.up * 0.4f, allowGround: true);
+                if (requireVisibleFallback && !visible && !_navMeshDisabled)
+                    continue;
+
                 float score = distance - value + (visible ? 0f : 55f) + GetLootJitter(loot.Index);
                 if (IsLootClaimedByOther(loot.Index))
                     score += 180f;
                 if (_target != null && _canSeeTarget)
                     score += Mathf.Clamp(Flat(loot.Position - _target.PlayerPosition).magnitude * 0.12f, 0f, 20f);
-                if (!_hasWeapon && hasThreatPosition)
+                if (hasThreatPosition)
                 {
                     Vector3 toLoot = Flat(loot.Position - _player.PlayerPosition);
                     Vector3 toThreat = Flat(threatPosition - _player.PlayerPosition);
@@ -2411,14 +3276,16 @@ namespace TabgInstaller.FakePlayers
                     {
                         float dot = Vector3.Dot(toLoot.normalized, toThreat.normalized);
                         if (dot > 0f)
-                            score += dot * 95f;
+                            score += dot * (_hasWeapon ? 42f : 95f);
                     }
 
                     float threatDistance = Flat(threatPosition - _player.PlayerPosition).magnitude;
-                    if (threatDistance < UnarmedDangerRange + 10f && distance > 12f)
+                    if (!_hasWeapon && threatDistance < Mathf.Max(3f, UnarmedDangerRange + 1.5f) && distance > 12f)
                         score += 120f;
-                    if (visible)
+                    if (!_hasWeapon && visible)
                         score -= 8f;
+                    if (_hasWeapon && _canSeeTarget && distance > 8f)
+                        score += 45f;
                 }
                 if (_wantedLoot != null && loot.Index == _lastLootIndex)
                     score -= 8f;
@@ -2431,6 +3298,58 @@ namespace TabgInstaller.FakePlayers
             }
 
             return best;
+        }
+
+        private bool NeedsEmergencyLoot()
+        {
+            if (!_hasWeapon || !HasCombatWeapon())
+                return true;
+            if (NeedsAmmo())
+                return true;
+            return _player != null && _player.Health < 55f && _healingItemCount <= 0;
+        }
+
+        private void MarkLootTemporarilyBlocked(NetworkGun loot)
+        {
+            if (loot == null)
+                return;
+
+            _blockedLootUntil[loot.Index] = Time.unscaledTime + BlockedLootCooldownSeconds;
+            if (_blockedLootUntil.Count > MaxBlockedLootEntries)
+                PruneBlockedLoot(clearIfStillTooLarge: true);
+        }
+
+        private bool IsLootTemporarilyBlocked(int lootIndex)
+        {
+            float blockedUntil;
+            if (!_blockedLootUntil.TryGetValue(lootIndex, out blockedUntil))
+                return false;
+
+            if (blockedUntil > Time.unscaledTime)
+                return true;
+
+            _blockedLootUntil.Remove(lootIndex);
+            return false;
+        }
+
+        private void PruneBlockedLoot(bool clearIfStillTooLarge = false)
+        {
+            if (_blockedLootUntil.Count == 0)
+                return;
+
+            float now = Time.unscaledTime;
+            _blockedLootScratch.Clear();
+            foreach (KeyValuePair<int, float> entry in _blockedLootUntil)
+            {
+                if (entry.Value <= now)
+                    _blockedLootScratch.Add(entry.Key);
+            }
+
+            for (int i = 0; i < _blockedLootScratch.Count; i++)
+                _blockedLootUntil.Remove(_blockedLootScratch[i]);
+
+            if (clearIfStillTooLarge && _blockedLootUntil.Count > MaxBlockedLootEntries)
+                _blockedLootUntil.Clear();
         }
 
         private void ClaimLoot(NetworkGun loot)
@@ -2501,10 +3420,13 @@ namespace TabgInstaller.FakePlayers
                     return EnableGrenadeThrows && _grenadeCount < 1 && (_target == null || !_canSeeTarget) ? 28f : 0f;
 
                 case Pickup.WeaponType.Health:
+                    bool watched = _target != null && _canSeeTarget && !HasCoverFromTarget(_player.PlayerPosition);
+                    if (watched && _player.Health > HealCriticalThreshold)
+                        return 0f;
                     if (!_hasWeapon && _player.Health >= 45f)
                         return 0f;
                     if (_player.Health < 55f)
-                        return 68f;
+                        return watched ? 38f : 68f;
                     if (_player.Health < 75f && _healingItemCount <= 0)
                         return 36f;
                     return 0f;
@@ -2827,7 +3749,7 @@ namespace TabgInstaller.FakePlayers
             _movementNoiseTimer = UnityEngine.Random.Range(1.0f, 3.0f);
         }
 
-        private byte BuildMovementFlags(Vector3 direction, float yaw)
+        private static byte BuildMovementFlags(Vector3 direction, float yaw)
         {
             if (direction == Vector3.zero)
                 return 0;
@@ -2854,6 +3776,9 @@ namespace TabgInstaller.FakePlayers
                 return VehicleMoveSpeed;
 
             float skillBonus = Mathf.Lerp(-0.25f, 0.2f, GetSkillT());
+            if (_currentAction == AiAction.RunToRing)
+                return CombatMoveSpeed + skillBonus + 0.25f;
+
             if (_state == AiState.Fighting)
             {
                 if (_target != null && _canSeeTarget)
@@ -3473,7 +4398,7 @@ namespace TabgInstaller.FakePlayers
             float targetDistance = _target != null ? Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude : -1f;
             return string.Format(
                 CultureInfo.InvariantCulture,
-                "{0} idx={1} state={2} hp={3:0} weapon={4} class={5} ammo={6}/{7} reserve={8} target={9} dist={10:0} los={11} threat={12:0.0}s sound={13:0.0}s loot={14} reload={15:0.0}s goal=({16:0},{17:0},{18:0})",
+                "{0} idx={1} state={2} hp={3:0} weapon={4} class={5} ammo={6}/{7} reserve={8} target={9} dist={10:0} los={11} threat={12:0.0}s sound={13:0.0}s loot={14} reload={15:0.0}s goal=({16:0},{17:0},{18:0}) action={19} score={20:0} reason=\"{21}\" top3=[{22}] ring={23:0.00} wanted={24}",
                 _player.PlayerName,
                 _player.PlayerIndex,
                 _state,
@@ -3492,12 +4417,43 @@ namespace TabgInstaller.FakePlayers
                 Mathf.Max(0f, _reloadTimer),
                 _currentDestination.x,
                 _currentDestination.y,
-                _currentDestination.z);
+                _currentDestination.z,
+                _currentAction,
+                _currentUtilityScore,
+                _stateReason,
+                _topUtilityScores,
+                _lastRingDanger,
+                _wantedLootKind);
         }
 
         public string DebugState
         {
             get { return _state.ToString(); }
+        }
+
+        public string DebugAction
+        {
+            get { return _currentAction.ToString(); }
+        }
+
+        public string DebugStateReason
+        {
+            get { return _stateReason; }
+        }
+
+        public float DebugUtilityScore
+        {
+            get { return _currentUtilityScore; }
+        }
+
+        public string DebugTopUtilityScores
+        {
+            get { return _topUtilityScores; }
+        }
+
+        public float DebugRingDanger
+        {
+            get { return _lastRingDanger; }
         }
 
         public string DebugTargetName
@@ -3543,6 +4499,11 @@ namespace TabgInstaller.FakePlayers
         public string DebugLootName
         {
             get { return _wantedLoot != null ? _wantedLoot.WeaponName : string.Empty; }
+        }
+
+        public string DebugWantedLootKind
+        {
+            get { return _wantedLootKind; }
         }
 
         private void OnDestroy()

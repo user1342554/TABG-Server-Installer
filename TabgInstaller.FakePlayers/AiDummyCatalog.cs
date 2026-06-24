@@ -79,8 +79,8 @@ namespace TabgInstaller.FakePlayers
         public const float ShootRange = 30f;
         public const float PreferredFightRange = 16f;
         public const float MinFightRange = 6f;
-        public const float UnarmedDangerRange = 42f;
-        public const float UnarmedEvadeDistance = 34f;
+        public const float UnarmedDangerRange = 1.5f;
+        public const float UnarmedEvadeDistance = 10f;
         public const float DamagePerShot = 5.5f;
         public const float AutoDamagePerBullet = 2.4f;
         public const float AutoBulletInterval = 0.11f;
@@ -94,9 +94,9 @@ namespace TabgInstaller.FakePlayers
         public const float MuzzleForwardOffset = 0.45f;
         public const float PoiArriveDistance = 18f;
         public const float BadTerrainRepathPenalty = 65f;
-        public const bool EnableGunDamage = true;
-        public const bool EnableGrenadeThrows = false;
-        public const bool EnableGrenadeDamage = false;
+        public static readonly bool EnableGunDamage = true;
+        public static readonly bool EnableGrenadeThrows = DisabledFeatureDefault();
+        public static readonly bool EnableGrenadeDamage = DisabledFeatureDefault();
         public const float WarmupTime = 4f;
         public const float WallProbeDistance = 3.0f;
         public const float WallProbeRadius = 0.55f;
@@ -194,6 +194,11 @@ namespace TabgInstaller.FakePlayers
             155, 156, 157, 158, 160, 264, 315, 320
         };
 
+        private static bool DisabledFeatureDefault()
+        {
+            return false;
+        }
+
         public static bool IsShootableWeapon(int weaponId)
         {
             return ShootableWeaponIds.Contains(weaponId);
@@ -251,7 +256,7 @@ namespace TabgInstaller.FakePlayers
             string lower = (name ?? string.Empty).ToLowerInvariant();
 
             if (itemId < 0)
-                return new WeaponProfile(WeaponCombatClass.Unarmed, FirePlan.Semi, 2f, 4f, 5f, 1f, 0.8f, 1, 1, 1f, 0f, 0f);
+                return new WeaponProfile(WeaponCombatClass.Unarmed, FirePlan.Semi, 0.6f, 1.05f, 1.55f, 6f, 0.8f, 1, 1, 1f, 0f, 0f);
 
             if ((BurstWeaponIds.Contains(itemId) || lower.Contains("burst") || lower.Contains("famas") || lower.Contains("beam")) && !lower.Contains("sniper"))
                 return new WeaponProfile(WeaponCombatClass.AssaultRifle, FirePlan.Burst, 10f, 25f, 58f, 5.4f, 0.095f, 3, 30, 2.25f, 0.58f, 0.27f);

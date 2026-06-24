@@ -176,6 +176,15 @@ namespace TabgInstaller.MatchCore
         }
     }
 
+    [HarmonyPatch(typeof(TheRing), "StopRing")]
+    internal static class RingWaitPatch
+    {
+        private static void Postfix(TheRing __instance)
+        {
+            MatchCoreRuntime.ClampRingWait(__instance);
+        }
+    }
+
     [HarmonyPatch]
     internal static class StartFlyingPatch
     {
