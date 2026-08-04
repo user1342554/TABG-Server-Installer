@@ -100,6 +100,7 @@ namespace TabgInstaller.FakePlayers
         private const float BlockedLootCooldownSeconds = 24f;
         private const float EmergencyLootSearchRange = 2600f;
         private const int MaxBlockedLootEntries = 40;
+        private static readonly int[] AmmoLootItemIds = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
         private struct GroundProbe
         {
@@ -3490,6 +3491,82 @@ namespace TabgInstaller.FakePlayers
             _reloadTimer = 0f;
             _isReloading = false;
             _hasWeapon = true;
+        }
+
+        internal void SyncDeathLoot()
+        {
+            if (_player == null || _room == null)
+                return;
+
+            if (HasCombatWeapon() && _equippedWeaponId >= 0 && _player.HasLoot(_equippedWeaponId) <= 0)
+                AddSyntheticLoot(_equippedWeaponId, 1);
+
+            for (int i = 0; i < AmmoLootItemIds.Length; i++)
+                RemoveLootIfPresent(AmmoLootItemIds[i]);
+
+            if (HasCombatWeapon())
+            {
+                int looseRounds = Mathf.Max(0, _magazineAmmo + _reserveAmmo);
+                if (looseRounds > 0)
+                {
+                    int ammoStacks = Mathf.Clamp(Mathf.CeilToInt(looseRounds / 18f), 1, 8);
+                    AddSyntheticLoot(GetAmmoItemIdForWeapon(), ammoStacks);
+                }
+            }
+
+            if (_healingItemId >= 0)
+            {
+                RemoveLootIfPresent(_healingItemId);
+                if (_healingItemCount > 0)
+                    AddSyntheticLoot(_healingItemId, Mathf.Clamp(_healingItemCount, 1, 4));
+            }
+
+            if (_grenadeItemId >= 0)
+            {
+                RemoveLootIfPresent(_grenadeItemId);
+                if (_grenadeCount > 0)
+                    AddSyntheticLoot(_grenadeItemId, Mathf.Clamp(_grenadeCount, 1, 3));
+            }
+        }
+
+        private int GetAmmoItemIdForWeapon()
+        {
+            string name = (_player?.WeaponName ?? string.Empty).ToLowerInvariant();
+            switch (_weaponProfile.CombatClass)
+            {
+                case WeaponCombatClass.Shotgun:
+                    return 8; // Shotgun ammo
+                case WeaponCombatClass.Smg:
+                case WeaponCombatClass.Pistol:
+                    return 9; // Small ammo
+                case WeaponCombatClass.Launcher:
+                    return 7; // Rocket ammo
+                case WeaponCombatClass.Sniper:
+                case WeaponCombatClass.AutoSniper:
+                    if (name.Contains("crossbow"))
+                        return 2;
+                    if (name.Contains("musket"))
+                        return 4;
+                    return 6; // Normal ammo
+                default:
+                    return 6; // Normal ammo
+            }
+        }
+
+        private void RemoveLootIfPresent(int itemId)
+        {
+            int count = _player.HasLoot(itemId);
+            if (count > 0)
+                _player.RemoveLoot(itemId, count);
+        }
+
+        private void AddSyntheticLoot(int itemId, int amount)
+        {
+            if (itemId < 0 || amount <= 0)
+                return;
+
+            int index = _room.GetNewWeaponIndex();
+            _player.AddLoot(new NetworkGun("AI carried loot", amount, index, itemId, null));
         }
 
         private void FaceBestInterest(Vector3 movementDirection)

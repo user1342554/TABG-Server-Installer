@@ -112,9 +112,14 @@ namespace TabgInstaller.MatchCore
             }
 
             if (state == GameState.Started)
+            {
+                DriveRingPacing(TheRing.Instance, settings);
                 TickServerRingDamage(room, settings);
+            }
             else
+            {
                 RingDamageSince.Remove(room);
+            }
         }
 
         public static bool HandleWinCondition(BattleRoyaleGameMode mode, GameState state)
@@ -254,6 +259,8 @@ namespace TabgInstaller.MatchCore
             if (settings != null && settings.RingBaseTime > 0f)
                 ring.SetBaseTime(settings.RingBaseTime);
 
+            ApplyInitialRingTarget(ring, profile);
+
             MatchCorePlugin.LoggerSafe(
                 "Applied ring profile " + profile.Name +
                 " center=" + FormatVector(profile.Center) +
@@ -269,7 +276,8 @@ namespace TabgInstaller.MatchCore
                 return;
 
             float oldWait = ring.timeBetweenRings;
-            float newWait = Mathf.Min(oldWait, settings.MaxRingWaitSeconds);
+            float effectiveWait = Mathf.Max(settings.MaxRingWaitSeconds, 26f);
+            float newWait = Mathf.Min(oldWait, effectiveWait);
             if (newWait >= oldWait - 0.1f)
                 return;
 
@@ -280,23 +288,52 @@ namespace TabgInstaller.MatchCore
                 "s to " + newWait.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "s.");
         }
 
-        public static bool TryOverrideRingPosition(TheRing ring, float newCircleSize)
+        private static void DriveRingPacing(TheRing ring, MatchCoreConfig settings)
         {
-            var profile = SelectedRing();
-            if (ring == null || profile == null) return false;
+            if (ring == null || settings == null || settings.MaxRingWaitSeconds <= 0f || !ring.hasStarted || ring.isMoving)
+                return;
 
-            float size = newCircleSize;
+            if (ring.betweenRingCounter < settings.MaxRingWaitSeconds)
+                return;
+
+            if (ring.currentRingID <= 0 || ring.currentRingID >= ring.ringSpeeds.Length)
+                return;
+
+            bool hasPendingRingTarget =
+                Vector3.Distance(ring.currentBluePosition, ring.currentWhiteRingPosition) > 1f ||
+                Mathf.Abs(ring.currentBlueSize - ring.currentWhiteSize) > 1f;
+            if (!hasPendingRingTarget)
+                return;
+
+            ring.StartMoving();
+            MatchCorePlugin.LoggerSafe("Forced ring movement for ring " + ring.currentRingID + " after idle wait.");
+        }
+
+        private static void ApplyInitialRingTarget(TheRing ring, RingProfile profile)
+        {
+            if (ring == null || profile == null)
+                return;
+
+            float size = ring.currentWhiteSize;
             if (profile.Sizes != null && ring.currentRingID >= 0 && ring.currentRingID < profile.Sizes.Length)
                 size = profile.Sizes[ring.currentRingID];
 
-            ring.currentWhiteRingPosition = profile.Center;
+            Vector3 target = profile.Center;
+            if (Mathf.Abs(target.y) < 0.001f)
+                target.y = Mathf.Abs(ring.currentWhiteRingPosition.y) > 0.001f ? ring.currentWhiteRingPosition.y : 160f;
+
+            ring.currentWhiteRingPosition = target;
             ring.currentWhiteSize = size;
             if (ring.white != null)
             {
-                ring.white.transform.position = profile.Center;
+                ring.white.transform.position = target;
                 ring.white.transform.localScale = Vector3.one * size;
             }
-            return true;
+
+            MatchCorePlugin.LoggerSafe(
+                "Set initial ring target " + FormatVector(target) +
+                " size=" + size.ToString("0", System.Globalization.CultureInfo.InvariantCulture) +
+                " ringId=" + ring.currentRingID + ".");
         }
 
         public static void ForceDrop(ServerClient world)

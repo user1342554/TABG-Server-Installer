@@ -880,4 +880,28 @@ namespace TabgInstaller.FakePlayers
             return true;
         }
     }
+
+    [HarmonyPatch]
+    internal static class FakePlayerDeathLootPatch
+    {
+        private static MethodBase TargetMethod()
+        {
+            return AccessTools.Method(typeof(DropAllLootCommand), "Run", new[] { typeof(ServerClient), typeof(List<TABGPlayerServer>) });
+        }
+
+        private static void Prefix(List<TABGPlayerServer> players)
+        {
+            if (players == null)
+                return;
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                TABGPlayerServer player = players[i];
+                AiDummyController controller = player?.PlayerObject != null
+                    ? player.PlayerObject.GetComponent<AiDummyController>()
+                    : null;
+                controller?.SyncDeathLoot();
+            }
+        }
+    }
 }

@@ -167,15 +167,6 @@ namespace TabgInstaller.MatchCore
         }
     }
 
-    [HarmonyPatch(typeof(TheRing), "GetNewRingPosition")]
-    internal static class RingPositionPatch
-    {
-        private static bool Prefix(TheRing __instance, float newCircleSize)
-        {
-            return !MatchCoreRuntime.TryOverrideRingPosition(__instance, newCircleSize);
-        }
-    }
-
     [HarmonyPatch(typeof(TheRing), "StopRing")]
     internal static class RingWaitPatch
     {
