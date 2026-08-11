@@ -37,6 +37,52 @@ namespace TabgInstaller.Tests.Model
         }
 
         [Fact]
+        public void BuiltIns_ExposePairedRangeMapPlugins()
+        {
+            PluginRegistry.ResetToBuiltIns();
+
+            var server = PluginRegistry.ServerPlugins.Single(plugin => plugin.Id == "RangeMap");
+            var client = PluginRegistry.ClientMods.Single(plugin => plugin.Id == "RangeMapClient");
+
+            server.RequiresClientMod.Should().BeTrue();
+            server.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.RangeMap.Server.dll");
+            client.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.RangeMap.Client.dll");
+        }
+
+        [Fact]
+        public void ShootingRangePreset_UsesTestModeAndInfiniteLives()
+        {
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Multiplayer Shooting Range");
+            var settings = preset.Files["game_settings.txt"];
+
+            settings.Should().Contain("GameMode=Test");
+            settings.Should().Contain("PlayersToStart=1");
+            settings.Should().Contain("NumberOfLivesPerTeam=2147483647");
+            preset.RequiredPlugins.Should().Contain("TabgInstaller.RangeMap.Server.dll");
+            preset.Notes.Should().Contain("TabgInstaller.RangeMap.Client");
+        }
+
+        [Fact]
+        public void ShootingRangePreset_DeploysConfigAndServerPlugin()
+        {
+            var target = Path.Combine(Path.GetTempPath(), "tabg-range-preset-" + Guid.NewGuid().ToString("N"));
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Multiplayer Shooting Range");
+            try
+            {
+                BuiltInPresets.Deploy(preset, target);
+
+                File.ReadAllText(Path.Combine(target, "game_settings.txt")).Should().Contain("GameMode=Test");
+                File.Exists(Path.Combine(target, "BepInEx", "config", "tabginstaller.rangemap.server.cfg")).Should().BeTrue();
+                File.Exists(Path.Combine(target, "BepInEx", "plugins", "TabgInstaller.RangeMap.Server.dll")).Should().BeTrue();
+            }
+            finally
+            {
+                if (Directory.Exists(target))
+                    Directory.Delete(target, true);
+            }
+        }
+
+        [Fact]
         public void BundledManifestDlls_ExistInPayloadFolders()
         {
             var root = FindRepositoryRoot();

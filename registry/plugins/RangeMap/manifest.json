@@ -1,0 +1,19 @@
+{
+  "id": "RangeMap",
+  "name": "Range Map Server",
+  "version": "1.0.0",
+  "description": "Hosts TABG's WilhelmTest shooting range as a multiplayer Test match with fixed Range spawns, infinite respawns, and validated server-authoritative item requests.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.RangeMap.Server.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["shooting-range", "map", "items", "respawn", "multiplayer"],
+  "requiresClientMod": true,
+  "clientPluginId": "RangeMapClient"
+}

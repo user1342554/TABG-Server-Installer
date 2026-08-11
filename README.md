@@ -112,6 +112,7 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
 | FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets for private testing | No |
 | DummyDebugRadar | `TabgInstaller.AdminRadar.Server.dll` | Dummy/debug telemetry server, real player positions and real target names disabled by default | No |
+| RangeMap | `TabgInstaller.RangeMap.Server.dll` | Multiplayer WilhelmTest shooting range with authoritative items and infinite respawns; paired client required | No |
 
 ### Client Plugins
 
@@ -125,6 +126,11 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
 | ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
 | DummyDebugRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Dummy/debug radar overlay | No |
+| RangeMapClient | `TabgInstaller.RangeMap.Client.dll` | Loads WilhelmTest and adds a searchable F6 all-items menu | No |
+
+## Multiplayer Shooting Range
+
+Apply the **Multiplayer Shooting Range** preset, install `RangeMap` on the server, and install `RangeMapClient` on every player. Compatible clients are redirected from the stock Test map to TABG's built-in `WilhelmTest` shooting range. Press **F6** in the Range to request any item from the server. Ammo requests give a full stack, the starter weapon/ammo return after every death, and the Test match is kept running for unlimited respawns.
 
 ## Proximity Voice Chat
 

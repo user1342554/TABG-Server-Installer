@@ -1,0 +1,17 @@
+{
+  "id": "RangeMapClient",
+  "name": "Range Map Client",
+  "version": "1.0.0",
+  "description": "Loads TABG's WilhelmTest shooting range for compatible servers, bootstraps the multiplayer handler, and provides an F6 searchable all-items menu.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.RangeMap.Client.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["shooting-range", "map", "items", "respawn", "multiplayer"]
+}

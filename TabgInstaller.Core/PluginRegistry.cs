@@ -82,6 +82,7 @@ namespace TabgInstaller.Core
             new("ProximityChat", "Proximity Chat Server - relays nearby voice packets", new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
             new("FakePlayers", "Fake Players - dummy players and AI test targets", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
             new("AdminRadar", "Dummy Debug Radar Server - dummy/debug telemetry with real-player positions disabled by default", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("RangeMap", "Range Map Server - multiplayer Shooting Range, all-item requests, infinite respawns", new[] { "TabgInstaller.RangeMap.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
         };
 
         private static readonly PluginDefinition[] BuiltInClientMods =
@@ -94,6 +95,7 @@ namespace TabgInstaller.Core
             new("PopupBlocker", "Popup Blocker - suppresses modded-client anti-cheat popups", new[] { "TabgInstaller.PopupBlocker.dll" }, true, PluginKind.Bundled),
             new("ProximityChatClient", "Proximity Chat Client - captures and plays proximity voice", new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
             new("AdminRadarClient", "Dummy Debug Radar Client - dummy/debug radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
+            new("RangeMapClient", "Range Map Client - WilhelmTest scene loader and F6 all-items menu", new[] { "TabgInstaller.RangeMap.Client.dll" }, false, PluginKind.Bundled),
         };
 
         public static void ResetToBuiltIns()

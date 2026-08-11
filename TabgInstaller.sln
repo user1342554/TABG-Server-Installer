@@ -49,6 +49,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.App", "TabgIn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.UI", "TabgInstaller.UI\TabgInstaller.UI.csproj", "{2B55C863-20E5-414C-9154-596C4B098439}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.RangeMap.Server", "TabgInstaller.RangeMap.Server\TabgInstaller.RangeMap.Server.csproj", "{8A733F55-66DE-43BD-AB0C-1B9B96842A01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TabgInstaller.RangeMap.Client", "TabgInstaller.RangeMap.Client\TabgInstaller.RangeMap.Client.csproj", "{8A733F55-66DE-43BD-AB0C-1B9B96842A02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +63,30 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|x64.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Debug|x86.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|x64.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|x64.Build.0 = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|x86.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A01}.Release|x86.Build.0 = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|x64.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Debug|x86.Build.0 = Debug|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|x64.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|x64.Build.0 = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|x86.ActiveCfg = Release|Any CPU
+		{8A733F55-66DE-43BD-AB0C-1B9B96842A02}.Release|x86.Build.0 = Release|Any CPU
 		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD81A1D2-4F34-4E77-96C2-5BDF98AFBECD}.Debug|x64.ActiveCfg = Debug|Any CPU
