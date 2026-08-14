@@ -241,6 +241,7 @@ namespace TabgInstaller.UnusedVehicles
             }
 
             var prefix = new HarmonyMethod(prefixMethod);
+            PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "Update", prefix);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "stopBrake", prefix);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "OnDestroy", prefix);
             PatchOptionalHeadlessAudioMethod("VehicleSoundHandler", "Crash", prefix);

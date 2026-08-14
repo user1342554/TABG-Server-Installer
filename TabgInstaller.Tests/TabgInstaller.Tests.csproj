@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\TabgInstaller.CustomGameSkins.Shared\CustomGameSkinsProtocol.cs" Link="CustomGameSkins\CustomGameSkinsProtocol.cs" />
     <ProjectReference Include="..\TabgInstaller.Core\TabgInstaller.Core.csproj" />
     <ProjectReference Include="..\TabgInstaller.UI\TabgInstaller.UI.csproj" />
     <ProjectReference Include="..\TabgInstaller.App\TabgInstaller.App.csproj" />

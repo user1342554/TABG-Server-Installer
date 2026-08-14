@@ -71,12 +71,44 @@ namespace TabgInstaller.MatchCore
         }
     }
 
+    [HarmonyPatch(typeof(GameSettings), "get_Respawns")]
+    internal static class BattleRoyaleRespawnsPatch
+    {
+        private static void Postfix(ref bool __result)
+        {
+            if (MatchCorePlugin.Settings?.AllowRespawns == true)
+                __result = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameRoom), nameof(GameRoom.SetGameMode))]
+    internal static class RespawnGameStatsPatch
+    {
+        private static void Postfix(GameRoom __instance)
+        {
+            if (MatchCorePlugin.Settings?.AllowRespawns != true || __instance == null)
+                return;
+
+            __instance.CurrentGameStats?.SetGameMode(__instance.CurrentGameSettings.MatchMode);
+            MatchCorePlugin.LoggerSafe("Respawns enabled for " + __instance.CurrentGameSettings.GameMode + ".");
+        }
+    }
+
     [HarmonyPatch(typeof(BattleRoyaleGameMode), "CheckGameState")]
     internal static class WinConditionPatch
     {
         private static bool Prefix(BattleRoyaleGameMode __instance, GameState state)
         {
             return MatchCoreRuntime.HandleWinCondition(__instance, state);
+        }
+    }
+
+    [HarmonyPatch(typeof(BattleRoyaleGameMode), nameof(BattleRoyaleGameMode.RunStart))]
+    internal static class BattleRoyaleRespawnStartPatch
+    {
+        private static void Postfix(BattleRoyaleGameMode __instance)
+        {
+            MatchCoreRuntime.InitializeBattleRoyaleRespawns(__instance);
         }
     }
 
@@ -114,6 +146,7 @@ namespace TabgInstaller.MatchCore
         private static void Postfix(TABGPlayerServer victimPlayer, ServerClient world)
         {
             MatchCoreRuntime.ApplyKillRewards(victimPlayer, world);
+            MatchCoreRuntime.QueueRespawn(world, victimPlayer);
         }
     }
 
@@ -126,8 +159,46 @@ namespace TabgInstaller.MatchCore
             if (settings == null || settings.CanGoDown) return true;
             if (victimPlayer == null || world == null) return true;
 
-            world.GameRoomReference.CurrentGameMode.KillPlayer(victimPlayer, damagerPlayer);
-            world.GameRoomReference.CheckGameState();
+            GameRoom room = world.GameRoomReference;
+            room.CurrentGameMode.KillPlayer(victimPlayer, damagerPlayer);
+            room.CheckGameState();
+
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerDeadCommand), "Run")]
+    internal static class PlayerReportedDeathPatch
+    {
+        private static bool Prefix(byte[] msgData, ServerClient world, byte sender)
+        {
+            GameRoom room = world?.GameRoomReference;
+            if (room?.CurrentGameMode == null || room.CurrentGameSettings.GameMode != GameMode.BattleRoyale)
+                return true;
+
+            var settings = MatchCorePlugin.Settings;
+            if (settings?.AllowRespawns != true && !room.CurrentGameSettings.AllowRespawnMinigame)
+                return true;
+
+            if (msgData == null || msgData.Length == 0 || msgData[0] != sender)
+                return true;
+
+            TABGPlayerServer player = room.FindPlayer(sender);
+            if (player == null)
+                return true;
+
+            // A client-reported death normally bypasses BattleRoyaleGameMode.KillPlayer,
+            // so vanilla never gets a chance to mark the player for the Gulag and our
+            // timed-respawn hook never runs. Route it through the same authoritative
+            // death path as damage deaths and ignore duplicate reports.
+            if (player.IsDead || player.InBossFight)
+                return false;
+
+            TABGPlayerServer attacker = room.FindPlayer(player.LastAttacker);
+            room.CurrentGameMode.KillPlayer(player, attacker);
+            room.CheckGameState();
+            MatchCorePlugin.LoggerSafe("Handled client-reported death for " + player.PlayerName +
+                " through BattleRoyale respawn flow; inGulag=" + player.InBossFight + ".");
             return false;
         }
     }

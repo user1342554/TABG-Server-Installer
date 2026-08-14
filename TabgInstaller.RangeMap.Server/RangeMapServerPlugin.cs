@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace TabgInstaller.RangeMap.Server
 {
-    [BepInPlugin("tabginstaller.rangemap.server", "Range Map Server", "1.0.0")]
+    [BepInPlugin("tabginstaller.rangemap.server", "Range Map Server", "1.1.0")]
     public sealed class RangeMapServerPlugin : BaseUnityPlugin
     {
         internal static RangeMapServerPlugin Instance;
@@ -80,15 +80,20 @@ namespace TabgInstaller.RangeMap.Server
     {
         private static readonly HashSet<byte> CompatibleClients = new HashSet<byte>();
         private static readonly Dictionary<byte, RequestWindow> RequestWindows = new Dictionary<byte, RequestWindow>();
+        internal static ServerClient ActiveServer;
 
         internal static void ClearClients()
         {
             CompatibleClients.Clear();
             RequestWindows.Clear();
+            ActiveServer = null;
         }
+
+        internal static bool IsCompatibleClient(byte playerIndex) => CompatibleClients.Contains(playerIndex);
 
         private static bool Prefix(ServerPackage networkEvent, ServerClient __instance)
         {
+            ActiveServer = __instance;
             var sender = networkEvent.SenderPlayerID;
             if ((byte)networkEvent.Code == RangeProtocol.EventCode)
             {
@@ -127,38 +132,36 @@ namespace TabgInstaller.RangeMap.Server
             return true;
         }
 
-        private static void Postfix(ServerPackage networkEvent, ServerClient __instance)
-        {
-            var sender = networkEvent.SenderPlayerID;
-            if (networkEvent.Code != EventCode.RequestWorldState || !CompatibleClients.Contains(sender))
-                return;
-
-            // CurrentGameWorldCommand (the original handler) creates the player's
-            // network object. Start only after it returns so Test's starter items
-            // have a valid authoritative player object to target.
-            var room = __instance.GameRoomReference;
-            if (room == null || room.CurrentGameState != GameState.CountDown ||
-                room.CurrentGameSettings.GameMode != GameMode.Test)
-                return;
-
-            LandLog.Log("[RangeMap] Starting Test match after player world initialization.");
-            room.CurrentGameMode.RunStart();
-        }
-
         private static void GiveRequestedItem(ServerClient server, byte sender, int itemId, byte quantity)
         {
-            if (quantity == 0 || !AllowRequest(sender) || server.GameRoomReference?.FindPlayer(sender) == null)
+            var player = server.GameRoomReference?.FindPlayer(sender);
+            if (quantity == 0 || player == null || !AllowRequest(sender))
+            {
+                server.SendMessageToClients((EventCode)RangeProtocol.EventCode,
+                    RangeProtocol.CreateItemDenied(itemId), sender, true);
+                RangeMapServerPlugin.Instance?.LogRangeWarning(
+                    "[RangeMap] Denied item " + itemId + " for player " + sender +
+                    ": player not ready or request rate exceeded.");
                 return;
+            }
 
             try
             {
                 if (!LootDatabase.Instance.HasDataEntry(itemId))
+                {
+                    server.SendMessageToClients((EventCode)RangeProtocol.EventCode,
+                        RangeProtocol.CreateItemDenied(itemId), sender, true);
                     return;
+                }
                 server.GivePlayerWeapon(sender, itemId, quantity);
+                server.SendMessageToClients((EventCode)RangeProtocol.EventCode,
+                    RangeProtocol.CreateItemGranted(itemId, quantity), sender, true);
                 RangeMapServerPlugin.Instance?.LogRangeInfo("[RangeMap] Gave item " + itemId + " x" + quantity + " to player " + sender + ".");
             }
             catch (Exception ex)
             {
+                server.SendMessageToClients((EventCode)RangeProtocol.EventCode,
+                    RangeProtocol.CreateItemDenied(itemId), sender, true);
                 RangeMapServerPlugin.Instance?.LogRangeWarning("[RangeMap] Item request failed: " + ex.Message);
             }
         }
@@ -185,6 +188,23 @@ namespace TabgInstaller.RangeMap.Server
         }
     }
 
+    [HarmonyPatch(typeof(TestGameMode), nameof(TestGameMode.Run))]
+    internal static class TickRangeCountdownPatch
+    {
+        private static void Postfix(GameState state)
+        {
+            if (state != GameState.CountDown)
+                return;
+
+            var room = RangeNetworkPatch.ActiveServer?.GameRoomReference;
+            if (room == null || room.CurrentGameState != GameState.CountDown ||
+                room.CurrentGameSettings.GameMode != GameMode.Test)
+                return;
+
+            room.TickCountDown();
+        }
+    }
+
     [HarmonyPatch(typeof(TestGameMode), nameof(TestGameMode.GetNewSpawnPoint))]
     internal static class RangeSpawnPatch
     {
@@ -192,6 +212,36 @@ namespace TabgInstaller.RangeMap.Server
         {
             __result = new SpawnPointWrapper(RangeMapServerPlugin.SpawnPosition, RangeMapServerPlugin.SpawnRotation.Value);
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameRoom), nameof(GameRoom.AcceptingPlayers))]
+    internal static class KeepRangeOpenForMultiplayerPatch
+    {
+        private static void Postfix(GameRoom __instance, ref bool __result)
+        {
+            if (__instance != null && __instance.CurrentGameSettings.GameMode == GameMode.Test &&
+                __instance.CurrentGameState != GameState.Ended &&
+                __instance.Players != null &&
+                __instance.Players.Count < __instance.CurrentGameSettings.MaxPlayers)
+                __result = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameRoom), nameof(GameRoom.StartGameRoom))]
+    internal static class ClearNativeRangeWorldLootPatch
+    {
+        private static void Postfix(GameRoom __instance)
+        {
+            if (__instance == null || __instance.CurrentGameSettings.GameMode != GameMode.Test ||
+                __instance.Weapons == null || __instance.Weapons.Count == 0)
+                return;
+
+            var removed = __instance.Weapons.Count;
+            __instance.ClearAllWeapons();
+            RangeMapServerPlugin.Instance?.LogRangeInfo(
+                "[RangeMap] Cleared " + removed +
+                " native Test-map weapons so the initial Login snapshot fits Unity Transport.");
         }
     }
 

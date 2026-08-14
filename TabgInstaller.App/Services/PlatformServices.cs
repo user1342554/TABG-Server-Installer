@@ -56,8 +56,8 @@ public sealed class AvaloniaConfirmationDialogService : IConfirmationDialogServi
 
     public async Task<bool> ConfirmAsync(string title, string message)
     {
-        var yes = new Button { Content = "Yes", IsDefault = true, MinWidth = 84 };
-        var no = new Button { Content = "No", IsCancel = true, MinWidth = 84 };
+        var yes = new Button { Content = "Ja", IsDefault = true, MinWidth = 84 };
+        var no = new Button { Content = "Abbrechen", IsCancel = true, MinWidth = 100 };
         var dialog = new Window
         {
             Title = title,

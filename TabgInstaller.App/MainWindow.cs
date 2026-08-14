@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +22,7 @@ using TabgInstaller.UI.Services;
 
 namespace TabgInstaller.App;
 
-public sealed class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
     private const int MaxVisibleLogChars = 120_000;
 
@@ -51,21 +52,22 @@ public sealed class MainWindow : Window
     private readonly StackPanel _clientModChecks = new() { Spacing = 4 };
     private readonly ListBox _backups = new();
     private readonly Dictionary<string, Control> _gameSettingEditors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly TextBlock _gameSettingsSaveState = new() { Text = "Geladener Stand", VerticalAlignment = VerticalAlignment.Center };
     private readonly ComboBox _spLoadoutMode = new() { Width = 150, ItemsSource = new[] { "Normal", "GunGame", "ReverseGunGame", "KeepInventory" } };
     private readonly ComboBox _spWinCondition = new() { Width = 150, ItemsSource = new[] { "Default", "KillsToWin", "Debug" } };
     private readonly TextBox _spKillsToWin = SmallBox("20");
-    private readonly CheckBox _spForceKillAtStart = new() { Content = "Force kill at start" };
-    private readonly CheckBox _spDropItemsOnDeath = new() { Content = "Drop items on death" };
+    private readonly CheckBox _spForceKillAtStart = new() { Content = "Spieler beim Rundenstart zurücksetzen" };
+    private readonly CheckBox _spDropItemsOnDeath = new() { Content = "Gegenstände beim Tod fallen lassen" };
     private readonly TextBox _spItemsGiven = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
     private readonly TextBox _spLoadouts = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-    private readonly CheckBox _spHealOnKill = new() { Content = "Heal on kill" };
+    private readonly CheckBox _spHealOnKill = new() { Content = "Heilung nach Kill" };
     private readonly TextBox _spHealOnKillAmount = SmallBox("50");
-    private readonly CheckBox _spCanGoDown = new() { Content = "Can go down" };
-    private readonly CheckBox _spCanLockOut = new() { Content = "Can lock out" };
+    private readonly CheckBox _spCanGoDown = new() { Content = "Niedergeschlagen möglich" };
+    private readonly CheckBox _spCanLockOut = new() { Content = "Aussperren möglich" };
     private readonly TextBox _spPercentVotes = SmallBox("50");
     private readonly TextBox _spMinPlayers = SmallBox("2");
     private readonly TextBox _spTimeToStart = SmallBox("20");
-    private readonly CheckBox _spSpellDropEnabled = new() { Content = "Spell drops" };
+    private readonly CheckBox _spSpellDropEnabled = new() { Content = "Zauber-Drops aktivieren" };
     private readonly TextBox _spMinSpellDelay = SmallBox("30");
     private readonly TextBox _spMaxSpellDelay = SmallBox("90");
     private readonly TextBox _spSpellOffset = SmallBox("0");
@@ -77,11 +79,11 @@ public sealed class MainWindow : Window
     private readonly TextBox _validSpawnPoints = SmallBox("6,");
     private readonly TextBox _customSpawnPoint = new() { Width = 260 };
     private readonly TextBox _matchSpawns = new() { AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-    private readonly CheckBox _enableLootDrops = new() { Content = "Enable MatchCore loot drops" };
-    private readonly CheckBox _attackerGrenadeEnabled = new() { Content = "Attacker grenade" };
+    private readonly CheckBox _enableLootDrops = new() { Content = "MatchCore-Loot-Drops aktivieren" };
+    private readonly CheckBox _attackerGrenadeEnabled = new() { Content = "Granate des Angreifers" };
     private readonly ComboBox _attackerGrenade = new() { Width = 240 };
     private readonly TextBox _attackerChance = SmallBox("0.2");
-    private readonly CheckBox _corpseGrenadeEnabled = new() { Content = "Corpse grenade" };
+    private readonly CheckBox _corpseGrenadeEnabled = new() { Content = "Granate am besiegten Spieler" };
     private readonly ComboBox _corpseGrenade = new() { Width = 240 };
     private readonly TextBox _corpseChance = SmallBox("0.2");
     private readonly TextBox _lives = SmallBox("256");
@@ -90,10 +92,10 @@ public sealed class MainWindow : Window
     private readonly TextBox _proxMaxRange = SmallBox("50");
     private readonly TextBox _proxMinRange = SmallBox("5");
     private readonly ComboBox _proxFalloff = new() { Width = 140, ItemsSource = new[] { "Linear", "Logarithmic" }, SelectedIndex = 0 };
-    private readonly CheckBox _serverLoggerLogToConsole = new() { Content = "BepInEx console log" };
-    private readonly CheckBox _serverLoggerWriteCsv = new() { Content = "CSV identity log" };
-    private readonly CheckBox _serverLoggerWriteLegacy = new() { Content = "Legacy ServerLogger.txt" };
-    private readonly CheckBox _serverLoggerFallbackScan = new() { Content = "Fallback player scan" };
+    private readonly CheckBox _serverLoggerLogToConsole = new() { Content = "In BepInEx-Konsole protokollieren" };
+    private readonly CheckBox _serverLoggerWriteCsv = new() { Content = "Spieleridentitäten als CSV" };
+    private readonly CheckBox _serverLoggerWriteLegacy = new() { Content = "Alte ServerLogger.txt schreiben" };
+    private readonly CheckBox _serverLoggerFallbackScan = new() { Content = "Ersatzweise Spielerliste scannen" };
     private readonly TextBox _serverLoggerInterval = SmallBox("2");
     private readonly TextBox _serverLoggerLogDirectory = new() { Width = 220, Text = "server-logs" };
     private readonly TextBox _serverLoggerCsvFile = new() { Width = 160, Text = "players.csv" };
@@ -103,12 +105,17 @@ public sealed class MainWindow : Window
     private readonly TextBlock _clientPluginSettingsStatus = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
     private readonly List<PluginSettingEditor> _pluginSettingEditors = new();
     private readonly ListBox _adminList = new();
-    private readonly TextBox _adminName = new() { Width = 180, Watermark = "name" };
+    private readonly TextBox _adminName = new() { Width = 180, Watermark = "Anzeigename" };
     private readonly TextBox _adminEpic = new() { Width = 260, Watermark = "Epic ID" };
     private readonly TextBox _adminLevel = SmallBox("4");
     private readonly ListBox _userPresets = new();
     private readonly ListBox _builtInPresets = new();
-    private readonly TextBox _presetName = new() { Width = 220, Watermark = "preset name" };
+    private readonly TextBox _presetName = new()
+    {
+        MinWidth = 0,
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        Watermark = "Name des eigenen Profils",
+    };
     private readonly ListBox _serverPluginList = new();
     private readonly StackPanel _serverPluginCatalogChecks = new() { Spacing = 4 };
     private readonly ListBox _clientPluginList = new();
@@ -119,8 +126,10 @@ public sealed class MainWindow : Window
     private readonly TextBox _consoleSearch = new() { Width = 220, Watermark = "search log" };
     private readonly TextBox _referenceSearch = new() { Width = 240, Watermark = "filter items" };
     private readonly TextBox _settingsSummary = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBox _serverProfileName = new() { Watermark = "Anzeigename des Servers" };
     private readonly ServerPathProvider _serverPathProvider = new();
     private readonly ServerProcessService _serverProcess;
+    private readonly ServerProfileStore _serverProfiles;
     private readonly IStoragePickerService _storagePicker;
     private readonly IConfirmationDialogService _confirmations;
     private readonly IUiDispatcher _dispatcher;
@@ -133,6 +142,8 @@ public sealed class MainWindow : Window
     private Process? _clientProcess;
     private CancellationTokenSource? _installCts;
     private bool _logFlushQueued;
+    private bool _loadingGameSettings;
+    private string _loadedGameSettingsFingerprint = string.Empty;
 
     public MainWindow()
         : this(
@@ -170,6 +181,7 @@ public sealed class MainWindow : Window
             "TabgInstaller");
         Directory.CreateDirectory(logDir);
         _logPath = Path.Combine(logDir, "tabg-installer-app.log");
+        _serverProfiles = new ServerProfileStore(logDir);
 
         Title = "TABG Server Installer";
         Width = 1180;
@@ -183,32 +195,23 @@ public sealed class MainWindow : Window
         LoadPluginRegistry();
         BuildUi();
         WireServerProcess();
-        TryAutoDetectPaths();
+        if (!LoadActiveServerProfile())
+        {
+            TryAutoDetectPaths();
+            RegisterCurrentServerProfileIfReady();
+        }
+        else
+        {
+            DetectClientPath();
+        }
+        ShowInitialFunctionalPage();
+        RefreshFunctionalUi();
         Log("Avalonia app started. Log file: " + _logPath);
     }
 
     private void BuildUi()
     {
-        var root = new DockPanel { LastChildFill = true, Margin = new Avalonia.Thickness(10) };
-        var statusBar = new DockPanel { LastChildFill = true, Margin = new Avalonia.Thickness(0, 0, 0, 6) };
-        DockPanel.SetDock(statusBar, Dock.Top);
-        statusBar.Children.Add(_status);
-        root.Children.Add(statusBar);
-
-        DockPanel.SetDock(_log, Dock.Bottom);
-        _log.Height = 160;
-        root.Children.Add(_log);
-
-        _tabs = new TabControl();
-        _tabs.Items.Add(new TabItem { Header = "Setup", Content = BuildSetupTab() });
-        _tabs.Items.Add(new TabItem { Header = "Server", Content = BuildServerWorkspaceTab() });
-        _tabs.Items.Add(new TabItem { Header = "Config", Content = BuildConfigTab() });
-        _tabs.Items.Add(new TabItem { Header = "Mods", Content = BuildModsTab() });
-        _tabs.Items.Add(new TabItem { Header = "Reference", Content = BuildReferenceTab() });
-        _tabs.Items.Add(new TabItem { Header = "Settings", Content = BuildSettingsTab() });
-        root.Children.Add(_tabs);
-
-        Content = root;
+        BuildFunctionalUi();
     }
 
     private Control BuildSetupTab()
@@ -335,18 +338,27 @@ public sealed class MainWindow : Window
         return new TabControl
         {
             Margin = new Avalonia.Thickness(6),
+            TabStripPlacement = Dock.Left,
             Items =
             {
-                new TabItem { Header = "Game", Content = BuildGameSettingsTab() },
-                new TabItem { Header = "Match", Content = BuildMatchSettingsTab() },
-                new TabItem { Header = "Ring / Spawns", Content = BuildRingSpawnsTab() },
-                new TabItem { Header = "Mod Settings", Content = BuildModSettingsTab() },
-                new TabItem { Header = "Admins", Content = BuildAdminsTab() },
-                new TabItem { Header = "Presets", Content = BuildPresetsTab() },
-                new TabItem { Header = "Raw", Content = BuildRawConfigTab() },
+                ConfigTab("Spielprofil & Presets", BuildPresetsTab()),
+                ConfigTab("Server & Spieler", BuildGameSettingsTab()),
+                ConfigTab("Runde, Sieg & Loadouts", BuildMatchSettingsTab()),
+                ConfigTab("Welt: Ring & Spawns", BuildRingSpawnsTab()),
+                ConfigTab("Mod-Einstellungen", BuildModSettingsTab()),
+                ConfigTab("Admins", BuildAdminsTab()),
+                ConfigTab("Erweiterte Datei", BuildRawConfigTab()),
             }
         };
     }
+
+    private static TabItem ConfigTab(string title, Control content)
+        => new()
+        {
+            Header = title,
+            Content = content,
+            FontSize = 15,
+        };
 
     private Control BuildRawConfigTab()
     {
@@ -414,63 +426,70 @@ public sealed class MainWindow : Window
     private Control BuildServerModsTab()
     {
         RefreshServerModLists();
+        var advanced = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children =
+            {
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = "Installierte Serverdateien", FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                        new ScrollViewer { Content = _serverPluginList, Height = 120 },
+                        new WrapPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Children =
+                            {
+                                FlowButton("Aktualisieren", RefreshServerModLists),
+                                FlowButton("Aktivieren / deaktivieren", ToggleSelectedServerPlugin),
+                                FlowButton("Entfernen", RemoveSelectedServerPlugin),
+                                FlowButton("Externe DLL hinzufügen", AddServerPluginAsync),
+                                FlowButton("Ordner öffnen", () => OpenPath(ServerPluginDir()))
+                            }
+                        }
+                    }
+                }, 0),
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                    Children =
+                    {
+                        new TextBlock { Text = "Mitgelieferte Rohdateien", FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                        new ScrollViewer { Content = _bundledServerPluginList, Height = 120 },
+                        new WrapPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Children = { FlowButton("Ausgewählte DLL installieren", InstallBundledServerPlugin) }
+                        }
+                    }
+                }, 1)
+            }
+        };
+
         return ToolPanel(new StackPanel
         {
             Margin = new Avalonia.Thickness(10),
             Spacing = 10,
             Children =
             {
-                new TextBlock { Text = "Local plugin library", FontSize = 16 },
+                new TextBlock { Text = "Server-Erweiterungen", FontSize = 18, FontWeight = Avalonia.Media.FontWeight.SemiBold },
                 new TextBlock
                 {
-                    Text = "Owned bundled plugins.",
+                    Text = "Aktiviere Funktionen. Installation, Deaktivierung und fehlende Dateien werden pro Erweiterung angezeigt.",
+                    Foreground = Brush.Parse("#9AA8B7"),
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap
                 },
                 new ScrollViewer { Content = _serverPluginCatalogChecks, Height = 420 },
-                new TextBlock { Text = "Advanced DLLs", FontSize = 13 },
-                new Grid
+                new Expander
                 {
-                    ColumnDefinitions = new ColumnDefinitions("*,*"),
-                    Children =
-                    {
-                        Put(new StackPanel
-                        {
-                            Spacing = 8,
-                            Children =
-                            {
-                                new TextBlock { Text = "Installed server DLLs" },
-                                new ScrollViewer { Content = _serverPluginList, Height = 120 },
-                                new WrapPanel
-                                {
-                                    Orientation = Orientation.Horizontal,
-                                    Children =
-                                    {
-                                        FlowButton("Refresh", RefreshServerModLists),
-                                        FlowButton("Enable / disable", ToggleSelectedServerPlugin),
-                                        FlowButton("Remove", RemoveSelectedServerPlugin),
-                                        FlowButton("Add DLL", AddServerPluginAsync),
-                                        FlowButton("Open folder", () => OpenPath(ServerPluginDir()))
-                                    }
-                                }
-                            }
-                        }, 0),
-                        Put(new StackPanel
-                        {
-                            Spacing = 8,
-                            Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                            Children =
-                            {
-                                new TextBlock { Text = "Raw bundled DLLs" },
-                                new ScrollViewer { Content = _bundledServerPluginList, Height = 120 },
-                                new WrapPanel
-                                {
-                                    Orientation = Orientation.Horizontal,
-                                    Children = { FlowButton("Install selected DLL", InstallBundledServerPlugin) }
-                                }
-                            }
-                        }, 1)
-                    }
-                }
+                    Header = "Erweiterte DLL-Verwaltung",
+                    IsExpanded = false,
+                    Content = advanced,
+                },
             }
         });
     }
@@ -478,42 +497,124 @@ public sealed class MainWindow : Window
     private Control BuildGameSettingsTab()
     {
         _gameSettingEditors.Clear();
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("180,*,180,*"),
-            RowDefinitions = new RowDefinitions()
-        };
+        var rows = new Dictionary<string, Control>(StringComparer.OrdinalIgnoreCase);
+        var warningBlocks = new Dictionary<string, TextBlock>(StringComparer.OrdinalIgnoreCase);
+        var list = new StackPanel { Spacing = 6 };
 
         var props = typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        for (var i = 0; i < props.Length; i++)
+        foreach (var property in props)
         {
-            var row = i / 2;
-            var col = (i % 2) * 2;
-            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            var editor = CreateGameSettingEditor(props[i]);
-            _gameSettingEditors[props[i].Name] = editor;
-            Put(grid, Label(props[i].Name), row, col);
-            Put(grid, editor, row, col + 1);
+            var editor = CreateGameSettingEditor(property);
+            _gameSettingEditors[property.Name] = editor;
+
+            KnowledgeIndex.Current.GameSettings.TryGetValue(property.Name, out var knowledge);
+            var description = knowledge?.Description ?? GameSettingFallbackDescription(property.Name);
+            var warning = new TextBlock
+            {
+                Foreground = Brush.Parse("#F3C654"),
+                FontSize = 12,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                IsVisible = false,
+            };
+            warningBlocks[property.Name] = warning;
+
+            var labelPanel = new StackPanel
+            {
+                Spacing = 3,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = GameSettingDisplayName(property.Name),
+                        FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                    },
+                    new TextBlock
+                    {
+                        Text = description,
+                        Foreground = Brush.Parse("#9AA8B7"),
+                        FontSize = 12,
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    },
+                    warning,
+                },
+            };
+            ToolTip.SetTip(editor, $"{property.Name}: {description}");
+
+            var row = new Border
+            {
+                BorderBrush = Brush.Parse("#303A47"),
+                BorderThickness = new Avalonia.Thickness(0, 0, 0, 1),
+                Padding = new Avalonia.Thickness(10, 9),
+                Child = new StackPanel
+                {
+                    Spacing = 8,
+                    Children = { labelPanel, editor },
+                },
+            };
+            rows[property.Name] = row;
+            list.Children.Add(row);
+
+            switch (editor)
+            {
+                case TextBox textBox:
+                    textBox.TextChanged += (_, _) =>
+                    {
+                        MarkGameSettingsDirty();
+                        ValidateGameSettingsEditors(warningBlocks);
+                    };
+                    break;
+                case CheckBox checkBox:
+                    checkBox.IsCheckedChanged += (_, _) =>
+                    {
+                        MarkGameSettingsDirty();
+                        ValidateGameSettingsEditors(warningBlocks);
+                    };
+                    break;
+                case ComboBox comboBox:
+                    comboBox.SelectionChanged += (_, _) =>
+                    {
+                        MarkGameSettingsDirty();
+                        ValidateGameSettingsEditors(warningBlocks);
+                    };
+                    break;
+            }
         }
 
+        var search = new TextBox { Watermark = "Einstellungen suchen…", Width = 260 };
+        search.TextChanged += (_, _) =>
+        {
+            var query = search.Text?.Trim() ?? string.Empty;
+            foreach (var property in props)
+            {
+                KnowledgeIndex.Current.GameSettings.TryGetValue(property.Name, out var knowledge);
+                rows[property.Name].IsVisible = string.IsNullOrEmpty(query)
+                    || property.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || GameSettingDisplayName(property.Name).Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || (knowledge?.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false);
+            }
+        };
+
         LoadGameSettingsTyped();
+        ValidateGameSettingsEditors(warningBlocks);
+        var save = Button("Speichern", SaveGameSettingsTyped);
+        save.Classes.Add("accent");
         return new DockPanel
         {
             Children =
             {
-                DockTop(new StackPanel
+                DockTop(new WrapPanel
                 {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
                     Margin = new Avalonia.Thickness(0, 0, 0, 8),
                     Children =
                     {
-                        Button("Load", LoadGameSettingsTyped),
-                        Button("Save", SaveGameSettingsTyped),
-                        Button("Open file", () => OpenPath(GameSettingsPath()))
+                        save,
+                        Button("Neu laden", LoadGameSettingsTyped),
+                        Button("Dateiordner öffnen", () => OpenPath(GameSettingsPath())),
+                        search,
+                        _gameSettingsSaveState,
                     }
                 }),
-                new ScrollViewer { Content = grid }
+                new ScrollViewer { Content = list }
             }
         };
     }
@@ -533,13 +634,13 @@ public sealed class MainWindow : Window
                         Orientation = Orientation.Horizontal,
                         Children =
                         {
-                            Label("Win condition"), _spWinCondition,
-                            Label("Loadout mode"), _spLoadoutMode,
-                            Label("Kills"), _spKillsToWin,
+                            Label("Siegbedingung"), _spWinCondition,
+                            Label("Loadout-Modus"), _spLoadoutMode,
+                            Label("Kills zum Sieg"), _spKillsToWin,
                             _spForceKillAtStart,
                             _spDropItemsOnDeath,
                             _spHealOnKill,
-                            Label("Heal %"), _spHealOnKillAmount,
+                            Label("Heilung %"), _spHealOnKillAmount,
                             _spCanGoDown,
                             _spCanLockOut
                         }
@@ -549,13 +650,13 @@ public sealed class MainWindow : Window
                         Orientation = Orientation.Horizontal,
                         Children =
                         {
-                            Label("Votes %"), _spPercentVotes,
-                            Label("Min players"), _spMinPlayers,
-                            Label("Time to start"), _spTimeToStart,
+                            Label("Benötigte Stimmen %"), _spPercentVotes,
+                            Label("Mindestspieler"), _spMinPlayers,
+                            Label("Startwartezeit"), _spTimeToStart,
                             _spSpellDropEnabled,
-                            Label("Spell min"), _spMinSpellDelay,
-                            Label("Spell max"), _spMaxSpellDelay,
-                            Label("Spell offset"), _spSpellOffset
+                            Label("Zauber frühestens"), _spMinSpellDelay,
+                            Label("Zauber spätestens"), _spMaxSpellDelay,
+                            Label("Zauber-Versatz"), _spSpellOffset
                         }
                     },
                     new WrapPanel
@@ -563,16 +664,16 @@ public sealed class MainWindow : Window
                         Orientation = Orientation.Horizontal,
                         Children =
                         {
-                            Label("Pre-match timeout"), _spPreMatchTimeout,
-                            Label("Match timeout"), _spPeriMatchTimeout,
-                            Button("Load", LoadStarterPackSettings),
-                            Button("Save", SaveStarterPackSettings),
-                            Button("Open file", () => OpenPath(StarterPackConfigService.GetPath(_serverPath.Text ?? "")))
+                            Label("Vorbereitungs-Timeout"), _spPreMatchTimeout,
+                            Label("Runden-Timeout"), _spPeriMatchTimeout,
+                            Button("Neu laden", LoadStarterPackSettings),
+                            Button("Speichern", SaveStarterPackSettings),
+                            Button("Dateiordner öffnen", () => OpenPath(StarterPackConfigService.GetPath(_serverPath.Text ?? "")))
                         }
                     },
-                    new TextBlock { Text = "ItemsGiven" },
+                    new TextBlock { Text = "Startgegenstände (erweiterte Syntax)" },
                     new ScrollViewer { Content = _spItemsGiven, Height = 90 },
-                    new TextBlock { Text = "Loadouts" },
+                    new TextBlock { Text = "Loadouts (erweiterte Syntax)" },
                     new ScrollViewer { Content = _spLoadouts, Height = 210 }
                 }
             }
@@ -596,25 +697,25 @@ public sealed class MainWindow : Window
                         Spacing = 8,
                         Children =
                         {
-                            Label("Location"), _spawnLocations,
-                            Button("Apply location", ApplySelectedSpawnLocation),
+                            Label("Ort"), _spawnLocations,
+                            Button("Ort übernehmen", ApplySelectedSpawnLocation),
                             Button("Standard BR", ApplyStandardRingPreset),
-                            Button("No ring deathmatch", ApplyDeathmatchRingPreset)
+                            Button("Deathmatch ohne Ring", ApplyDeathmatchRingPreset)
                         }
                     },
                     new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
                         Spacing = 8,
-                        Children = { Label("Ring sizes"), _ringSizes, Label("Ring speeds"), _ringSpeeds }
+                        Children = { Label("Ringgrößen"), _ringSizes, Label("Ringgeschwindigkeiten"), _ringSpeeds }
                     },
                     new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
                         Spacing = 8,
-                        Children = { Label("Valid spawn points"), _validSpawnPoints, Label("Custom lobby spawn"), _customSpawnPoint }
+                        Children = { Label("Gültige Spawnpunkte"), _validSpawnPoints, Label("Eigener Lobby-Spawn"), _customSpawnPoint }
                     },
-                    new TextBlock { Text = "Match spawn points (x,z;x,z;...)" },
+                    new TextBlock { Text = "Runden-Spawnpunkte (x,z;x,z;…)" },
                     new ScrollViewer { Content = _matchSpawns, Height = 210 },
                     new StackPanel
                     {
@@ -622,9 +723,9 @@ public sealed class MainWindow : Window
                         Spacing = 8,
                         Children =
                         {
-                            Button("Load", LoadRingSpawnSettings),
-                            Button("Save", SaveRingSpawnSettings),
-                            Button("Open MatchCore cfg", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "TabgInstaller.MatchCore.cfg")))
+                            Button("Neu laden", LoadRingSpawnSettings),
+                            Button("Speichern", SaveRingSpawnSettings),
+                            Button("MatchCore-Datei öffnen", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config", "TabgInstaller.MatchCore.cfg")))
                         }
                     }
                 }
@@ -645,35 +746,33 @@ public sealed class MainWindow : Window
                 Spacing = 8,
                 Children =
                 {
-                    new TextBlock { Text = "MatchCore and owned bundled plugin settings" },
+                    new TextBlock { Text = "MatchCore und mitgelieferte Erweiterungen", FontWeight = FontWeight.SemiBold },
                     _enableLootDrops,
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _attackerGrenadeEnabled, _attackerGrenade, Label("Chance"), _attackerChance } },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _corpseGrenadeEnabled, _corpseGrenade, Label("Chance"), _corpseChance } },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Lives"), _lives, Label("Streaming distance"), _streamingDistance } },
-                    new TextBlock { Text = "Ban list (one Epic ID per line)" },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _attackerGrenadeEnabled, _attackerGrenade, Label("Wahrscheinlichkeit"), _attackerChance } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { _corpseGrenadeEnabled, _corpseGrenade, Label("Wahrscheinlichkeit"), _corpseChance } },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Leben"), _lives, Label("Streaming-Distanz"), _streamingDistance } },
+                    new TextBlock { Text = "Sperrliste (eine Epic-ID pro Zeile)" },
                     new ScrollViewer { Content = _banList, Height = 90 },
-                    new TextBlock { Text = "Proximity chat" },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Max range"), _proxMaxRange, Label("Min range"), _proxMinRange, Label("Falloff"), _proxFalloff } },
-                    new TextBlock { Text = "Server Logger" },
+                    new TextBlock { Text = "Nähe-Sprachchat", FontWeight = FontWeight.SemiBold },
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Maximale Reichweite"), _proxMaxRange, Label("Minimale Reichweite"), _proxMinRange, Label("Abfallkurve"), _proxFalloff } },
+                    new TextBlock { Text = "Server-Protokollierung", FontWeight = FontWeight.SemiBold },
                     new WrapPanel { Orientation = Orientation.Horizontal, Children = { _serverLoggerLogToConsole, _serverLoggerWriteCsv, _serverLoggerWriteLegacy, _serverLoggerFallbackScan } },
-                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Scan interval"), _serverLoggerInterval, Label("Log dir"), _serverLoggerLogDirectory, Label("CSV file"), _serverLoggerCsvFile, Label("Legacy file"), _serverLoggerLegacyFile } },
-                    new StackPanel
+                    new WrapPanel { Orientation = Orientation.Horizontal, Children = { Label("Prüfintervall"), _serverLoggerInterval, Label("Protokollordner"), _serverLoggerLogDirectory, Label("CSV-Datei"), _serverLoggerCsvFile, Label("Alte Datei"), _serverLoggerLegacyFile } },
+                    new WrapPanel
                     {
-                        Orientation = Orientation.Horizontal,
-                        Spacing = 8,
                         Children =
                         {
-                            Button("Open ServerLogger cfg", () => OpenPath(ModConfigService.ServerLoggerConfigPath(_serverPath.Text ?? ""))),
-                            Button("Open CSV log", () => OpenPath(ModConfigService.GetServerLoggerCsvPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields()))),
-                            Button("Open legacy log", () => OpenPath(ModConfigService.GetServerLoggerLegacyPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields())))
+                            Button("ServerLogger-Datei öffnen", () => OpenPath(ModConfigService.ServerLoggerConfigPath(_serverPath.Text ?? ""))),
+                            Button("CSV-Protokoll öffnen", () => OpenPath(ModConfigService.GetServerLoggerCsvPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields()))),
+                            Button("Altes Protokoll öffnen", () => OpenPath(ModConfigService.GetServerLoggerLegacyPath(_serverPath.Text ?? "", BuildServerLoggerSettingsFromFields())))
                         }
                     },
-                    new TextBlock { Text = "Other server plugin settings" },
+                    new TextBlock { Text = "Weitere Server-Erweiterungen", FontWeight = FontWeight.SemiBold },
                     _additionalServerPluginSettings,
-                    new TextBlock { Text = "Client plugin settings" },
+                    new TextBlock { Text = "Client-Erweiterungen", FontWeight = FontWeight.SemiBold },
                     _clientPluginSettingsStatus,
                     _clientPluginSettings,
-                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Load", LoadModSettings), Button("Save", SaveModSettings), Button("Open config folder", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config"))) } }
+                    new WrapPanel { Children = { Button("Neu laden", LoadModSettings), Button("Speichern", SaveModSettings), Button("Konfigurationsordner öffnen", () => OpenPath(Path.Combine(_serverPath.Text ?? "", "BepInEx", "config"))) } }
                 }
             }
         };
@@ -688,8 +787,8 @@ public sealed class MainWindow : Window
             Children =
             {
                 new ScrollViewer { Content = _adminList, Height = 300 },
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _adminName, _adminEpic, Label("Level"), _adminLevel } },
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Load", LoadAdmins), Button("Add / update", AddOrUpdateAdmin), Button("Remove", RemoveSelectedAdmin), Button("Save", SaveAdmins), Button("Open PlayerPerms.json", () => OpenPath(PlayerPermsPath())) } }
+                new WrapPanel { Children = { _adminName, _adminEpic, Label("Berechtigungsstufe"), _adminLevel } },
+                new WrapPanel { Children = { Button("Neu laden", LoadAdmins), Button("Hinzufügen / ändern", AddOrUpdateAdmin), Button("Entfernen", RemoveSelectedAdmin), Button("Speichern", SaveAdmins), Button("PlayerPerms.json öffnen", () => OpenPath(PlayerPermsPath())) } }
             }
         };
     }
@@ -697,33 +796,40 @@ public sealed class MainWindow : Window
     private Control BuildPresetsTab()
     {
         RefreshPresetLists();
-        return new Grid
+        return new ScrollViewer
         {
-            ColumnDefinitions = new ColumnDefinitions("*,*"),
-            Children =
+            Content = new StackPanel
             {
-                Put(new StackPanel
+                MaxWidth = 720,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Spacing = 22,
+                Children =
                 {
-                    Spacing = 8,
-                    Children =
+                    new StackPanel
                     {
-                        new TextBlock { Text = "Built-in templates" },
-                        new ScrollViewer { Content = _builtInPresets, Height = 320 },
-                        Button("Apply selected template", ApplyBuiltInPreset)
-                    }
-                }, 0),
-                Put(new StackPanel
-                {
-                    Spacing = 8,
-                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                    Children =
+                        Spacing = 8,
+                        Children =
+                        {
+                            new TextBlock { Text = "Spielprofil auswählen", FontSize = 18, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                            new TextBlock { Text = "Ein Profil setzt zusammengehörige Spiel-, Match- und Mod-Werte in einem Schritt.", Foreground = Brush.Parse("#9AA8B7"), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                            new ScrollViewer { Content = _builtInPresets, Height = 220 },
+                            Button("Ausgewähltes Profil anwenden", ApplyBuiltInPreset),
+                        },
+                    },
+                    new Separator(),
+                    new StackPanel
                     {
-                        new TextBlock { Text = "Saved config presets" },
-                        new ScrollViewer { Content = _userPresets, Height = 280 },
-                        _presetName,
-                        new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { Button("Refresh", RefreshPresetLists), Button("Save", SaveUserPreset), Button("Load", LoadUserPreset), Button("Delete", DeleteUserPreset) } }
-                    }
-                }, 1)
+                        Spacing = 8,
+                        Children =
+                        {
+                            new TextBlock { Text = "Eigene Profile", FontSize = 18, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                            new TextBlock { Text = "Speichere den aktuellen Stand oder stelle ein früheres Profil wieder her.", Foreground = Brush.Parse("#9AA8B7"), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                            new ScrollViewer { Content = _userPresets, Height = 150 },
+                            _presetName,
+                            new WrapPanel { Children = { Button("Aktualisieren", RefreshPresetLists), Button("Speichern", SaveUserPreset), Button("Laden", LoadUserPreset), Button("Löschen", DeleteUserPreset) } },
+                        },
+                    },
+                },
             }
         };
     }
@@ -736,17 +842,21 @@ public sealed class MainWindow : Window
             Margin = new Avalonia.Thickness(6),
             Children =
             {
-                new StackPanel
+                new WrapPanel
                 {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
                     Children =
                     {
-                        Button("Create backup", CreateBackupAsync),
-                        Button("Refresh", RefreshBackups),
-                        Button("Restore selected", RestoreBackupAsync),
-                        Button("Delete selected", DeleteBackup)
+                        Button("Neue Sicherung", CreateBackupAsync),
+                        Button("Aktualisieren", RefreshBackups),
+                        Button("Auswahl wiederherstellen", RestoreBackupAsync),
+                        Button("Auswahl löschen", DeleteBackup)
                     }
+                },
+                new TextBlock
+                {
+                    Text = "Vor einer Wiederherstellung wird automatisch eine zusätzliche Sicherheitskopie des aktuellen Stands angelegt.",
+                    Foreground = Brush.Parse("#9AA8B7"),
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 },
                 _backups
             }
@@ -788,63 +898,70 @@ public sealed class MainWindow : Window
     private Control BuildClientModsTab()
     {
         RefreshClientModLists();
+        var advanced = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children =
+            {
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = "Installierte Clientdateien", FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                        new ScrollViewer { Content = _clientPluginList, Height = 120 },
+                        new WrapPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Children =
+                            {
+                                FlowButton("Aktualisieren", RefreshClientModLists),
+                                FlowButton("Aktivieren / deaktivieren", ToggleSelectedClientPlugin),
+                                FlowButton("Entfernen", RemoveSelectedClientPlugin),
+                                FlowButton("Externe DLL hinzufügen", AddClientPluginAsync),
+                                FlowButton("Ordner öffnen", () => OpenPath(ClientPluginDir()))
+                            }
+                        }
+                    }
+                }, 0),
+                Put(new StackPanel
+                {
+                    Spacing = 8,
+                    Margin = new Avalonia.Thickness(10, 0, 0, 0),
+                    Children =
+                    {
+                        new TextBlock { Text = "Mitgelieferte Rohdateien", FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                        new ScrollViewer { Content = _bundledClientPluginList, Height = 120 },
+                        new WrapPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Children = { FlowButton("Ausgewählte DLL installieren", InstallBundledClientPlugin) }
+                        }
+                    }
+                }, 1)
+            }
+        };
+
         return ToolPanel(new StackPanel
         {
             Margin = new Avalonia.Thickness(10),
             Spacing = 10,
             Children =
             {
-                new TextBlock { Text = "Local client library", FontSize = 16 },
+                new TextBlock { Text = "Client-Erweiterungen", FontSize = 18, FontWeight = Avalonia.Media.FontWeight.SemiBold },
                 new TextBlock
                 {
-                    Text = "Owned bundled client mods.",
+                    Text = "Diese Erweiterungen gelten nur für die getrennte modifizierte TABG-Kopie.",
+                    Foreground = Brush.Parse("#9AA8B7"),
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap
                 },
                 new ScrollViewer { Content = _clientPluginCatalogChecks, Height = 420 },
-                new TextBlock { Text = "Advanced DLLs", FontSize = 13 },
-                new Grid
+                new Expander
                 {
-                    ColumnDefinitions = new ColumnDefinitions("*,*"),
-                    Children =
-                    {
-                        Put(new StackPanel
-                        {
-                            Spacing = 8,
-                            Children =
-                            {
-                                new TextBlock { Text = "Installed client DLLs" },
-                                new ScrollViewer { Content = _clientPluginList, Height = 120 },
-                                new WrapPanel
-                                {
-                                    Orientation = Orientation.Horizontal,
-                                    Children =
-                                    {
-                                        FlowButton("Refresh", RefreshClientModLists),
-                                        FlowButton("Enable / disable", ToggleSelectedClientPlugin),
-                                        FlowButton("Remove", RemoveSelectedClientPlugin),
-                                        FlowButton("Add DLL", AddClientPluginAsync),
-                                        FlowButton("Open folder", () => OpenPath(ClientPluginDir()))
-                                    }
-                                }
-                            }
-                        }, 0),
-                        Put(new StackPanel
-                        {
-                            Spacing = 8,
-                            Margin = new Avalonia.Thickness(10, 0, 0, 0),
-                            Children =
-                            {
-                                new TextBlock { Text = "Raw bundled DLLs" },
-                                new ScrollViewer { Content = _bundledClientPluginList, Height = 120 },
-                                new WrapPanel
-                                {
-                                    Orientation = Orientation.Horizontal,
-                                    Children = { FlowButton("Install selected DLL", InstallBundledClientPlugin) }
-                                }
-                            }
-                        }, 1)
-                    }
-                }
+                    Header = "Erweiterte DLL-Verwaltung",
+                    IsExpanded = false,
+                    Content = advanced,
+                },
             }
         });
     }
@@ -897,18 +1014,30 @@ public sealed class MainWindow : Window
     private Control BuildSettingsTab()
     {
         RefreshSettingsSummary();
+        var saveProfileName = Button("Servernamen speichern", SaveActiveServerProfileName);
+        var removeProfile = Button("Server aus Liste entfernen", async () => await RemoveActiveServerProfileAsync());
         return new StackPanel
         {
             Spacing = 8,
             Margin = new Avalonia.Thickness(6),
             Children =
             {
+                new TextBlock { Text = "Aktiver Server", FontSize = 18, FontWeight = FontWeight.SemiBold },
+                new TextBlock
+                {
+                    Text = "Der Anzeigename ändert nur die Auswahl in dieser App. Serverdateien werden dabei weder verschoben noch gelöscht.",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    Foreground = Avalonia.Media.Brushes.Gray,
+                },
+                _serverProfileName,
+                new WrapPanel { Children = { saveProfileName, removeProfile } },
+                new Separator { Margin = new Avalonia.Thickness(0, 8) },
                 _settingsSummary,
-                Button("Clear log", () => _log.Text = ""),
-                Button("Open log file", () => OpenPath(_logPath)),
-                Button("Open app folder", () => OpenPath(AppContext.BaseDirectory)),
-                Button("Refresh status", RefreshSettingsSummary),
-                Button("Hard reset detected paths", HardResetDetectedPaths)
+                Button("Protokollansicht leeren", () => _log.Text = ""),
+                Button("Protokolldatei öffnen", () => OpenPath(_logPath)),
+                Button("Anwendungsordner öffnen", () => OpenPath(AppContext.BaseDirectory)),
+                Button("Status aktualisieren", RefreshSettingsSummary),
+                Button("Pfade neu erkennen", HardResetDetectedPaths)
             }
         };
     }
@@ -929,6 +1058,9 @@ public sealed class MainWindow : Window
     }
 
     private async void InstallOrUpdateDedicatedServerAsync()
+        => await InstallOrUpdateDedicatedServerCoreAsync();
+
+    private async Task<bool> InstallOrUpdateDedicatedServerCoreAsync()
     {
         var serverDir = _serverPath.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(serverDir))
@@ -943,7 +1075,8 @@ public sealed class MainWindow : Window
         if (steamCmd == null)
         {
             Log("SteamCMD was not found. Install it or put steamcmd/steamcmd.sh on PATH.");
-            return;
+            SetStatus("SteamCMD fehlt");
+            return false;
         }
 
         _installCts?.Cancel();
@@ -970,16 +1103,19 @@ public sealed class MainWindow : Window
             }
 
             SetStatus(code == 0 ? "Server installed/updated" : "SteamCMD failed");
+            return code == 0;
         }
         catch (OperationCanceledException)
         {
             Log("SteamCMD install/update cancelled.");
             SetStatus("Cancelled");
+            return false;
         }
         catch (Exception ex)
         {
             Log("SteamCMD install/update failed: " + ex.Message);
             SetStatus("SteamCMD failed");
+            return false;
         }
         finally
         {
@@ -991,19 +1127,24 @@ public sealed class MainWindow : Window
     }
 
     private async void InstallServerAsync()
+        => await InstallServerCoreAsync();
+
+    private async Task<bool> InstallServerCoreAsync()
     {
         var serverDir = _serverPath.Text?.Trim() ?? "";
         if (!Directory.Exists(serverDir))
         {
             Log("Select a valid server folder first.");
-            return;
+            SetStatus("Serverordner fehlt");
+            return false;
         }
 
         var serverExe = ResolveServerExecutable(serverDir);
         if (serverExe == null)
         {
             Log("No TABG dedicated server executable found. SteamCMD must complete successfully before Start can work.");
-            return;
+            SetStatus("Serverdateien fehlen");
+            return false;
         }
 
         _installCts = new CancellationTokenSource();
@@ -1063,25 +1204,31 @@ public sealed class MainWindow : Window
             Log(code == 0 ? "Install finished." : $"Install exited with code {code}.");
             SetStatus(code == 0 ? "Install finished" : "Install failed");
             RefreshServerModLists();
+            return code == 0;
         }
         catch (OperationCanceledException)
         {
             Log("Install cancelled.");
             SetStatus("Cancelled");
+            return false;
         }
         catch (Exception ex)
         {
             Log("Install failed: " + ex.Message);
             SetStatus("Install failed");
+            return false;
         }
         finally
         {
-            _installCts.Dispose();
+            _installCts?.Dispose();
             _installCts = null;
         }
     }
 
     private void StartServer(string args)
+        => TryStartServer(args);
+
+    private bool TryStartServer(string args)
     {
         try
         {
@@ -1091,19 +1238,27 @@ public sealed class MainWindow : Window
             {
                 Log("No server executable found. SteamCMD did not install the dedicated server yet.");
                 Log("If SteamCMD says No subscription, install TABG Dedicated Server from Steam or use an account with access.");
-                return;
+                return false;
             }
 
             Log("Starting server executable: " + exe);
             if (!_serverProcess.Start(args))
+            {
                 Log("Server is already running.");
+                RefreshFunctionalUi();
+                return _serverProcess.IsRunning;
+            }
             else
                 SetStatus("Server running");
+            RefreshFunctionalUi();
+            return true;
         }
         catch (Exception ex)
         {
             Log("Could not start server: " + ex.Message);
             SetStatus("Server start failed");
+            RefreshFunctionalUi();
+            return false;
         }
     }
 
@@ -1132,6 +1287,7 @@ public sealed class MainWindow : Window
 
     private void LoadGameSettingsTyped()
     {
+        _loadingGameSettings = true;
         try
         {
             var file = GameSettingsPath();
@@ -1141,11 +1297,18 @@ public sealed class MainWindow : Window
                 if (!_gameSettingEditors.TryGetValue(prop.Name, out var editor)) continue;
                 SetEditorValue(editor, prop.GetValue(settings));
             }
+            _loadedGameSettingsFingerprint = BuildGameSettingsFingerprint();
+            _gameSettingsSaveState.Text = "Geladener Stand · keine offenen Änderungen";
+            _gameSettingsSaveState.Foreground = Brush.Parse("#9AA8B7");
             Log(File.Exists(file) ? "Loaded typed game_settings.txt." : "Using default game settings.");
         }
         catch (Exception ex)
         {
             Log("Could not load typed game settings: " + ex.Message);
+        }
+        finally
+        {
+            _loadingGameSettings = false;
         }
     }
 
@@ -1169,12 +1332,55 @@ public sealed class MainWindow : Window
             }
             ConfigIO.WriteGameSettings(settings, file);
             LoadConfig();
+            _loadedGameSettingsFingerprint = BuildGameSettingsFingerprint();
+            _gameSettingsSaveState.Text = $"✓ Gespeichert · {DateTime.Now:HH:mm}";
+            _gameSettingsSaveState.Foreground = Brush.Parse("#45CF8A");
             Log("Saved typed game_settings.txt.");
         }
         catch (Exception ex)
         {
             Log("Could not save typed game settings: " + ex.Message);
+            _gameSettingsSaveState.Text = "Speichern fehlgeschlagen · Details unter Diagnose";
+            _gameSettingsSaveState.Foreground = Brush.Parse("#FF777F");
         }
+    }
+
+    private void MarkGameSettingsDirty()
+    {
+        if (_loadingGameSettings)
+            return;
+
+        if (string.Equals(BuildGameSettingsFingerprint(), _loadedGameSettingsFingerprint, StringComparison.Ordinal))
+        {
+            _gameSettingsSaveState.Text = "Geladener Stand · keine offenen Änderungen";
+            _gameSettingsSaveState.Foreground = Brush.Parse("#9AA8B7");
+        }
+        else
+        {
+            _gameSettingsSaveState.Text = "● Ungespeicherte Änderungen";
+            _gameSettingsSaveState.Foreground = Brush.Parse("#F3C654");
+        }
+    }
+
+    private string BuildGameSettingsFingerprint()
+    {
+        var parts = new List<string>();
+        foreach (var property in typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (!_gameSettingEditors.TryGetValue(property.Name, out var editor))
+                continue;
+
+            var value = editor switch
+            {
+                CheckBox checkBox => checkBox.IsChecked == true ? "true" : "false",
+                ComboBox comboBox => comboBox.SelectedItem?.ToString() ?? string.Empty,
+                TextBox textBox => textBox.Text ?? string.Empty,
+                _ => string.Empty,
+            };
+            parts.Add(property.Name + "=" + value);
+        }
+
+        return string.Join("\n", parts);
     }
 
     private void LoadStarterPackSettings()
@@ -1615,8 +1821,11 @@ public sealed class MainWindow : Window
     private async void CreateBackupAsync()
     {
         var backup = new BackupService(new Progress<string>(Log));
-        await backup.CreateBackupAsync(_serverPath.Text ?? "");
+        SetStatus("Sicherung wird erstellt…");
+        var ok = await backup.CreateBackupAsync(_serverPath.Text ?? "");
+        SetStatus(ok ? "Sicherung erstellt" : "Sicherung fehlgeschlagen");
         RefreshBackups();
+        RefreshFunctionalUi();
     }
 
     private void RefreshBackups()
@@ -1624,29 +1833,55 @@ public sealed class MainWindow : Window
         _backups.Items.Clear();
         var backup = new BackupService(new Progress<string>(Log));
         foreach (var item in backup.GetAvailableBackups(_serverPath.Text ?? ""))
-            _backups.Items.Add(item);
+            _backups.Items.Add(new BackupListItem(item));
     }
 
     private async void RestoreBackupAsync()
     {
-        if (_backups.SelectedItem is not BackupInfo item) return;
+        if (_backups.SelectedItem is not BackupListItem selection) return;
+        var item = selection.Backup;
+        if (_serverProcess.IsRunning)
+        {
+            if (!await _confirmations.ConfirmAsync(
+                    "Server stoppen",
+                    "Der Server läuft noch. Für eine sichere Wiederherstellung muss er zuerst gestoppt werden. Jetzt stoppen?"))
+            {
+                return;
+            }
+
+            _serverProcess.Stop();
+        }
+
         if (!await _confirmations.ConfirmAsync(
-                "Restore backup",
-                $"Restore backup '{item.Name}' over the current server files?"))
+                "Sicherung wiederherstellen",
+                $"Sicherung '{item.Name}' wiederherstellen? Vorher wird automatisch eine Sicherheitskopie des aktuellen Stands erstellt."))
         {
             return;
         }
 
         var backup = new BackupService(new Progress<string>(Log));
-        await backup.RestoreBackupAsync(_serverPath.Text ?? "", item);
+        SetStatus("Sicherheitskopie vor Wiederherstellung…");
+        if (!await backup.CreateBackupAsync(_serverPath.Text ?? ""))
+        {
+            SetStatus("Wiederherstellung abgebrochen");
+            Log("Restore was cancelled because the safety backup failed.");
+            return;
+        }
+
+        SetStatus("Sicherung wird wiederhergestellt…");
+        var ok = await backup.RestoreBackupAsync(_serverPath.Text ?? "", item);
+        SetStatus(ok ? "Sicherung wiederhergestellt" : "Wiederherstellung fehlgeschlagen");
+        ReloadFunctionalServerData();
+        RefreshFunctionalUi();
     }
 
     private async void DeleteBackup()
     {
-        if (_backups.SelectedItem is not BackupInfo item) return;
+        if (_backups.SelectedItem is not BackupListItem selection) return;
+        var item = selection.Backup;
         if (!await _confirmations.ConfirmAsync(
-                "Delete backup",
-                $"Delete backup '{item.Name}'? This cannot be undone."))
+                "Sicherung löschen",
+                $"Sicherung '{item.Name}' endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."))
         {
             return;
         }
@@ -1910,18 +2145,86 @@ public sealed class MainWindow : Window
         return new PluginCatalogItem(plugin, label, installed, enabled, available);
     }
 
-    private CheckBox BuildCatalogCheckBox(PluginCatalogItem item, Action<PluginCatalogItem> toggle)
+    private Control BuildCatalogCheckBox(PluginCatalogItem item, Action<PluginCatalogItem> toggle)
     {
         var checkBox = new CheckBox
         {
-            Content = $"{item.Name} - {item.Status}",
+            Content = new StackPanel
+            {
+                Spacing = 3,
+                Children =
+                {
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 10,
+                        Children =
+                        {
+                            new TextBlock { Text = item.Name, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+                            new TextBlock { Text = item.Status, Foreground = Brush.Parse("#9AA8B7"), FontSize = 12 },
+                        },
+                    },
+                    new TextBlock
+                    {
+                            Text = string.IsNullOrWhiteSpace(PluginDescriptionGerman(item.Name))
+                                ? "Mitgelieferte TABG-Erweiterung"
+                                : PluginDescriptionGerman(item.Name),
+                        Foreground = Brush.Parse("#9AA8B7"),
+                        FontSize = 12,
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    },
+                },
+            },
             IsChecked = item.Enabled,
             IsEnabled = item.CanToggle,
             Tag = item,
-            Margin = new Avalonia.Thickness(0, 0, 0, 2)
+            HorizontalAlignment = HorizontalAlignment.Stretch,
         };
         checkBox.Click += (_, _) => toggle(item);
-        return checkBox;
+        return new Border
+        {
+            BorderBrush = Brush.Parse("#303A47"),
+            BorderThickness = new Avalonia.Thickness(0, 0, 0, 1),
+            Padding = new Avalonia.Thickness(8, 7),
+            Child = checkBox,
+        };
+    }
+
+    private static string PluginDescriptionGerman(string name)
+    {
+        var normalized = name.ToLowerInvariant();
+        if (normalized.Contains("citrus"))
+            return "Grundbibliothek für Adminbefehle, Berechtigungen und zentrale Serverfunktionen.";
+        if (normalized.Contains("anti-cheat"))
+            return "Ermöglicht private oder angepasste Server ohne die normalen EAC-/EOS-Startpfade.";
+        if (normalized.Contains("custom grenades"))
+            return "Ergänzt besondere Granaten und die dazugehörigen Client-Effekte.";
+        if (normalized.Contains("proximity") || normalized.Contains("nähe"))
+            return "Sprachchat, dessen Lautstärke von der Entfernung der Spieler abhängt.";
+        if (normalized.Contains("match core"))
+            return "Steuert Ringe, Loadouts, Abstimmungen, Loot, Timer und Siegbedingungen.";
+        if (normalized.Contains("server logger"))
+            return "Protokolliert Spielernamen sowie PlayFab- und Epic-IDs nachvollziehbar.";
+        if (normalized.Contains("unusedvehicles") || normalized.Contains("unused vehicles"))
+            return "Macht zusätzliche Fahrzeuge wie Helikopter, UFO und HoverBike verfügbar.";
+        if (normalized.Contains("radar"))
+            return "Admin- und Debug-Radar für private Server; sensible Echtspielerdaten bleiben bewusst konfigurierbar.";
+        if (normalized.Contains("fake") || normalized.Contains("dummy"))
+            return "Erzeugt Testspieler für private Entwicklungs- und Funktionstests.";
+        if (normalized.Contains("solo"))
+            return "Vereinfacht lokale Einzelspieler- und Serverfunktionstests.";
+        if (normalized.Contains("coordinates") || normalized.Contains("coords"))
+            return "Zeigt dem modifizierten Client die aktuelle Position an.";
+        if (normalized.Contains("enhanced client"))
+            return "Bündelt zusätzliche Komfortfunktionen für den modifizierten TABG-Client.";
+        if (normalized.Contains("flying"))
+            return "Ergänzt Steuerungen für fliegende Fahrzeuge im modifizierten Client.";
+        if (normalized.Contains("popup"))
+            return "Unterdrückt störende Hinweise, die beim modifizierten Client auftreten können.";
+        if (normalized.Contains("mod settings"))
+            return "Stellt eine Oberfläche für unterstützte Mod-Einstellungen im Client bereit.";
+
+        return string.Empty;
     }
 
     private async void AddServerPluginAsync()
@@ -2080,19 +2383,22 @@ public sealed class MainWindow : Window
     }
 
     private void StartModdedClient()
+        => StartModdedClientCore();
+
+    private bool StartModdedClientCore()
     {
         var clientDir = _moddedClientPath.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(clientDir) || !Directory.Exists(clientDir))
         {
             Log("Select or install a valid modded client folder first.");
-            return;
+            return false;
         }
 
         var executable = ResolveClientLaunchTarget(clientDir);
         if (executable == null)
         {
             Log("No modded TABG launcher found. Install / update client mods first.");
-            return;
+            return false;
         }
 
         try
@@ -2100,7 +2406,7 @@ public sealed class MainWindow : Window
             if (_clientProcess?.HasExited == false)
             {
                 Log("Modded client is already running.");
-                return;
+                return true;
             }
 
             var psi = CreateClientStartInfo(executable, clientDir);
@@ -2113,7 +2419,7 @@ public sealed class MainWindow : Window
             if (!process.Start())
             {
                 Log("Could not start modded client.");
-                return;
+                return false;
             }
 
             process.BeginOutputReadLine();
@@ -2121,11 +2427,15 @@ public sealed class MainWindow : Window
             _clientProcess = process;
 
             SetStatus("Modded client started");
+            RefreshFunctionalUi();
+            return true;
         }
         catch (Exception ex)
         {
             Log("Could not start modded client: " + ex.Message);
             SetStatus("Client start failed");
+            RefreshFunctionalUi();
+            return false;
         }
     }
 
@@ -2141,16 +2451,40 @@ public sealed class MainWindow : Window
     {
         _pluginChecks.Children.Clear();
         var plugins = PluginRegistry.ServerPlugins
-            .Where(p => p.DefaultChecked && p.Kind != PluginKind.CoreDependency)
+            .Where(p => p.Kind != PluginKind.CoreDependency)
             .ToArray();
 
         foreach (var item in PluginCatalogGrouper.Collapse(plugins))
         {
+            var parts = item.Label.Split(" - ", 2, StringSplitOptions.None);
+            var name = parts[0];
+            var description = PluginDescriptionGerman(name);
+            if (string.IsNullOrWhiteSpace(description))
+                description = "Optionale Funktion für angepasste TABG-Server.";
+            if (item.Primary.RequiresClientMod)
+                description += " Benötigt die passende Client-Erweiterung.";
+
             _pluginChecks.Children.Add(new CheckBox
             {
-                Content = item.Label,
+                Content = new StackPanel
+                {
+                    Spacing = 2,
+                    Children =
+                    {
+                        new TextBlock { Text = name, FontWeight = FontWeight.SemiBold },
+                        new TextBlock
+                        {
+                            Text = description,
+                            Foreground = Brush.Parse("#93A4B7"),
+                            FontSize = 12,
+                            TextWrapping = TextWrapping.Wrap,
+                        },
+                    },
+                },
                 Tag = item.Primary,
                 IsChecked = item.Primary.DefaultChecked,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Padding = new Avalonia.Thickness(4),
             });
         }
     }
@@ -2183,6 +2517,7 @@ public sealed class MainWindow : Window
         {
             Log($"Server exited with code {code}.");
             SetStatus("Server stopped");
+            RefreshFunctionalUi();
         };
     }
 
@@ -2212,6 +2547,7 @@ public sealed class MainWindow : Window
 
         RefreshServerModLists();
         LoadModSettings();
+        RefreshFunctionalUi();
     }
 
     private void DetectClientPath()
@@ -2225,6 +2561,7 @@ public sealed class MainWindow : Window
 
         RefreshClientModLists();
         LoadPluginSettingsPanels(_serverPath.Text ?? "");
+        RefreshFunctionalUi();
     }
 
     private async void BrowseServerAsync()
@@ -2233,6 +2570,8 @@ public sealed class MainWindow : Window
         {
             RefreshServerModLists();
             LoadModSettings();
+            ReloadFunctionalServerData();
+            RefreshFunctionalUi();
         }
     }
 
@@ -2242,6 +2581,7 @@ public sealed class MainWindow : Window
         {
             RefreshClientModLists();
             LoadPluginSettingsPanels(_serverPath.Text ?? "");
+            RefreshFunctionalUi();
         }
     }
 
@@ -2251,6 +2591,7 @@ public sealed class MainWindow : Window
         {
             RefreshClientModLists();
             LoadPluginSettingsPanels(_serverPath.Text ?? "");
+            RefreshFunctionalUi();
         }
     }
 
@@ -2278,6 +2619,165 @@ public sealed class MainWindow : Window
             cb.IsChecked = value;
     }
 
+    private void ValidateGameSettingsEditors(IReadOnlyDictionary<string, TextBlock> warningBlocks)
+    {
+        var values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var minimums = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var maximums = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in typeof(GameSettingsData).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (!_gameSettingEditors.TryGetValue(property.Name, out var editor))
+                continue;
+
+            try
+            {
+                values[property.Name] = ConvertEditorValue(editor, property.PropertyType);
+            }
+            catch
+            {
+                // While a user is typing, incomplete numeric values are validated on the next edit.
+            }
+
+            if (property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(double))
+            {
+                minimums[property.Name] = 0;
+                maximums[property.Name] = double.MaxValue;
+                if (KnowledgeIndex.Current.GameSettings.TryGetValue(property.Name, out var knowledge)
+                    && knowledge.Range != null)
+                {
+                    if (double.TryParse(knowledge.Range.Min, NumberStyles.Any, CultureInfo.InvariantCulture, out var min))
+                        minimums[property.Name] = min;
+                    if (double.TryParse(knowledge.Range.Max, NumberStyles.Any, CultureInfo.InvariantCulture, out var max))
+                        maximums[property.Name] = max;
+                }
+            }
+        }
+
+        var warnings = new ConfigValidationService().Validate(values, minimums, maximums);
+        foreach (var pair in warningBlocks)
+        {
+            if (warnings.TryGetValue(pair.Key, out var messages) && messages.Count > 0)
+            {
+                pair.Value.Text = "⚠ " + string.Join(" · ", messages.Select(TranslateValidationWarning));
+                pair.Value.IsVisible = true;
+            }
+            else
+            {
+                pair.Value.Text = string.Empty;
+                pair.Value.IsVisible = false;
+            }
+        }
+    }
+
+    private static string GameSettingDisplayName(string name) => name switch
+    {
+        "ServerName" => "Servername",
+        "ServerDescription" => "Serverbeschreibung",
+        "ServerBrowserIP" => "Öffentliche Server-IP",
+        "Password" => "Serverpasswort",
+        "TeamMode" => "Teammodus",
+        "GameMode" => "Spielmodus",
+        "Port" => "Serverport",
+        "MaxPlayers" => "Maximale Spieler",
+        "GroupsToStart" => "Gruppen zum Starten",
+        "MinPlayersToForceStart" => "Mindestspieler für erzwungenen Start",
+        "PlayersToStart" => "Zum Start benötigte Spieler",
+        "KillsToWin" => "Kills zum Gewinnen",
+        "RoundsToWin" => "Runden zum Gewinnen",
+        "NumberOfLivesPerTeam" => "Leben pro Team",
+        "MaxNumberOfTeamsAuto" => "Maximale automatisch erstellte Teams",
+        "SpawnBots" => "Bots erzeugen",
+        "UseSouls" => "Seelen verwenden",
+        "BombTime" => "Bombenzeit",
+        "RoundTime" => "Rundendauer",
+        "CarSpawnRate" => "Fahrzeug-Spawnrate",
+        "ForceStartTime" => "Zeit bis zum erzwungenen Start",
+        "Countdown" => "Countdown",
+        "BaseRingTime" => "Grunddauer des Rings",
+        "TimeBeforeFirstRing" => "Zeit bis zum ersten Ring",
+        "StripLootByPercentage" => "Loot-Reduktion",
+        "WeaponDissapearTime" => "Zeit bis Waffen verschwinden",
+        "BombDefuseTime" => "Entschärfungszeit",
+        "RingSizes" => "Ringgrößen",
+        "RingSpeeds" => "Ringgeschwindigkeiten",
+        "Relay" => "Steam-Relay verwenden",
+        "AutoTeam" => "Teams automatisch bilden",
+        "AllowRespawnMinigame" => "Respawn-Minispiel erlauben",
+        "UseTimedForceStart" => "Zeitgesteuerten Start verwenden",
+        "AntiCheat" => "Anti-Cheat aktivieren",
+        "LAN" => "Nur im lokalen Netzwerk",
+        "AllowSpectating" => "Zuschauen erlauben",
+        "NoRing" => "Ring deaktivieren",
+        "UseKicks" => "Kicks erlauben",
+        "DEBUG_DEATHMATCH" => "Deathmatch-Debugmodus",
+        "UsePlayFabStats" => "PlayFab-Statistiken verwenden",
+        "AllowRejoins" => "Wiedereinstieg erlauben",
+        "AntiCheatDebugLogging" => "Anti-Cheat-Debugprotokoll",
+        "AntiCheatEventLogging" => "Anti-Cheat-Ereignisprotokoll",
+        _ => HumanizeIdentifier(name),
+    };
+
+    private static string GameSettingFallbackDescription(string name) => name switch
+    {
+        "ServerName" => "Dieser Name erscheint in der Serverliste.",
+        "ServerDescription" => "Kurze Beschreibung für Spieler in der Serverliste.",
+        "Password" => "Leer lassen, wenn der Server ohne Passwort erreichbar sein soll.",
+        "GameMode" => "Der grundlegende TABG-Spielmodus.",
+        "TeamMode" => "Legt die Teamgröße und Gruppierung fest.",
+        "MaxPlayers" => "Wie viele Spieler gleichzeitig teilnehmen können.",
+        "PlayersToStart" => "Die Runde wartet, bis mindestens diese Zahl erreicht ist.",
+        "Port" => "Netzwerkport des Dedicated Servers.",
+        "RingSizes" => "Kommagetrennte Größen für die Ringphasen.",
+        "RingSpeeds" => "Kommagetrennte Geschwindigkeiten für die Ringphasen.",
+        _ => $"Technischer Schlüssel: {name}",
+    };
+
+    private static string TranslateValidationWarning(string message)
+    {
+        if (message.Contains("maximum of 253", StringComparison.OrdinalIgnoreCase))
+            return "Der Server unterstützt höchstens 253 Spieler.";
+        if (message.Contains("PlayersToStart exceeds MaxPlayers", StringComparison.OrdinalIgnoreCase))
+            return "Die zum Start benötigten Spieler überschreiten die maximale Spielerzahl.";
+        if (message.Contains("MinPlayersToForceStart exceeds MaxPlayers", StringComparison.OrdinalIgnoreCase))
+            return "Die Mindestspielerzahl für den erzwungenen Start ist zu hoch.";
+        if (message.Contains("unless GameMode is Brawl", StringComparison.OrdinalIgnoreCase))
+            return "Dieser Wert wirkt nur im Spielmodus Brawl.";
+        if (message.Contains("unless GameMode is Bomb", StringComparison.OrdinalIgnoreCase))
+            return "Dieser Wert wirkt nur im Spielmodus Bomb.";
+        if (message.Contains("unless GameMode is BattleRoyale", StringComparison.OrdinalIgnoreCase))
+            return "Ringwerte wirken nur im Spielmodus Battle Royale.";
+        if (message.Contains("when NoRing is enabled", StringComparison.OrdinalIgnoreCase))
+            return "Ringwerte werden ignoriert, solange der Ring deaktiviert ist.";
+        if (message.Contains("ignored when UseTimedForceStart", StringComparison.OrdinalIgnoreCase))
+            return "Dieser Wert wird ohne zeitgesteuerten Start ignoriert.";
+        if (message.Contains("Relay is typically disabled for LAN", StringComparison.OrdinalIgnoreCase))
+            return "Für einen LAN-Server sollte das Relay normalerweise deaktiviert sein.";
+        if (message.Contains("Bots in BattleRoyale", StringComparison.OrdinalIgnoreCase))
+            return "Bots können im Battle-Royale-Modus instabil sein.";
+        if (message.Contains("outside the valid range", StringComparison.OrdinalIgnoreCase))
+            return message.Replace("Value", "Wert", StringComparison.OrdinalIgnoreCase)
+                .Replace("is outside the valid range", "liegt außerhalb des gültigen Bereichs", StringComparison.OrdinalIgnoreCase);
+        return message;
+    }
+
+    private static string HumanizeIdentifier(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return value;
+
+        var builder = new StringBuilder(value.Length + 8);
+        for (var i = 0; i < value.Length; i++)
+        {
+            var current = value[i];
+            if (i > 0 && char.IsUpper(current) && !char.IsUpper(value[i - 1]))
+                builder.Append(' ');
+            builder.Append(current == '_' ? ' ' : current);
+        }
+
+        return builder.ToString();
+    }
+
     private void SelectSigmaPreset()
     {
         foreach (var cb in _pluginChecks.Children.OfType<CheckBox>())
@@ -2292,15 +2792,15 @@ public sealed class MainWindow : Window
     private static Control CreateGameSettingEditor(PropertyInfo prop)
     {
         if (prop.PropertyType == typeof(bool))
-            return new CheckBox();
+            return new CheckBox { HorizontalAlignment = HorizontalAlignment.Left };
 
         if (prop.Name == nameof(GameSettingsData.TeamMode))
-            return new ComboBox { Width = 160, ItemsSource = new[] { "SQUAD", "DUO", "SOLO" } };
+            return new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = new[] { "SQUAD", "DUO", "SOLO" } };
 
         if (prop.Name == nameof(GameSettingsData.GameMode))
-            return new ComboBox { Width = 180, ItemsSource = new[] { "BattleRoyale", "Brawl", "Test", "Bomb", "Deception" } };
+            return new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = new[] { "BattleRoyale", "Brawl", "Test", "Bomb", "Deception" } };
 
-        return new TextBox { Width = prop.PropertyType == typeof(string) ? 260 : 120 };
+        return new TextBox { MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Stretch };
     }
 
     private static void SetEditorValue(Control editor, object? value)
@@ -2531,6 +3031,8 @@ FalloffCurve = {_proxFalloff.SelectedItem}
         _moddedClientPath.Text = "";
         TryAutoDetectPaths();
         RefreshSettingsSummary();
+        ShowInitialFunctionalPage();
+        RefreshFunctionalUi();
     }
 
     private void OpenPath(string? path)
@@ -2572,6 +3074,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
         }
 
         QueueVisibleLogLine(line);
+        UpdateFunctionalActivity(message);
     }
 
     private void QueueVisibleLogLine(string line)
@@ -2614,24 +3117,55 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
     private void SetStatus(string status)
     {
-        _dispatcher.Post(() => _status.Text = status);
+        _dispatcher.Post(() =>
+        {
+            _functionalOperationStatus = status;
+            _status.Text = status;
+            RefreshFunctionalUi();
+        });
     }
 
-    private static Button Button(string text, Action action)
+    internal void ReportUnexpectedUiException(Exception exception)
+    {
+        Log("UI-Aktion fehlgeschlagen, App läuft weiter: " + exception);
+        SetStatus("Aktion fehlgeschlagen · Details unter Diagnose");
+    }
+
+    private Button Button(string text, Action action)
     {
         var button = new Button { Content = text, MinWidth = 110 };
-        button.Click += (_, _) => action();
+        button.Click += (_, _) =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                ReportUnexpectedUiException(ex);
+            }
+        };
         return button;
     }
 
-    private static Button Button(string text, Func<Task> action)
+    private Button Button(string text, Func<Task> action)
     {
         var button = new Button { Content = text, MinWidth = 110 };
-        button.Click += async (_, _) => await action();
+        button.Click += async (_, _) =>
+        {
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                ReportUnexpectedUiException(ex);
+            }
+        };
         return button;
     }
 
-    private static Button FlowButton(string text, Action action)
+    private Button FlowButton(string text, Action action)
     {
         var button = Button(text, action);
         button.Margin = new Avalonia.Thickness(0, 0, 6, 6);
@@ -2652,7 +3186,7 @@ FalloffCurve = {_proxFalloff.SelectedItem}
 
     private static TextBlock Label(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center };
 
-    private static Control PathRow(string label, TextBox box, Action browse)
+    private Control PathRow(string label, TextBox box, Action browse)
     {
         box.MinWidth = 560;
         return new StackPanel
@@ -2955,6 +3489,12 @@ FalloffCurve = {_proxFalloff.SelectedItem}
         public override string ToString() => $"{Name} - {Epic} - level {PermLevel}";
     }
 
+    private sealed record BackupListItem(BackupInfo Backup)
+    {
+        public override string ToString()
+            => $"{Backup.CreatedDate:dd.MM.yyyy · HH:mm}  ·  {Backup.SizeInBytes / 1024d / 1024d:0.#} MB  ·  {Backup.Name}";
+    }
+
     private sealed record PluginFileItem(string Path, bool Enabled)
     {
         public override string ToString()
@@ -2972,12 +3512,12 @@ FalloffCurve = {_proxFalloff.SelectedItem}
         public string Description => SplitLabel(Label).description;
         public string Dlls => Plugin.DllNames.Length == 0 ? "Handled by installer" : string.Join(", ", Plugin.DllNames);
         public string Status => Enabled
-            ? "Enabled"
+            ? "Aktiv"
             : Installed
-                ? "Installed disabled"
+                ? "Installiert · deaktiviert"
                 : Available
-                    ? "Ready to install"
-                    : "Missing bundled DLL";
+                    ? "Bereit zur Installation"
+                    : "Mitgelieferte Datei fehlt";
         public bool CanToggle => Installed || Enabled || Available;
 
         public override string ToString()

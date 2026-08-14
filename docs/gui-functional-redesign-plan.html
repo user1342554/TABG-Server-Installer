@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>TABG Server Installer – funktionaler GUI-Neubauplan</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --surface: #12161c;
+      --surface-2: #181e26;
+      --surface-3: #202834;
+      --line: #2b3645;
+      --text: #eef3f8;
+      --muted: #9aa8b7;
+      --blue: #55a8ff;
+      --blue-2: #1677d2;
+      --green: #45cf8a;
+      --yellow: #f3c654;
+      --red: #ff6b73;
+      --purple: #aa87ff;
+      --radius: 14px;
+      --shadow: 0 18px 60px rgba(0,0,0,.30);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 85% 0%, rgba(35,119,202,.14), transparent 30rem),
+        var(--bg);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; }
+    code { color: #bddcff; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    strong { color: #fff; }
+
+    .layout { display: grid; grid-template-columns: 265px minmax(0,1fr); min-height: 100vh; }
+    .layout > * { min-width: 0; }
+    .toc {
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+      padding: 28px 20px; border-right: 1px solid var(--line); background: rgba(11,13,16,.94);
+    }
+    .brand { display: flex; gap: 11px; align-items: center; margin-bottom: 26px; font-weight: 750; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--blue); color: #07111c; font-weight: 900; }
+    .toc small { display:block; color:var(--muted); font-weight:500; }
+    .toc nav { display: grid; gap: 3px; }
+    .toc nav a { padding: 8px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; }
+    .toc nav a:hover { background: var(--surface-2); color: var(--text); }
+    .toc .decision { margin-top: 24px; padding: 12px; border: 1px solid #245a42; border-radius: 10px; background:#10251b; color:#bcebd2; font-size:13px; }
+
+    main { width: min(1320px, 100%); padding: 48px clamp(24px,5vw,76px) 100px; }
+    section { scroll-margin-top: 24px; margin: 0 0 82px; }
+    .hero { padding: 34px 0 18px; }
+    .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:800; }
+    h1 { margin: 10px 0 16px; max-width: 980px; font-size: clamp(38px,6vw,74px); line-height:1.02; letter-spacing:-.045em; }
+    h2 { margin:0 0 14px; font-size:clamp(27px,4vw,42px); line-height:1.12; letter-spacing:-.025em; }
+    h3 { margin:0 0 8px; font-size:19px; }
+    h4 { margin:0 0 6px; font-size:15px; }
+    .lead { max-width: 900px; color:#c0cad5; font-size:20px; }
+    .section-intro { max-width:900px; color:var(--muted); font-size:17px; margin:0 0 26px; }
+    .meta { color:var(--muted); margin-top:22px; }
+
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:32px; }
+    .stat { padding:18px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); }
+    .stat b { display:block; font-size:30px; color:#fff; }
+    .stat span { color:var(--muted); }
+
+    .verdict { display:grid; grid-template-columns: 1.3fr .7fr; gap:18px; }
+    .panel { padding:22px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
+    .panel.blue { border-color:#245680; background:linear-gradient(140deg,#0e2033,#12161c 72%); }
+    .panel.green { border-color:#245a42; background:linear-gradient(140deg,#10271c,#12161c 72%); }
+    .panel.warn { border-color:#65542a; background:linear-gradient(140deg,#2a230f,#12161c 72%); }
+    .big-quote { font-size:25px; line-height:1.35; letter-spacing:-.018em; }
+    .checks, .plain-list { list-style:none; padding:0; margin:14px 0 0; }
+    .checks li, .plain-list li { position:relative; padding:7px 0 7px 26px; }
+    .checks li::before { content:"✓"; position:absolute; left:0; color:var(--green); font-weight:900; }
+    .plain-list li::before { content:"→"; position:absolute; left:0; color:var(--blue); }
+
+    .figure { margin:24px 0; }
+    .figure figcaption { margin-top:12px; color:var(--muted); font-size:13px; }
+    .window { overflow:hidden; border:1px solid #3a4654; border-radius:16px; background:#090b0e; box-shadow:0 22px 80px rgba(0,0,0,.42); }
+    .windowbar { display:flex; align-items:center; gap:7px; height:38px; padding:0 13px; background:#1b2129; color:#98a4b1; font-size:12px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:#556170; }
+    .windowtitle { margin-left:8px; }
+    .current-ui { min-height:490px; padding:14px; color:#efefef; font-size:12px; }
+    .tabs { display:flex; gap:22px; color:#aeb4bb; font-size:18px; border-bottom:1px solid #161a1e; }
+    .tabs span { padding:7px 0; }
+    .tabs .active { color:#fff; border-bottom:2px solid #3191ef; }
+    .subtabs { display:flex; gap:20px; margin:10px 18px; color:#adb4bc; font-size:17px; }
+    .subtabs .active { color:#fff; border-bottom:2px solid #3191ef; }
+    .legacy-form { padding:0 22px; }
+    .legacy-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+    .fake-input { height:30px; min-width:200px; padding:5px 8px; border:1px solid #747b84; border-radius:3px; background:#090b0e; color:#fff; }
+    .fake-input.long { flex:1; }
+    .fake-btn { padding:6px 10px; border-radius:3px; background:#34373b; white-space:nowrap; }
+    .legacy-log { position:relative; height:142px; margin-top:178px; padding:8px; border:1px solid #777; font:12px/1.35 ui-monospace,monospace; color:#eee; }
+    .callout-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+    .callout { padding:12px; border-left:3px solid var(--red); background:#1a171a; color:#d5cdd3; font-size:13px; }
+
+    .principles { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .principle { min-height:160px; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+    .number { display:grid; place-items:center; width:32px; height:32px; margin-bottom:14px; border-radius:9px; background:#153a5b; color:#9bd0ff; font-weight:800; }
+    .principle p { color:var(--muted); margin:8px 0 0; }
+
+    .flow-svg { width:100%; height:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); }
+    .legend { display:flex; gap:18px; flex-wrap:wrap; color:var(--muted); font-size:13px; margin-top:10px; }
+    .legend i { display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:3px; }
+
+    .journeys { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .journey { padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+    .journey .tag { display:inline-block; padding:3px 8px; margin-bottom:12px; border-radius:99px; color:#b8dbff; background:#163752; font-size:11px; text-transform:uppercase; font-weight:800; letter-spacing:.08em; }
+    .journey ol { padding-left:20px; color:#c8d1db; }
+    .journey li { margin:8px 0; }
+
+    .mock { display:grid; grid-template-columns:210px minmax(0,1fr); min-height:620px; background:#0e1217; }
+    .mock-sidebar { padding:18px 12px; border-right:1px solid #2c3642; background:#131820; }
+    .server-chip { padding:11px; margin-bottom:18px; border:1px solid #354252; border-radius:9px; background:#1a2029; }
+    .server-chip small { display:block; color:var(--muted); }
+    .mock-nav { display:grid; gap:4px; }
+    .mock-nav div { padding:9px 11px; border-radius:8px; color:#a7b2be; }
+    .mock-nav .active { color:#fff; background:#1d3f60; }
+    .mock-nav .advanced { margin-top:16px; color:#7f8b99; font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .mock-content { padding:28px; }
+    .mock-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:22px; }
+    .mock-head h3 { font-size:25px; }
+    .mock-head p { margin:4px 0; color:var(--muted); }
+    .status-pill { padding:7px 11px; border-radius:99px; color:#aee8ca; background:#133827; white-space:nowrap; font-weight:700; font-size:12px; }
+    .status-pill.stopped { color:#d7dde4; background:#303844; }
+    .primary { display:inline-block; padding:11px 18px; border-radius:9px; background:var(--blue-2); color:#fff; font-weight:750; }
+    .secondary { display:inline-block; padding:10px 15px; border:1px solid #3c4958; border-radius:9px; background:#1b222b; color:#d7dee6; }
+    .danger { color:#ffc0c4; border-color:#71393d; background:#30171b; }
+    .action-row { display:flex; gap:9px; flex-wrap:wrap; margin:15px 0; }
+    .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .ui-card { padding:16px; border:1px solid #2e3946; border-radius:11px; background:#151b22; }
+    .ui-card small { color:var(--muted); }
+    .metric { display:block; margin-top:6px; font-size:23px; font-weight:780; }
+    .tasklist { margin-top:15px; border:1px solid #2d3845; border-radius:11px; overflow:hidden; }
+    .task { display:grid; grid-template-columns:24px 1fr auto; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #28313c; }
+    .task:last-child { border-bottom:0; }
+    .ok { color:var(--green); }
+    .warning { color:var(--yellow); }
+    .muted { color:var(--muted); }
+
+    .wizard { min-height:600px; padding:26px; background:#0f141a; }
+    .stepper { display:flex; align-items:center; margin-bottom:32px; color:#8e9aa8; font-size:12px; }
+    .stepper span { display:grid; place-items:center; width:27px; height:27px; margin-right:7px; border-radius:50%; background:#27303a; }
+    .stepper .done span { background:#174d35; color:#8ee2b6; }
+    .stepper .now { color:#fff; }
+    .stepper .now span { background:var(--blue-2); }
+    .stepper i { flex:1; height:1px; margin:0 10px; background:#34404d; }
+    .wizard-body { max-width:760px; margin:0 auto; }
+    .choice-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:20px 0; }
+    .choice { padding:17px; border:1px solid #344251; border-radius:11px; background:#151b22; }
+    .choice.selected { border-color:#3e9af1; background:#122a40; box-shadow:inset 0 0 0 1px #3e9af1; }
+    .choice b { display:block; margin-bottom:4px; }
+    .choice small { color:var(--muted); }
+    .path-check { display:flex; gap:10px; align-items:center; padding:12px; border:1px solid #285b43; border-radius:9px; background:#10271c; color:#bbe9d1; }
+    .wizard-footer { display:flex; justify-content:space-between; align-items:center; margin-top:28px; }
+
+    .config-shell { display:grid; grid-template-columns:230px 1fr; min-height:610px; background:#0e1217; }
+    .config-list { padding:18px; border-right:1px solid #2c3642; }
+    .config-list .search { padding:9px; border:1px solid #3b4652; border-radius:8px; color:#7f8b96; margin-bottom:14px; }
+    .config-list div:not(.search) { padding:9px; border-radius:7px; color:#aab4bf; }
+    .config-list .active { color:#fff!important; background:#1b3e5d; }
+    .config-editor { padding:24px; }
+    .savebar { display:flex; align-items:center; justify-content:space-between; padding:11px 13px; margin-bottom:16px; border:1px solid #5f5127; border-radius:9px; background:#2a230e; color:#f2daa0; }
+    .form-section { margin-top:16px; padding:17px; border:1px solid #2d3946; border-radius:11px; background:#151b22; }
+    .form-row { display:grid; grid-template-columns:minmax(150px,1fr) minmax(170px,240px); gap:18px; align-items:center; padding:11px 0; border-bottom:1px solid #28323d; }
+    .form-row:last-child { border:0; }
+    .form-row small { display:block; color:var(--muted); }
+    .control { padding:8px 10px; border:1px solid #465361; border-radius:7px; background:#0f141a; color:#e7edf3; }
+    .inline-warning { margin-top:6px; color:#f0ce79; font-size:12px; }
+
+    .plugin-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .plugin { display:grid; grid-template-columns:1fr auto; gap:10px; padding:15px; border:1px solid #2e3a47; border-radius:11px; background:#151b22; }
+    .plugin p { margin:3px 0 10px; color:var(--muted); font-size:12px; }
+    .badges { display:flex; gap:5px; flex-wrap:wrap; }
+    .badge { padding:2px 6px; border-radius:99px; background:#293340; color:#b7c1cc; font-size:10px; }
+    .switch { width:39px; height:22px; padding:3px; border-radius:99px; background:#35404c; }
+    .switch.on { background:#217b51; }
+    .switch::after { content:""; display:block; width:16px; height:16px; border-radius:50%; background:#fff; }
+    .switch.on::after { margin-left:17px; }
+
+    table { width:100%; border-collapse:collapse; border:1px solid var(--line); background:var(--surface); }
+    th, td { padding:11px 13px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { position:sticky; top:0; background:#1a212a; color:#dfe8f1; font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+    td { color:#c0cad5; }
+    tr:last-child td { border-bottom:0; }
+    .keep { color:#95e1b8; font-weight:700; }
+    .move { color:#a8d4ff; font-weight:700; }
+
+    .state-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .state { padding:17px; border:1px solid var(--line); border-radius:11px; background:var(--surface); }
+    .state-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .state p { margin:8px 0 0; color:var(--muted); }
+
+    .timeline { position:relative; margin-top:28px; }
+    .phase { display:grid; grid-template-columns:120px 1fr 110px; gap:18px; padding:0 0 28px 24px; border-left:2px solid #2c4054; }
+    .phase::before { content:""; position:absolute; left:-6px; width:10px; height:10px; border-radius:50%; background:var(--blue); box-shadow:0 0 0 5px #112334; }
+    .phase h3 { font-size:17px; }
+    .phase p { margin:5px 0; color:var(--muted); }
+    .phase ul { margin:8px 0 0; padding-left:18px; color:#c7d0da; }
+    .effort { color:#9bcfff; font-weight:700; text-align:right; }
+    .gate { color:#91deb5; font-size:12px; }
+
+    .tree { padding:18px; overflow:auto; border:1px solid var(--line); border-radius:12px; background:#0d1116; color:#c6d1dc; font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre; }
+    .test-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .test-card { padding:16px; border:1px solid var(--line); border-radius:11px; background:var(--surface); }
+    .test-card b { color:#fff; }
+    .test-card p { margin:6px 0 0; color:var(--muted); }
+    .final-box { padding:28px; border:1px solid #2f6a4d; border-radius:16px; background:linear-gradient(140deg,#10301f,#11171a); }
+    .final-box h2 { max-width:850px; }
+    .footer { margin-top:80px; padding-top:22px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+
+    @media (max-width: 1000px) {
+      .layout { grid-template-columns:1fr; }
+      .toc { position:relative; height:auto; border-right:0; border-bottom:1px solid var(--line); }
+      .toc nav { grid-template-columns:repeat(3,1fr); }
+      .stats, .principles, .journeys, .test-grid { grid-template-columns:repeat(2,1fr); }
+      .verdict { grid-template-columns:1fr; }
+    }
+    @media (max-width: 700px) {
+      main { padding:30px 16px 70px; }
+      h1 { font-size:34px; overflow-wrap:anywhere; }
+      .toc nav { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .toc .decision { overflow-wrap:anywhere; }
+      .stats, .principles, .journeys, .test-grid, .state-grid, .card-grid, .plugin-grid, .choice-grid, .callout-row { grid-template-columns:1fr; }
+      .mock, .config-shell { grid-template-columns:1fr; }
+      .mock-sidebar, .config-list { border-right:0; border-bottom:1px solid var(--line); }
+      .mock-nav { grid-template-columns:repeat(2,1fr); }
+      .phase { grid-template-columns:1fr; }
+      .effort { text-align:left; }
+      .form-row { grid-template-columns:1fr; gap:7px; }
+    }
+    @media print {
+      body { background:#fff; color:#111; }
+      .layout { display:block; }
+      .toc { display:none; }
+      main { width:100%; padding:0; }
+      section { break-inside:avoid; margin-bottom:34px; }
+      .panel, .principle, .journey, table, .state, .test-card { box-shadow:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc">
+      <div class="brand"><div class="brand-mark">T</div><div>TABG GUI-Plan<small>Funktion vor Dekoration</small></div></div>
+      <nav aria-label="Inhalt">
+        <a href="#entscheidung">Entscheidung</a>
+        <a href="#analyse">Ist-Analyse</a>
+        <a href="#prinzipien">Leitprinzipien</a>
+        <a href="#struktur">Zielstruktur</a>
+        <a href="#ablaeufe">Nutzerabläufe</a>
+        <a href="#screens">Bildschirme</a>
+        <a href="#zustaende">Zustände</a>
+        <a href="#vollstaendigkeit">Funktionsabdeckung</a>
+        <a href="#umsetzung">Umsetzung</a>
+        <a href="#tests">Prüfung</a>
+        <a href="#abnahme">Abnahme</a>
+      </nav>
+      <div class="decision">Empfehlung: Avalonia als gemeinsame Oberfläche behalten, aber den 3.001-Zeilen-MainWindow-Monolithen schrittweise durch zustandsgetriebene Views ersetzen.</div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">Konkreter Produkt- und Umsetzungsplan</div>
+        <h1>Ein Server-Manager, den man ohne Anleitung bedienen kann.</h1>
+        <p class="lead">Dieser Plan reduziert nicht den Funktionsumfang. Er ordnet sämtliche Funktionen nach Nutzerziel, zeigt immer genau die nächste sinnvolle Aktion und verschiebt technische Werkzeuge dorthin, wo erfahrene Nutzer sie weiterhin finden.</p>
+        <div class="stats">
+          <div class="stat"><b>1</b><span>klarer Erststart-Ablauf</span></div>
+          <div class="stat"><b>4</b><span>primäre Arbeitsbereiche</span></div>
+          <div class="stat"><b>0</b><span>verlorene Funktionen</span></div>
+          <div class="stat"><b>25</b><span>Entwicklertage, realistisch</span></div>
+        </div>
+        <p class="meta">Grundlage: aktueller Cross-Platform-Avalonia-Stand, bestehende WPF-Oberfläche und Paritätsdokumentation · 4. August 2026</p>
+      </header>
+
+      <section id="entscheidung">
+        <div class="eyebrow">01 · Entscheidung</div>
+        <h2>Kein kosmetisches Redesign. Eine funktionale Neuordnung.</h2>
+        <div class="verdict">
+          <div class="panel blue">
+            <div class="big-quote">Der Standardnutzer sieht nur, was er für seinen aktuellen Zustand braucht. Alles Weitere bleibt erreichbar, aber nicht gleichzeitig sichtbar.</div>
+            <ul class="checks">
+              <li>Ein Assistent führt sicher bis zum ersten Serverstart.</li>
+              <li>Die Übersicht ersetzt „Idle“ durch verständliche Bereitschafts- und Fehlerzustände.</li>
+              <li>Konfiguration beginnt mit Spielmodi und Presets, nicht mit Dateinamen.</li>
+              <li>Logs, DLL-Dateien und Raw Config werden zu Diagnose-/Expertenwerkzeugen.</li>
+            </ul>
+          </div>
+          <div class="panel green">
+            <h3>Erfolg bedeutet</h3>
+            <p>Eine neue Person kann einen Server installieren, konfigurieren, starten und einen Fehlerbericht exportieren, ohne README oder Discord-Hilfe zu benötigen.</p>
+            <p><strong>Messbar:</strong> höchstens eine primäre Aktion pro Zustand, verständliche Fehlermeldung mit Lösung und vollständige Tastaturbedienung.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="analyse">
+        <div class="eyebrow">02 · Ist-Analyse</div>
+        <h2>Warum die heutige Oberfläche kompliziert wirkt</h2>
+        <p class="section-intro">Die aktuelle Linux-/Cross-Platform-App startet direkt in einer Werkzeugansicht. Sechs Haupt-Tabs, verschachtelte Unter-Tabs und ein permanentes Log konkurrieren um Aufmerksamkeit. Alle Schaltflächen sehen gleich wichtig aus.</p>
+
+        <figure class="figure">
+          <div class="window" role="img" aria-label="Rekonstruktion der aktuellen TABG Server Installer Startansicht">
+            <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="windowtitle">TABG Server Installer – aktuelle Avalonia-Oberfläche</span></div>
+            <div class="current-ui">
+              <div style="color:#bbb;margin-bottom:4px">Idle</div>
+              <div class="tabs"><span class="active">Setup</span><span>Server</span><span>Config</span><span>Mods</span><span>Reference</span><span>Settings</span></div>
+              <div class="subtabs"><span class="active">Server install</span><span>Client install</span></div>
+              <div class="legacy-form">
+                <div class="legacy-row"><span>Server folder</span><span class="fake-input long">/home/.../TotallyAccurateBattlegroundsDedicatedServer</span><span class="fake-btn">Browse</span></div>
+                <div class="legacy-row"><span class="fake-btn">Create folder</span><span class="fake-btn">SteamCMD install/update</span><span class="fake-btn">Detect server</span></div>
+                <div class="legacy-row"><span>Steam user</span><span class="fake-input">anonymous</span><span>Steam password</span><span class="fake-input"></span><span>Steam Guard</span></div>
+                <div class="legacy-row"><span class="fake-btn">Prepare / repair server</span><span class="fake-btn">Cancel install</span><span class="fake-btn">Reload plugin list</span></div>
+              </div>
+              <div class="legacy-log">[16:37:39] Loaded ring and spawn settings.<br>[16:37:39] PlayerPerms.json not found yet.<br>[16:37:39] Detected server path: /home/...<br>[16:37:39] Avalonia app started.<br>[16:37:39] Main window opened.</div>
+            </div>
+          </div>
+          <figcaption>Bild 1 – Funktionsgetreue Rekonstruktion des live geprüften Erstbildschirms. Das Log nimmt rund ein Viertel der Fläche ein, obwohl noch keine Diagnoseaufgabe besteht.</figcaption>
+        </figure>
+
+        <div class="callout-row">
+          <div class="callout"><strong>Kein Ablauf</strong><br>„Detect“, „Create“, „SteamCMD“ und „Prepare“ erklären ihre Reihenfolge nicht.</div>
+          <div class="callout"><strong>Technische Sprache</strong><br>BepInEx, DLLs, Raw, SteamCMD und Startargumente setzen Vorwissen voraus.</div>
+          <div class="callout"><strong>Falsche Gewichtung</strong><br>Start, Stop, Abbrechen und Reparieren bleiben unabhängig vom Zustand sichtbar.</div>
+          <div class="callout"><strong>Zu viele Ebenen</strong><br>6 Hauptbereiche, bis zu 7 Konfigurations-Unterbereiche und weitere Unter-Tabs.</div>
+        </div>
+      </section>
+
+      <section id="prinzipien">
+        <div class="eyebrow">03 · Leitprinzipien</div>
+        <h2>Sechs Regeln steuern jede UI-Entscheidung</h2>
+        <div class="principles">
+          <div class="principle"><div class="number">1</div><h3>Zustand vor Funktion</h3><p>Die Oberfläche fragt zuerst: nicht eingerichtet, bereit, läuft, beschäftigt oder fehlerhaft? Erst daraus entstehen sichtbare Aktionen.</p></div>
+          <div class="principle"><div class="number">2</div><h3>Eine Hauptaktion</h3><p>Pro Ansicht und Zustand gibt es höchstens einen klar hervorgehobenen nächsten Schritt. Nebenaktionen bleiben sekundär.</p></div>
+          <div class="principle"><div class="number">3</div><h3>Aufgaben statt Technik</h3><p>„Server installieren“ statt „SteamCMD“, „Erweiterungen“ statt „DLLs“, „Erweiterte Dateibearbeitung“ statt „Raw“.</p></div>
+          <div class="principle"><div class="number">4</div><h3>Details bei Bedarf</h3><p>Expertenfunktionen werden nicht entfernt. Sie liegen in aufklappbaren Bereichen und unter „Diagnose &amp; Erweitert“.</p></div>
+          <div class="principle"><div class="number">5</div><h3>Jede Aktion erklärt Folgen</h3><p>Vor Änderungen sieht der Nutzer, was geschrieben, installiert, gesichert, neu gestartet oder gelöscht wird.</p></div>
+          <div class="principle"><div class="number">6</div><h3>Fehler führen zur Lösung</h3><p>Keine nackten Exceptions. Jede Fehlermeldung enthält Ursache in Alltagssprache, empfohlenen Schritt und exportierbare Details.</p></div>
+        </div>
+      </section>
+
+      <section id="struktur">
+        <div class="eyebrow">04 · Zielstruktur</div>
+        <h2>Vier Arbeitsbereiche plus ein Expertenbereich</h2>
+        <p class="section-intro">Die Navigation folgt dem Lebenszyklus eines Servers. „Client“, „Konsole“, „Referenz“ und technische Dateiverwaltung verschwinden nicht, werden aber nicht mehr mit dem Kernablauf gleichgestellt.</p>
+
+        <svg class="flow-svg" viewBox="0 0 1180 500" role="img" aria-labelledby="flow-title flow-desc">
+          <title id="flow-title">Neue Informationsarchitektur des TABG Server Installers</title>
+          <desc id="flow-desc">Einrichtung führt zur Übersicht. Von dort gehen Konfiguration, Erweiterungen und Sicherungen ab. Diagnose und Einstellungen sind nachrangig.</desc>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#58708a"/></marker>
+            <filter id="shadow"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-opacity=".25"/></filter>
+          </defs>
+          <rect x="0" y="0" width="1180" height="500" rx="14" fill="#12161c"/>
+          <path d="M267 250 H360" stroke="#58708a" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M600 250 H680 V99 H760" stroke="#58708a" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+          <path d="M600 250 H760" stroke="#58708a" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M600 250 H680 V402 H760" stroke="#58708a" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+          <path d="M480 316 V392" stroke="#58708a" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+
+          <g filter="url(#shadow)"><rect x="55" y="181" width="210" height="138" rx="14" fill="#112b40" stroke="#2f86ce"/><text x="80" y="218" fill="#8bc8ff" font-size="13" font-weight="700">NUR WENN NÖTIG</text><text x="80" y="254" fill="#fff" font-size="24" font-weight="750">Einrichtung</text><text x="80" y="281" fill="#a8b6c5" font-size="14">Neu · Vorhanden · Remote</text></g>
+          <g filter="url(#shadow)"><rect x="360" y="181" width="240" height="138" rx="14" fill="#133024" stroke="#36a66e"/><text x="385" y="218" fill="#8ee0b3" font-size="13" font-weight="700">STARTPUNKT</text><text x="385" y="254" fill="#fff" font-size="24" font-weight="750">Übersicht</text><text x="385" y="281" fill="#b1c8bc" font-size="14">Status · Start · nächste Aufgabe</text></g>
+          <g><rect x="760" y="46" width="350" height="106" rx="14" fill="#181e26" stroke="#354457"/><text x="786" y="84" fill="#fff" font-size="21" font-weight="700">Konfiguration</text><text x="786" y="111" fill="#9eacba" font-size="14">Spielmodus · Regeln · Welt · Spieler</text><text x="786" y="132" fill="#9eacba" font-size="14">Loadouts · Admins · Presets</text></g>
+          <g><rect x="760" y="197" width="350" height="106" rx="14" fill="#181e26" stroke="#354457"/><text x="786" y="235" fill="#fff" font-size="21" font-weight="700">Erweiterungen</text><text x="786" y="262" fill="#9eacba" font-size="14">Server-Mods · optionale Client-Kopie</text><text x="786" y="283" fill="#9eacba" font-size="14">Abhängigkeiten · Updates</text></g>
+          <g><rect x="760" y="348" width="350" height="106" rx="14" fill="#181e26" stroke="#354457"/><text x="786" y="386" fill="#fff" font-size="21" font-weight="700">Sicherungen</text><text x="786" y="413" fill="#9eacba" font-size="14">Automatisch · Manuell · Wiederherstellen</text><text x="786" y="434" fill="#9eacba" font-size="14">Änderungsvorschau vor Restore</text></g>
+          <g><rect x="322" y="394" width="316" height="72" rx="12" fill="#171b22" stroke="#3e4651" stroke-dasharray="5 4"/><text x="347" y="426" fill="#cbd5df" font-size="17" font-weight="700">Diagnose &amp; Erweitert</text><text x="347" y="449" fill="#8e9ba8" font-size="13">Konsole · Raw Config · DLLs · Referenz</text></g>
+        </svg>
+        <div class="legend"><span><i style="background:#2f86ce"></i>einmaliger Ablauf</span><span><i style="background:#36a66e"></i>täglicher Startpunkt</span><span><i style="background:#354457"></i>normale Arbeitsbereiche</span><span><i style="background:#555"></i>Expertenwerkzeuge</span></div>
+      </section>
+
+      <section id="ablaeufe">
+        <div class="eyebrow">05 · Nutzerabläufe</div>
+        <h2>Drei Einstiege, danach dieselbe verständliche Übersicht</h2>
+        <div class="journeys">
+          <article class="journey"><span class="tag">Standard</span><h3>Neuen Server erstellen</h3><ol><li>Installationsart „Neuer Server“ wählen.</li><li>Zielordner automatisch vorschlagen oder ändern.</li><li>SteamCMD automatisch nutzen; Kontodaten nur bei Bedarf zeigen.</li><li>Spielprofil auswählen, empfohlene Erweiterungen automatisch ableiten.</li><li>Zusammenfassung bestätigen, Installation verfolgen.</li><li>Erfolg prüfen und „Server starten“ anbieten.</li></ol></article>
+          <article class="journey"><span class="tag">Import</span><h3>Vorhandenen Server verwalten</h3><ol><li>Server automatisch suchen oder Ordner wählen.</li><li>Dateien, BepInEx, Konfiguration und Plugins prüfen.</li><li>Vor erster Änderung automatische Sicherung anbieten.</li><li>Fehlende Komponenten als Reparaturplan zeigen.</li><li>Import bestätigen; existierende Einstellungen bewahren.</li><li>Mit Zustandsbericht auf der Übersicht landen.</li></ol></article>
+          <article class="journey"><span class="tag">Erweitert</span><h3>Remote-Server verbinden</h3><ol><li>„Remote/SSH“ bewusst auswählen.</li><li>Host, Port, Nutzer und Schlüssel eingeben.</li><li>Verbindung testen, bevor etwas gespeichert wird.</li><li>Serverpfad remote prüfen.</li><li>Unterstützte Funktionen und Einschränkungen anzeigen.</li><li>Remote-Instanz mit eindeutiger Kennzeichnung hinzufügen.</li></ol></article>
+        </div>
+
+        <div class="panel warn" style="margin-top:16px">
+          <h3>Wichtige Trennung: Server und modifizierter Client</h3>
+          <p>Die modifizierte TABG-Client-Kopie gehört nicht in den Pflicht-Erststart. Nach erfolgreicher Servereinrichtung fragt eine optionale Karte: „Möchtest du auf diesem PC auch mit Client-Mods spielen?“ Wer „Nein“ wählt, sieht diesen Bereich anschließend nur unter „Erweiterungen“.</p>
+        </div>
+      </section>
+
+      <section id="screens">
+        <div class="eyebrow">06 · Konkrete Bildschirme</div>
+        <h2>So sieht der funktionale Zielzustand aus</h2>
+        <p class="section-intro">Die Wireframes definieren Hierarchie, Inhalte, Zustände und Aktionen. Farben und Abstände sind Platzhalter; die Funktion ist verbindlich.</p>
+
+        <h3>Bildschirm A – geführte Einrichtung</h3>
+        <figure class="figure">
+          <div class="window">
+            <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="windowtitle">TABG Server Installer · Einrichtung</span></div>
+            <div class="wizard" role="img" aria-label="Mockup des geführten Installationsassistenten">
+              <div class="stepper"><div class="done"><span>✓</span>Start</div><i></i><div class="now"><span>2</span>Server</div><i></i><div><span>3</span>Profil</div><i></i><div><span>4</span>Prüfen</div><i></i><div><span>5</span>Installieren</div></div>
+              <div class="wizard-body">
+                <div class="eyebrow">Schritt 2 von 5</div>
+                <h2 style="font-size:30px;margin-top:7px">Wo soll der Server liegen?</h2>
+                <p class="muted">Wir haben bereits einen passenden Steam-Ordner gefunden. Du kannst ihn übernehmen oder einen anderen Ordner wählen.</p>
+                <div class="choice-grid">
+                  <div class="choice selected"><b>Gefundenen Server verwenden</b><small>/home/jonasn/.steam/steam/steamapps/common/TotallyAccurateBattlegroundsDedicatedServer</small></div>
+                  <div class="choice"><b>Neuen Ordner auswählen</b><small>Der Server wird dort vollständig installiert.</small></div>
+                </div>
+                <div class="path-check"><strong>✓</strong><div><b>Pfad ist verwendbar</b><br><small>Serverdateien gefunden · Schreibzugriff vorhanden · 8,4 GB frei</small></div></div>
+                <details style="margin-top:18px"><summary class="muted">Erweiterte Steam-Anmeldung</summary><p class="muted">Standard: anonyme SteamCMD-Anmeldung. Benutzername, Passwort und Steam Guard erscheinen nur, wenn eine anonyme Installation fehlschlägt oder bewusst deaktiviert wird.</p></details>
+                <div class="wizard-footer"><span class="secondary">Zurück</span><span class="primary">Weiter: Serverprofil</span></div>
+              </div>
+            </div>
+          </div>
+          <figcaption>Bild 2 – Keine isolierten „Create/Detect/SteamCMD“-Knöpfe. Der Assistent erkennt, validiert und erklärt einen zusammenhängenden Schritt.</figcaption>
+        </figure>
+
+        <h3 style="margin-top:44px">Bildschirm B – tägliche Übersicht</h3>
+        <figure class="figure">
+          <div class="window">
+            <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="windowtitle">TABG Server Installer · Übersicht</span></div>
+            <div class="mock" role="img" aria-label="Mockup der neuen Serverübersicht">
+              <aside class="mock-sidebar">
+                <div class="server-chip"><strong>Mein TABG Server</strong><small>● Lokal · gestoppt</small></div>
+                <div class="mock-nav"><div class="active">Übersicht</div><div>Konfiguration</div><div>Erweiterungen</div><div>Sicherungen</div><div class="advanced">Erweitert</div><div>Diagnose &amp; Konsole</div><div>Referenz</div><div>Einstellungen</div></div>
+              </aside>
+              <div class="mock-content">
+                <div class="mock-head"><div><div class="eyebrow">Mein TABG Server</div><h3>Bereit zum Starten</h3><p>Installation und Konfiguration wurden geprüft.</p></div><span class="status-pill stopped">● Gestoppt</span></div>
+                <div class="action-row"><span class="primary">Server starten</span><span class="secondary">Ordner öffnen</span><span class="secondary">Konfiguration prüfen</span></div>
+                <div class="card-grid">
+                  <div class="ui-card"><small>Spieler</small><span class="metric">0 / 16</span></div>
+                  <div class="ui-card"><small>Serverprofil</small><span class="metric" style="font-size:18px">Battle Royale</span></div>
+                  <div class="ui-card"><small>Letzte Sicherung</small><span class="metric" style="font-size:18px">Heute, 16:31</span></div>
+                </div>
+                <div class="tasklist">
+                  <div class="task"><span class="ok">✓</span><div><b>Serverdateien</b><br><small class="muted">Vollständig und startbereit</small></div><span class="muted">Details</span></div>
+                  <div class="task"><span class="ok">✓</span><div><b>BepInEx und Kern-Erweiterungen</b><br><small class="muted">8 Erweiterungen aktiv</small></div><span class="muted">Verwalten</span></div>
+                  <div class="task"><span class="warning">!</span><div><b>Modifizierter Client nicht eingerichtet</b><br><small class="muted">Optional, wenn du Client-Mods verwenden möchtest</small></div><span style="color:#9bcfff">Einrichten</span></div>
+                </div>
+                <div class="ui-card" style="margin-top:14px"><b>Letzte Aktivität</b><p class="muted" style="margin-bottom:0">16:31 · Automatische Sicherung erstellt &nbsp;·&nbsp; 16:30 · Konfiguration gespeichert</p></div>
+              </div>
+            </div>
+          </div>
+          <figcaption>Bild 3 – Die Übersicht beantwortet vier Fragen: Ist der Server bereit? Was ist die Hauptaktion? Gibt es ein Problem? Wo finde ich Details?</figcaption>
+        </figure>
+
+        <h3 style="margin-top:44px">Bildschirm C – verständliche Konfiguration</h3>
+        <figure class="figure">
+          <div class="window">
+            <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="windowtitle">TABG Server Installer · Konfiguration</span></div>
+            <div class="config-shell" role="img" aria-label="Mockup des neu strukturierten Konfigurationseditors">
+              <aside class="config-list"><div class="search">Einstellungen suchen…</div><div class="active">Spielmodus &amp; Preset</div><div>Runde &amp; Sieg</div><div>Spieler &amp; Teams</div><div>Ring &amp; Spawns</div><div>Loadouts</div><div>Admins</div><div>Mod-Einstellungen</div><div style="margin-top:14px;color:#74808c">Erweiterte Dateibearbeitung</div></aside>
+              <div class="config-editor">
+                <div class="savebar"><span>● 2 ungespeicherte Änderungen</span><span class="primary" style="padding:7px 12px">Speichern</span></div>
+                <div class="mock-head"><div><h3>Spielmodus &amp; Preset</h3><p>Beginne mit einem passenden Spielprofil. Einzelne Werte kannst du danach anpassen.</p></div><span class="secondary">Preset wechseln</span></div>
+                <div class="form-section"><h3>Grundmodus</h3>
+                  <div class="form-row"><div><b>Spielprofil</b><small>Legt sinnvolle Standardwerte für mehrere Einstellungen fest.</small></div><div class="control">Battle Royale ▾</div></div>
+                  <div class="form-row"><div><b>Maximale Spieler</b><small>Wie viele Personen gleichzeitig teilnehmen können.</small></div><div class="control">16</div></div>
+                  <div class="form-row"><div><b>Zum Start benötigte Spieler</b><small>Die Runde wartet, bis diese Zahl erreicht ist.</small><div class="inline-warning">⚠ Darf nicht größer als „Maximale Spieler“ sein.</div></div><div class="control">20</div></div>
+                  <div class="form-row"><div><b>LAN-Server</b><small>Nur im lokalen Netzwerk sichtbar.</small></div><div class="control">Aus</div></div>
+                </div>
+                <p class="muted">Änderungen, die einen Neustart benötigen, werden nach dem Speichern gesammelt angezeigt. Der Server wird nie ungefragt neu gestartet.</p>
+              </div>
+            </div>
+          </div>
+          <figcaption>Bild 4 – Presets und Aufgaben stehen vor technischen Feldnamen. Abhängige Werte werden sofort validiert; Raw Config bleibt als Expertenweg erhalten.</figcaption>
+        </figure>
+
+        <h3 style="margin-top:44px">Bildschirm D – Erweiterungen statt DLL-Verwaltung</h3>
+        <figure class="figure">
+          <div class="window">
+            <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="windowtitle">TABG Server Installer · Erweiterungen</span></div>
+            <div class="mock" role="img" aria-label="Mockup des Erweiterungskatalogs">
+              <aside class="mock-sidebar"><div class="server-chip"><strong>Mein TABG Server</strong><small>● Lokal · läuft</small></div><div class="mock-nav"><div>Übersicht</div><div>Konfiguration</div><div class="active">Erweiterungen</div><div>Sicherungen</div><div class="advanced">Filter</div><div>Alle</div><div>Server</div><div>Client</div><div>Entwicklung</div></div></aside>
+              <div class="mock-content">
+                <div class="mock-head"><div><h3>Erweiterungen</h3><p>Aktiviere Funktionen, nicht Dateien. Abhängigkeiten werden automatisch geprüft.</p></div><span class="secondary">Updates prüfen</span></div>
+                <div class="panel warn" style="padding:12px;margin-bottom:14px"><strong>Server läuft.</strong> Änderungen werden vorbereitet und beim nächsten Neustart wirksam. <span style="color:#9bcfff">Jetzt neu starten…</span></div>
+                <div class="plugin-grid">
+                  <div class="plugin"><div><b>MatchCore</b><p>Spielregeln, Ringe, Loadouts, Abstimmungen und Match-Fixes.</p><div class="badges"><span class="badge">Server</span><span class="badge">Empfohlen</span><span class="badge">Konfigurierbar</span></div></div><div class="switch on"></div></div>
+                  <div class="plugin"><div><b>Proximity Chat</b><p>Räumlicher Voice-Chat über die bestehende Spielverbindung.</p><div class="badges"><span class="badge">Server + Client</span><span class="badge">Mikrofon</span></div></div><div class="switch on"></div></div>
+                  <div class="plugin"><div><b>Server Logger</b><p>Schreibt Spieleridentitäten in eine CSV-Datei.</p><div class="badges"><span class="badge">Server</span><span class="badge">Datenschutz</span></div></div><div class="switch on"></div></div>
+                  <div class="plugin"><div><b>Fake Players</b><p>Testspieler und KI-Ziele für private Entwicklung.</p><div class="badges"><span class="badge">Entwicklung</span><span class="badge">Standardmäßig aus</span></div></div><div class="switch"></div></div>
+                </div>
+                <details style="margin-top:16px"><summary class="muted">Erweiterte DLL-Verwaltung</summary><p class="muted">Externe DLL hinzufügen, Datei aktivieren/deaktivieren, entfernen und Plugin-Ordner öffnen. Destruktive Aktionen benötigen eine Bestätigung.</p></details>
+              </div>
+            </div>
+          </div>
+          <figcaption>Bild 5 – Die fachliche Erweiterung ist das primäre Objekt. DLL-Dateien bleiben als Implementierungsdetail im Expertenbereich.</figcaption>
+        </figure>
+
+        <div class="verdict" style="margin-top:44px">
+          <div class="panel"><h3>Diagnose &amp; Konsole</h3><ul class="plain-list"><li>Nur bei Fehlern automatisch auf der Übersicht verlinken.</li><li>Info/Warnung/Fehler filtern, suchen und exportieren.</li><li>Kein wirkungsloses Eingabefeld: Serverbefehle erst anzeigen, wenn stdin technisch unterstützt wird.</li><li>„Diagnosepaket exportieren“ sammelt App-Log, Server-Log, Versionen und anonymisierte Pfade.</li></ul></div>
+          <div class="panel"><h3>Sicherungen</h3><ul class="plain-list"><li>Automatisch vor Installation, Reparatur, Preset und Restore.</li><li>Zeitpunkt, Größe, Anlass und enthaltene Dateien zeigen.</li><li>Vor Restore Unterschiede und betroffene Dateien auflisten.</li><li>Löschen und Wiederherstellen immer bestätigen.</li></ul></div>
+        </div>
+      </section>
+
+      <section id="zustaende">
+        <div class="eyebrow">07 · Zustandsmodell</div>
+        <h2>Die UI wird aus Zuständen abgeleitet, nicht aus zufälligen Buttons</h2>
+        <p class="section-intro">Jeder Zustand legt Haupttext, primäre Aktion, erlaubte Nebenaktionen und sichtbare Diagnose fest. Damit können „Stop“, „Cancel“ oder „Repair“ nie im falschen Moment dominieren.</p>
+        <div class="state-grid">
+          <div class="state"><div class="state-head"><h3>Nicht eingerichtet</h3><span class="status-pill stopped">Setup nötig</span></div><p><strong>Primär:</strong> Server einrichten. Keine Server-, Config- oder Mod-Aktionen, bevor ein gültiger Pfad existiert.</p></div>
+          <div class="state"><div class="state-head"><h3>Bereit / gestoppt</h3><span class="status-pill stopped">Gestoppt</span></div><p><strong>Primär:</strong> Server starten. Konfiguration, Erweiterungen, Restore und Reparatur sind möglich.</p></div>
+          <div class="state"><div class="state-head"><h3>Startet / stoppt</h3><span class="status-pill" style="background:#423719;color:#f2d989">Beschäftigt</span></div><p><strong>Primär:</strong> Fortschritt anzeigen. Zustandsgefährdende Aktionen sperren; Abbruch nur anbieten, wenn technisch sicher.</p></div>
+          <div class="state"><div class="state-head"><h3>Läuft</h3><span class="status-pill">Läuft</span></div><p><strong>Primär:</strong> Status beobachten. Stoppen bleibt sekundär; Config-/Mod-Änderungen werden als „Neustart erforderlich“ gesammelt.</p></div>
+          <div class="state"><div class="state-head"><h3>Fehlerhaft</h3><span class="status-pill" style="background:#4a2024;color:#ffc0c4">Problem</span></div><p><strong>Primär:</strong> Problem beheben. Fehler erklären, passenden Repair-/Pfad-/Log-Schritt anbieten und Details exportierbar machen.</p></div>
+          <div class="state"><div class="state-head"><h3>Installation läuft</h3><span class="status-pill" style="background:#183856;color:#b6dcff">42 %</span></div><p><strong>Primär:</strong> Stufe, Fortschritt und verständliche Aktivität zeigen. Log eingeklappt; sicherer Cancel mit klarer Folge.</p></div>
+          <div class="state"><div class="state-head"><h3>Remote getrennt</h3><span class="status-pill" style="background:#4a2024;color:#ffc0c4">Offline</span></div><p><strong>Primär:</strong> Verbindung erneut testen. Lokale Dateiaktionen deaktivieren und Remote-Ursache getrennt anzeigen.</p></div>
+          <div class="state"><div class="state-head"><h3>Ungespeicherte Änderungen</h3><span class="status-pill" style="background:#423719;color:#f2d989">2 Änderungen</span></div><p><strong>Primär:</strong> Speichern. Navigation warnt nur beim Verlassen; „Verwerfen“ erklärt exakt, was verloren geht.</p></div>
+        </div>
+      </section>
+
+      <section id="vollstaendigkeit">
+        <div class="eyebrow">08 · Funktionsabdeckung</div>
+        <h2>Keine Funktion geht verloren</h2>
+        <p class="section-intro">Diese Zuordnung ist der Schutz gegen ein hübsches, aber unvollständiges Redesign. Jede heutige Funktion erhält einen eindeutigen Zielort.</p>
+        <div style="overflow:auto;border-radius:12px">
+          <table>
+            <thead><tr><th>Heutige Funktion</th><th>Neuer Ort</th><th>Verhalten</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Serverpfad erkennen / auswählen / anlegen</td><td>Einrichtungsassistent</td><td>Automatische Erkennung zuerst, manuelle Wahl als Alternative, sofortige Validierung.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>SteamCMD installieren / aktualisieren</td><td>Assistent + Übersicht „Server aktualisieren“</td><td>Technik läuft im Hintergrund; Zugangsdaten nur bei Bedarf.</td><td class="move">Neu geordnet</td></tr>
+              <tr><td>BepInEx + Kernplugins vorbereiten/reparieren</td><td>Assistent / Diagnose</td><td>Installationsplan und Sicherung vor Ausführung anzeigen.</td><td class="move">Neu geordnet</td></tr>
+              <tr><td>Plugin-Auswahl während Setup</td><td>Profilbasierte Empfehlung</td><td>Standardprofil wählt sichere Defaults; benutzerdefinierte Auswahl bleibt optional.</td><td class="move">Vereinfacht</td></tr>
+              <tr><td>Server Start / Stop / Restart</td><td>Übersicht</td><td>Zustandsabhängige Hauptaktion; Startargumente unter Erweitert.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Health, Spielerzahl, Uptime, letzte Ausgabe</td><td>Übersicht</td><td>Gesundheitscheck und relevante Aktivität statt permanentem Rohlog.</td><td class="move">Aufgewertet</td></tr>
+              <tr><td>Konsole, Filter, Suche, Export</td><td>Diagnose &amp; Konsole</td><td>Virtuelle Logliste; direkter Link bei Fehlern.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Kommandoeingabe ohne Server-stdin</td><td>Nicht anzeigen, bis unterstützt</td><td>Keine scheinbar funktionale Aktion. Später nur mit echter Rückmeldung aktivieren.</td><td class="move">Korrigiert</td></tr>
+              <tr><td>Game Settings</td><td>Konfiguration: Spielmodus / Spieler</td><td>Aufgabenbasierte Kategorien, Suche, Beschreibung und Inline-Validierung.</td><td class="move">Neu geordnet</td></tr>
+              <tr><td>Match Settings</td><td>Konfiguration: Runde &amp; Sieg</td><td>Nur für gewählten Modus relevante Felder zeigen.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Ringe und Spawns</td><td>Konfiguration: Ring &amp; Spawns</td><td>Presets, Vorschauwerte und Abhängigkeitswarnungen.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Loadouts</td><td>Konfiguration: Loadouts</td><td>Such-/Listen-Editor als Standard; Rohtext nur unter Erweitert.</td><td class="move">Aufgewertet</td></tr>
+              <tr><td>Admins / PlayerPerms.json</td><td>Konfiguration: Admins</td><td>Personenliste, verständliche Rollen, ID-Validierung, Speichern.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Presets</td><td>Konfigurations-Einstieg</td><td>Built-in und eigene Presets mit Änderungsvorschau vor Anwendung.</td><td class="move">Prominenter</td></tr>
+              <tr><td>Raw game_settings.txt</td><td>Diagnose &amp; Erweitert</td><td>Warnung, Syntaxprüfung, Backup und Diff vor Speichern.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Serverplugin-Katalog</td><td>Erweiterungen: Server</td><td>Funktionen und Abhängigkeiten statt DLL-Dateien darstellen.</td><td class="move">Neu geordnet</td></tr>
+              <tr><td>DLL hinzufügen / aktivieren / entfernen</td><td>Erweiterungen: Erweiterte DLL-Verwaltung</td><td>Weiterhin vollständig verfügbar, aber eingeklappt und abgesichert.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Modifizierte Client-Kopie + Client-Mods</td><td>Erweiterungen: Client</td><td>Eigener optionaler Assistent; danach Start- und Updateaktion.</td><td class="move">Optionalisiert</td></tr>
+              <tr><td>Backups erstellen / listen / restore / löschen</td><td>Sicherungen</td><td>Automatische Sicherungen, Anlass, Inhalt und Restore-Vorschau.</td><td class="move">Aufgewertet</td></tr>
+              <tr><td>Reference: Commands / Items / Spawns / Syntax</td><td>Kontext-Hilfe + Referenz</td><td>Hilfe direkt am Feld; vollständige durchsuchbare Bibliothek unter Erweitert.</td><td class="move">Besser verteilt</td></tr>
+              <tr><td>Pfade, Sprache, Kontrast, Privacy, App-Info</td><td>Einstellungen</td><td>Normale Einstellungen getrennt von „Gefahrenbereich“ und Reset.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Updates / Changelog</td><td>Übersicht + Einstellungen</td><td>Nicht blockierender Hinweis, Release Notes vor Installation, Version überspringbar.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Mehrere Serverinstanzen</td><td>Serverauswahl in Seitenleiste</td><td>Bei einer Instanz kompakt, bei mehreren als klarer Selektor mit Status.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Remote SSH</td><td>Erweiterte Einrichtung + Instanzkennzeichnung</td><td>Verbindungstest, unterstützte Aktionen und Offline-Zustand explizit.</td><td class="keep">Erhalten</td></tr>
+              <tr><td>Sigma/Windows-Spezialfunktionen</td><td>Plattformspezifisch unter Erweitert</td><td>Nur auf unterstütztem System anzeigen; nie als Linux-Platzhalter.</td><td class="keep">Erhalten</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="umsetzung">
+        <div class="eyebrow">09 · Umsetzung</div>
+        <h2>In acht lieferbaren Etappen, ohne Big-Bang-Risiko</h2>
+        <p class="section-intro">Die bestehende Core-Logik bleibt maßgeblich. Die Arbeit trennt zuerst UI, Zustand und Services; danach werden Ansichten einzeln ersetzt. Die alte Avalonia-Ansicht bleibt bis zur vollständigen Abnahme als Fallback startbar.</p>
+
+        <div class="timeline">
+          <div class="phase"><div><strong>M0</strong><br><span class="muted">Sicherheitsnetz</span></div><div><h3>Funktions- und Zustandsvertrag festschreiben</h3><p>Alle Dateioperationen, Prozesszustände, Dialoge und Plattformunterschiede inventarisieren.</p><ul><li>Golden-Path-Tests für Neuinstallation, Import, Start/Stop, Save, Plugins und Restore.</li><li>Test-Doubles für Picker, Dialoge, Prozessstart, Steam-Erkennung und Benachrichtigungen.</li></ul><div class="gate">Gate: bestehende Workflows sind automatisiert reproduzierbar.</div></div><div class="effort">1 Tag</div></div>
+          <div class="phase"><div><strong>M1</strong><br><span class="muted">Fundament</span></div><div><h3>3.001-Zeilen-MainWindow zerlegen</h3><p>AppShell, Navigation, Serverauswahl und zentrale Zustände als Avalonia-XAML/MVVM aufbauen.</p><ul><li><code>AppShellViewModel</code>, <code>ServerContextViewModel</code>, <code>OperationState</code>.</li><li>Bestehende Core-Services injizieren; keine Dateilogik in Views.</li><li>Legacy-UI über Startoption erreichbar halten.</li></ul><div class="gate">Gate: neuer Shell startet, Serverkontext wechselt, Alt-UI bleibt nutzbar.</div></div><div class="effort">3 Tage</div></div>
+          <div class="phase"><div><strong>M2</strong><br><span class="muted">Erststart</span></div><div><h3>Assistent für Neu, Import und Remote</h3><p>Validierung pro Schritt, Review-Seite, echte Fortschrittsstufen, Cancel-/Recovery-Vertrag.</p><ul><li>Steam-Zugangsdaten standardmäßig verbergen.</li><li>Automatische Sicherung vor Eingriffen in vorhandene Server.</li><li>Nach Erfolg direkt in den bereiten Serverzustand wechseln.</li></ul><div class="gate">Gate: Erstnutzer gelangt ohne README zum startbaren Server.</div></div><div class="effort">4 Tage</div></div>
+          <div class="phase"><div><strong>M3</strong><br><span class="muted">Betrieb</span></div><div><h3>Übersicht und Serverzustandsmaschine</h3><p>Health-Checks, kontextuelle Hauptaktion, Aktivitätsliste, Update- und Neustartbedarf.</p><ul><li>Start/Stop/Restart mit Disabled-, Busy- und Error-Zustand.</li><li>Mehrere lokale/remote Instanzen.</li><li>Keine permanente Rohkonsole.</li></ul><div class="gate">Gate: jede Laufzeitlage ergibt eine eindeutige UI-Aktion.</div></div><div class="effort">3 Tage</div></div>
+          <div class="phase"><div><strong>M4</strong><br><span class="muted">Konfiguration</span></div><div><h3>Aufgabenbasierter Editor</h3><p>Presets, Suche, bedingte Felder, Validation, Dirty State, Save + Restart-Hinweis.</p><ul><li>Game, Match, Ring/Spawns, Loadouts, Admins und Mod-Settings migrieren.</li><li>WPF-Validierungsregeln wiederverwenden/portieren.</li><li>Raw-Editor mit Syntaxprüfung und Diff absichern.</li></ul><div class="gate">Gate: alle heutigen Config-Werte sind editier- und verlustfrei speicherbar.</div></div><div class="effort">5 Tage</div></div>
+          <div class="phase"><div><strong>M5</strong><br><span class="muted">Erweiterungen</span></div><div><h3>Server-/Client-Katalog und Client-Assistent</h3><p>Plugin-Zustände, Abhängigkeiten, Restart-Bedarf und technische DLL-Werkzeuge sauber trennen.</p><ul><li>Bundled, installiert, deaktiviert, fehlend und Update verfügbar unterscheiden.</li><li>Proximity-Chat-Server/Client-Abhängigkeit erklären.</li><li>Modifizierte Client-Kopie als separaten optionalen Flow behandeln.</li></ul><div class="gate">Gate: jeder Plugin-Zustand ist verständlich und reversibel.</div></div><div class="effort">4 Tage</div></div>
+          <div class="phase"><div><strong>M6</strong><br><span class="muted">Sicherheit</span></div><div><h3>Backups, Diagnose und Fehlerbehebung</h3><p>Restore-Vorschau, automatische Backups, Logfilter, Export und Diagnosepaket.</p><ul><li>Destruktive Aktionen bestätigen.</li><li>Exceptions in lösungsorientierte Fehlerobjekte übersetzen.</li><li>Fake-Kommandoeingabe entfernen, bis stdin echt verfügbar ist.</li></ul><div class="gate">Gate: Fehler lassen sich ohne Terminal erfassen und weitergeben.</div></div><div class="effort">3 Tage</div></div>
+          <div class="phase"><div><strong>M7</strong><br><span class="muted">Freigabe</span></div><div><h3>Barrierefreiheit, Plattformtests und Umschaltung</h3><p>Deutsch/Englisch, Tastatur, Skalierung, Kontrast, Wayland/X11/Windows und Migrationspfad.</p><ul><li>Legacy-Fallback für eine Release-Linie dokumentieren.</li><li>Telemetrie-freie lokale Fehlerprotokolle und Crash-Consent prüfen.</li><li>WPF-/LinuxGui-Löschung erst nach Paritätsabnahme separat entscheiden.</li></ul><div class="gate">Gate: Abnahmematrix vollständig grün; neue UI wird Standard.</div></div><div class="effort">2 Tage</div></div>
+        </div>
+
+        <div class="panel blue"><strong>Gesamtaufwand: etwa 25 fokussierte Entwicklertage.</strong> Das ist eine belastbare Ein-Person-Schätzung für Implementierung plus automatisierte Tests. Reale Zwei-Plattform-Smoke-Tests und Feedback können zusätzliche Kalendertage erzeugen. M2–M6 sollen jeweils als eigenständig prüfbare Zwischenstände geliefert werden.</div>
+
+        <h3 style="margin-top:34px">Vorgeschlagene Zielstruktur im Avalonia-Projekt</h3>
+        <div class="tree">TabgInstaller.App/
+├── App.axaml
+├── Views/
+│   ├── AppShellView.axaml
+│   ├── Setup/SetupWizardView.axaml
+│   ├── Dashboard/DashboardView.axaml
+│   ├── Configuration/ConfigurationView.axaml
+│   ├── Extensions/ExtensionsView.axaml
+│   ├── Backups/BackupsView.axaml
+│   ├── Diagnostics/DiagnosticsView.axaml
+│   └── Settings/SettingsView.axaml
+├── ViewModels/
+│   ├── AppShellViewModel.cs
+│   ├── ServerContextViewModel.cs
+│   ├── SetupWizardViewModel.cs
+│   ├── DashboardViewModel.cs
+│   ├── ConfigurationViewModel.cs
+│   ├── ExtensionsViewModel.cs
+│   ├── BackupsViewModel.cs
+│   └── DiagnosticsViewModel.cs
+├── Models/
+│   ├── SetupState.cs
+│   ├── ServerRuntimeState.cs
+│   ├── OperationState.cs
+│   └── UserFacingError.cs
+├── Services/
+│   ├── NavigationService.cs
+│   ├── ServerReadinessService.cs
+│   ├── UserFacingErrorMapper.cs
+│   └── DiagnosticBundleService.cs
+└── Legacy/
+    └── LegacyMainWindow.cs   # temporär, eine Release-Linie</div>
+
+        <div class="verdict" style="margin-top:18px">
+          <div class="panel"><h3>Was im Core bleibt</h3><p>Installer, Steam-Pfaderkennung, ServerProcessService, BackupService, ConfigIO, Presets, Plugin Registry, ClientModInstaller, SSH/Remote, UpdateService und alle Dateiformate.</p></div>
+          <div class="panel"><h3>Was aus MainWindow heraus muss</h3><p>Navigation, sichtbarer Zustand, Dialogkoordination, Logdarstellung, Feldzustände und Aktionsverfügbarkeit. Views dürfen keine Installationslogik besitzen.</p></div>
+        </div>
+      </section>
+
+      <section id="tests">
+        <div class="eyebrow">10 · Prüfung</div>
+        <h2>Funktionalität wird nicht per Screenshot behauptet</h2>
+        <p class="section-intro">Visuelle Mockups helfen bei der Verständlichkeit. Die Freigabe basiert jedoch auf reproduzierbaren Abläufen, Zustandsübergängen und echten Plattform-Smoke-Tests.</p>
+        <div class="test-grid">
+          <div class="test-card"><b>Unit: Zustände</b><p>Für jeden Runtime-/Setup-/Operation-State prüfen, welche Texte und Commands sichtbar, aktiv oder gesperrt sind.</p></div>
+          <div class="test-card"><b>Unit: Validierung</b><p>Pfade, Steam-Eingaben, Config-Abhängigkeiten, Plugin-Voraussetzungen und Restore-Auswahl testen.</p></div>
+          <div class="test-card"><b>Integration: Services</b><p>Mit temporären Ordnern Installation, Config-Save, Plugin Toggle, Backup/Restore und Diagnoseexport prüfen.</p></div>
+          <div class="test-card"><b>UI: Headless</b><p>Navigation, Wizard-Schritte, Dirty-State-Dialoge, Tastaturfokus und Command-Verfügbarkeit in Avalonia testen.</p></div>
+          <div class="test-card"><b>Linux: echt</b><p>Wayland und X11: Start, Picker, SteamCMD, Prozess, Proton-Client, Ordner öffnen und Skalierung.</p></div>
+          <div class="test-card"><b>Windows: echt</b><p>Installation, Steam-Erkennung, Serverprozess, Clientstart, Update und Vergleich mit WPF-Parität.</p></div>
+        </div>
+
+        <h3 style="margin-top:30px">Verbindliche End-to-End-Szenarien</h3>
+        <div style="overflow:auto;border-radius:12px">
+          <table>
+            <thead><tr><th>#</th><th>Szenario</th><th>Erwartetes Ergebnis</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Frischer Start ohne gespeicherte Pfade</td><td>Nur Assistent; kein leeres Hauptfenster und keine technischen Tabs.</td></tr>
+              <tr><td>2</td><td>Automatisch erkannter vorhandener Server</td><td>Validierung, Backupangebot, Importzusammenfassung, keine überschriebenen Configs.</td></tr>
+              <tr><td>3</td><td>Neue anonyme SteamCMD-Installation</td><td>Stufenfortschritt bis Readiness=bereit; Log nur aufklappbar.</td></tr>
+              <tr><td>4</td><td>Installation schlägt in Stufe 3 fehl</td><td>Verständliche Ursache, Retry genau dieser Stufe, Diagnoseexport, konsistenter Dateizustand.</td></tr>
+              <tr><td>5</td><td>Start → läuft → Stop</td><td>Nie gleichzeitig aktive Start-/Stop-Aktionen; korrekte Statusübergänge.</td></tr>
+              <tr><td>6</td><td>Config-Änderung bei laufendem Server</td><td>Save möglich, Neustartbedarf sichtbar, kein ungefragter Restart.</td></tr>
+              <tr><td>7</td><td>Ungültige Spielerkombination</td><td>Inline-Warnung verhindert fehlerhaften Save oder fordert explizite Korrektur.</td></tr>
+              <tr><td>8</td><td>Server-/Client-Abhängigkeit Proximity Chat</td><td>UI erklärt beide Seiten und bietet den fehlenden Client-Schritt an.</td></tr>
+              <tr><td>9</td><td>Backup wiederherstellen</td><td>Diff, Sicherheitsbackup, Bestätigung, Restore, Readiness-Neuprüfung.</td></tr>
+              <tr><td>10</td><td>Remote-Verbindung fällt aus</td><td>Offline-Status, keine lokalen Fehlaktionen, Retry und SSH-Details.</td></tr>
+              <tr><td>11</td><td>Mehrere Server wechseln</td><td>Alle Ansichten und Aktionen folgen atomar dem gewählten Serverkontext.</td></tr>
+              <tr><td>12</td><td>Nur Tastatur / 200 % Skalierung</td><td>Alle Kernabläufe erreichbar, Fokus sichtbar, keine abgeschnittenen Aktionen.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="abnahme">
+        <div class="eyebrow">11 · Definition of Done</div>
+        <div class="final-box">
+          <h2>Der Umbau ist erst fertig, wenn die Oberfläche den Nutzer bis zum Ergebnis trägt.</h2>
+          <ul class="checks">
+            <li>Ein neuer Nutzer kann ohne externe Anleitung installieren und erstmals starten.</li>
+            <li>Jeder Zustand besitzt genau eine klare Hauptaktion oder erklärt, warum keine möglich ist.</li>
+            <li>Alle Funktionen der Paritätstabelle sind umgesetzt oder bewusst plattformspezifisch ausgeblendet.</li>
+            <li>Keine wirkungslosen Controls, keine unbestätigten destruktiven Aktionen und keine versteckten Dateiüberschreibungen.</li>
+            <li>Config-, Plugin- und Restore-Aktionen erzeugen nachvollziehbaren Status und sichere Recovery-Pfade.</li>
+            <li>Deutsch und Englisch, Tastatur, Screenreader-Namen, hoher Kontrast und 200-%-Skalierung funktionieren.</li>
+            <li>Linux-Wayland/X11 und Windows bestehen die End-to-End-Matrix.</li>
+            <li>Die alte Oberfläche bleibt eine Release-Linie als Fallback und wird erst nach bestätigter Parität entfernt.</li>
+          </ul>
+        </div>
+        <p class="lead" style="margin-top:28px"><strong>Warum dieser Plan überzeugt:</strong> Er versteckt Komplexität, aber keine Leistung. Anfänger erhalten einen geführten Weg; erfahrene Betreiber behalten Konsole, Dateien, DLLs, Remote-Steuerung und Rohkonfiguration. Die neue Oberfläche ist nicht weniger mächtig – sie zeigt Macht erst dann, wenn sie gebraucht wird.</p>
+      </section>
+
+      <footer class="footer">TABG Server Installer · Funktionaler GUI-Neubauplan · Erstellt auf Basis des lokalen Repository-Stands vom 4. August 2026. Diese Datei ist offline lesbar und druckbar.</footer>
+    </main>
+  </div>
+</body>
+</html>

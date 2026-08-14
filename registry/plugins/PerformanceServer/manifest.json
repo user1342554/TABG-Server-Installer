@@ -1,0 +1,19 @@
+{
+  "id": "PerformanceServer",
+  "name": "TABG Performance Server",
+  "version": "2.0.0",
+  "description": "Optimizes custom-server replication, packet sizing, network queues, lookups, parsing, and headless frame work.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.PerformanceServer.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["performance", "networking", "replication", "headless", "private-server"],
+  "requiresClientMod": true,
+  "clientPluginId": "PerformanceClient"
+}

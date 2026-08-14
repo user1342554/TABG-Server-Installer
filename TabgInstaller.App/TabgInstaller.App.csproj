@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -25,18 +25,24 @@
   <ItemGroup>
     <None Include="..\Knowledge\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <Link>Knowledge\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
     <None Include="..\registry\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <Link>registry\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
     <None Include="..\bundled\plugins\**\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <Link>plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
     <None Include="..\bundled\client-plugins\**\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <Link>client-plugins\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>

@@ -1,0 +1,19 @@
+{
+  "id": "CustomGameSkins",
+  "name": "Custom Game All Skins Server",
+  "version": "1.0.0",
+  "description": "Authorizes session-only access to every built-in TABG clothing skin and validates each requested outfit before relaying it to players on this custom server.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.CustomGameSkins.Server.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["custom-game", "cosmetics", "skins", "wardrobe", "private-server"],
+  "requiresClientMod": true,
+  "clientPluginId": "CustomGameSkinsClient"
+}

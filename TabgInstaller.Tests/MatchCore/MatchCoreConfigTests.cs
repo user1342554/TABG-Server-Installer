@@ -107,6 +107,16 @@ namespace TabgInstaller.Tests.MatchCore
         }
 
         [Theory]
+        [InlineData("AllowRespawns=true")]
+        [InlineData("BattleRoyaleRespawns=1")]
+        public void Parse_RespawnSetting_AcceptsCurrentAndAliasKeys(string line)
+        {
+            var cfg = MatchCoreConfig.Parse(new[] { line });
+
+            cfg.AllowRespawns.Should().BeTrue();
+        }
+
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Endless")]
         public void Parse_WinCondition_SupportsExplicitNonBattleRoyaleModes(string value)

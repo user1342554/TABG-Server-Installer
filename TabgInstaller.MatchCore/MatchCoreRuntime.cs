@@ -13,6 +13,7 @@ namespace TabgInstaller.MatchCore
         private static readonly Dictionary<GameRoom, float> WaitingSince = new Dictionary<GameRoom, float>();
         private static readonly Dictionary<GameRoom, float> StartedSince = new Dictionary<GameRoom, float>();
         private static readonly Dictionary<GameRoom, float> RingDamageSince = new Dictionary<GameRoom, float>();
+        private static readonly HashSet<byte> RespawnsQueued = new HashSet<byte>();
         private static RingProfile _selectedRing;
 
         public static void Reset()
@@ -21,7 +22,37 @@ namespace TabgInstaller.MatchCore
             WaitingSince.Clear();
             StartedSince.Clear();
             RingDamageSince.Clear();
+            RespawnsQueued.Clear();
             _selectedRing = null;
+        }
+
+        public static void QueueRespawn(ServerClient world, TABGPlayerServer player)
+        {
+            var settings = MatchCorePlugin.Settings;
+            if (settings?.AllowRespawns != true || world == null || player == null)
+                return;
+
+            byte playerIndex = player.PlayerIndex;
+            if (!RespawnsQueued.Add(playerIndex))
+                return;
+
+            MatchCorePlugin.LoggerSafe("Queued respawn for " + player.PlayerName + " in 6 seconds.");
+            world.WaitThenDoAction(6f, () =>
+            {
+                try
+                {
+                    GameRoom room = world.GameRoomReference;
+                    if (room == null || room.Players == null || !room.Players.Contains(player) || !player.IsDead)
+                        return;
+
+                    RespawnEntityCommand.Run(world, player);
+                    MatchCorePlugin.LoggerSafe("Respawned " + player.PlayerName + ".");
+                }
+                finally
+                {
+                    RespawnsQueued.Remove(playerIndex);
+                }
+            });
         }
 
         public static void ClearVotes()
@@ -130,6 +161,9 @@ namespace TabgInstaller.MatchCore
             var room = GetRoom(mode);
             if (room == null) return true;
 
+            if (settings.AllowRespawns && settings.WinCondition == WinConditionMode.Default)
+                return false;
+
             if (settings.WinCondition == WinConditionMode.Debug || settings.WinCondition == WinConditionMode.Endless)
                 return false;
 
@@ -152,6 +186,24 @@ namespace TabgInstaller.MatchCore
             }
 
             return true;
+        }
+
+        public static void InitializeBattleRoyaleRespawns(BattleRoyaleGameMode mode)
+        {
+            var settings = MatchCorePlugin.Settings;
+            if (settings?.AllowRespawns != true || mode == null)
+                return;
+
+            GameRoom room = GetRoom(mode);
+            if (room == null || room.CurrentGameStats == null)
+                return;
+
+            room.CurrentGameStats.SetGameMode(room.CurrentGameSettings.MatchMode);
+            var teams = room.CurrentGameStats.GetAllTeams();
+            for (int i = 0; teams != null && i < teams.Count; i++)
+                teams[i]?.InitNumberOfLives(int.MaxValue);
+
+            MatchCorePlugin.LoggerSafe("Initialized unlimited respawn lives for " + (teams?.Count ?? 0) + " teams.");
         }
 
         public static bool TryGetSpawnPoint(BattleRoyaleGameMode mode, out SpawnPointWrapper spawn)

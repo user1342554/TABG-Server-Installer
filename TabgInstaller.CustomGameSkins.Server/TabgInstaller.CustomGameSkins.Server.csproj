@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\TabgInstaller.CustomGameSkins.Shared\CustomGameSkinsProtocol.cs" Link="CustomGameSkinsProtocol.cs" />
+    <Reference Include="0Harmony">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\BepInEx.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\TabgInstaller.ProximityChat.Server\Libs\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>..\TabgInstaller.CustomGrenades\Libs\Sirenix.Serialization.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyCustomGameSkinsServerToBundledPlugins" AfterTargets="Build">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\plugins" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

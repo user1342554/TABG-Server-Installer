@@ -1,0 +1,17 @@
+{
+  "id": "PerformanceClient",
+  "name": "TABG Performance Client",
+  "version": "2.0.0",
+  "description": "Custom-client FPS, allocation, culling, streaming, physics LOD, reflection, haze, UI, and packet hot-path optimizations.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.PerformanceClient.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["performance", "fps", "culling", "physics", "private-server"]
+}

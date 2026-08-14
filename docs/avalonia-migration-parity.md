@@ -18,8 +18,10 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 | Detect TABG dedicated server path | `InstallerPanel` / path provider | partial | Uses shared `Installer.TryFindTabgServerPath`; Linux fallback path is provided when detection fails. Needs Windows smoke test. |
 | SteamCMD install/update dedicated server | WPF installer flow | done | Runs `steamcmd`/`steamcmd.sh` with Steam credentials and streams output. |
 | Prepare/repair server with BepInEx and bundled server plugins | WPF installer flow | done | Calls `Installer.InstallAsync` and backs up first. |
-| Server plugin preset selection | WPF default/Sigma controls | partial | Select all/none/default/Sigma preset exists, but WPF setup wizard polish is not ported. |
-| Setup wizard window | `SetupWizardWindow` | missing | Avalonia uses inline setup tabs instead of a wizard. |
+| Server plugin preset selection | WPF default/Sigma controls | done | The guided setup offers recommended, minimal, and all-available choices before the review step. |
+| Setup wizard window | `SetupWizardWindow` | done | Avalonia now uses a five-step inline assistant for existing and new local servers, including per-step validation, review, progress, cancellation, and completion. |
+| Multiple local servers | `ServerListPanel` | done | Persisted server profiles are selectable from the sidebar and can be added, renamed, switched, or removed without touching server files. Switching is locked while the active server is running. |
+| Remote/SSH setup | `AddServerDialog` / Core SSH services | missing | The local guided flow explicitly marks remote migration as pending; it does not pretend that local file operations work against an SSH host. |
 
 ## Server Run / Console / Logs
 
@@ -33,7 +35,7 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 | Export visible console | `ConsolePanel` | done | Writes an export log file. |
 | Search visible console | `ConsolePanel` | done | Logs the first matching line. |
 | Send stdin command | `ConsolePanel` | intentionally unsupported cross-platform | The Avalonia UI logs the command as unsupported because the current process service does not expose reliable stdin. |
-| Dashboard health cards/watchdog view | `DashboardPanel` | partial | Start/stop and log preview exist; WPF health-card/watchdog UI is not fully ported. |
+| Dashboard health cards/watchdog view | `DashboardPanel` | partial | The new overview has state-derived primary actions, file/mod-loader/plugin/backup health cards, and recent activity. Watchdog/restart policy controls remain unported. |
 
 ## Config Editor
 
@@ -47,7 +49,7 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 | Admin permissions editor | `AdminPanel` | done | Reads/writes `PlayerPerms.json`. |
 | Presets | `PresetsGrid` | done | Lists built-in presets and saved user presets. |
 | Mod/plugin config editor | `ModSettingsPanel` | done | Covers Commission, MatchCore loot drops, ProximityChat, ServerLogger, additional server plugin config, and client plugin config. |
-| Config validation/dirty autosave behavior | WPF view models | partial | Manual load/save exists; WPF autosave/validation status behavior is not equivalent. |
+| Config validation/dirty autosave behavior | WPF view models | partial | The primary game-settings editor now has inline validation, search, and an explicit saved/unsaved/error state. Other config groups still use explicit save actions and there is no global autosave. |
 
 ## Server Mods
 
@@ -82,7 +84,7 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 | List backups | `BackupsPanel` | done | Uses shared `BackupService`. |
 | Restore selected backup | `BackupsPanel` | done | Uses shared `BackupService`. |
 | Delete selected backup | `BackupsPanel` | done | Uses shared `BackupService`. |
-| Confirmation dialogs before destructive backup actions | WPF view models | partial | Avalonia destructive actions are real but currently do not prompt everywhere WPF prompts. |
+| Confirmation dialogs before destructive backup actions | WPF view models | done | Restore and delete prompt explicitly; restore stops a running server with consent and requires a successful safety backup before applying the selected backup. |
 
 ## Settings / Reference
 
@@ -93,7 +95,7 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 | Spawn/loadout reference | `ReferencePanel` | done | Inline reference text. |
 | Path/status summary | `SettingsPanel` | done | Shows app folder, log path, selected paths, bundled folders, and platform. |
 | Reset detected paths | `SettingsPanel` | done | Clears selected paths and reruns detection. |
-| Theme/localization settings | WPF settings/theme services | missing | Avalonia does not yet port WPF theme/localization controls. |
+| Theme/localization settings | WPF settings/theme services | partial | The functional shell and primary workflows are German and use one coherent dark theme. Runtime language/theme switching is not yet exposed. |
 
 ## Path Detection / Browse Flows
 
@@ -131,7 +133,14 @@ This checklist compares the WPF app (`TabgInstaller.Gui`) with the target cross-
 
 - Keep `TabgInstaller.Gui` until Windows smoke testing confirms the Avalonia app can install/update, manage server and client plugins, start/stop/log a server, edit configs, and manage backups.
 - Keep `TabgInstaller.LinuxGui` for now as a temporary comparison app until `TabgInstaller.App` has completed Linux and Windows smoke tests.
-- Remaining parity gaps are mainly WPF polish and safety prompts, full loadout editor ergonomics, dashboard health/watchdog UI, theme/localization settings, and update/status surfaces.
+- Remaining parity gaps are remote/SSH migration, full loadout editor ergonomics, watchdog/restart policy controls, runtime theme/language switching, and update/status surfaces.
+
+## Functional redesign verification (2026-08-04)
+
+- State evaluation and persistent local server profiles have dedicated unit tests.
+- `dotnet test TabgInstaller.Tests/TabgInstaller.Tests.csproj --framework net8.0 --configuration Debug --no-build --no-restore` passes all 186 tests.
+- The rebuilt Avalonia app was visually checked on Wayland at its default 1180x760 size and its 900x620 minimum size across overview, guided setup, configuration, extensions, backups, and diagnostics.
+- The smoke test did not start the live game server or mutate its installation.
 
 ## Verification snapshot
 

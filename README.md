@@ -95,6 +95,14 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 - **Admins** - `PlayerPerms.json` management.
 - **Presets** - apply built-in templates or save custom config sets.
 
+### Portable Preset Bundles
+
+The [`portable-presets`](./portable-presets) folder preserves complete paired
+server/client setups, including mode-specific DLLs, sanitized configuration,
+metadata, install notes, and checksums. It currently contains the validated
+Island Map Gun Game and Multiplayer Shooting Range setups plus a template for
+saving another preset later.
+
 
 ## Bundled Plugins
 
@@ -104,15 +112,18 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 |--------|-----|-------------|---------|
 | Citruslib | `Citruslib.dll` | Third-party TABG server modding API dependency | Yes |
 | AntiCheatBypass | `TabgInstaller.AntiCheatBypass.dll` | Private server EAC/EOS compatibility bypass | Yes |
+| PerformanceServer | `TabgInstaller.PerformanceServer.dll` | Delta replication, bounded queues, exact packets, direct hot-path serialization, and headless tick optimization; paired client required | No |
 | MatchCore | `TabgInstaller.MatchCore.dll` | Rings, loadouts, vote-start, drops, spell drops, timeouts, win rules, and match fixes | Yes |
 | ServerLogger | `TabgInstaller.ServerLogger.dll` | Player name, PlayFab ID, and Epic ID logging with CSV and legacy log support | Yes |
 | UnusedVehicles | `TabgInstaller.UnusedVehicles.dll` | Spawns and manages hidden TABG vehicles | Yes |
 | CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Big Smoke grenade behavior; client-only MGL flashbang code disables itself on headless servers | Yes |
 | ProximityChat | `TabgInstaller.ProximityChat.Server.dll` | Nearby voice relay over the existing game network | Yes |
 | SoloTesting | `TabgInstaller.SoloTesting.dll` | Local testing helpers | No |
-| FakePlayers | `TabgInstaller.FakePlayers.dll` | Dummy players and AI test targets for private testing | No |
+| FakePlayers | `TabgInstaller.FakePlayers.dll` | Server-only AI squadmates that follow orders, ping spotted enemies, assist in combat, revive, and use fair server-tracked bullets | No |
 | DummyDebugRadar | `TabgInstaller.AdminRadar.Server.dll` | Dummy/debug telemetry server, real player positions and real target names disabled by default | No |
+| CustomGameSkins | `TabgInstaller.CustomGameSkins.Server.dll` | Authorizes and validates session-only access to every built-in clothing skin; paired client required | No |
 | RangeMap | `TabgInstaller.RangeMap.Server.dll` | Multiplayer WilhelmTest shooting range with authoritative items and infinite respawns; paired client required | No |
+| DevTestMap | `TabgInstaller.DevTestMap.Server.dll` | Multiplayer version of TABG's hidden DevTest map with authoritative items and infinite respawns; paired client required | No |
 
 ### Client Plugins
 
@@ -122,15 +133,34 @@ Client mods are installed into a separate TABG copy so players do not have to mo
 | CustomGrenades | `TabgInstaller.CustomGrenades.dll` | Client visuals/effects for custom grenades and MGL flashbangs | Yes |
 | CoordsDisplay | `TabgInstaller.CoordsDisplay.dll` | Coordinate overlay | Yes |
 | ModSettings | `TabgInstaller.ModSettings.dll` | In-game mod settings support | Yes |
+| PerformanceClient | `TabgInstaller.PerformanceClient.dll` | FPS, allocation, culling, streaming, remote physics LOD, and network hot-path optimization for custom clients | No |
 | EnhancedClient | `TabgInstaller.EnhancedClient.dll` | Experimental LOD, draw distance, haze, and HUD controls | No |
 | PopupBlocker | `TabgInstaller.PopupBlocker.dll` | Suppresses modded-client anti-cheat popups | Yes |
 | ProximityChatClient | `TabgInstaller.ProximityChat.Client.dll` | Captures and plays proximity voice | Yes |
 | DummyDebugRadarClient | `TabgInstaller.AdminRadar.Client.dll` | Dummy/debug radar overlay | No |
+| CustomGameSkinsClient | `TabgInstaller.CustomGameSkins.Client.dll` | F7 searchable all-skins wardrobe, locked unless the custom server authorizes it | No |
 | RangeMapClient | `TabgInstaller.RangeMap.Client.dll` | Loads WilhelmTest and adds a searchable F6 all-items menu | No |
+| DevTestMapClient | `TabgInstaller.DevTestMap.Client.dll` | Loads DevTest and adds a searchable F6 all-items menu | No |
 
 ## Multiplayer Shooting Range
 
 Apply the **Multiplayer Shooting Range** preset, install `RangeMap` on the server, and install `RangeMapClient` on every player. Compatible clients are redirected from the stock Test map to TABG's built-in `WilhelmTest` shooting range. Press **F6** in the Range to request any item from the server. Ammo requests give a full stack, the starter weapon/ammo return after every death, and the Test match is kept running for unlimited respawns.
+
+## Island Map Gun Game
+
+Apply the **Island Map Gun Game** preset, install `DevTestMap` on the server, and install `DevTestMapClient` on every player. This keeps TABG's stock Test-mode destination—the hidden map we call Island Map—while adding Gun Game progression, a win at 32 kills, one-second spawn protection, searchable **F6** all-items, server-authoritative water damage, and unlimited respawns. Do not install `DevTestMap` together with `RangeMap`, and keep `AntiCheatBypass` disabled for this setup.
+
+## Performance Mods
+
+`PerformanceClient` is for the separate BepInEx/custom-server client only; do not install it into the Easy Anti-Cheat stock client. It tunes rendering, culling, streaming, physics hot paths, UI updates, and packet parsing. Press **F10** for its frame-time overlay and **F8** for the offline Shooting Range. Do not load it together with `EnhancedClient`; both alter the same rendering and streaming systems.
+
+`PerformanceServer` optimizes private-server replication and packet queues. Its delta-snapshot mode requires `PerformanceClient` on every connected player. Both performance plugins remain opt-in while the paired multiplayer networking path awaits a full live match validation.
+
+## Custom Game All Skins
+
+Install `CustomGameSkins` on a custom server and `CustomGameSkinsClient` on each player who wants the wardrobe. After the server accepts the versioned handshake, press **F7** in game to search every skin in TABG's built-in `GearDatabase`, fill both head and torso layers, choose colors, or randomize an outfit. The server checks all 12 gear/color values and relays the accepted outfit to the other players.
+
+The mod does not add purchases, change PlayFab inventory, call TABG's store APIs, or save the custom outfit as the public-account outfit. The F7 menu remains locked on public or otherwise incompatible servers, and authorization is cleared when returning to the main menu.
 
 ## Proximity Voice Chat
 
@@ -148,13 +178,14 @@ Voice communication is built directly into the game's existing network connectio
 
 Some bundled plugins exist for custom/private server operation and should not be treated as public-server defaults:
 
-- **FakePlayers** commands require Citrus permissions by default. The `CommandsUsableByEveryone` bypass is ignored unless `Safety.DevelopmentMode=true`.
+- **FakePlayers** is server-only; players use an unmodified client. AI spawned by a player joins that player's squad while space remains, follows the nearest human squadmate, obeys teammate pings/map markers, marks enemies it can currently see, helps fight attackers, and uses the vanilla timed revive flow. Its commands require Citrus permissions by default. The `CommandsUsableByEveryone` bypass is ignored unless `Safety.DevelopmentMode=true`.
 - **AntiCheatBypass** and **PopupBlocker** are compatibility tooling for this custom server ecosystem, not general-purpose public-server anti-cheat changes.
 - **DummyDebugRadar** defaults to dummy-only broadcasts. Real player positions and real bot target names require `Visibility.IncludeRealPlayers=true`; with it off, bot debug target names are kept only for dummy targets or generic threat markers such as `last-heard`.
 - **SoloTesting** is inactive unless `Safety.DevelopmentMode=true`.
 - **EnhancedClient** is disabled by default and uses bounded draw-distance settings.
 - **ProximityChat** records microphone audio only while enabled and in a game session; disabling it stops capture immediately.
 - **CustomGrenades** is one combined DLL with separate `BigSmoke` and `Flashbang` config sections. The MGL flashbang feature is client-only and disables itself on dedicated/headless servers.
+- **CustomGameSkins** requires a live handshake from its paired server plugin before F7 unlocks. Accepted outfits exist only in that custom-server session and are rate-limited and validated server-side.
 
 ## Server Logger
 

@@ -42,6 +42,10 @@
       <HintPath>Libs\Citruslib.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>..\TabgInstaller.CustomGrenades\Libs\Sirenix.Serialization.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="CopyFakePlayersToBundledPlugins" AfterTargets="Build">

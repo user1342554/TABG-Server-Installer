@@ -22,6 +22,7 @@ namespace TabgInstaller.MatchCore
         public bool HealOnKill = false;
         public float HealOnKillAmount = 100f;
         public bool ServerRingDamage = true;
+        public bool AllowRespawns = false;
         public float ServerRingDamagePerSecond = 8f;
         public float ServerRingDamageTickSeconds = 1f;
         public float RingBaseTime = 0f;
@@ -157,6 +158,7 @@ namespace TabgInstaller.MatchCore
                 "HealOnKill=false",
                 "HealOnKillAmount=100",
                 "ServerRingDamage=true",
+                "AllowRespawns=false",
                 "ServerRingDamagePerSecond=8",
                 "ServerRingDamageTickSeconds=1",
                 "RingBaseTime=0",
@@ -207,6 +209,10 @@ namespace TabgInstaller.MatchCore
                     break;
                 case "serverringdamage":
                     ServerRingDamage = ParseBool(value, ServerRingDamage);
+                    break;
+                case "allowrespawns":
+                case "battleroyalerespawns":
+                    AllowRespawns = ParseBool(value, AllowRespawns);
                     break;
                 case "serverringdamagepersecond":
                     ServerRingDamagePerSecond = ParseFloat(value, ServerRingDamagePerSecond);

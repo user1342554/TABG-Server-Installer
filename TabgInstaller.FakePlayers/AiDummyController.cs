@@ -19,6 +19,9 @@ namespace TabgInstaller.FakePlayers
             Fighting,
             Evading,
             Searching,
+            FollowingTeam,
+            FollowingOrder,
+            Reviving,
             Wandering,
             Unstuck,
             Dropping
@@ -35,15 +38,11 @@ namespace TabgInstaller.FakePlayers
             LootWeapon,
             LootAmmo,
             Heal,
+            FollowTeam,
+            FollowOrder,
+            ReviveTeamMate,
             SearchLastSeen,
             Flee
-        }
-
-        private enum HitZone
-        {
-            Limb,
-            Body,
-            Head
         }
 
         private struct UtilityOption
@@ -81,16 +80,25 @@ namespace TabgInstaller.FakePlayers
         private const float PlayableMinZ = -850f;
         private const float PlayableMaxZ = 750f;
         private const float MaxFairGunDamageRange = 58f;
-        private const float MaxPendingShotAge = 0.22f;
-        private const float MaxPendingShotTargetDrift = 2.6f;
-        private const float MeleeStartRange = 1.8f;
-        private const float MeleeHitRange = 1.45f;
-        private const float MeleeAimAngle = 42f;
         private const float RingUnsafeRadiusFraction = 1.03f;
         private const float RingDestinationRadiusFraction = 0.82f;
         private const float RingEarlyRotateFraction = 0.68f;
         private const float RingHardRotateFraction = 0.86f;
         private const float LateGameRingRadius = 95f;
+        private const float BotRingDamagePerSecond = 8f;
+        private const float BotRingDamageTickSeconds = 1f;
+        private const float TeamContextRefreshSeconds = 0.2f;
+        private const float TeamFollowComfortDistance = 9f;
+        private const float TeamFollowUrgentDistance = 30f;
+        private const float TeamOrderArrivalDistance = 5f;
+        private const float TeamCombatAssistRange = 110f;
+        private const float TeamThreatMemorySeconds = 8f;
+        private const float TeamReviveApproachDistance = 1.75f;
+        private const float TeamReviveBreakDistance = 3f;
+        private const float VanillaReviveHealthPerSecond = 10f;
+        private const float EnemyPingLostGraceSeconds = 1.25f;
+        private const float EnemyPingMinUpdateSeconds = 1.75f;
+        private const float EnemyPingMovementThreshold = 8f;
         private const float UtilitySwitchMargin = 9f;
         private const float UtilityCurrentActionBonus = 5f;
         private const float SearchGiveUpSeconds = 7.5f;
@@ -111,32 +119,37 @@ namespace TabgInstaller.FakePlayers
             public string SurfaceName;
         }
 
-        private struct PendingShot
+        private struct ServerProjectile
         {
-            public TABGPlayerServer Target;
-            public Vector3 AimPoint;
-            public Vector3 TargetPosition;
-            public float MaxRange;
-            public float FireTime;
-            public float Timer;
+            public Vector3 Position;
+            public readonly Vector3 Direction;
+            public readonly float MaxRange;
+            public readonly float Speed;
+            public readonly float Damage;
+            public float RemainingRange;
+            public float DistanceTravelled;
 
-            public PendingShot(TABGPlayerServer target, Vector3 aimPoint, Vector3 targetPosition, float maxRange, float fireTime, float timer)
+            public ServerProjectile(Vector3 position, Vector3 direction, float range, float speed, float damage)
             {
-                Target = target;
-                AimPoint = aimPoint;
-                TargetPosition = targetPosition;
-                MaxRange = maxRange;
-                FireTime = fireTime;
-                Timer = timer;
+                Position = position;
+                Direction = direction;
+                MaxRange = range;
+                Speed = speed;
+                Damage = damage;
+                RemainingRange = range;
+                DistanceTravelled = 0f;
             }
         }
-
 
         private ServerClient _server;
         private GameRoom _room;
         private TABGPlayerServer _player;
         private TABGPlayerServer _target;
         private TABGPlayerServer _threatTarget;
+        private TABGPlayerServer _teamLeader;
+        private TABGPlayerServer _reviveTarget;
+        private TABGPlayerServer _activeReviveTarget;
+        private TABGPlayerServer _enemyPingTarget;
         private NetworkGun _wantedLoot;
         private TABGCarServer _wantedCar;
         private TABGCarServer _activeCar;
@@ -165,6 +178,8 @@ namespace TabgInstaller.FakePlayers
         private Vector3 _coverTarget;
         private Vector3 _currentDestination;
         private Vector3 _currentPoiTarget;
+        private Vector3 _teamOrderPosition;
+        private Vector3 _enemyPingPosition;
         private float _terrainHeightOffset = 1.15f;
         private float _retargetTimer;
         private float _wanderTimer;
@@ -190,7 +205,7 @@ namespace TabgInstaller.FakePlayers
         private float _networkTimer;
         private float _shootTimer;
         private float _autoBurstTimer;
-        private float _autoDamageTimer;
+        private float _autoShotTimer;
         private float _aimSettleTimer;
         private float _warmupTimer;
         private float _lootProgressTimer;
@@ -217,6 +232,11 @@ namespace TabgInstaller.FakePlayers
         private float _lastLootDistance = float.MaxValue;
         private float _bestPlaneDropDistance = float.MaxValue;
         private float _lastRingDanger;
+        private float _ringDamageTimer;
+        private float _teamContextTimer;
+        private float _reviveTimer;
+        private float _enemyPingLostTimer;
+        private float _enemyPingUpdateCooldown;
         private float _currentUtilityScore;
         private Vector3 _pendingGrenadePosition;
         private Vector3 _lastFirePosition;
@@ -242,6 +262,8 @@ namespace TabgInstaller.FakePlayers
         private int _skillLevel = 1;
         private int _pathCornerIndex = 1;
         private int _navFailureCount;
+        private int _teamOrderSequence;
+        private int _completedTeamOrderSequence;
         private bool _canSeeTarget;
         private bool _hasLastSeenTarget;
         private bool _hasThreatMemory;
@@ -256,12 +278,16 @@ namespace TabgInstaller.FakePlayers
         private bool _hasPoiTarget;
         private bool _dropStarted;
         private bool _dropFinished;
+        private bool _hasTeamOrder;
+        private bool _teamOrderIsPing;
+        private bool _reviveStarted;
+        private bool _enemyPingActive;
         private AiAction _currentAction = AiAction.None;
         private AiAction _lastLoggedAction = AiAction.None;
         private NavMeshPath _navPath;
         private WeaponProfile _weaponProfile;
         private static readonly Dictionary<int, byte> LootClaims = new Dictionary<int, byte>();
-        private readonly List<PendingShot> _pendingShots = new List<PendingShot>();
+        private readonly List<ServerProjectile> _serverProjectiles = new List<ServerProjectile>();
         private readonly Dictionary<byte, Vector3> _lastSoundPositions = new Dictionary<byte, Vector3>();
         private readonly Dictionary<int, float> _blockedLootUntil = new Dictionary<int, float>();
         private readonly List<int> _blockedLootScratch = new List<int>();
@@ -274,6 +300,15 @@ namespace TabgInstaller.FakePlayers
             _skillLevel = Mathf.Clamp(skillLevel, 1, 5);
             _warmupTimer = WarmupTime;
             _weaponProfile = GetWeaponProfile(-1, null);
+
+            // Fake players cannot play the client-side Gulag. Mark their one-time
+            // boss attempt as consumed so any server-authoritative death remains final.
+            if (!_player.HasDoneBossFight)
+            {
+                _player.EnterBoss();
+                _player.ExitBoss();
+            }
+
             RemoveBuiltInBotController();
             InitPhysicalEnemyAiHooks();
             InitTerrainOffset();
@@ -293,6 +328,8 @@ namespace TabgInstaller.FakePlayers
         {
             if (_server == null || _room == null || _player == null || _player.IsDead)
             {
+                CancelTeamRevive();
+                ClearEnemyPing();
                 StopFullAuto();
                 Destroy(this);
                 return;
@@ -319,7 +356,7 @@ namespace TabgInstaller.FakePlayers
             _networkTimer -= dt;
             _shootTimer -= dt;
             _autoBurstTimer -= dt;
-            _autoDamageTimer -= dt;
+            _autoShotTimer -= dt;
             _aimSettleTimer -= dt;
             _warmupTimer -= dt;
             _pathRebuildTimer -= dt;
@@ -341,6 +378,10 @@ namespace TabgInstaller.FakePlayers
             _burstShotTimer -= dt;
             _poiTimer -= dt;
             _physicalHookRetryTimer -= dt;
+            _teamContextTimer -= dt;
+            _enemyPingUpdateCooldown -= dt;
+
+            TickServerProjectiles(dt);
 
             if ((_physicalInput == null || _physicalHip == null || _physicalRotationTarget == null) && _physicalHookRetryTimer <= 0f)
             {
@@ -370,6 +411,17 @@ namespace TabgInstaller.FakePlayers
                 return;
             }
 
+            if (_player.IsDowned)
+            {
+                CancelTeamRevive();
+                ClearEnemyPing();
+                StopFullAuto();
+                ClearPhysicalInput();
+                _player.UpdateMovementDirection(Vector3.zero);
+                _player.UpdateMovementType(0);
+                return;
+            }
+
             if (_warmupTimer > 0f)
             {
                 _player.UpdateMovementDirection(Vector3.zero);
@@ -383,14 +435,20 @@ namespace TabgInstaller.FakePlayers
                 return;
             }
 
+            TickBotRingDamage(dt);
+            if (_player.IsDead)
+                return;
+
+            TickTeamContext();
+
             if (_movementNoiseTimer <= 0f)
                 PickMovementNoise();
 
             TickTargeting();
+            TickEnemyPing(dt);
             TickSoundAwareness(dt);
             TickLootChoice();
             TickVehicleChoice();
-            TickPendingShots(dt);
             DecideState();
             TickReload();
             TickHealing(dt);
@@ -400,12 +458,12 @@ namespace TabgInstaller.FakePlayers
             _currentDestination = destination;
             TrackStuck(destination);
             MoveToward(destination, dt);
+            TickTeamRevive(dt);
 
-            TryPickupLoot();
+            if (_state != AiState.Reviving)
+                TryPickupLoot();
 
-            if ((_state == AiState.Fighting || _state == AiState.Advancing) && ShouldTryMeleeAttack(_target))
-                TryMeleeAttack(_target);
-            else if (_state == AiState.Fighting && _hasWeapon && _target != null)
+            if (_state == AiState.Fighting && _hasWeapon && _target != null)
                 TryShoot(_target);
             else
                 StopFullAuto();
@@ -715,6 +773,169 @@ namespace TabgInstaller.FakePlayers
             PickNewWanderTarget();
         }
 
+        private void TickTeamContext()
+        {
+            if (_teamContextTimer > 0f || _room == null || _room.Players == null)
+                return;
+
+            _teamContextTimer = TeamContextRefreshSeconds;
+            _teamLeader = FindTeamLeader();
+            _reviveTarget = FindTeamMateToRevive();
+
+            FakePlayersPlugin.TeamMoveOrder order;
+            if (FakePlayersPlugin.TryGetTeamMoveOrder(_room, _player.GroupIndex, out order) &&
+                order.Sequence != _completedTeamOrderSequence)
+            {
+                _teamOrderSequence = order.Sequence;
+                _teamOrderPosition = ResolveTeamDestination(order.Position);
+                _teamOrderIsPing = order.IsPing;
+                _hasTeamOrder = true;
+
+                if (Flat(_teamOrderPosition - _player.PlayerPosition).magnitude <= TeamOrderArrivalDistance)
+                {
+                    _completedTeamOrderSequence = order.Sequence;
+                    _hasTeamOrder = false;
+                    FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} reached teammate {(order.IsPing ? "ping" : "map marker")}.");
+                }
+            }
+            else
+            {
+                _hasTeamOrder = false;
+            }
+
+            TABGPlayerServer teamThreat = FindRecentTeamThreat();
+            if (teamThreat != null)
+                RememberThreat(teamThreat, teamThreat.PlayerPosition, TeamThreatMemorySeconds, suppressLoot: true);
+        }
+
+        private TABGPlayerServer FindTeamLeader()
+        {
+            TABGPlayerServer orderSender = null;
+            FakePlayersPlugin.TeamMoveOrder order;
+            if (FakePlayersPlugin.TryGetTeamMoveOrder(_room, _player.GroupIndex, out order))
+                orderSender = _room.FindPlayer(order.SenderIndex);
+
+            if (IsActiveHumanTeamMate(orderSender))
+                return orderSender;
+
+            TABGPlayerServer closest = null;
+            float closestDistance = float.MaxValue;
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = _room.Players[i];
+                if (!IsActiveHumanTeamMate(candidate))
+                    continue;
+
+                float distance = Flat(candidate.PlayerPosition - _player.PlayerPosition).sqrMagnitude;
+                if (distance >= closestDistance)
+                    continue;
+
+                closest = candidate;
+                closestDistance = distance;
+            }
+
+            return closest;
+        }
+
+        private TABGPlayerServer FindTeamMateToRevive()
+        {
+            TABGPlayerServer best = null;
+            float bestScore = float.MaxValue;
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = _room.Players[i];
+                if (candidate == null || candidate == _player || candidate.GroupIndex != _player.GroupIndex ||
+                    candidate.IsDead || !candidate.IsDowned || !candidate.HasDropped)
+                    continue;
+                if (candidate.IsBeingRevived && candidate.Reviver != _player)
+                    continue;
+
+                float score = Flat(candidate.PlayerPosition - _player.PlayerPosition).magnitude;
+                if (candidate.Bot)
+                    score += 200f;
+                if (candidate == _activeReviveTarget || candidate == _reviveTarget)
+                    score -= 6f;
+
+                if (score < bestScore)
+                {
+                    best = candidate;
+                    bestScore = score;
+                }
+            }
+
+            return best;
+        }
+
+        private TABGPlayerServer FindRecentTeamThreat()
+        {
+            TABGPlayerServer best = null;
+            float bestScore = float.MaxValue;
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer teamMate = _room.Players[i];
+                if (teamMate == null || teamMate == _player || teamMate.GroupIndex != _player.GroupIndex || teamMate.IsDead)
+                    continue;
+                if (teamMate.LastAttacker == byte.MaxValue || Time.time - teamMate.LastAttackTime > TeamThreatMemorySeconds)
+                    continue;
+
+                TABGPlayerServer attacker = _room.FindPlayer(teamMate.LastAttacker);
+                if (!IsValidEnemyTarget(attacker))
+                    continue;
+
+                float botDistance = Flat(attacker.PlayerPosition - _player.PlayerPosition).magnitude;
+                float teamDistance = Flat(attacker.PlayerPosition - teamMate.PlayerPosition).magnitude;
+                if (botDistance > TeamCombatAssistRange && teamDistance > TeamCombatAssistRange)
+                    continue;
+
+                float score = Mathf.Min(botDistance, teamDistance) + Mathf.Max(0f, Time.time - teamMate.LastAttackTime) * 3f;
+                if (score < bestScore)
+                {
+                    best = attacker;
+                    bestScore = score;
+                }
+            }
+
+            return best;
+        }
+
+        private bool IsActiveHumanTeamMate(TABGPlayerServer candidate)
+        {
+            return candidate != null &&
+                candidate != _player &&
+                !candidate.Bot &&
+                candidate.GroupIndex == _player.GroupIndex &&
+                !candidate.IsDead &&
+                !candidate.IsDowned &&
+                candidate.HasDropped;
+        }
+
+        private Vector3 ResolveTeamDestination(Vector3 destination)
+        {
+            if (IsOutsidePlayableBounds(destination))
+                return _player.PlayerPosition;
+
+            Vector3 ringCenter;
+            float ringRadius;
+            if (_room.CurrentGameState == GameState.Started && TryGetRing(out ringCenter, out ringRadius))
+            {
+                Vector3 fromCenter = Flat(destination - ringCenter);
+                float safeRadius = Mathf.Max(8f, ringRadius * 0.9f);
+                if (fromCenter.magnitude > safeRadius)
+                {
+                    if (fromCenter.sqrMagnitude < 0.01f)
+                        fromCenter = Vector3.forward;
+                    destination = ringCenter + fromCenter.normalized * safeRadius;
+                }
+            }
+
+            float groundY;
+            if (TryFindGroundY(destination, out groundY))
+                destination.y = groundY + _terrainHeightOffset;
+            else
+                destination.y = _player.PlayerPosition.y;
+            return destination;
+        }
+
         private void TickTargeting()
         {
             if (_searchGiveUpTimer <= 0f && _state == AiState.Searching && !_canSeeTarget)
@@ -788,6 +1009,90 @@ namespace TabgInstaller.FakePlayers
                 _hasTargetPosition = false;
                 _targetVelocity = Vector3.zero;
             }
+        }
+
+        private void TickEnemyPing(float dt)
+        {
+            TABGPlayerServer visibleEnemy = _target != null && _canSeeTarget && IsValidEnemyTarget(_target)
+                ? _target
+                : null;
+
+            if (visibleEnemy != null && HasHumanTeamMate() && CanPublishEnemyPing(visibleEnemy))
+            {
+                _enemyPingLostTimer = 0f;
+                Vector3 position = visibleEnemy.PlayerPosition + Vector3.up * 0.9f;
+                bool targetChanged = _enemyPingTarget != visibleEnemy;
+                bool movedEnough = Flat(position - _enemyPingPosition).magnitude >= EnemyPingMovementThreshold;
+                if (!_enemyPingActive || targetChanged || (movedEnough && _enemyPingUpdateCooldown <= 0f))
+                {
+                    ServerMessages.SendEnemyPing(_server, _player, position);
+                    if (!_enemyPingActive || targetChanged)
+                        FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} pinged enemy {visibleEnemy.PlayerName} for group {_player.GroupIndex}.");
+
+                    _enemyPingActive = true;
+                    _enemyPingTarget = visibleEnemy;
+                    _enemyPingPosition = position;
+                    _enemyPingUpdateCooldown = EnemyPingMinUpdateSeconds;
+                }
+
+                return;
+            }
+
+            if (!_enemyPingActive)
+                return;
+
+            bool invalidTarget = !IsValidEnemyTarget(_enemyPingTarget);
+            bool yieldedToTeamMate = visibleEnemy != null && !CanPublishEnemyPing(visibleEnemy);
+            _enemyPingLostTimer += Mathf.Max(0f, dt);
+            if (invalidTarget || yieldedToTeamMate || _enemyPingLostTimer >= EnemyPingLostGraceSeconds)
+                ClearEnemyPing();
+        }
+
+        private bool HasHumanTeamMate()
+        {
+            if (_room == null || _room.Players == null)
+                return false;
+
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = _room.Players[i];
+                if (candidate != null && !candidate.Bot && candidate.GroupIndex == _player.GroupIndex && !candidate.IsDead)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool CanPublishEnemyPing(TABGPlayerServer enemy)
+        {
+            if (_room == null || _room.Players == null || enemy == null)
+                return false;
+
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = _room.Players[i];
+                if (candidate == null || candidate == _player || candidate.GroupIndex != _player.GroupIndex ||
+                    candidate.PlayerIndex >= _player.PlayerIndex || candidate.PlayerObject == null)
+                    continue;
+
+                AiDummyController controller = candidate.PlayerObject.GetComponent<AiDummyController>();
+                if (controller != null && controller._canSeeTarget && controller._target == enemy)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void ClearEnemyPing()
+        {
+            if (_enemyPingActive && _server != null && _player != null)
+                ServerMessages.RemoveEnemyPing(_server, _player);
+
+            _enemyPingActive = false;
+            _enemyPingTarget = null;
+            _enemyPingPosition = Vector3.zero;
+            _enemyPingLostTimer = 0f;
+            _enemyPingUpdateCooldown = 0f;
         }
 
         private void TrackTargetVelocity(float dt)
@@ -1201,7 +1506,7 @@ namespace TabgInstaller.FakePlayers
 
         private List<UtilityOption> BuildUtilityOptions()
         {
-            var options = new List<UtilityOption>(10);
+            var options = new List<UtilityOption>(13);
             bool hasLoot = _wantedLoot != null && _room.Weapons.Contains(_wantedLoot);
             bool hasThreat = HasActiveThreatMemory();
             bool hasVisibleTarget = _target != null && _canSeeTarget;
@@ -1221,6 +1526,27 @@ namespace TabgInstaller.FakePlayers
             Pickup lootPickup = hasLoot ? GetPickup(_wantedLoot) : null;
             Pickup.WeaponType lootType = lootPickup != null ? lootPickup.weaponType : Pickup.WeaponType.OtherConsumable;
             _wantedLootKind = hasLoot ? GetLootDebugKind(_wantedLoot, lootPickup) : "none";
+
+            float reviveScore = ScoreReviveTeamMate(hasVisibleTarget, targetDistance, ring);
+            options.Add(new UtilityOption(
+                AiAction.ReviveTeamMate,
+                AiState.Reviving,
+                reviveScore,
+                _reviveTarget != null ? $"revive {_reviveTarget.PlayerName}" : "no downed teammate"));
+
+            float orderScore = ScoreFollowOrder(hasThreat, hasVisibleTarget, ring);
+            options.Add(new UtilityOption(
+                AiAction.FollowOrder,
+                AiState.FollowingOrder,
+                orderScore,
+                _hasTeamOrder ? $"{(_teamOrderIsPing ? "ping" : "marker")} order {_teamOrderSequence}" : "no teammate order"));
+
+            float followScore = ScoreFollowTeam(hasThreat, hasVisibleTarget, ring);
+            options.Add(new UtilityOption(
+                AiAction.FollowTeam,
+                AiState.FollowingTeam,
+                followScore,
+                _teamLeader != null ? $"stay near {_teamLeader.PlayerName}" : "no human teammate"));
 
             float fightScore = ScoreFight(hasVisibleTarget, hasUsableWeapon, needsReload, targetDistance, hasShot, ring, threatPosition);
             options.Add(new UtilityOption(AiAction.Fight, AiState.Fighting, fightScore, GetFightReason(targetDistance, hasShot)));
@@ -1256,24 +1582,67 @@ namespace TabgInstaller.FakePlayers
             return options;
         }
 
-        private float ScoreFight(bool hasVisibleTarget, bool hasUsableWeapon, bool needsReload, float targetDistance, bool hasShot, RingContext ring, Vector3 threatPosition)
+        private float ScoreReviveTeamMate(bool hasVisibleTarget, float enemyDistance, RingContext ring)
         {
-            bool canMelee = !hasUsableWeapon && targetDistance <= MeleeStartRange;
-            if (!hasVisibleTarget || needsReload || _isReloading || _isHealing || (!hasUsableWeapon && !canMelee))
+            TABGPlayerServer reviveCandidate = _reviveStarted ? _activeReviveTarget : _reviveTarget;
+            if (!IsValidReviveTarget(reviveCandidate))
                 return 0f;
 
-            if (!hasUsableWeapon)
-            {
-                float meleeFit = Mathf.Clamp01(1f - targetDistance / Mathf.Max(0.1f, MeleeStartRange));
-                float meleeScore = 26f + meleeFit * 28f;
-                if (hasShot)
-                    meleeScore += 10f;
-                if (_player.Health <= LowHealthRetreatThreshold)
-                    meleeScore -= 24f;
-                if (ring.Danger > 0.55f && IsThreatWorseRingSide(ring, threatPosition))
-                    meleeScore -= 20f;
-                return Mathf.Max(0f, meleeScore);
-            }
+            float distance = Flat(reviveCandidate.PlayerPosition - _player.PlayerPosition).magnitude;
+            float score = 230f - Mathf.Clamp(distance * 0.5f, 0f, 80f);
+            if (hasVisibleTarget && enemyDistance < 12f)
+                score -= 85f;
+            if (ring.Danger > 0.8f)
+                score -= 75f;
+            if (_reviveStarted)
+                score += 30f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreFollowOrder(bool hasThreat, bool hasVisibleTarget, RingContext ring)
+        {
+            if (!_hasTeamOrder)
+                return 0f;
+
+            float distance = Flat(_teamOrderPosition - _player.PlayerPosition).magnitude;
+            if (distance <= TeamOrderArrivalDistance)
+                return 0f;
+
+            float score = 170f + Mathf.Clamp(distance * 0.35f, 0f, 30f);
+            if (hasVisibleTarget)
+                score -= 110f;
+            else if (hasThreat)
+                score -= 60f;
+            if (ring.Danger > 0.7f)
+                score -= 35f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreFollowTeam(bool hasThreat, bool hasVisibleTarget, RingContext ring)
+        {
+            if (_teamLeader == null || _hasTeamOrder)
+                return 0f;
+
+            float distance = Flat(_teamLeader.PlayerPosition - _player.PlayerPosition).magnitude;
+            if (distance <= TeamFollowComfortDistance)
+                return 4f;
+
+            float score = distance >= TeamFollowUrgentDistance
+                ? 112f + Mathf.Clamp((distance - TeamFollowUrgentDistance) * 0.3f, 0f, 24f)
+                : 58f + (distance - TeamFollowComfortDistance) * 1.6f;
+            if (hasVisibleTarget)
+                score -= 58f;
+            else if (hasThreat)
+                score -= 25f;
+            if (ring.Danger > 0.75f)
+                score -= 28f;
+            return Mathf.Max(0f, score);
+        }
+
+        private float ScoreFight(bool hasVisibleTarget, bool hasUsableWeapon, bool needsReload, float targetDistance, bool hasShot, RingContext ring, Vector3 threatPosition)
+        {
+            if (!hasVisibleTarget || !hasUsableWeapon || needsReload || _isReloading || _isHealing)
+                return 0f;
 
             float damageRange = GetDamageRange();
             if (targetDistance > damageRange + GetWeaponRangeTolerance())
@@ -1368,7 +1737,7 @@ namespace TabgInstaller.FakePlayers
                 return 0f;
 
             if (!hasUsableWeapon)
-                return targetDistance <= MeleeStartRange ? 16f : 0f;
+                return 0f;
 
             float score = 0f;
             switch (_weaponProfile.CombatClass)
@@ -1551,6 +1920,11 @@ namespace TabgInstaller.FakePlayers
                     return UnityEngine.Random.Range(0.75f, 1.25f);
                 case AiAction.RunToRing:
                     return UnityEngine.Random.Range(0.95f, 1.55f);
+                case AiAction.ReviveTeamMate:
+                    return 0.25f;
+                case AiAction.FollowOrder:
+                case AiAction.FollowTeam:
+                    return UnityEngine.Random.Range(0.45f, 0.8f);
                 case AiAction.SearchLastSeen:
                     return UnityEngine.Random.Range(0.85f, 1.35f);
                 default:
@@ -1563,12 +1937,7 @@ namespace TabgInstaller.FakePlayers
             if (_target == null || !_canSeeTarget)
                 return "no visible target";
             if (!HasUsableWeapon())
-            {
-                float distance = Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude;
-                return distance <= MeleeStartRange
-                    ? string.Format(CultureInfo.InvariantCulture, "fists at {0:0.0}m", distance)
-                    : "no usable weapon";
-            }
+                return "no usable weapon";
             if (_magazineAmmo <= 0)
                 return "empty magazine";
             return string.Format(CultureInfo.InvariantCulture, "{0} at {1:0}m, shot={2}", _weaponProfile.CombatClass, targetDistance, hasShot);
@@ -1592,7 +1961,7 @@ namespace TabgInstaller.FakePlayers
             if (_weaponProfile.CombatClass == WeaponCombatClass.Shotgun)
                 return string.Format(CultureInfo.InvariantCulture, "shotgun closes to {0:0}m", GetPreferredFightRange());
             if (!HasUsableWeapon())
-                return targetDistance <= MeleeStartRange ? "fists only at point blank" : "unarmed push blocked";
+                return "unarmed push blocked";
             return string.Format(CultureInfo.InvariantCulture, "{0} pressure at {1:0}m", _weaponProfile.CombatClass, targetDistance);
         }
 
@@ -1697,6 +2066,35 @@ namespace TabgInstaller.FakePlayers
             context.Danger = Mathf.Clamp(danger, 0f, 1.35f);
             context.ShouldRotate = context.Danger >= 0.34f || context.Fraction >= RingHardRotateFraction || context.IsClosing;
             return context;
+        }
+
+        private void TickBotRingDamage(float dt)
+        {
+            if (_room.CurrentGameState != GameState.Started || !_player.HasDropped)
+            {
+                _ringDamageTimer = 0f;
+                return;
+            }
+
+            Vector3 center;
+            float radius;
+            if (!TryGetRing(out center, out radius) || Flat(_player.PlayerPosition - center).magnitude <= radius)
+            {
+                _ringDamageTimer = 0f;
+                return;
+            }
+
+            _ringDamageTimer += Mathf.Max(0f, dt);
+            if (_ringDamageTimer < BotRingDamageTickSeconds)
+                return;
+
+            int ticks = Mathf.Max(1, Mathf.FloorToInt(_ringDamageTimer / BotRingDamageTickSeconds));
+            _ringDamageTimer -= ticks * BotRingDamageTickSeconds;
+            FakePlayersPlugin.ApplyEnvironmentDamage(
+                _server,
+                _player,
+                ticks * BotRingDamagePerSecond * BotRingDamageTickSeconds,
+                "outside the ring");
         }
 
         private bool IsThreatWorseRingSide(RingContext ring, Vector3 threatPosition)
@@ -1879,6 +2277,8 @@ namespace TabgInstaller.FakePlayers
             AiState previous = _state;
             _state = next;
             _stateTimer = minTime;
+            if (previous == AiState.Reviving && next != AiState.Reviving)
+                CancelTeamRevive();
             if (_lastLoggedState != next)
             {
                 FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} state: {next}.");
@@ -1979,6 +2379,10 @@ namespace TabgInstaller.FakePlayers
 
         private TABGPlayerServer FindTarget()
         {
+            TABGPlayerServer teamThreat = FindRecentTeamThreat();
+            if (teamThreat != null && Flat(teamThreat.PlayerPosition - _player.PlayerPosition).magnitude <= TeamCombatAssistRange)
+                return teamThreat;
+
             TABGPlayerServer current = IsValidEnemyTarget(_target) ? _target : null;
             float currentDistance = current != null ? Flat(current.PlayerPosition - _player.PlayerPosition).magnitude : float.MaxValue;
             bool keepCurrent = current != null &&
@@ -2025,8 +2429,87 @@ namespace TabgInstaller.FakePlayers
         {
             if (candidate == null || candidate == _player || !FakePlayersPlugin.IsCombatTargetAlive(candidate))
                 return false;
+            if (candidate.GroupIndex == _player.GroupIndex)
+                return false;
 
             return !candidate.Bot || FakePlayersPlugin.IsTrackedAiPlayer(candidate);
+        }
+
+        private bool IsValidReviveTarget(TABGPlayerServer candidate)
+        {
+            return candidate != null &&
+                candidate != _player &&
+                candidate.GroupIndex == _player.GroupIndex &&
+                candidate.HasDropped &&
+                candidate.IsDowned &&
+                !candidate.IsDead &&
+                (!candidate.IsBeingRevived || candidate.Reviver == _player);
+        }
+
+        private void TickTeamRevive(float dt)
+        {
+            TABGPlayerServer target = _reviveStarted ? _activeReviveTarget : _reviveTarget;
+            if (_state != AiState.Reviving || _currentAction != AiAction.ReviveTeamMate || !IsValidReviveTarget(target))
+            {
+                CancelTeamRevive();
+                return;
+            }
+
+            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
+            FacePoint(target.PlayerPosition + Vector3.up * 0.9f);
+            if (distance > TeamReviveBreakDistance)
+            {
+                CancelTeamRevive();
+                return;
+            }
+
+            if (distance > TeamReviveApproachDistance)
+                return;
+
+            StopFullAuto();
+            _player.UpdateMovementDirection(Vector3.zero);
+            _player.UpdateMovementType(0);
+
+            if (!_reviveStarted)
+            {
+                if (!ServerMessages.TryRunReviveState(_server, _player, target, ReviveState.Start))
+                    return;
+
+                _reviveStarted = true;
+                _activeReviveTarget = target;
+                _isHealing = false;
+                _healTimer = 0f;
+                _reviveTimer = Mathf.Max(0.25f, (100f - Mathf.Clamp(target.Health, 0f, 100f)) / VanillaReviveHealthPerSecond);
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} started reviving {target.PlayerName} ({_reviveTimer:0.0}s).");
+                return;
+            }
+
+            _reviveTimer -= Mathf.Max(0f, dt);
+            if (_reviveTimer > 0f)
+                return;
+
+            TABGPlayerServer revived = _activeReviveTarget;
+            if (ServerMessages.TryRunReviveState(_server, _player, revived, ReviveState.Finished))
+                FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} revived {revived.PlayerName}.");
+
+            _reviveStarted = false;
+            _reviveTimer = 0f;
+            _activeReviveTarget = null;
+            _reviveTarget = null;
+            _decisionTimer = 0f;
+        }
+
+        private void CancelTeamRevive()
+        {
+            if (_reviveStarted && _server != null && _player != null && _activeReviveTarget != null &&
+                _activeReviveTarget.IsBeingRevived && _activeReviveTarget.Reviver == _player)
+            {
+                ServerMessages.TryRunReviveState(_server, _player, _activeReviveTarget, ReviveState.Stop);
+            }
+
+            _reviveStarted = false;
+            _reviveTimer = 0f;
+            _activeReviveTarget = null;
         }
 
         private Vector3 ChooseDestination()
@@ -2048,6 +2531,37 @@ namespace TabgInstaller.FakePlayers
                 _wantedCar = null;
                 _hasPoiTarget = false;
                 return ringDestination;
+            }
+
+            TABGPlayerServer reviveDestination = _reviveStarted ? _activeReviveTarget : _reviveTarget;
+            if (_currentAction == AiAction.ReviveTeamMate && IsValidReviveTarget(reviveDestination))
+            {
+                ReleaseLootClaim();
+                _wantedLoot = null;
+                _wantedCar = null;
+                _hasPoiTarget = false;
+                float distance = Flat(reviveDestination.PlayerPosition - _player.PlayerPosition).magnitude;
+                return distance <= TeamReviveApproachDistance
+                    ? _player.PlayerPosition
+                    : ResolveTeamDestination(reviveDestination.PlayerPosition);
+            }
+
+            if (_currentAction == AiAction.FollowOrder && _hasTeamOrder)
+            {
+                ReleaseLootClaim();
+                _wantedLoot = null;
+                _wantedCar = null;
+                _hasPoiTarget = false;
+                return GetTeamOrderDestination();
+            }
+
+            if (_currentAction == AiAction.FollowTeam && _teamLeader != null)
+            {
+                ReleaseLootClaim();
+                _wantedLoot = null;
+                _wantedCar = null;
+                _hasPoiTarget = false;
+                return GetTeamFollowDestination();
             }
 
             if ((_currentAction == AiAction.Heal && _isHealing && !HasActiveThreatMemory()) ||
@@ -2101,6 +2615,30 @@ namespace TabgInstaller.FakePlayers
                 PickNewWanderTarget();
 
             return _wanderTarget;
+        }
+
+        private Vector3 GetTeamOrderDestination()
+        {
+            float angle = (_player.PlayerIndex * 137.5f) % 360f;
+            float radius = 1.8f + (_player.PlayerIndex % 3) * 0.9f;
+            Vector3 spread = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius;
+            return ResolveTeamDestination(_teamOrderPosition + spread);
+        }
+
+        private Vector3 GetTeamFollowDestination()
+        {
+            if (_teamLeader == null)
+                return _player.PlayerPosition;
+
+            Vector3 leaderDirection = Flat(_teamLeader.MovementDirection);
+            if (leaderDirection.sqrMagnitude < 0.04f)
+                leaderDirection = Quaternion.Euler(0f, _teamLeader.PlayerRotation.y, 0f) * Vector3.forward;
+            leaderDirection = Flat(leaderDirection).normalized;
+
+            float sideSlot = (_player.PlayerIndex % 5) - 2f;
+            Vector3 side = Vector3.Cross(Vector3.up, leaderDirection);
+            Vector3 destination = _teamLeader.PlayerPosition - leaderDirection * (5.5f + Mathf.Abs(sideSlot)) + side * sideSlot * 2.4f;
+            return ResolveTeamDestination(destination);
         }
 
         private bool TryGetRingRotationDestination(out Vector3 destination)
@@ -2760,37 +3298,6 @@ namespace TabgInstaller.FakePlayers
             return null;
         }
 
-        private bool ShouldTryMeleeAttack(TABGPlayerServer target)
-        {
-            if (target == null || _isReloading || _isHealing || HasUsableWeapon())
-                return false;
-
-            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
-            return distance <= MeleeStartRange && _canSeeTarget;
-        }
-
-        private void TryMeleeAttack(TABGPlayerServer target)
-        {
-            if (target == null)
-                return;
-
-            StopFullAuto();
-            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
-            Vector3 aimPoint = target.PlayerPosition + Vector3.up * 1.05f;
-            FacePoint(aimPoint);
-            FakePlayersPlugin.BroadcastPlayerUpdate(_server, _player, _player.PlayerPosition);
-
-            if (_shootTimer > 0f || distance > MeleeHitRange)
-                return;
-            if (!HasLineOfSight(target) || !IsAimingAt(target, MeleeAimAngle))
-                return;
-
-            float damage = Mathf.Lerp(4.5f, 8.5f, GetSkillT());
-            FakePlayersPlugin.ApplyDirectDamage(_server, _player, target, damage);
-            FakePlayersPlugin.Log($"AI dummy {_player.PlayerName} melee hit {target.PlayerName} at {distance:0.0}m for {damage:0.0}.");
-            _shootTimer = Mathf.Lerp(0.95f, 0.62f, GetSkillT());
-        }
-
         private void TryShoot(TABGPlayerServer target)
         {
             if (!HasUsableWeapon())
@@ -2848,9 +3355,8 @@ namespace TabgInstaller.FakePlayers
             if (_shootTimer > 0f || !ConsumeRound())
                 return;
 
-            FakePlayersPlugin.BroadcastFire(_server, _player, aimPoint);
+            FireProjectile(aimPoint);
             _fireAnimationTimer = FireAnimationWindow;
-            QueueShotDamage(target, aimPoint);
             NoteShotFired();
 
             _shootTimer = GetSemiFireInterval();
@@ -2869,12 +3375,11 @@ namespace TabgInstaller.FakePlayers
                 _isFullAutoFiring = true;
                 _autoBulletsFired = 0;
                 _autoBurstTimer = UnityEngine.Random.Range(0.8f, 1.6f);
-                _autoDamageTimer = Mathf.Max(ShotDamageDelay, _weaponProfile.FireInterval);
-                FakePlayersPlugin.BroadcastFullAutoStart(_server, _player, aimPoint);
+                _autoShotTimer = 0f;
                 _fireAnimationTimer = Mathf.Max(_fireAnimationTimer, 0.35f);
             }
 
-            if (_autoDamageTimer <= 0f)
+            if (_autoShotTimer <= 0f)
             {
                 float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
                 float damageRange = GetDamageRange();
@@ -2886,10 +3391,10 @@ namespace TabgInstaller.FakePlayers
 
                 _autoBulletsFired++;
                 _fireAnimationTimer = Mathf.Max(_fireAnimationTimer, FireAnimationWindow);
-                QueueShotDamage(target, aimPoint);
+                FireProjectile(aimPoint);
                 if (_autoBulletsFired == 1 || _autoBulletsFired % 6 == 0)
                     NoteShotFired();
-                _autoDamageTimer = Mathf.Max(0.045f, _weaponProfile.FireInterval);
+                _autoShotTimer = Mathf.Max(0.045f, _weaponProfile.FireInterval);
             }
 
             if (_autoBurstTimer <= 0f || _magazineAmmo <= 0)
@@ -2906,7 +3411,6 @@ namespace TabgInstaller.FakePlayers
             if (!_isFullAutoFiring)
                 return;
 
-            FakePlayersPlugin.BroadcastFullAutoStop(_server, _player, Mathf.Max(1, _autoBulletsFired));
             _isFullAutoFiring = false;
             _autoBulletsFired = 0;
         }
@@ -2932,9 +3436,8 @@ namespace TabgInstaller.FakePlayers
                 return;
             }
 
-            FakePlayersPlugin.BroadcastFire(_server, _player, aimPoint);
+            FireProjectile(aimPoint);
             _fireAnimationTimer = FireAnimationWindow;
-            QueueShotDamage(target, aimPoint);
             NoteShotFired();
 
             _burstShotsRemaining--;
@@ -2950,13 +3453,218 @@ namespace TabgInstaller.FakePlayers
                 StartReload();
         }
 
-        private void QueueShotDamage(TABGPlayerServer target, Vector3 aimPoint)
+        private void FireProjectile(Vector3 aimPoint)
         {
-            if (!EnableGunDamage || target == null)
+            Vector3 muzzle = GetMuzzlePosition();
+            Vector3 direction = aimPoint - muzzle;
+            if (direction.sqrMagnitude < 0.01f)
+                direction = Quaternion.Euler(new Vector3(_player.PlayerRotation.x, _player.PlayerRotation.y, 0f)) * Vector3.forward;
+            direction.Normalize();
+
+            // Use the game's normal server command so vanilla clients create the same
+            // remote projectile, muzzle flash, sound, and tracer as for a real player.
+            FakePlayersPlugin.BroadcastFire(_server, _player, aimPoint);
+
+            float range = Mathf.Min(GetDamageRange(), MaxFairGunDamageRange);
+            _serverProjectiles.Add(new ServerProjectile(
+                muzzle,
+                direction,
+                range,
+                GetProjectileSpeed(),
+                _weaponProfile.BaseDamage));
+        }
+
+        private void TickServerProjectiles(float dt)
+        {
+            if (_serverProjectiles.Count == 0 || _room == null)
                 return;
 
-            float maxRange = Mathf.Min(GetDamageRange(), MaxFairGunDamageRange);
-            _pendingShots.Add(new PendingShot(target, aimPoint, target.PlayerPosition, maxRange, Time.unscaledTime, ShotDamageDelay));
+            float stepTime = Mathf.Clamp(dt, 0f, 0.25f);
+            for (int i = _serverProjectiles.Count - 1; i >= 0; i--)
+            {
+                ServerProjectile projectile = _serverProjectiles[i];
+                float stepDistance = Mathf.Min(projectile.RemainingRange, projectile.Speed * stepTime);
+                if (stepDistance <= 0.001f)
+                {
+                    _serverProjectiles.RemoveAt(i);
+                    continue;
+                }
+
+                float worldHitDistance = FindWorldHitDistance(projectile.Position, projectile.Direction, stepDistance);
+                TABGPlayerServer hitPlayer;
+                float playerHitDistance;
+                float hitMultiplier;
+                bool hit = TryFindPlayerHit(
+                    projectile.Position,
+                    projectile.Direction,
+                    Mathf.Min(stepDistance, worldHitDistance),
+                    out hitPlayer,
+                    out playerHitDistance,
+                    out hitMultiplier);
+
+                if (hit)
+                {
+                    float travelled = projectile.DistanceTravelled + playerHitDistance;
+                    float falloff = Mathf.Lerp(1f, 0.65f, Mathf.Clamp01(travelled / Mathf.Max(1f, projectile.MaxRange)));
+                    float damage = Mathf.Max(0.5f, projectile.Damage * falloff * hitMultiplier);
+                    FakePlayersPlugin.ApplyDamage(_server, _player, hitPlayer, damage);
+                    _serverProjectiles.RemoveAt(i);
+                    continue;
+                }
+
+                if (worldHitDistance <= stepDistance)
+                {
+                    _serverProjectiles.RemoveAt(i);
+                    continue;
+                }
+
+                projectile.Position += projectile.Direction * stepDistance;
+                projectile.DistanceTravelled += stepDistance;
+                projectile.RemainingRange -= stepDistance;
+                if (projectile.RemainingRange <= 0.001f)
+                    _serverProjectiles.RemoveAt(i);
+                else
+                    _serverProjectiles[i] = projectile;
+            }
+        }
+
+        private float FindWorldHitDistance(Vector3 origin, Vector3 direction, float distance)
+        {
+            float closest = float.MaxValue;
+            RaycastHit[] hits = Physics.RaycastAll(origin, direction, distance, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Collider collider = hits[i].collider;
+                if (collider == null || IsAnyPlayerCollider(collider))
+                    continue;
+
+                closest = Mathf.Min(closest, hits[i].distance);
+            }
+
+            return closest;
+        }
+
+        private bool TryFindPlayerHit(
+            Vector3 origin,
+            Vector3 direction,
+            float distance,
+            out TABGPlayerServer hitPlayer,
+            out float hitDistance,
+            out float damageMultiplier)
+        {
+            hitPlayer = null;
+            hitDistance = float.MaxValue;
+            damageMultiplier = 1f;
+
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer candidate = _room.Players[i];
+                if (!IsValidEnemyTarget(candidate))
+                    continue;
+
+                float candidateDistance;
+                float candidateMultiplier;
+                if (!TryIntersectPlayer(origin, direction, distance, candidate, out candidateDistance, out candidateMultiplier))
+                    continue;
+                if (candidateDistance >= hitDistance)
+                    continue;
+
+                hitPlayer = candidate;
+                hitDistance = candidateDistance;
+                damageMultiplier = candidateMultiplier;
+            }
+
+            return hitPlayer != null;
+        }
+
+        private static bool TryIntersectPlayer(
+            Vector3 origin,
+            Vector3 direction,
+            float maxDistance,
+            TABGPlayerServer player,
+            out float hitDistance,
+            out float damageMultiplier)
+        {
+            hitDistance = float.MaxValue;
+            damageMultiplier = 1f;
+
+            float distance;
+            if (TryIntersectSphere(origin, direction, maxDistance, player.PlayerPosition + Vector3.up * 0.45f, 0.46f, out distance) && distance < hitDistance)
+            {
+                hitDistance = distance;
+                damageMultiplier = 0.78f;
+            }
+            if (TryIntersectSphere(origin, direction, maxDistance, player.PlayerPosition + Vector3.up * 1.02f, 0.48f, out distance) && distance < hitDistance)
+            {
+                hitDistance = distance;
+                damageMultiplier = 1f;
+            }
+            if (TryIntersectSphere(origin, direction, maxDistance, player.PlayerPosition + Vector3.up * 1.62f, 0.31f, out distance) && distance < hitDistance)
+            {
+                hitDistance = distance;
+                damageMultiplier = 1.55f;
+            }
+
+            return hitDistance < float.MaxValue;
+        }
+
+        private static bool TryIntersectSphere(
+            Vector3 origin,
+            Vector3 direction,
+            float maxDistance,
+            Vector3 center,
+            float radius,
+            out float distance)
+        {
+            Vector3 toCenter = center - origin;
+            float projected = Vector3.Dot(toCenter, direction);
+            float centerDistanceSquared = toCenter.sqrMagnitude - projected * projected;
+            float radiusSquared = radius * radius;
+            if (centerDistanceSquared > radiusSquared)
+            {
+                distance = 0f;
+                return false;
+            }
+
+            float offset = Mathf.Sqrt(Mathf.Max(0f, radiusSquared - centerDistanceSquared));
+            distance = projected - offset;
+            if (distance < 0f)
+                distance = projected + offset;
+            return distance >= 0f && distance <= maxDistance;
+        }
+
+        private bool IsAnyPlayerCollider(Collider collider)
+        {
+            if (collider == null || _room == null)
+                return false;
+
+            for (int i = 0; i < _room.Players.Count; i++)
+            {
+                TABGPlayerServer player = _room.Players[i];
+                if (player != null && player.PlayerObject != null && collider.transform.IsChildOf(player.PlayerObject.transform))
+                    return true;
+            }
+
+            return collider.GetComponentInParent<Player>() != null;
+        }
+
+        private float GetProjectileSpeed()
+        {
+            switch (_weaponProfile.CombatClass)
+            {
+                case WeaponCombatClass.Launcher:
+                    return 35f;
+                case WeaponCombatClass.Shotgun:
+                    return 82f;
+                case WeaponCombatClass.Pistol:
+                case WeaponCombatClass.Smg:
+                    return 95f;
+                case WeaponCombatClass.Sniper:
+                case WeaponCombatClass.AutoSniper:
+                    return 165f;
+                default:
+                    return 120f;
+            }
         }
 
         private void NoteShotFired()
@@ -2980,29 +3688,6 @@ namespace TabgInstaller.FakePlayers
             _postShotRepositionTimer = sniper ? UnityEngine.Random.Range(1.2f, 2.0f) : UnityEngine.Random.Range(0.8f, 1.35f);
             _sameFireSpotShots = 0;
             PickCombatStrafe();
-        }
-
-        private void TickPendingShots(float dt)
-        {
-            for (int i = _pendingShots.Count - 1; i >= 0; i--)
-            {
-                PendingShot shot = _pendingShots[i];
-                shot.Timer -= dt;
-                if (shot.Timer > 0f)
-                {
-                    _pendingShots[i] = shot;
-                    continue;
-                }
-
-                if (FakePlayersPlugin.IsCombatTargetAlive(shot.Target))
-                {
-                    float damage;
-                    if (TryResolveShotDamage(shot, out damage))
-                        FakePlayersPlugin.ApplyDamage(_server, _player, shot.Target, damage);
-                }
-
-                _pendingShots.RemoveAt(i);
-            }
         }
 
         private void TickReload()
@@ -3056,173 +3741,6 @@ namespace TabgInstaller.FakePlayers
             _shootTimer = _reloadTimer;
         }
 
-        private bool TryResolveShotDamage(PendingShot shot, out float damage)
-        {
-            damage = 0f;
-            TABGPlayerServer target = shot.Target;
-            Vector3 aimPoint = shot.AimPoint;
-            if ((_fireAnimationTimer <= 0f && !_isFullAutoFiring) || target == null)
-                return false;
-            if (Time.unscaledTime - shot.FireTime > MaxPendingShotAge)
-                return false;
-
-            float distance = Flat(target.PlayerPosition - _player.PlayerPosition).magnitude;
-            float range = Mathf.Min(GetDamageRange(), Mathf.Max(1f, shot.MaxRange));
-            if (distance > range)
-                return false;
-            if (Flat(target.PlayerPosition - shot.TargetPosition).magnitude > MaxPendingShotTargetDrift)
-                return false;
-            if (!HasShotLine(target) || !IsAimingAt(target, Mathf.Min(GetAimCone(), 14f)))
-                return false;
-
-            float hitChance = GetWeaponHitChance(distance, range);
-            if (UnityEngine.Random.value > hitChance)
-                return false;
-
-            HitZone zone;
-            Vector3 hitPoint;
-            if (!TryRaycastShot(target, aimPoint, out zone, out hitPoint))
-                return false;
-
-            float falloff = GetDistanceFalloff(distance, range);
-            float skillDamage = Mathf.Lerp(0.78f, 1.08f, GetSkillT());
-            damage = Mathf.Max(0.5f, _weaponProfile.BaseDamage * falloff * skillDamage * GetHitZoneMultiplier(zone));
-            return damage > 0.1f;
-        }
-
-        private bool TryRaycastShot(TABGPlayerServer target, Vector3 aimPoint, out HitZone zone, out Vector3 hitPoint)
-        {
-            zone = HitZone.Body;
-            hitPoint = aimPoint;
-
-            Vector3 start = GetMuzzlePosition();
-            Vector3 delta = aimPoint - start;
-            float range = Mathf.Max(1f, GetDamageRange());
-            float rayDistance = Mathf.Min(delta.magnitude + 2f, range);
-            if (rayDistance < 0.1f)
-                return false;
-
-            Vector3 direction = delta.normalized;
-            RaycastHit[] hits = Physics.RaycastAll(
-                start,
-                direction,
-                rayDistance,
-                ~0,
-                QueryTriggerInteraction.Ignore);
-
-            float closestBlock = float.MaxValue;
-            float closestTarget = float.MaxValue;
-            Vector3 targetHitPoint = aimPoint;
-            for (int i = 0; i < hits.Length; i++)
-            {
-                RaycastHit hit = hits[i];
-                Collider collider = hit.collider;
-                if (IsOwnCollider(collider))
-                    continue;
-
-                if (IsTargetCollider(collider, target))
-                {
-                    if (hit.distance < closestTarget)
-                    {
-                        closestTarget = hit.distance;
-                        targetHitPoint = hit.point;
-                    }
-                    continue;
-                }
-
-                if (collider != null && collider.GetComponentInParent<Player>() != null)
-                {
-                    closestBlock = Mathf.Min(closestBlock, hit.distance);
-                    continue;
-                }
-
-                if (Vector3.Dot(hit.normal, Vector3.up) < 0.92f)
-                    closestBlock = Mathf.Min(closestBlock, hit.distance);
-            }
-
-            if (closestTarget == float.MaxValue)
-            {
-                RaycastHit[] sphereHits = Physics.SphereCastAll(
-                    start,
-                    ShotTraceRadius,
-                    direction,
-                    rayDistance,
-                    ~0,
-                    QueryTriggerInteraction.Ignore);
-
-                for (int i = 0; i < sphereHits.Length; i++)
-                {
-                    RaycastHit hit = sphereHits[i];
-                    Collider collider = hit.collider;
-                    if (IsOwnCollider(collider))
-                        continue;
-
-                    if (IsTargetCollider(collider, target))
-                    {
-                        if (hit.distance < closestTarget)
-                        {
-                            closestTarget = hit.distance;
-                            targetHitPoint = hit.point;
-                        }
-                        continue;
-                    }
-
-                    if (collider != null && collider.GetComponentInParent<Player>() != null)
-                    {
-                        closestBlock = Mathf.Min(closestBlock, hit.distance);
-                        continue;
-                    }
-
-                    if (Vector3.Dot(hit.normal, Vector3.up) < 0.92f)
-                        closestBlock = Mathf.Min(closestBlock, hit.distance);
-                }
-            }
-
-            if (closestTarget < float.MaxValue && closestTarget < closestBlock)
-            {
-                hitPoint = targetHitPoint;
-                zone = ClassifyHitZone(target, targetHitPoint);
-                return true;
-            }
-
-            return false;
-        }
-
-        private Vector3 GetMuzzlePosition()
-        {
-            Vector3 forward = Quaternion.Euler(new Vector3(_player.PlayerRotation.x, _player.PlayerRotation.y, 0f)) * Vector3.forward;
-            return _player.PlayerPosition + Vector3.up * 1.32f + Flat(forward).normalized * MuzzleForwardOffset;
-        }
-
-        private static Vector3 ClosestPointOnLine(Vector3 start, Vector3 direction, Vector3 point)
-        {
-            float t = Mathf.Max(0f, Vector3.Dot(point - start, direction));
-            return start + direction * t;
-        }
-
-        private static HitZone ClassifyHitZone(TABGPlayerServer target, Vector3 hitPoint)
-        {
-            float height = hitPoint.y - target.PlayerPosition.y;
-            if (height >= 1.48f)
-                return HitZone.Head;
-            if (height <= 0.62f)
-                return HitZone.Limb;
-            return HitZone.Body;
-        }
-
-        private float GetHitZoneMultiplier(HitZone zone)
-        {
-            switch (zone)
-            {
-                case HitZone.Head:
-                    return _weaponProfile.CombatClass == WeaponCombatClass.Shotgun ? 1.35f : 1.85f;
-                case HitZone.Limb:
-                    return 0.62f;
-                default:
-                    return 1f;
-            }
-        }
-
         private NetworkGun FindLoot()
         {
             float maxDistance = _hasWeapon ? LootSearchRange : WeaponlessLootSearchRange;
@@ -3249,6 +3767,9 @@ namespace TabgInstaller.FakePlayers
                 if (loot == null)
                     continue;
                 if (IsLootTemporarilyBlocked(loot.Index))
+                    continue;
+                if (_teamLeader != null && !_hasTeamOrder &&
+                    Flat(loot.Position - _teamLeader.PlayerPosition).magnitude > TeamFollowUrgentDistance)
                     continue;
 
                 float distance = Flat(loot.Position - _player.PlayerPosition).magnitude;
@@ -3855,6 +4376,8 @@ namespace TabgInstaller.FakePlayers
             float skillBonus = Mathf.Lerp(-0.25f, 0.2f, GetSkillT());
             if (_currentAction == AiAction.RunToRing)
                 return CombatMoveSpeed + skillBonus + 0.25f;
+            if (_currentAction == AiAction.FollowTeam || _currentAction == AiAction.FollowOrder || _currentAction == AiAction.ReviveTeamMate)
+                return CombatMoveSpeed + skillBonus;
 
             if (_state == AiState.Fighting)
             {
@@ -3919,24 +4442,6 @@ namespace TabgInstaller.FakePlayers
             }
         }
 
-        private float GetWeaponHitChance(float distance, float range)
-        {
-            float t = Mathf.Clamp01(distance / Mathf.Max(1f, range));
-            float baseChance = Mathf.Lerp(_weaponProfile.CloseHitChance, _weaponProfile.FarHitChance, t);
-            return Mathf.Clamp01(baseChance + Mathf.Lerp(-0.12f, 0.1f, GetSkillT()));
-        }
-
-        private float GetDistanceFalloff(float distance, float range)
-        {
-            float preferred = Mathf.Max(1f, _weaponProfile.PreferredRange);
-            float t = Mathf.Clamp01((distance - preferred) / Mathf.Max(1f, range - preferred));
-            if (_weaponProfile.CombatClass == WeaponCombatClass.Shotgun)
-                return Mathf.Lerp(1.12f, 0.28f, t);
-            if (_weaponProfile.CombatClass == WeaponCombatClass.Sniper || _weaponProfile.CombatClass == WeaponCombatClass.AutoSniper)
-                return Mathf.Lerp(0.88f, 1.0f, Mathf.Clamp01(distance / preferred)) * Mathf.Lerp(1f, 0.76f, t);
-            return Mathf.Lerp(1f, 0.58f, t);
-        }
-
         private float GetSemiFireInterval()
         {
             return UnityEngine.Random.Range(
@@ -3947,36 +4452,6 @@ namespace TabgInstaller.FakePlayers
         private float GetAimCone()
         {
             return Mathf.Lerp(34f, 16f, GetSkillT());
-        }
-
-        private float GetSemiDamage()
-        {
-            return Mathf.Lerp(3.2f, DamagePerShot, GetSkillT());
-        }
-
-        private float GetAutoDamage()
-        {
-            return Mathf.Lerp(1.3f, AutoDamagePerBullet, GetSkillT());
-        }
-
-        private float GetSemiNearHitChance()
-        {
-            return Mathf.Lerp(0.48f, 0.78f, GetSkillT());
-        }
-
-        private float GetSemiFarHitChance()
-        {
-            return Mathf.Lerp(0.18f, 0.38f, GetSkillT());
-        }
-
-        private float GetAutoNearHitChance()
-        {
-            return Mathf.Lerp(0.28f, 0.58f, GetSkillT());
-        }
-
-        private float GetAutoFarHitChance()
-        {
-            return Mathf.Lerp(0.1f, 0.28f, GetSkillT());
         }
 
         private void RemoveBuiltInBotController()
@@ -4292,6 +4767,11 @@ namespace TabgInstaller.FakePlayers
             return true;
         }
 
+        private Vector3 GetMuzzlePosition()
+        {
+            return _player.PlayerPosition + Vector3.up * 1.3f;
+        }
+
         private bool HasClearMapLine(Vector3 point)
         {
             Vector3 start = _player.PlayerPosition + Vector3.up * 1.35f;
@@ -4475,7 +4955,7 @@ namespace TabgInstaller.FakePlayers
             float targetDistance = _target != null ? Flat(_target.PlayerPosition - _player.PlayerPosition).magnitude : -1f;
             return string.Format(
                 CultureInfo.InvariantCulture,
-                "{0} idx={1} state={2} hp={3:0} weapon={4} class={5} ammo={6}/{7} reserve={8} target={9} dist={10:0} los={11} threat={12:0.0}s sound={13:0.0}s loot={14} reload={15:0.0}s goal=({16:0},{17:0},{18:0}) action={19} score={20:0} reason=\"{21}\" top3=[{22}] ring={23:0.00} wanted={24}",
+                "{0} idx={1} state={2} hp={3:0} weapon={4} class={5} ammo={6}/{7} reserve={8} target={9} dist={10:0} los={11} threat={12:0.0}s sound={13:0.0}s loot={14} reload={15:0.0}s goal=({16:0},{17:0},{18:0}) action={19} score={20:0} reason=\"{21}\" top3=[{22}] ring={23:0.00} wanted={24} leader={25} order={26} revive={27}",
                 _player.PlayerName,
                 _player.PlayerIndex,
                 _state,
@@ -4500,7 +4980,10 @@ namespace TabgInstaller.FakePlayers
                 _stateReason,
                 _topUtilityScores,
                 _lastRingDanger,
-                _wantedLootKind);
+                _wantedLootKind,
+                _teamLeader != null ? _teamLeader.PlayerName : "none",
+                _hasTeamOrder ? (_teamOrderIsPing ? "ping" : "marker") + "#" + _teamOrderSequence : "none",
+                _reviveTarget != null ? _reviveTarget.PlayerName : "none");
         }
 
         public string DebugState
@@ -4585,6 +5068,8 @@ namespace TabgInstaller.FakePlayers
 
         private void OnDestroy()
         {
+            ClearEnemyPing();
+            CancelTeamRevive();
             ReleaseLootClaim();
             StopFullAuto();
             LeaveVehicle();

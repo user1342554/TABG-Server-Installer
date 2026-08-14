@@ -6,10 +6,12 @@ namespace TabgInstaller.RangeMap
     internal static class RangeProtocol
     {
         internal const byte EventCode = 242;
-        internal const byte Version = 1;
+        internal const byte Version = 2;
         internal const byte Hello = 1;
         internal const byte Accepted = 2;
         internal const byte GiveItem = 3;
+        internal const byte ItemGranted = 4;
+        internal const byte ItemDenied = 5;
 
         private static readonly byte[] Magic = { (byte)'R', (byte)'N', (byte)'G', (byte)'E' };
 
@@ -25,10 +27,25 @@ namespace TabgInstaller.RangeMap
 
         internal static byte[] CreateGiveItem(int itemId, byte quantity)
         {
+            return CreateItemMessage(GiveItem, itemId, quantity);
+        }
+
+        internal static byte[] CreateItemGranted(int itemId, byte quantity)
+        {
+            return CreateItemMessage(ItemGranted, itemId, quantity);
+        }
+
+        internal static byte[] CreateItemDenied(int itemId)
+        {
+            return CreateItemMessage(ItemDenied, itemId, 0);
+        }
+
+        private static byte[] CreateItemMessage(byte operation, int itemId, byte quantity)
+        {
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
             {
-                WriteHeader(writer, GiveItem);
+                WriteHeader(writer, operation);
                 writer.Write(itemId);
                 writer.Write(quantity);
                 return stream.ToArray();
@@ -58,7 +75,7 @@ namespace TabgInstaller.RangeMap
                         return false;
 
                     operation = reader.ReadByte();
-                    if (operation == GiveItem)
+                    if (operation == GiveItem || operation == ItemGranted || operation == ItemDenied)
                     {
                         if (stream.Length - stream.Position < 5)
                             return false;

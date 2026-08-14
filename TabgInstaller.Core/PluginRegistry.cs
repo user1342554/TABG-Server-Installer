@@ -74,15 +74,18 @@ namespace TabgInstaller.Core
         {
             new("Citruslib", "Citruslib - required server modding API", new[] { "Citruslib.dll" }, true, PluginKind.CoreDependency),
             new("AntiCheatBypass", "Anti-Cheat Bypass - private server EAC/EOS compatibility", new[] { "TabgInstaller.AntiCheatBypass.dll" }, true, PluginKind.Bundled),
+            new("PerformanceServer", "TABG Performance Server - replication, packet, queue, and headless tick optimization", new[] { "TabgInstaller.PerformanceServer.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
             new("MatchCore", "TABG Match Core - rings, loadouts, vote-start, drops, timers, win rules", new[] { "TabgInstaller.MatchCore.dll" }, true, PluginKind.Bundled),
             new("ServerLogger", "Server Logger - player name, PlayFab, and Epic identity log", new[] { "TabgInstaller.ServerLogger.dll" }, true, PluginKind.Bundled),
             new("UnusedVehicles", "Unused Vehicles - spawn and manage hidden TABG vehicles", new[] { "TabgInstaller.UnusedVehicles.dll" }, true, PluginKind.Bundled),
             new("CustomGrenades", "Custom Grenades - combined Big Smoke and MGL flashbang plugin", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
             new("SoloTesting", "Solo Testing - local testing helpers", new[] { "TabgInstaller.SoloTesting.dll" }, false, PluginKind.Bundled),
             new("ProximityChat", "Proximity Chat Server - relays nearby voice packets", new[] { "TabgInstaller.ProximityChat.Server.dll" }, true, PluginKind.Bundled, RequiresClientMod: true),
-            new("FakePlayers", "Fake Players - dummy players and AI test targets", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
+            new("FakePlayers", "Fake Players - server-only AI bots with randomized names, cosmetics, and traveling projectiles", new[] { "TabgInstaller.FakePlayers.dll" }, false, PluginKind.Bundled),
             new("AdminRadar", "Dummy Debug Radar Server - dummy/debug telemetry with real-player positions disabled by default", new[] { "TabgInstaller.AdminRadar.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("CustomGameSkins", "Custom Game All Skins Server - validates and authorizes session-only cosmetic outfits", new[] { "TabgInstaller.CustomGameSkins.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
             new("RangeMap", "Range Map Server - multiplayer Shooting Range, all-item requests, infinite respawns", new[] { "TabgInstaller.RangeMap.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
+            new("DevTestMap", "DevTest Map Server - hidden DevTest scene, all-item requests, infinite respawns", new[] { "TabgInstaller.DevTestMap.Server.dll" }, false, PluginKind.Bundled, RequiresClientMod: true),
         };
 
         private static readonly PluginDefinition[] BuiltInClientMods =
@@ -91,11 +94,14 @@ namespace TabgInstaller.Core
             new("CustomGrenades", "Custom Grenades Client - visuals and effects for custom grenades", new[] { "TabgInstaller.CustomGrenades.dll" }, true, PluginKind.Bundled),
             new("CoordsDisplay", "Coords Display - client coordinate overlay", new[] { "TabgInstaller.CoordsDisplay.dll" }, true, PluginKind.Bundled),
             new("ModSettings", "Mod Settings - client-side settings support", new[] { "TabgInstaller.ModSettings.dll" }, true, PluginKind.Bundled),
+            new("PerformanceClient", "TABG Performance Client - FPS, allocation, culling, streaming, and physics LOD optimization", new[] { "TabgInstaller.PerformanceClient.dll" }, false, PluginKind.Bundled),
             new("EnhancedClient", "Enhanced Client - experimental LOD, draw distance, haze, and HUD controls", new[] { "TabgInstaller.EnhancedClient.dll" }, false, PluginKind.Bundled),
             new("PopupBlocker", "Popup Blocker - suppresses modded-client anti-cheat popups", new[] { "TabgInstaller.PopupBlocker.dll" }, true, PluginKind.Bundled),
             new("ProximityChatClient", "Proximity Chat Client - captures and plays proximity voice", new[] { "TabgInstaller.ProximityChat.Client.dll" }, true, PluginKind.Bundled),
             new("AdminRadarClient", "Dummy Debug Radar Client - dummy/debug radar overlay", new[] { "TabgInstaller.AdminRadar.Client.dll" }, false, PluginKind.Bundled),
+            new("CustomGameSkinsClient", "Custom Game All Skins Client - F7 server-authorized wardrobe with every built-in skin", new[] { "TabgInstaller.CustomGameSkins.Client.dll" }, false, PluginKind.Bundled),
             new("RangeMapClient", "Range Map Client - WilhelmTest scene loader and F6 all-items menu", new[] { "TabgInstaller.RangeMap.Client.dll" }, false, PluginKind.Bundled),
+            new("DevTestMapClient", "DevTest Map Client - DevTest scene loader and F6 all-items menu", new[] { "TabgInstaller.DevTestMap.Client.dll" }, false, PluginKind.Bundled),
         };
 
         public static void ResetToBuiltIns()

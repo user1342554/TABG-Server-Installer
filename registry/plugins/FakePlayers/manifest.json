@@ -2,7 +2,7 @@
   "id": "FakePlayers",
   "name": "FakePlayers",
   "version": "1.0.0",
-  "description": "Spawn fake and AI dummy players for private testing. Commands require configured Citrus permissions unless explicit development mode is enabled.",
+  "description": "Spawn server-only AI squadmates with human-style names and cosmetics. Bots follow orders, ping spotted enemies, assist in combat, revive allies, and use fair server-tracked bullets.",
   "author": "anonymer_hase",
   "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
   "dllNames": ["TabgInstaller.FakePlayers.dll"],

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
@@ -39,14 +40,49 @@ namespace TabgInstaller.FakePlayers
             }
         }
 
+        internal struct TeamMoveOrder
+        {
+            public int Sequence;
+            public byte SenderIndex;
+            public Vector3 Position;
+            public bool IsPing;
+            public float CreatedAt;
+
+            public TeamMoveOrder(int sequence, byte senderIndex, Vector3 position, bool isPing, float createdAt)
+            {
+                Sequence = sequence;
+                SenderIndex = senderIndex;
+                Position = position;
+                IsPing = isPing;
+                CreatedAt = createdAt;
+            }
+        }
+
         internal static readonly List<byte> FakeIndices = new List<byte>();
         internal static readonly List<byte> AiIndices = new List<byte>();
         internal static readonly List<GunshotSoundEvent> GunshotSounds = new List<GunshotSoundEvent>();
+        private static readonly Dictionary<byte, TeamMoveOrder> TeamMoveOrders = new Dictionary<byte, TeamMoveOrder>();
         private static readonly Dictionary<byte, int> PendingAiLevels = new Dictionary<byte, int>();
         private const float AutoSpawnInitialDelaySeconds = 25.0f;
         private const int AutoSpawnMaxReadinessAttempts = 60;
         private const float AutoSpawnRetryDelaySeconds = 1.0f;
+        private static readonly string[] BotFirstNames =
+        {
+            "Alex", "Amelia", "Ben", "Charlotte", "Daniel", "Elias", "Emma", "Felix",
+            "Finn", "Hannah", "Henry", "Isabella", "Jack", "Jannik", "Jonah", "Julia",
+            "Kai", "Lara", "Laura", "Lea", "Leo", "Leon", "Liam", "Lina", "Luca",
+            "Lucas", "Maja", "Marie", "Mia", "Mila", "Noah", "Nora", "Oliver", "Oscar",
+            "Paul", "Sophie", "Theo", "Tom", "Victoria", "Zoe"
+        };
+        private static readonly string[] BotLastNames =
+        {
+            "Bauer", "Becker", "Fischer", "Hartmann", "Hoffmann", "Keller", "Klein",
+            "Koch", "Krause", "Kruger", "Lehmann", "Meyer", "Neumann", "Richter",
+            "Schmidt", "Schneider", "Schulz", "Vogel", "Wagner", "Weber", "Werner", "Wolf"
+        };
         private static int _nextNumber = 1;
+        private static int _nextTeamMoveOrderSequence = 1;
+        private static bool _loggedCosmeticDatabase;
         internal static int GunshotSoundSequence { get; private set; }
         internal static ConfigEntry<int> MaxFakeSpawnCount;
         internal static ConfigEntry<int> MaxAiSpawnCount;
@@ -335,15 +371,7 @@ namespace TabgInstaller.FakePlayers
 
         private static bool LooksLikeTrackedFakePlayer(TABGPlayerServer player)
         {
-            if (player == null || !player.Bot)
-                return false;
-
-            string name = player.PlayerName ?? string.Empty;
-            if (name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Player", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return player.PlayerObject != null && player.PlayerObject.GetComponent<AiDummyController>() != null;
+            return player != null && player.Bot;
         }
 
         internal static void ResetStaticMatchState()
@@ -352,8 +380,11 @@ namespace TabgInstaller.FakePlayers
             AiIndices.Clear();
             PendingAiLevels.Clear();
             GunshotSounds.Clear();
+            TeamMoveOrders.Clear();
             GunshotSoundSequence = 0;
             _nextNumber = 1;
+            _nextTeamMoveOrderSequence = 1;
+            _loggedCosmeticDatabase = false;
             _autoSpawnQueued = false;
             _autoSpawnCompleted = false;
             ServerMessages.ResetTransientState();
@@ -482,9 +513,12 @@ namespace TabgInstaller.FakePlayers
             if (playerIndex == byte.MaxValue) return byte.MaxValue;
 
             ulong loginKey = 0uL;
-            byte groupIndex = room.GetNewGroupIndex(loginKey, playerIndex);
-            string name = (aiControlled ? "AIPlayer" : "Player") + number;
-            int[] gearData = { 2 };
+            bool joinsAnchorTeam = CanJoinAnchorTeam(room, anchorPlayer);
+            byte groupIndex = joinsAnchorTeam
+                ? anchorPlayer.GroupIndex
+                : room.GetNewGroupIndex(loginKey, playerIndex);
+            string name = CreateHumanBotName(room, number);
+            int[] gearData = CreateRandomCosmeticLoadout();
 
             var player = new TABGPlayerServer(
                 name, playerIndex, groupIndex, loginKey,
@@ -492,7 +526,7 @@ namespace TabgInstaller.FakePlayers
                 room.CurrentGameSettings.MaxPlayers,
                 admin: false, bot: true);
 
-            room.AddPlayer(player, wantsToBeAlone: true);
+            room.AddPlayer(player, wantsToBeAlone: !joinsAnchorTeam);
             player.WasAccepted();
             server.CheckForMaxCapaciy();
             room.DecrementReservedSquadSlots(loginKey);
@@ -520,10 +554,112 @@ namespace TabgInstaller.FakePlayers
             {
                 PendingAiLevels[playerIndex] = Mathf.Clamp(aiLevel, 1, 5);
                 QueueAiInit(server, room, playerIndex, 0.75f);
-                Log($"AI dummy {name} level {PendingAiLevels[playerIndex]} queued at {pos}.");
+                string teamNote = joinsAnchorTeam ? $"; teammate of {anchorPlayer.PlayerName} in group {groupIndex}" : string.Empty;
+                Log($"AI dummy {name} level {PendingAiLevels[playerIndex]} queued at {pos}{teamNote}; cosmetics [{string.Join(",", gearData)}].");
             }
 
             return playerIndex;
+        }
+
+        private static bool CanJoinAnchorTeam(GameRoom room, TABGPlayerServer anchorPlayer)
+        {
+            if (room == null || anchorPlayer == null || anchorPlayer.IsDead || anchorPlayer.Bot || room.CurrentGameStats == null)
+                return false;
+
+            TeamStanding team = room.CurrentGameStats.GetTeam(anchorPlayer.GroupIndex);
+            return team != null &&
+                team.GetNumberOfPlayersInTeam(withBookings: true) < room.CurrentGameSettings.MaxTeamSize;
+        }
+
+        private static string CreateHumanBotName(GameRoom room, int fallbackNumber)
+        {
+            for (int attempt = 0; attempt < 32; attempt++)
+            {
+                string candidate = BotFirstNames[UnityEngine.Random.Range(0, BotFirstNames.Length)] + " " +
+                    BotLastNames[UnityEngine.Random.Range(0, BotLastNames.Length)];
+                bool alreadyUsed = false;
+                for (int i = 0; room.Players != null && i < room.Players.Count; i++)
+                {
+                    TABGPlayerServer existing = room.Players[i];
+                    if (existing != null && string.Equals(existing.PlayerName, candidate, StringComparison.OrdinalIgnoreCase))
+                    {
+                        alreadyUsed = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyUsed)
+                    return candidate;
+            }
+
+            return BotFirstNames[fallbackNumber % BotFirstNames.Length] + " " + fallbackNumber;
+        }
+
+        private static int[] CreateRandomCosmeticLoadout()
+        {
+            try
+            {
+                GearDatabase database = GearDatabase.Instance;
+                if (database == null)
+                    throw new InvalidOperationException("Gear Database resource is unavailable");
+
+                var head = database.GetGearList(Gear.GearType.HEAD);
+                var torso = database.GetGearList(Gear.GearType.TORSO);
+                var legs = database.GetGearList(Gear.GearType.LEGS);
+                var feet = database.GetGearList(Gear.GearType.FEET);
+                int colorCount = database.Colors != null ? database.Colors.Length : 0;
+
+                if (!_loggedCosmeticDatabase)
+                {
+                    _loggedCosmeticDatabase = true;
+                    Log($"Cosmetic database ready: head={head.Count}, torso={torso.Count}, legs={legs.Count}, feet={feet.Count}, colors={colorCount}.");
+                }
+
+                if (head.Count == 0 || torso.Count == 0 || legs.Count == 0 || feet.Count == 0)
+                    throw new InvalidOperationException("one or more cosmetic categories are empty");
+
+                return new[]
+                {
+                    RandomGearIndex(head), RandomColorIndex(database, Gear.GearType.HEAD, colorCount),
+                    RandomGearIndex(torso), RandomColorIndex(database, Gear.GearType.TORSO, colorCount),
+                    RandomGearIndex(legs), RandomColorIndex(database, Gear.GearType.LEGS, colorCount),
+                    RandomGearIndex(feet), RandomColorIndex(database, Gear.GearType.FEET, colorCount)
+                };
+            }
+            catch (Exception ex)
+            {
+                if (!_loggedCosmeticDatabase)
+                {
+                    _loggedCosmeticDatabase = true;
+                    Log($"Random cosmetics unavailable; using the vanilla fallback item: {ex.GetType().Name}: {ex.Message}");
+                }
+
+                // Vanilla SpawnBotCommand uses gear index 2. Supplying its color pair
+                // makes the normal client actually consume the item.
+                return new[] { 2, -1 };
+            }
+        }
+
+        private static int RandomGearIndex(List<GearDataEntry> entries)
+        {
+            Gear gear = entries[UnityEngine.Random.Range(0, entries.Count)].m_gear;
+            return gear != null ? gear.Index : -1;
+        }
+
+        private static int RandomColorIndex(GearDatabase database, Gear.GearType gearType, int colorCount)
+        {
+            if (colorCount <= 0 || UnityEngine.Random.value < 0.2f)
+                return -1;
+
+            for (int attempt = 0; attempt < 16; attempt++)
+            {
+                int color = UnityEngine.Random.Range(0, colorCount);
+                if (gearType != Gear.GearType.HEAD || database.m_bannedHeadColors == null ||
+                    Array.IndexOf(database.m_bannedHeadColors, color) < 0)
+                    return color;
+            }
+
+            return -1;
         }
 
         private static void BroadcastLogin(ServerClient server, TABGPlayerServer player)
@@ -571,18 +707,6 @@ namespace TabgInstaller.FakePlayers
         internal static void BroadcastFire(ServerClient server, TABGPlayerServer player, Vector3 target)
         {
             ServerMessages.SendFire(server, player, target, FiringMode.Semi);
-            RecordGunshot(player, FiringMode.Semi);
-        }
-
-        internal static void BroadcastFullAutoStart(ServerClient server, TABGPlayerServer player, Vector3 target)
-        {
-            ServerMessages.SendFire(server, player, target, FiringMode.FullAutoStart);
-            RecordGunshot(player, FiringMode.FullAutoStart);
-        }
-
-        internal static void BroadcastFullAutoStop(ServerClient server, TABGPlayerServer player, int bulletsFired)
-        {
-            ServerMessages.SendFullAutoStop(server, player, bulletsFired);
         }
 
         internal static void BroadcastGrenadeThrow(ServerClient server, TABGPlayerServer player, int itemIdentifier, int quantity, Vector3 position, Vector3 direction, bool sync)
@@ -630,6 +754,46 @@ namespace TabgInstaller.FakePlayers
             PlayerDamageCommand.Run(damageCommand, server, target.PlayerIndex);
         }
 
+        internal static void ApplyEnvironmentDamage(ServerClient server, TABGPlayerServer target, float damage, string source)
+        {
+            GameRoom room = server?.GameRoomReference;
+            if (room?.CurrentGameMode == null || !IsCombatTargetAlive(target))
+                return;
+
+            damage = Mathf.Max(0f, damage);
+            if (damage <= 0f)
+                return;
+
+            float newHealth = Mathf.Max(0f, target.Health - damage);
+            if (newHealth > 0f)
+            {
+                target.UpdateHealth(newHealth);
+                ServerMessages.SendHealthStateChanged(server, target, newHealth);
+                return;
+            }
+
+            try
+            {
+                // Bots have no client that can complete the Gulag. Consume that path
+                // before killing them so they cannot remain alive as boss spectators.
+                if (target.Bot && !target.HasDoneBossFight)
+                {
+                    target.EnterBoss();
+                    target.ExitBoss();
+                }
+
+                target.UpdateLastAttacker(byte.MaxValue);
+                target.UpdateHealth(0f);
+                room.CurrentGameMode.KillPlayer(target, null);
+                room.CheckGameState();
+                Log($"AI dummy {target.PlayerName} died {source}.");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying environmental damage to {target.PlayerName}: {ex.Message}");
+            }
+        }
+
         internal static bool IsCombatTargetAlive(TABGPlayerServer player)
         {
             return player != null &&
@@ -657,23 +821,6 @@ namespace TabgInstaller.FakePlayers
             {
                 Log($"Error applying lethal AI damage to {target.PlayerName}: {ex.Message}");
             }
-        }
-
-        internal static void ApplyDirectDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target, float damage)
-        {
-            if (server == null || !IsCombatTargetAlive(attacker) || !IsCombatTargetAlive(target))
-                return;
-
-            damage = Mathf.Max(0f, damage);
-            if (damage <= 0f)
-                return;
-
-            target.UpdateLastAttacker(attacker.PlayerIndex);
-            target.TakeDamage(damage);
-            ServerMessages.SendDirectDamage(server, attacker, target);
-
-            if (target.Health <= 0f)
-                ApplyLethalDamage(server, attacker, target);
         }
 
         private static void BroadcastLeave(ServerClient server, byte playerIndex)
@@ -782,6 +929,80 @@ namespace TabgInstaller.FakePlayers
             float cutoff = Time.unscaledTime - 2.5f;
             while (GunshotSounds.Count > 0 && (GunshotSounds[0].Time < cutoff || GunshotSounds.Count > 96))
                 GunshotSounds.RemoveAt(0);
+        }
+
+        internal static void RecordTeamMarker(ServerClient server, byte[] msgData)
+        {
+            GameRoom room = server != null ? server.GameRoomReference : null;
+            if (room == null || msgData == null || msgData.Length < 2)
+                return;
+
+            TABGPlayerServer sender = room.FindPlayer(msgData[0]);
+            if (sender == null || sender.Bot)
+                return;
+
+            byte action = msgData[1];
+            TeamMoveOrder previous;
+            if (action == 1)
+            {
+                if (TeamMoveOrders.TryGetValue(sender.GroupIndex, out previous) && previous.SenderIndex == sender.PlayerIndex)
+                {
+                    TeamMoveOrders.Remove(sender.GroupIndex);
+                    Log($"Cleared teammate move order from {sender.PlayerName} for group {sender.GroupIndex}.");
+                }
+                return;
+            }
+
+            if (action != 0 || msgData.Length < 27)
+                return;
+
+            using (var stream = new MemoryStream(msgData, writable: false))
+            using (var reader = new BinaryReader(stream))
+            {
+                reader.ReadByte();
+                reader.ReadByte();
+                Vector3 position = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+                reader.ReadSingle();
+                reader.ReadSingle();
+                reader.ReadSingle();
+                bool isPing = (MarkerType)reader.ReadByte() == MarkerType.Ping;
+
+                if (!IsFinite(position))
+                    return;
+
+                var order = new TeamMoveOrder(
+                    _nextTeamMoveOrderSequence++,
+                    sender.PlayerIndex,
+                    position,
+                    isPing,
+                    Time.unscaledTime);
+                TeamMoveOrders[sender.GroupIndex] = order;
+                Log($"Teammate {(isPing ? "ping" : "map marker")} from {sender.PlayerName} set group {sender.GroupIndex} move order at {position}.");
+            }
+        }
+
+        internal static bool TryGetTeamMoveOrder(GameRoom room, byte groupIndex, out TeamMoveOrder order)
+        {
+            if (!TeamMoveOrders.TryGetValue(groupIndex, out order))
+                return false;
+
+            TABGPlayerServer sender = room != null ? room.FindPlayer(order.SenderIndex) : null;
+            bool expiredPing = order.IsPing && Time.unscaledTime - order.CreatedAt > 18f;
+            if (sender == null || sender.Bot || sender.GroupIndex != groupIndex || expiredPing)
+            {
+                TeamMoveOrders.Remove(groupIndex);
+                order = default(TeamMoveOrder);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+                !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+                !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
     }
 

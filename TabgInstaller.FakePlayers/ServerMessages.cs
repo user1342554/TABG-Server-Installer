@@ -11,10 +11,12 @@ namespace TabgInstaller.FakePlayers
     {
         // Keep these payloads byte-for-byte aligned with the decompiled server command readers.
         private static int _nextAiThrownItemIndex = 50000;
+        private static bool _vanillaFireCommandFailed;
 
         public static void ResetTransientState()
         {
             _nextAiThrownItemIndex = 50000;
+            _vanillaFireCommandFailed = false;
         }
 
         public static void SendLogin(ServerClient server, TABGPlayerServer player)
@@ -134,36 +136,45 @@ namespace TabgInstaller.FakePlayers
 
         public static void SendFire(ServerClient server, TABGPlayerServer player, Vector3 target, FiringMode mode)
         {
-            Vector3 dir = target - player.PlayerPosition;
+            if (server == null || player == null)
+                return;
+
+            Vector3 muzzlePosition = player.PlayerPosition + Vector3.up * 1.3f;
+            Vector3 dir = target - muzzlePosition;
             if (dir.sqrMagnitude < 0.01f)
                 dir = Vector3.forward;
             dir.Normalize();
 
             byte[] rotBytes = NetworkOptimizationHelper.OptimizeQuaternion(Quaternion.LookRotation(dir));
-            SendToRealClients(server, EventCode.PlayerFire, Write(writer =>
+            byte[] command = Write(writer =>
             {
                 writer.Write(player.PlayerIndex);
                 writer.Write((byte)(mode | FiringMode.ContainsDirection));
                 writer.Write(-1);
-                writer.Write(player.PlayerPosition.x);
-                writer.Write(player.PlayerPosition.y + 1.3f);
-                writer.Write(player.PlayerPosition.z);
+                writer.Write(muzzlePosition.x);
+                writer.Write(muzzlePosition.y);
+                writer.Write(muzzlePosition.z);
                 writer.Write(rotBytes);
-            }), reliable: true);
-        }
+            });
 
-        public static void SendFullAutoStop(ServerClient server, TABGPlayerServer player, int bulletsFired)
-        {
-            if (server == null || player == null)
-                return;
-
-            SendToRealClients(server, EventCode.PlayerFire, Write(writer =>
+            // Prefer the same command that handles a real player's fire packet. Some
+            // dedicated-server states reject synthetic players inside that command;
+            // if that happens, fall back to relaying the identical vanilla packet.
+            if (!_vanillaFireCommandFailed)
             {
-                writer.Write(player.PlayerIndex);
-                writer.Write((byte)FiringMode.FullAutoStop);
-                writer.Write(-1);
-                writer.Write(Math.Max(1, bulletsFired));
-            }), reliable: true);
+                try
+                {
+                    PlayerFireCommand.Run(command, server, player.PlayerIndex);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _vanillaFireCommandFailed = true;
+                    FakePlayersPlugin.Log($"Vanilla fire command unavailable for server AI; using packet relay: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            SendToRealClients(server, EventCode.PlayerFire, command, reliable: true);
         }
 
         public static void SendGrenadeThrow(ServerClient server, TABGPlayerServer player, int itemIdentifier, int quantity, Vector3 position, Vector3 direction, bool sync)
@@ -191,6 +202,103 @@ namespace TabgInstaller.FakePlayers
                 writer.Write(player.PlayerIndex);
                 writer.Write(health);
             }), reliable: true, alsoSendToTeamates: true);
+        }
+
+        public static void SendEnemyPing(ServerClient server, TABGPlayerServer spotter, Vector3 position)
+        {
+            if (server == null || spotter == null)
+                return;
+
+            // Remote Ping markers have no matching removal packet in vanilla TABG.
+            // Use the removable Marker variant so a lost enemy never leaves stale intel.
+            SendToRealClients(server, EventCode.PlayerMarkerEvent, Write(writer =>
+            {
+                writer.Write(spotter.PlayerIndex);
+                writer.Write((byte)MarkerActionType.Add);
+                WriteVector3(writer, position);
+                WriteVector3(writer, Vector3.up);
+                writer.Write((byte)MarkerType.Marker);
+            }), reliable: true, alsoSendToTeamates: true);
+        }
+
+        public static void RemoveEnemyPing(ServerClient server, TABGPlayerServer spotter)
+        {
+            if (server == null || spotter == null)
+                return;
+
+            SendToRealClients(server, EventCode.PlayerMarkerEvent, Write(writer =>
+            {
+                writer.Write(spotter.PlayerIndex);
+                writer.Write((byte)MarkerActionType.Remove);
+            }), reliable: true, alsoSendToTeamates: true);
+        }
+
+        public static bool TryRunReviveState(ServerClient server, TABGPlayerServer reviver, TABGPlayerServer target, ReviveState state)
+        {
+            if (server == null || reviver == null || target == null || reviver.GroupIndex != target.GroupIndex)
+                return false;
+
+            try
+            {
+                byte[] packet;
+                switch (state)
+                {
+                    case ReviveState.Start:
+                        if (reviver.IsDead || reviver.IsDowned || target.IsDead || !target.IsDowned ||
+                            (target.IsBeingRevived && target.Reviver != reviver))
+                            return false;
+                        target.StartRevive(reviver);
+                        packet = Write(writer =>
+                        {
+                            writer.Write((byte)state);
+                            writer.Write(target.PlayerIndex);
+                            writer.Write(reviver.PlayerIndex);
+                            writer.Write((byte)Mathf.Clamp(target.Health, 0f, 255f));
+                            writer.Write((byte)0);
+                        });
+                        break;
+
+                    case ReviveState.Stop:
+                        if (target.Reviver != reviver)
+                            return false;
+                        target.StopRevive();
+                        packet = Write(writer =>
+                        {
+                            writer.Write((byte)state);
+                            writer.Write(target.PlayerIndex);
+                            writer.Write(reviver.PlayerIndex);
+                            writer.Write((byte)0);
+                        });
+                        break;
+
+                    case ReviveState.Finished:
+                        if (reviver.IsDead || reviver.IsDowned || target.IsDead || !target.IsDowned || target.Reviver != reviver)
+                            return false;
+                        target.Revive();
+                        target.StopRevive();
+                        packet = Write(writer =>
+                        {
+                            writer.Write((byte)state);
+                            writer.Write(target.PlayerIndex);
+                            writer.Write(reviver.PlayerIndex);
+                            writer.Write(target.Health);
+                        });
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                // This mirrors ReviveStateCommand's client payloads, but intentionally
+                // skips EOS revive logging because synthetic bots have no AC handle.
+                SendToRealClients(server, EventCode.ReviveState, packet, reliable: true, alsoSendToTeamates: true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FakePlayersPlugin.Log($"Bot revive {state} failed for {target.PlayerName}: {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
         }
 
         public static void SendAirplaneDrop(ServerClient server, TABGPlayerServer player, Vector3 position, Vector3 forward)
@@ -226,26 +334,6 @@ namespace TabgInstaller.FakePlayers
                 writer.Write(false);
                 writer.Write(false);
             });
-        }
-
-        public static void SendDirectDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target)
-        {
-            Vector3 dir = target.PlayerPosition - attacker.PlayerPosition;
-            if (dir.sqrMagnitude < 0.01f)
-                dir = Vector3.forward;
-            dir.Normalize();
-
-            byte flags = 0;
-            flags = flags.SetBit(2);
-            byte[] dirBytes = NetworkOptimizationHelper.OptimizeDirection(dir);
-            SendToRealClients(server, EventCode.PlayerDamaged, Write(writer =>
-            {
-                writer.Write(target.PlayerIndex);
-                writer.Write(attacker.PlayerIndex);
-                writer.Write(target.Health);
-                writer.Write(flags);
-                writer.Write(dirBytes);
-            }), reliable: true, alsoSendToTeamates: true);
         }
 
         public static void SendLeave(ServerClient server, byte playerIndex)

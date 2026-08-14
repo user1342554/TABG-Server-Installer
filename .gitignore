@@ -40,6 +40,8 @@ _tabgvr_temp/
 !bundled/plugins/*.dll
 !bundled/client-plugins/
 !bundled/client-plugins/*.dll
+# Keep self-contained portable preset plugin payloads
+!portable-presets/**/BepInEx/plugins/*.dll
 # Allow markdown, config, and scripts
 !*.md
 !*.ps1
@@ -55,3 +57,6 @@ _tabgvr_temp/
 ExtraSettings.json
 PlayerPerms.json
 LootTables/
+
+# Ignore an unrelated test/download artifact without deleting the user's copy
+TabgInstaller.Tests/597b52dca91ed68930a2de836af46537_jpg.png

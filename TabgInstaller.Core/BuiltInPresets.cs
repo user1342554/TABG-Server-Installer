@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace TabgInstaller.Core
 {
@@ -10,12 +11,33 @@ namespace TabgInstaller.Core
     /// </summary>
     public static class BuiltInPresets
     {
-        public record BuiltInPreset(string Name, string Description, string Notes, Dictionary<string, string> Files, string[] RequiredPlugins);
+        public record BuiltInPreset(
+            string Name,
+            string Description,
+            string Notes,
+            Dictionary<string, string> Files,
+            string[] RequiredPlugins,
+            string[]? RequiredClientPlugins = null,
+            string[]? DisabledServerPlugins = null,
+            string[]? DisabledClientPlugins = null)
+        {
+            public override string ToString() => $"{Name} — {Description}";
+        }
 
         /// <summary>Common plugins needed by DM/GG/Scavenge modes.</summary>
         private static readonly string[] GameModePlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll" };
         /// <summary>Plugins for standard BR mode.</summary>
         private static readonly string[] BattleRoyalePlugins = { "Citruslib.dll", "TabgInstaller.MatchCore.dll" };
+        private static readonly string[] TestMapServerPlugins =
+        {
+            "TabgInstaller.RangeMap.Server.dll",
+            "TabgInstaller.DevTestMap.Server.dll"
+        };
+        private static readonly string[] TestMapClientPlugins =
+        {
+            "TabgInstaller.RangeMap.Client.dll",
+            "TabgInstaller.DevTestMap.Client.dll"
+        };
         /// <summary>Optional standalone plugin that spawns cut/unused vehicles (Heli, UFO, Mustang, VW, etc).</summary>
         public static readonly string UnusedVehiclesPlugin = "TabgInstaller.UnusedVehicles.dll";
 
@@ -24,6 +46,7 @@ namespace TabgInstaller.Core
         public static readonly IReadOnlyList<BuiltInPreset> All = new List<BuiltInPreset>
         {
             MultiplayerShootingRange(),
+            IslandMapGunGame(),
             CollinSigma(),
             BattleRoyaleMoreLoot(),
             DeathmatchBigWork(),
@@ -59,6 +82,50 @@ namespace TabgInstaller.Core
                             File.Copy(src, dst, overwrite: true);
                     }
                 }
+            }
+
+            ReconcilePluginDirectory(
+                Path.Combine(serverDir, "BepInEx", "plugins"),
+                preset.RequiredPlugins,
+                preset.DisabledServerPlugins ?? Array.Empty<string>());
+        }
+
+        /// <summary>
+        /// Enables the selected preset's client companions and disables mutually
+        /// exclusive client plugins left behind by another preset.
+        /// </summary>
+        public static void ReconcileClientPlugins(BuiltInPreset preset, string clientDir)
+        {
+            ReconcilePluginDirectory(
+                Path.Combine(clientDir, "BepInEx", "plugins"),
+                preset.RequiredClientPlugins ?? Array.Empty<string>(),
+                preset.DisabledClientPlugins ?? Array.Empty<string>());
+        }
+
+        private static void ReconcilePluginDirectory(
+            string pluginDir,
+            IEnumerable<string> requiredPlugins,
+            IEnumerable<string> disabledPlugins)
+        {
+            Directory.CreateDirectory(pluginDir);
+
+            foreach (var dll in requiredPlugins.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                var enabledPath = Path.Combine(pluginDir, dll);
+                var disabledPath = enabledPath + ".disabled";
+                if (!File.Exists(enabledPath) && File.Exists(disabledPath))
+                    File.Move(disabledPath, enabledPath, overwrite: true);
+                else if (File.Exists(enabledPath) && File.Exists(disabledPath))
+                    File.Delete(disabledPath);
+            }
+
+            foreach (var dll in disabledPlugins.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                var enabledPath = Path.Combine(pluginDir, dll);
+                if (!File.Exists(enabledPath))
+                    continue;
+
+                File.Move(enabledPath, enabledPath + ".disabled", overwrite: true);
             }
         }
 
@@ -108,7 +175,7 @@ CarSpawnRate=0
 UseTimedForceStart=false
 ForceStartTime=10
 MinPlayersToForceStart=1
-PlayersToStart=1
+PlayersToStart=2
 Countdown=3
 AllowRespawnMinigame=false
 TeamMode=SOLO
@@ -145,7 +212,89 @@ RespawnItems = 52:1,5:255
                 "Hosts TABG's WilhelmTest shooting range with server-authoritative items and infinite respawns.",
                 "Requires TabgInstaller.RangeMap.Server on the server and TabgInstaller.RangeMap.Client on every joining client. Press F6 for the all-items menu.",
                 files,
-                new[] { "TabgInstaller.RangeMap.Server.dll" });
+                new[] { "TabgInstaller.RangeMap.Server.dll" },
+                RequiredClientPlugins: new[] { "TabgInstaller.RangeMap.Client.dll" },
+                DisabledServerPlugins: new[]
+                {
+                    "TabgInstaller.DevTestMap.Server.dll",
+                    "TabgInstaller.AntiCheatBypass.dll"
+                },
+                DisabledClientPlugins: new[] { "TabgInstaller.DevTestMap.Client.dll" });
+        }
+
+        private static BuiltInPreset IslandMapGunGame()
+        {
+            var gameSettings = @"// Island Map Gun Game generated by TabgInstaller
+// TABG's public browser rejects arbitrary words; this known-safe word-list name keeps relay heartbeat working.
+ServerName=Big Work
+ServerDescription=server
+Port=7777
+MaxPlayers=20
+Relay=true
+AutoTeam=false
+Password=
+CarSpawnRate=0
+UseTimedForceStart=false
+ForceStartTime=10
+MinPlayersToForceStart=1
+PlayersToStart=2
+Countdown=0
+AllowRespawnMinigame=false
+TeamMode=SOLO
+GameMode=Test
+AntiCheat=false
+LAN=false
+AllowSpectating=false
+GroupsToStart=1
+NumberOfLivesPerTeam=2147483647
+UsePlayFabStats=false";
+
+            var devTestConfig = @"## Settings file for DevTest Map Server v1.0.0
+## Plugin GUID: tabginstaller.devtestmap.server
+
+[DevTestMap]
+
+## Optional items granted after every respawn. Leave empty and press F6 to choose items.
+RespawnItems =
+
+## Server-authoritative DevTest water damage.
+WaterDamageEnabled = true
+WaterHeight = 109
+WaterDamagePerSecond = 20
+WaterDamageTickSeconds = 0.1
+
+[GunGame]
+
+## Gun Game progression: 36 stages, advancing once per kill.
+Enabled = true
+
+## Verified exact x,y,z spawn points for the Island Map.
+CastleSpawns = -37,111,-11;6,112,21;-2,111,2
+
+## First player to 32 kills wins. Players are invulnerable for one second after spawning.
+KillsToWin = 32
+SpawnProtectionSeconds = 1
+";
+
+            var files = new Dictionary<string, string>
+            {
+                ["game_settings.txt"] = gameSettings,
+                [Path.Combine("BepInEx", "config", "tabginstaller.devtestmap.server.cfg")] = devTestConfig,
+            };
+
+            return new BuiltInPreset(
+                "Island Map Gun Game",
+                "Hosts the hidden Island Map as a 36-stage Gun Game with damaging water, server-authoritative F6 items, and infinite respawns.",
+                "Uses the Gun Game weapon order with verified Island Map spawn points. Requires TabgInstaller.DevTestMap.Server on the server and TabgInstaller.DevTestMap.Client on every joining client. Do not install it together with RangeMap, and keep AntiCheatBypass disabled. Press F6 for all items.",
+                files,
+                new[] { "TabgInstaller.DevTestMap.Server.dll" },
+                RequiredClientPlugins: new[] { "TabgInstaller.DevTestMap.Client.dll" },
+                DisabledServerPlugins: new[]
+                {
+                    "TabgInstaller.RangeMap.Server.dll",
+                    "TabgInstaller.AntiCheatBypass.dll"
+                },
+                DisabledClientPlugins: new[] { "TabgInstaller.RangeMap.Client.dll" });
         }
 
         private static string MatchCoreConfig(params string[] sections)
@@ -367,7 +516,10 @@ Spawnpoints =363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,
                 "CollinSigma",
                 "Collin's Deathmatch at Big Work. 20 players, 20 kills, password 'enormous'. 33 loadouts with curses, medkits on spawn, grenade on kill. Admins: Freddo & Jon_ass.",
                 "Requires plugins: Citruslib, TabgInstaller.MatchCore",
-                files, GameModePlugins);
+                files,
+                GameModePlugins,
+                DisabledServerPlugins: TestMapServerPlugins,
+                DisabledClientPlugins: TestMapClientPlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -406,7 +558,10 @@ AntiCheat=false";
                 "Battle Royale - More Loot",
                 "Classic BR with enhanced loot, 40 players, solo. Force start at 5 players. No custom loadouts.",
                 "This mode uses MatchCore for vote-start and timeout handling, but keeps standard BR loot and spawn rules.",
-                files, BattleRoyalePlugins);
+                files,
+                BattleRoyalePlugins,
+                DisabledServerPlugins: TestMapServerPlugins,
+                DisabledClientPlugins: TestMapClientPlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -560,7 +715,10 @@ Spawnpoints =363,-617;341,-638;358,-711;334,-709;313,-683;380,-663;351,-736;288,
                 "Deathmatch - Big Work",
                 "FFA Deathmatch at Big Work. 20 players, 20 kills to win, 35 loadouts with curses. Healing grenade on kill, 50% heal. Infinite lives.",
                 "Requires plugins: Citruslib, TabgInstaller.MatchCore",
-                files, GameModePlugins);
+                files,
+                GameModePlugins,
+                DisabledServerPlugins: TestMapServerPlugins,
+                DisabledClientPlugins: TestMapClientPlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -716,7 +874,10 @@ Spawnpoints =-702,502;-725,522;-713,572;-710,536;-697,568;-683,543;-692,549;-691
                 "Gun Game - Castle",
                 "Progressive Gun Game at Castle. 20 players, 35 kills. Weapon advances on each kill. 20% heal on kill. Infinite lives.",
                 "Requires plugins: Citruslib, TabgInstaller.MatchCore",
-                files, GameModePlugins);
+                files,
+                GameModePlugins,
+                DisabledServerPlugins: TestMapServerPlugins,
+                DisabledClientPlugins: TestMapClientPlugins);
         }
 
         // ──────────────────────────────────────────────
@@ -835,7 +996,10 @@ Spawnpoints =-41,540;-5,550;-1,589;-31,625;-47,600;-72,634;-90,600;-129,602;-92,
                 "Scavenge - Point Of Impact",
                 "KeepInventory scavenge at Point Of Impact. 20 players, 25 kills. Items persist through death. Loot drops enabled. 50% heal on kill. Infinite lives.",
                 "Requires plugins: Citruslib, TabgInstaller.MatchCore",
-                files, GameModePlugins);
+                files,
+                GameModePlugins,
+                DisabledServerPlugins: TestMapServerPlugins,
+                DisabledClientPlugins: TestMapClientPlugins);
         }
 
     }

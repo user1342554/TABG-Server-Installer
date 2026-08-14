@@ -50,15 +50,62 @@ namespace TabgInstaller.Tests.Model
         }
 
         [Fact]
+        public void BuiltIns_ExposePairedDevTestMapPlugins()
+        {
+            PluginRegistry.ResetToBuiltIns();
+
+            var server = PluginRegistry.ServerPlugins.Single(plugin => plugin.Id == "DevTestMap");
+            var client = PluginRegistry.ClientMods.Single(plugin => plugin.Id == "DevTestMapClient");
+
+            server.RequiresClientMod.Should().BeTrue();
+            server.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.DevTestMap.Server.dll");
+            client.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.DevTestMap.Client.dll");
+        }
+
+        [Fact]
+        public void BuiltIns_ExposePairedCustomGameSkinsPlugins()
+        {
+            PluginRegistry.ResetToBuiltIns();
+
+            var server = PluginRegistry.ServerPlugins.Single(plugin => plugin.Id == "CustomGameSkins");
+            var client = PluginRegistry.ClientMods.Single(plugin => plugin.Id == "CustomGameSkinsClient");
+
+            server.RequiresClientMod.Should().BeTrue();
+            server.DefaultChecked.Should().BeFalse();
+            server.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.CustomGameSkins.Server.dll");
+            client.DefaultChecked.Should().BeFalse();
+            client.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.CustomGameSkins.Client.dll");
+        }
+
+        [Fact]
+        public void BuiltIns_ExposeOptInPairedPerformancePlugins()
+        {
+            PluginRegistry.ResetToBuiltIns();
+
+            var server = PluginRegistry.ServerPlugins.Single(plugin => plugin.Id == "PerformanceServer");
+            var client = PluginRegistry.ClientMods.Single(plugin => plugin.Id == "PerformanceClient");
+
+            server.RequiresClientMod.Should().BeTrue();
+            server.DefaultChecked.Should().BeFalse();
+            server.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.PerformanceServer.dll");
+            client.DefaultChecked.Should().BeFalse();
+            client.DllNames.Should().ContainSingle().Which.Should().Be("TabgInstaller.PerformanceClient.dll");
+        }
+
+        [Fact]
         public void ShootingRangePreset_UsesTestModeAndInfiniteLives()
         {
             var preset = BuiltInPresets.All.Single(item => item.Name == "Multiplayer Shooting Range");
             var settings = preset.Files["game_settings.txt"];
 
             settings.Should().Contain("GameMode=Test");
-            settings.Should().Contain("PlayersToStart=1");
+            settings.Should().Contain("PlayersToStart=2");
             settings.Should().Contain("NumberOfLivesPerTeam=2147483647");
             preset.RequiredPlugins.Should().Contain("TabgInstaller.RangeMap.Server.dll");
+            preset.RequiredClientPlugins.Should().Contain("TabgInstaller.RangeMap.Client.dll");
+            preset.DisabledServerPlugins.Should().Contain("TabgInstaller.AntiCheatBypass.dll");
+            preset.DisabledServerPlugins.Should().Contain("TabgInstaller.DevTestMap.Server.dll");
+            preset.DisabledClientPlugins.Should().Contain("TabgInstaller.DevTestMap.Client.dll");
             preset.Notes.Should().Contain("TabgInstaller.RangeMap.Client");
         }
 
@@ -69,11 +116,125 @@ namespace TabgInstaller.Tests.Model
             var preset = BuiltInPresets.All.Single(item => item.Name == "Multiplayer Shooting Range");
             try
             {
+                var plugins = Path.Combine(target, "BepInEx", "plugins");
+                Directory.CreateDirectory(plugins);
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.AntiCheatBypass.dll"), "test");
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.DevTestMap.Server.dll"), "test");
+
                 BuiltInPresets.Deploy(preset, target);
 
                 File.ReadAllText(Path.Combine(target, "game_settings.txt")).Should().Contain("GameMode=Test");
                 File.Exists(Path.Combine(target, "BepInEx", "config", "tabginstaller.rangemap.server.cfg")).Should().BeTrue();
                 File.Exists(Path.Combine(target, "BepInEx", "plugins", "TabgInstaller.RangeMap.Server.dll")).Should().BeTrue();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.AntiCheatBypass.dll")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.AntiCheatBypass.dll.disabled")).Should().BeTrue();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Server.dll")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Server.dll.disabled")).Should().BeTrue();
+            }
+            finally
+            {
+                if (Directory.Exists(target))
+                    Directory.Delete(target, true);
+            }
+        }
+
+        [Fact]
+        public void DevTestPreset_UsesTestModeAndInfiniteLives()
+        {
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Island Map Gun Game");
+            var settings = preset.Files["game_settings.txt"];
+
+            settings.Should().Contain("GameMode=Test");
+            settings.Should().Contain("AntiCheat=false");
+            settings.Should().Contain("PlayersToStart=2");
+            settings.Should().Contain("Countdown=0");
+            settings.Should().Contain("NumberOfLivesPerTeam=2147483647");
+            var devTestConfig = preset.Files[Path.Combine("BepInEx", "config", "tabginstaller.devtestmap.server.cfg")];
+            devTestConfig.Should().Contain("RespawnItems =");
+            devTestConfig.Should().NotContain("52:1");
+            devTestConfig.Should().NotContain("5:255");
+            devTestConfig.Should().Contain("WaterDamageEnabled = true");
+            devTestConfig.Should().Contain("WaterHeight = 109");
+            devTestConfig.Should().Contain("WaterDamagePerSecond = 20");
+            devTestConfig.Should().Contain("WaterDamageTickSeconds = 0.1");
+            devTestConfig.Should().Contain("[GunGame]");
+            devTestConfig.Should().Contain("KillsToWin = 32");
+            devTestConfig.Should().Contain("SpawnProtectionSeconds = 1");
+            devTestConfig.Should().Contain("Enabled = true");
+            devTestConfig.Should().Contain("CastleSpawns = -37,111,-11");
+            preset.RequiredPlugins.Should().Contain("TabgInstaller.DevTestMap.Server.dll");
+            preset.RequiredClientPlugins.Should().Contain("TabgInstaller.DevTestMap.Client.dll");
+            preset.DisabledServerPlugins.Should().Contain("TabgInstaller.AntiCheatBypass.dll");
+            preset.DisabledServerPlugins.Should().Contain("TabgInstaller.RangeMap.Server.dll");
+            preset.DisabledClientPlugins.Should().Contain("TabgInstaller.RangeMap.Client.dll");
+            preset.Notes.Should().Contain("TabgInstaller.DevTestMap.Client");
+            preset.Notes.Should().Contain("AntiCheatBypass disabled");
+        }
+
+        [Fact]
+        public void ShootingRangePreset_ReconcilesPairedClientPlugins()
+        {
+            var target = Path.Combine(Path.GetTempPath(), "tabg-range-client-preset-" + Guid.NewGuid().ToString("N"));
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Multiplayer Shooting Range");
+            try
+            {
+                var plugins = Path.Combine(target, "BepInEx", "plugins");
+                Directory.CreateDirectory(plugins);
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll.disabled"), "range");
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll"), "devtest");
+
+                BuiltInPresets.ReconcileClientPlugins(preset, target);
+
+                File.Exists(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll")).Should().BeTrue();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll.disabled")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll.disabled")).Should().BeTrue();
+            }
+            finally
+            {
+                if (Directory.Exists(target))
+                    Directory.Delete(target, true);
+            }
+        }
+
+        [Fact]
+        public void StandardPreset_DisablesTestMapPluginsFromPreviousSession()
+        {
+            var target = Path.Combine(Path.GetTempPath(), "tabg-standard-client-preset-" + Guid.NewGuid().ToString("N"));
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Battle Royale - More Loot");
+            try
+            {
+                var plugins = Path.Combine(target, "BepInEx", "plugins");
+                Directory.CreateDirectory(plugins);
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll"), "range");
+                File.WriteAllText(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll"), "devtest");
+
+                BuiltInPresets.ReconcileClientPlugins(preset, target);
+
+                File.Exists(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.RangeMap.Client.dll.disabled")).Should().BeTrue();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll")).Should().BeFalse();
+                File.Exists(Path.Combine(plugins, "TabgInstaller.DevTestMap.Client.dll.disabled")).Should().BeTrue();
+            }
+            finally
+            {
+                if (Directory.Exists(target))
+                    Directory.Delete(target, true);
+            }
+        }
+
+        [Fact]
+        public void DevTestPreset_DeploysConfigAndServerPlugin()
+        {
+            var target = Path.Combine(Path.GetTempPath(), "tabg-devtest-preset-" + Guid.NewGuid().ToString("N"));
+            var preset = BuiltInPresets.All.Single(item => item.Name == "Island Map Gun Game");
+            try
+            {
+                BuiltInPresets.Deploy(preset, target);
+
+                File.ReadAllText(Path.Combine(target, "game_settings.txt")).Should().Contain("GameMode=Test");
+                File.Exists(Path.Combine(target, "BepInEx", "config", "tabginstaller.devtestmap.server.cfg")).Should().BeTrue();
+                File.Exists(Path.Combine(target, "BepInEx", "plugins", "TabgInstaller.DevTestMap.Server.dll")).Should().BeTrue();
             }
             finally
             {

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "island-map-gun-game",
+  "name": "Island Map Gun Game",
+  "gameMode": "Test",
+  "pairedClientRequired": true,
+  "serverFiles": [
+    "game_settings.txt",
+    "BepInEx/config/tabginstaller.devtestmap.server.cfg",
+    "BepInEx/plugins/TabgInstaller.DevTestMap.Server.dll"
+  ],
+  "clientFiles": [
+    "BepInEx/plugins/TabgInstaller.DevTestMap.Client.dll"
+  ],
+  "incompatiblePlugins": [
+    "TabgInstaller.RangeMap.Server.dll",
+    "TabgInstaller.RangeMap.Client.dll",
+    "AntiCheatBypass.dll"
+  ]
+}

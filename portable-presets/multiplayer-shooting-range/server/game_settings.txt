@@ -1,0 +1,24 @@
+// Multiplayer Shooting Range portable preset
+// Password is intentionally blank. Set it in the live copy, not in this preset.
+ServerName=Big Work
+ServerDescription=server
+Port=7777
+MaxPlayers=20
+Relay=true
+AutoTeam=false
+Password=
+CarSpawnRate=0
+UseTimedForceStart=false
+ForceStartTime=10
+MinPlayersToForceStart=1
+PlayersToStart=2
+Countdown=3
+AllowRespawnMinigame=false
+TeamMode=SOLO
+GameMode=Test
+AntiCheat=false
+LAN=false
+AllowSpectating=false
+GroupsToStart=1
+NumberOfLivesPerTeam=2147483647
+UsePlayFabStats=false

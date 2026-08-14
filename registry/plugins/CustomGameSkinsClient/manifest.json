@@ -1,0 +1,17 @@
+{
+  "id": "CustomGameSkinsClient",
+  "name": "Custom Game All Skins Client",
+  "version": "1.0.0",
+  "description": "Adds an F7 searchable wardrobe containing every built-in TABG clothing skin, available only after a compatible custom server authorizes the session.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.CustomGameSkins.Client.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["custom-game", "cosmetics", "skins", "wardrobe", "private-server"]
+}

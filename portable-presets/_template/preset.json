@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "replace-me",
+  "name": "Replace Me",
+  "gameMode": "Test",
+  "pairedClientRequired": false,
+  "serverFiles": [],
+  "clientFiles": [],
+  "incompatiblePlugins": []
+}

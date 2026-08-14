@@ -1,0 +1,17 @@
+{
+  "id": "DevTestMapClient",
+  "name": "DevTest Map Client",
+  "version": "1.0.0",
+  "description": "Loads TABG's hidden DevTest scene for compatible servers and provides an F6 searchable all-items menu.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.DevTestMap.Client.dll"],
+  "type": "client",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["devtest", "hidden-map", "items", "respawn", "multiplayer"]
+}

@@ -20,7 +20,8 @@ namespace TabgInstaller.AdminRadar.Server
         private const byte RadarPayloadVersion = 1;
         private const byte PlayerSectionType = 1;
         private const byte BotDebugSectionType = 2;
-        private const int MaxSerializedStringBytes = 512;
+        private const int MaxSerializedStringBytes = 128;
+        private const int MaxRadarPayloadBytes = 1100;
 
         private static AdminRadarServerPlugin _instance;
         private static ConfigEntry<bool> _enabled;
@@ -94,17 +95,21 @@ namespace TabgInstaller.AdminRadar.Server
                     if (server == null || server.GameRoomReference == null || server.GameRoomReference.Players == null)
                         return;
 
-                    var payload = BuildPayload(server);
-                    if (payload == null || payload.Length == 0) return;
+                    var payloads = BuildPayloads(server);
+                    if (payloads == null || payloads.Count == 0) return;
 
                     var recipientIndexes = ParseRecipients();
-                    if (recipientIndexes == null)
+                    for (int i = 0; i < payloads.Count; i++)
                     {
-                        server.SendMessageToClients((EventCode)RadarEventCode, payload, byte.MaxValue, false, false);
-                    }
-                    else if (recipientIndexes.Length > 0)
-                    {
-                        server.SendMessageToClients((EventCode)RadarEventCode, payload, recipientIndexes, false, false);
+                        byte[] payload = payloads[i];
+                        if (recipientIndexes == null)
+                        {
+                            server.SendMessageToClients((EventCode)RadarEventCode, payload, byte.MaxValue, false, false);
+                        }
+                        else if (recipientIndexes.Length > 0)
+                        {
+                            server.SendMessageToClients((EventCode)RadarEventCode, payload, recipientIndexes, false, false);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -122,7 +127,7 @@ namespace TabgInstaller.AdminRadar.Server
                 return room?.GetType().GetProperty("ServerClient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(room, null) as ServerClient;
             }
 
-            private static byte[] BuildPayload(ServerClient server)
+            private static List<byte[]> BuildPayloads(ServerClient server)
             {
                 var entries = new List<PlayerRadarEntry>();
                 foreach (var player in server.GameRoomReference.Players)
@@ -151,18 +156,72 @@ namespace TabgInstaller.AdminRadar.Server
                 }
 
                 var debugEntries = _includeBotDebug.Value && _includeWorldMarkers.Value ? BuildBotDebugEntries(server) : new List<BotDebugEntry>();
-                if (entries.Count == 0 && debugEntries.Count == 0) return null;
+                var payloads = new List<byte[]>();
+
+                AddPlayerPayloads(payloads, entries);
+                AddBotDebugPayloads(payloads, debugEntries);
+                return payloads;
+            }
+
+            private static void AddPlayerPayloads(List<byte[]> payloads, List<PlayerRadarEntry> entries)
+            {
+                var chunk = new List<PlayerRadarEntry>();
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    chunk.Add(entries[i]);
+                    byte[] candidate = BuildPayload(chunk, null);
+                    if (candidate.Length <= MaxRadarPayloadBytes)
+                        continue;
+
+                    chunk.RemoveAt(chunk.Count - 1);
+                    if (chunk.Count > 0)
+                        payloads.Add(BuildPayload(chunk, null));
+
+                    chunk.Clear();
+                    chunk.Add(entries[i]);
+                }
+
+                if (chunk.Count > 0)
+                    payloads.Add(BuildPayload(chunk, null));
+            }
+
+            private static void AddBotDebugPayloads(List<byte[]> payloads, List<BotDebugEntry> entries)
+            {
+                var chunk = new List<BotDebugEntry>();
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    chunk.Add(entries[i]);
+                    byte[] candidate = BuildPayload(null, chunk);
+                    if (candidate.Length <= MaxRadarPayloadBytes)
+                        continue;
+
+                    chunk.RemoveAt(chunk.Count - 1);
+                    if (chunk.Count > 0)
+                        payloads.Add(BuildPayload(null, chunk));
+
+                    chunk.Clear();
+                    chunk.Add(entries[i]);
+                }
+
+                if (chunk.Count > 0)
+                    payloads.Add(BuildPayload(null, chunk));
+            }
+
+            private static byte[] BuildPayload(List<PlayerRadarEntry> entries, List<BotDebugEntry> debugEntries)
+            {
+                int playerCount = entries != null ? entries.Count : 0;
+                int debugCount = debugEntries != null ? debugEntries.Count : 0;
 
                 using (var ms = new MemoryStream())
                 using (var bw = new BinaryWriter(ms))
                 {
-                    int sectionCount = (entries.Count > 0 ? 1 : 0) + (debugEntries.Count > 0 ? 1 : 0);
+                    int sectionCount = (playerCount > 0 ? 1 : 0) + (debugCount > 0 ? 1 : 0);
                     bw.Write(RadarPayloadMagic);
                     bw.Write(RadarPayloadVersion);
                     bw.Write((byte)sectionCount);
-                    if (entries.Count > 0)
+                    if (playerCount > 0)
                         WriteSection(bw, PlayerSectionType, sectionWriter => WritePlayerSection(sectionWriter, entries));
-                    if (debugEntries.Count > 0)
+                    if (debugCount > 0)
                         WriteSection(bw, BotDebugSectionType, sectionWriter => WriteBotDebugSection(sectionWriter, debugEntries));
 
                     return ms.ToArray();

@@ -46,4 +46,24 @@ namespace TabgInstaller.FakePlayers
             return false;
         }
     }
+
+    /// <summary>
+    /// Observes the vanilla teammate marker command before the server relays it.
+    /// The original command still owns validation and client delivery.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerMarkerChangedCommand), nameof(PlayerMarkerChangedCommand.Run))]
+    internal static class TeamMarkerOrderPatch
+    {
+        static void Prefix(byte[] msgData, ServerClient world)
+        {
+            try
+            {
+                FakePlayersPlugin.RecordTeamMarker(world, msgData);
+            }
+            catch (Exception ex)
+            {
+                FakePlayersPlugin.Log($"Team marker patch error: {ex.Message}");
+            }
+        }
+    }
 }

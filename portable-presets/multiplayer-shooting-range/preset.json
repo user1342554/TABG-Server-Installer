@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "multiplayer-shooting-range",
+  "name": "Multiplayer Shooting Range",
+  "gameMode": "Test",
+  "pairedClientRequired": true,
+  "serverFiles": [
+    "game_settings.txt",
+    "BepInEx/config/tabginstaller.rangemap.server.cfg",
+    "BepInEx/plugins/TabgInstaller.RangeMap.Server.dll"
+  ],
+  "clientFiles": [
+    "BepInEx/plugins/TabgInstaller.RangeMap.Client.dll"
+  ],
+  "incompatiblePlugins": [
+    "TabgInstaller.DevTestMap.Server.dll",
+    "TabgInstaller.DevTestMap.Client.dll",
+    "AntiCheatBypass.dll"
+  ]
+}

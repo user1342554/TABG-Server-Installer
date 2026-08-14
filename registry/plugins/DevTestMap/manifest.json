@@ -1,0 +1,19 @@
+{
+  "id": "DevTestMap",
+  "name": "DevTest Map Server",
+  "version": "1.0.0",
+  "description": "Hosts TABG's hidden DevTest scene as a multiplayer Test match with native spawns, infinite respawns, and validated server-authoritative item requests.",
+  "author": "anonymer_hase",
+  "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+  "dllNames": ["TabgInstaller.DevTestMap.Server.dll"],
+  "type": "server",
+  "kind": "bundled",
+  "defaultChecked": false,
+  "compatibleTabgVersions": ["*"],
+  "minInstallerVersion": "5.0.0",
+  "bepInExVersion": "5.4.22",
+  "dependencies": [],
+  "tags": ["devtest", "hidden-map", "items", "respawn", "multiplayer"],
+  "requiresClientMod": true,
+  "clientPluginId": "DevTestMapClient"
+}

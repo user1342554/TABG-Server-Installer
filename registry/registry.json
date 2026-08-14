@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-27T21:57:53Z",
+  "generatedAt": "2026-08-14T12:48:47Z",
   "plugins": [
     {
       "id": "AdminRadar",
@@ -136,6 +136,62 @@
       ]
     },
     {
+      "id": "CustomGameSkins",
+      "name": "Custom Game All Skins Server",
+      "version": "1.0.0",
+      "description": "Authorizes session-only access to every built-in TABG clothing skin and validates each requested outfit before relaying it to players on this custom server.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CustomGameSkins.Server.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "custom-game",
+        "cosmetics",
+        "skins",
+        "wardrobe",
+        "private-server"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "CustomGameSkinsClient"
+    },
+    {
+      "id": "CustomGameSkinsClient",
+      "name": "Custom Game All Skins Client",
+      "version": "1.0.0",
+      "description": "Adds an F7 searchable wardrobe containing every built-in TABG clothing skin, available only after a compatible custom server authorizes the session.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.CustomGameSkins.Client.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "custom-game",
+        "cosmetics",
+        "skins",
+        "wardrobe",
+        "private-server"
+      ]
+    },
+    {
       "id": "CustomGrenades",
       "name": "Custom Grenades",
       "version": "1.0.0",
@@ -159,6 +215,62 @@
         "effects",
         "visuals",
         "gameplay"
+      ]
+    },
+    {
+      "id": "DevTestMap",
+      "name": "DevTest Map Server",
+      "version": "1.0.0",
+      "description": "Hosts TABG's hidden DevTest scene as a multiplayer Test match with native spawns, infinite respawns, and validated server-authoritative item requests.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.DevTestMap.Server.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "devtest",
+        "hidden-map",
+        "items",
+        "respawn",
+        "multiplayer"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "DevTestMapClient"
+    },
+    {
+      "id": "DevTestMapClient",
+      "name": "DevTest Map Client",
+      "version": "1.0.0",
+      "description": "Loads TABG's hidden DevTest scene for compatible servers and provides an F6 searchable all-items menu.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.DevTestMap.Client.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "devtest",
+        "hidden-map",
+        "items",
+        "respawn",
+        "multiplayer"
       ]
     },
     {
@@ -194,7 +306,7 @@
       "id": "FakePlayers",
       "name": "FakePlayers",
       "version": "1.0.0",
-      "description": "Spawn fake and AI dummy players for private testing. Commands require configured Citrus permissions unless explicit development mode is enabled.",
+      "description": "Spawn server-only AI squadmates with human-style names and cosmetics. Bots follow orders, ping spotted enemies, assist in combat, revive allies, and use fair server-tracked bullets.",
       "author": "anonymer_hase",
       "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
       "dllNames": [
@@ -296,6 +408,62 @@
         "ui",
         "quality-of-life"
       ]
+    },
+    {
+      "id": "PerformanceClient",
+      "name": "TABG Performance Client",
+      "version": "2.0.0",
+      "description": "Custom-client FPS, allocation, culling, streaming, physics LOD, reflection, haze, UI, and packet hot-path optimizations.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.PerformanceClient.dll"
+      ],
+      "type": "client",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "performance",
+        "fps",
+        "culling",
+        "physics",
+        "private-server"
+      ]
+    },
+    {
+      "id": "PerformanceServer",
+      "name": "TABG Performance Server",
+      "version": "2.0.0",
+      "description": "Optimizes custom-server replication, packet sizing, network queues, lookups, parsing, and headless frame work.",
+      "author": "anonymer_hase",
+      "downloadUrl": "https://github.com/user1342554/TABG-Server-Installer/releases",
+      "dllNames": [
+        "TabgInstaller.PerformanceServer.dll"
+      ],
+      "type": "server",
+      "kind": "bundled",
+      "defaultChecked": false,
+      "compatibleTabgVersions": [
+        "*"
+      ],
+      "minInstallerVersion": "5.0.0",
+      "bepInExVersion": "5.4.22",
+      "dependencies": [],
+      "tags": [
+        "performance",
+        "networking",
+        "replication",
+        "headless",
+        "private-server"
+      ],
+      "requiresClientMod": true,
+      "clientPluginId": "PerformanceClient"
     },
     {
       "id": "PopupBlocker",
