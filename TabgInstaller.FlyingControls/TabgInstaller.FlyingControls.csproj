@@ -3,9 +3,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
+    <TabgClientManagedDir Condition="'$(TabgClientManagedDir)' == ''">$(MSBuildProjectDirectory)/Libs</TabgClientManagedDir>
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>../TabgInstaller.ProximityChat.Client/Libs/UnityEngine.AudioModule.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="0Harmony">
       <HintPath>Libs\0Harmony.dll</HintPath>
       <Private>False</Private>
@@ -44,6 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>../TabgInstaller.CustomGrenades/Libs/UnityEngine.ParticleSystemModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Sirenix.Serialization"><HintPath>../TabgInstaller.CustomGrenades/Libs/Sirenix.Serialization.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="EasyRoads3Dv3"><HintPath>$(TabgClientManagedDir)/EasyRoads3Dv3.dll</HintPath><Private>False</Private></Reference>
     <ProjectReference Include="..\TabgInstaller.ModSettings\TabgInstaller.ModSettings.csproj">
       <Private>False</Private>
     </ProjectReference>
@@ -53,4 +58,8 @@
     <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\client-plugins" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\client-plugins" SkipUnchangedFiles="true" />
   </Target>
+  <ItemGroup>
+    <Compile Include="../TabgInstaller.Vehicles.Shared/*.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+<ItemGroup><EmbeddedResource Include="AudioAssets/*.wav"><LogicalName>TabgAudio.%(Filename)%(Extension)</LogicalName></EmbeddedResource></ItemGroup>
 </Project>

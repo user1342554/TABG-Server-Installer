@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -10,7 +11,8 @@ using CitrusLib;
 
 namespace TabgInstaller.UnusedVehicles
 {
-    [BepInPlugin("tabginstaller.unusedvehicles", "TABG Unused Vehicles Revival", "1.0.0")]
+    [BepInPlugin("tabginstaller.unusedvehicles", "TABG Unused Vehicles Revival", "1.7.0")]
+    [BepInDependency("tabginstaller.fakeplayers", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.cyrusthelesser.citruslib", BepInDependency.DependencyFlags.SoftDependency)]
     public class UnusedVehiclesPlugin : BaseUnityPlugin
     {
@@ -61,6 +63,24 @@ namespace TabgInstaller.UnusedVehicles
 
             _harmony = new Harmony("tabginstaller.unusedvehicles");
             _harmony.PatchAll(typeof(SearchForCarsPatch));
+            _harmony.PatchAll(typeof(VehicleSpawnService.ReceivePatch));
+            _harmony.PatchAll(typeof(AircraftCombat.InitPatch));
+            _harmony.PatchAll(typeof(AircraftCombat.StartPatch));
+            _harmony.PatchAll(typeof(AircraftCombat.DamagePatch));
+            _harmony.PatchAll(typeof(BlastFeedback.PlayerDamage));
+            _harmony.PatchAll(typeof(BlastFeedback.CarDamage));
+            if (Config.Bind("Diagnostics", "VehicleBalance", false, "Log native grenade and road data for development checks.").Value)
+                gameObject.AddComponent<VehicleDiagnostics>();
+            gameObject.AddComponent<HelicopterMissiles>();
+            gameObject.AddComponent<BotVehicleBrain>();
+            gameObject.AddComponent<ServerHoverTaxi>();
+            _harmony.PatchAll(typeof(ServerHoverTaxi.MotionAuthority));
+            _harmony.PatchAll(typeof(ServerHoverTaxi.TemporaryMotionAuthority));
+            _harmony.PatchAll(typeof(TabgInstaller.FlyingControls.FpvItem.LookupPatch));
+            _harmony.PatchAll(typeof(FpvServer.ThrowPatch));
+            gameObject.AddComponent<FpvServer>();
+            if(Config.Bind("Diagnostics","BotDamageStartupCheck",false,"Run one synthetic FPV damage/duplicate check before any human connects. Disabled for normal play.").Value)gameObject.AddComponent<BotStartupCheck>();
+            gameObject.AddComponent<AircraftSafety>();
             PatchHeadlessAudioHooks();
             Logger.LogInfo("[UnusedVehicles] Plugin loaded. Patch applied.");
         }
@@ -95,71 +115,59 @@ namespace TabgInstaller.UnusedVehicles
                 string search = string.Join(" ", prms);
                 string matchedName = null;
                 int matchedIdx = -1;
-                foreach (var kvp in VehicleIndices)
+                if (VehicleIndices.TryGetValue(search, out matchedIdx)) matchedName = search;
+                else foreach (var kvp in VehicleIndices)
                 {
-                    if (kvp.Key.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        matchedName = kvp.Key;
-                        matchedIdx = kvp.Value;
-                        break;
-                    }
+                    if (kvp.Key.IndexOf(search, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                    if (matchedName != null) { Citrus.SelfParrot(player, "Name is ambiguous. Use /vehicle for exact names."); return; }
+                    matchedName = kvp.Key; matchedIdx = kvp.Value;
                 }
 
                 if (matchedName == null) { Citrus.SelfParrot(player, $"No vehicle matching '{search}'."); return; }
 
-                // Find the nearest car of this type on the server and move it to the player
-                var room = Citrus.World?.GameRoomReference;
-                if (room == null || room.Cars == null) { Citrus.SelfParrot(player, "Server not ready."); return; }
+                if (SkipVehicles.Contains(matchedName)) { Citrus.SelfParrot(player, "This vehicle is disabled in the server configuration."); return; }
+                VehicleSpawnService.SpawnForPlayer(player, matchedName, matchedIdx);
 
-                Vector3 playerPos = player.PlayerPosition;
-                TABGCarServer nearestCar = null;
-                float nearestDist = float.MaxValue;
-
-                foreach (var car in room.Cars)
-                {
-                    if (car.CarTypeIdentifier == matchedIdx)
-                    {
-                        float dist = Vector3.Distance(playerPos, car.CarPosition);
-                        if (dist < nearestDist) { nearestCar = car; nearestDist = dist; }
-                    }
-                }
-
-                if (nearestCar != null)
-                {
-                    // Move the nearest matching server-side vehicle to 5m in front of the player.
-                    Vector3 forward = Quaternion.Euler(0, player.PlayerRotation.y, 0) * Vector3.forward;
-                    Vector3 spawnPos = playerPos + forward * 5f;
-                    // Raycast to find ground
-                    if (Physics.Raycast(spawnPos + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 100f))
-                        spawnPos = hit.point + Vector3.up * 1f;
-                    else
-                        spawnPos.y = playerPos.y;
-
-                    nearestCar.UpdatePosition(spawnPos);
-                    Citrus.SelfParrot(player, $"Moved nearest {matchedName} in front of you.");
-                }
-                else
-                {
-                    Citrus.SelfParrot(player, $"No spawned {matchedName} exists to move. Try another vehicle.");
-                }
             };
 
-            Citrus.AddCommand("vehicle", vehicleCommand, "UnusedVehicles", "Move nearest spawned vehicle to your position", "<name>", 2);
+            Citrus.AddCommand("vehicle", vehicleCommand, "UnusedVehicles", "Spawn a new vehicle on clear ground near you", "<name>", 2);
+            Citrus.AddCommand("botvehicle", (string[] args,TABGPlayerServer player)=>
+            {
+                string search=string.Join(" ",args);
+                if(string.IsNullOrWhiteSpace(search))
+                {Citrus.SelfParrot(player,"Bot-Fahrzeuge: "+string.Join(", ",VehicleIndices.Keys.Where(n=>!SkipVehicles.Contains(n))));return;}
+                var names=VehicleIndices.Keys.Where(n=>!SkipVehicles.Contains(n) && n.IndexOf(search,StringComparison.OrdinalIgnoreCase)>=0).ToArray();
+                string name=names.FirstOrDefault(n=>n.Equals(search,StringComparison.OrdinalIgnoreCase));
+                if(name==null && names.Length==1)name=names[0];
+                if(name==null){Citrus.SelfParrot(player,"Fahrzeug nicht eindeutig oder deaktiviert. /botvehicle zeigt die Namen.");return;}
+                int type=VehicleIndices[name];
+                var bot=Citrus.World.GameRoomReference.Players.Where(p=>p.Bot && !p.IsDead && p.Health>0 && p.HasDropped && !p.IsInsideCar).OrderBy(p=>(p.PlayerPosition-player.PlayerPosition).sqrMagnitude).FirstOrDefault();
+                if(bot==null){Citrus.SelfParrot(player,"No living bot on foot after the drop.");return;}
+                VehicleSpawnService.SpawnForPlayer(player,name,type,bot);
+                Citrus.SelfParrot(player,"Vehicle test for "+bot.PlayerName+"; the bot must walk to its seat.");
+            },"UnusedVehicles","Spawn a test vehicle near the closest bot","<name>",2);
             if (EnableLegacySpawnAlias)
-                Citrus.AddCommand("spawn", vehicleCommand, "UnusedVehicles", "Legacy alias for /vehicle; moves an existing vehicle", "<name>", 2);
+                Citrus.AddCommand("spawn", vehicleCommand, "UnusedVehicles", "Legacy alias for /vehicle; spawns a new vehicle", "<name>", 2);
 
             Citrus.AddCommand("vehicles", (string[] prms, TABGPlayerServer player) =>
             {
+                var counts = new Dictionary<string, int>();
+                var room = Citrus.World?.GameRoomReference;
+                if (room?.Cars != null) foreach (var car in room.Cars)
+                {
+                    string name = CarDatabase.Instance.GetDataEntry(car.CarTypeIdentifier).prefab?.name ?? "Unknown";
+                    counts[name] = counts.TryGetValue(name, out int count) ? count + 1 : 1;
+                }
                 string msg = "Vehicles: ";
-                foreach (var kvp in SpawnedVehiclePositions)
-                    if (kvp.Value.Count > 0) msg += $"{kvp.Key}({kvp.Value.Count}) ";
+                foreach (var item in counts) msg += $"{item.Key}({item.Value}) ";
                 Citrus.SelfParrot(player, msg);
+
             }, "UnusedVehicles", "List vehicles on map", "", 1);
 
             Citrus.AddCommand("vehiclehelp", (string[] prms, TABGPlayerServer player) =>
             {
                 Citrus.SelfParrot(player, "=== Vehicle Commands ===");
-                Citrus.SelfParrot(player, "/vehicle <name> - Move nearest spawned vehicle to you");
+                Citrus.SelfParrot(player, "/vehicle <name> - Spawn a NEW vehicle on clear ground near you");
                 Citrus.SelfParrot(player, "/vehicle - List all vehicle names");
                 Citrus.SelfParrot(player, "/vehicles - List spawned vehicles on map");
                 if (EnableLegacySpawnAlias)
@@ -211,6 +219,7 @@ namespace TabgInstaller.UnusedVehicles
 
                 string name = entry.prefab.name;
                 VehicleIndices[name] = i;
+                TabgInstaller.Vehicles.VehicleGeometry.Get(i);
                 Debug.Log($"[UnusedVehicles] Vehicle [{i}] = {name}");
 
                 if (!StandardMotorcycles.Contains(i) && !SkipVehicles.Contains(name))
@@ -307,6 +316,7 @@ namespace TabgInstaller.UnusedVehicles
                     var server = GameRoomServerField?.GetValue(__instance) as ServerClient;
 
                     SpawnedVehiclePositions.Clear();
+                    VehicleSpawnService.Reset(__instance);
 
                     foreach (var existingCar in cars)
                     {
@@ -339,7 +349,6 @@ namespace TabgInstaller.UnusedVehicles
                             spawnPos = hit.point + Vector3.up * 0.5f;
 
                         GameObject vehicleGO = null;
-                        bool addedToServer = false;
                         string vName = entry.prefab.name;
                         // Wrap in try/catch per vehicle so one broken prefab doesn't kill all spawning.
                         try
@@ -358,7 +367,6 @@ namespace TabgInstaller.UnusedVehicles
                             var tabgCar = new TABGCarServer(carComponent, seats, vehicleIdx, carIndex);
                             cars.Add(tabgCar);
                             tabgCar.UpdatePosition(carComponent.transform.position);
-                            addedToServer = true;
 
                             if (!SpawnedVehiclePositions.ContainsKey(vName))
                                 SpawnedVehiclePositions[vName] = new List<Vector3>();
@@ -387,7 +395,7 @@ namespace TabgInstaller.UnusedVehicles
                         }
                         finally
                         {
-                            if (vehicleGO != null && !addedToServer)
+                            if (vehicleGO != null)
                                 UnityEngine.Object.Destroy(vehicleGO);
                         }
                     }

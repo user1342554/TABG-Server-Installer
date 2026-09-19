@@ -13,7 +13,7 @@ namespace TabgInstaller.MatchCore
     {
         public const string PluginGuid = "tabginstaller.matchcore";
         public const string PluginName = "TABG Match Core";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         internal static MatchCorePlugin Instance;
         internal static ManualLogSource LogSource;

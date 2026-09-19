@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
@@ -13,11 +14,11 @@ namespace TabgInstaller.FakePlayers
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     [BepInDependency("com.cyrusthelesser.citruslib", BepInDependency.DependencyFlags.SoftDependency)]
-    public class FakePlayersPlugin : BaseUnityPlugin
+    public partial class FakePlayersPlugin : BaseUnityPlugin
     {
         public const string PluginGuid = "tabginstaller.fakeplayers";
         public const string PluginName = "TABG Fake Players";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.8.2";
 
         public static FakePlayersPlugin Instance { get; private set; }
         public static ServerClient ServerRef { get; set; }
@@ -27,14 +28,16 @@ namespace TabgInstaller.FakePlayers
             public int Sequence;
             public byte ShooterIndex;
             public Vector3 Position;
+            public Vector3 Direction;
             public FiringMode Mode;
             public float Time;
 
-            public GunshotSoundEvent(int sequence, byte shooterIndex, Vector3 position, FiringMode mode, float time)
+            public GunshotSoundEvent(int sequence, byte shooterIndex, Vector3 position, Vector3 direction, FiringMode mode, float time)
             {
                 Sequence = sequence;
                 ShooterIndex = shooterIndex;
                 Position = position;
+                Direction = direction;
                 Mode = mode;
                 Time = time;
             }
@@ -62,56 +65,70 @@ namespace TabgInstaller.FakePlayers
         internal static readonly List<byte> AiIndices = new List<byte>();
         internal static readonly List<GunshotSoundEvent> GunshotSounds = new List<GunshotSoundEvent>();
         private static readonly Dictionary<byte, TeamMoveOrder> TeamMoveOrders = new Dictionary<byte, TeamMoveOrder>();
+        internal static readonly HashSet<byte> PendingTestBots=new HashSet<byte>();
+        internal static readonly Dictionary<byte,int> PendingPersonalities=new Dictionary<byte,int>();
         private static readonly Dictionary<byte, int> PendingAiLevels = new Dictionary<byte, int>();
         private const float AutoSpawnInitialDelaySeconds = 25.0f;
         private const int AutoSpawnMaxReadinessAttempts = 60;
         private const float AutoSpawnRetryDelaySeconds = 1.0f;
-        private static readonly string[] BotFirstNames =
+        private static readonly string[] GamerTags =
         {
-            "Alex", "Amelia", "Ben", "Charlotte", "Daniel", "Elias", "Emma", "Felix",
-            "Finn", "Hannah", "Henry", "Isabella", "Jack", "Jannik", "Jonah", "Julia",
-            "Kai", "Lara", "Laura", "Lea", "Leo", "Leon", "Liam", "Lina", "Luca",
-            "Lucas", "Maja", "Marie", "Mia", "Mila", "Noah", "Nora", "Oliver", "Oscar",
-            "Paul", "Sophie", "Theo", "Tom", "Victoria", "Zoe"
+            "SargMitWLAN","OmaMitRailgun","SkillIssueDeluxe","404BrainNotFound","TaxEvasionDLC",
+            "FriedhofsWLAN","PfandflaschenReaper","CEOofFriendlyFire","LagIstMeinAnwalt","KellerkindPrime",
+            "MietschuldenMage","RespawnImFinanzamt","DerLetzteToast","DosenbierDoomslayer","NoScopeNoFuture",
+            "GraveyardShiftVIP","KoffeinUndKriegsrat","RageQuitRoulade","FuneralSpeedrun","LootGoblin9000",
+            "SargnagelSupreme","BrotMitRache","WindowsXPWarrior","EmotionalSupportRPG","TurboTestament",
+            "UnpaidInternOfDoom","UeberfahreneFramerate","SchaufelImHandgepaeck","AltF4Enjoyer","RentFreeInYourScope",
+            "DachschadenDeluxe","RouterAusDerHoelle","KarmaOnCooldown","AimAusDemDiscounter","Ping999IQ2",
+            "BestattungAnyPercent","KnusperKamikaze","HaftpflichtHooligan","TraumaMitPommes","DiscountFinalBoss"
         };
-        private static readonly string[] BotLastNames =
-        {
-            "Bauer", "Becker", "Fischer", "Hartmann", "Hoffmann", "Keller", "Klein",
-            "Koch", "Krause", "Kruger", "Lehmann", "Meyer", "Neumann", "Richter",
-            "Schmidt", "Schneider", "Schulz", "Vogel", "Wagner", "Weber", "Werner", "Wolf"
-        };
-        private static int _nextNumber = 1;
-        private static int _nextTeamMoveOrderSequence = 1;
+
+        private static int _nextNumber=1,_nextTeamMoveOrderSequence=1;
         private static bool _loggedCosmeticDatabase;
         internal static int GunshotSoundSequence { get; private set; }
         internal static ConfigEntry<int> MaxFakeSpawnCount;
         internal static ConfigEntry<int> MaxAiSpawnCount;
         internal static ConfigEntry<int> AutoSpawnAiCount;
         internal static ConfigEntry<int> AutoSpawnAiLevel;
+        internal static ConfigEntry<bool> RandomAiSkill;
         internal static ConfigEntry<int> CommandPermissionLevel;
         internal static ConfigEntry<bool> DevelopmentMode;
         internal static ConfigEntry<bool> CommandsUsableByEveryone;
         private static bool _autoSpawnQueued;
         private static bool _autoSpawnCompleted;
+        private static ConfigEntry<bool> VerboseDecisions;
         private Harmony _harmony;
         private Harmony _permissionHarmony;
 
         private void Awake()
         {
+            var observers=Config.Bind("Testing","IgnoredPlayerNames","","Semicolon-separated real player names whom bots ignore as combat targets. Empty restores normal combat.");
+            BotTestObservers.Configure(observers.Value);
+            observers.SettingChanged+=(_,__)=>BotTestObservers.Configure(observers.Value);
             MaxFakeSpawnCount = Config.Bind("Commands", "MaxFakeSpawnCount", 200, "Maximum fake players spawned by one /spawndummy command.");
             MaxAiSpawnCount = Config.Bind("Commands", "MaxAiSpawnCount", 32, "Maximum AI dummy players spawned by one /spawnaidummy command.");
+            RandomAiSkill=Config.Bind("AI","RandomSkill",true,"Choose a persistent random skill for each automatic bot; explicit /spawnai levels override this.");
             AutoSpawnAiCount = Config.Bind("AutoSpawn", "AiCount", 0, "AI dummy players to spawn automatically when the game room is ready. Set to 0 to disable.");
             AutoSpawnAiLevel = Config.Bind("AutoSpawn", "AiLevel", 3, "Skill level used for automatically spawned AI dummy players, from 1 to 5.");
             CommandPermissionLevel = Config.Bind("Commands", "CommandPermissionLevel", 2, "Citrus permission level required for FakePlayers commands in normal release mode.");
             DevelopmentMode = Config.Bind("Safety", "DevelopmentMode", false, "Explicitly mark this server as a private development/test server. Required before test-only permission bypass can activate.");
             CommandsUsableByEveryone = Config.Bind("Safety", "CommandsUsableByEveryone", false, "Development-only: bypass Citrus permissions for FakePlayers commands. Ignored unless Safety.DevelopmentMode is true.");
 
+            VerboseDecisions=Config.Bind("Diagnostics","VerboseDecisions",false,"Log every state, loot and decision change (costly; leave off for normal play).");
+            gameObject.AddComponent<BotPerformance>();
             Instance = this;
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll();
             Logger.LogInfo("[FakePlayers] Loaded.");
         }
 
+        private float _nextMapSurvey;
+        private void Update()
+        {
+            if(Time.unscaledTime<_nextMapSurvey || ServerRef?.GameRoomReference==null)return;
+            _nextMapSurvey=Time.unscaledTime+.5f;BotMapKnowledge.ObserveFlight(ServerRef);
+            if(ServerRef.GameRoomReference.CurrentGameState==GameState.Started)BotLaunchPads.Known(ServerRef.GameRoomReference);
+        }
         private void OnDestroy()
         {
             if (ReferenceEquals(Instance, this))
@@ -163,7 +180,7 @@ namespace TabgInstaller.FakePlayers
 
                 int level = ParseAiLevel(prms.Length > 1 ? prms[1] : null);
                 int spawned = SpawnFakePlayers(server, count, player, aiControlled: true, aiLevel: level);
-                Citrus.SelfParrot(player, $"Spawned {spawned} AI dummy player(s), level {level}. Total dummies: {FakeIndices.Count}");
+                Citrus.SelfParrot(player, $"Spawned {spawned} AI dummy player(s), level {(level==0?"random":level.ToString())}. Total dummies: {FakeIndices.Count}");
             };
 
             Citrus.AddCommand("spawndummy", (string[] prms, TABGPlayerServer player) =>
@@ -202,6 +219,28 @@ namespace TabgInstaller.FakePlayers
                 Citrus.SelfParrot(player, $"Active fake players: {FakeIndices.Count}");
             }, "FakePlayers", "Show fake player count", "", commandPermission);
 
+            Citrus.AddCommand("bottest",(string[] args,TABGPlayerServer player)=>
+            {
+                var server=ResolveServer();var room=server?.GameRoomReference;
+                if(room==null){Citrus.SelfParrot(player,"Server noch nicht bereit.");return;}
+                string mode=args.Length==0?"solo":args[0].ToLowerInvariant();
+                if(args.Length>1 || (mode!="solo" && mode!="team" && mode!="navigation"))
+                {Citrus.SelfParrot(player,"/bottest = ein neuer Loot-Testbot; /bottest team = drei neue verbuendete Loot-Testbots.");return;}
+                if(room.CurrentGameSettings.MaxTeamSize!=1 || player.IsDead || player.IsDowned)
+                {Citrus.SelfParrot(player,"Bitte als lebender Spieler in einer Solo-Runde testen.");return;}
+                if(_pendingTests>=6){Citrus.SelfParrot(player,"Sechs Tests warten bereits auf deine Landung.");return;}
+                int count=mode=="team" || mode=="navigation"?3:1;
+                var before=new HashSet<byte>(room.Players.Select(p=>p.PlayerIndex));
+                SpawnFakePlayers(server,count,player,true,0);
+                var ids=room.Players.Where(p=>p.Bot && !before.Contains(p.PlayerIndex)).Select(p=>p.PlayerIndex).ToArray();
+                if(ids.Length==0){Citrus.SelfParrot(player,"Bot-/Spielerlimit erreicht. /removedummy entfernt Testbots.");return;}
+                BotTactics.EnsureRoom(room);BotTactics.TestPact(ids);foreach(byte id in ids)PendingTestBots.Add(id);_pendingTests++;
+                int wave=_testWave++%8;
+                Citrus.SelfParrot(player,$"{ids.Length} NEUE Testbots vorgemerkt. "+(player.HasDropped?"Bleib kurz zu Fuss auf freier Flaeche.":"/start 3, landen und zu Fuss bleiben."));
+                if(mode=="navigation")QueueNavigationTest(server,room,player,ids,Time.unscaledTime+300);
+                else QueueCombatTest(server,room,player,ids,Time.unscaledTime+300,wave);
+            },"FakePlayers","Spawn additional unarmed solo/team loot tests","[team]",commandPermission);
+
             Citrus.AddCommand("inspectbot", (string[] prms, TABGPlayerServer player) =>
             {
                 var server = ResolveServer();
@@ -214,12 +253,48 @@ namespace TabgInstaller.FakePlayers
                     return;
                 }
 
-                Citrus.SelfParrot(player, controller.GetDebugSummary());
-            }, "FakePlayers", "Inspect one AI dummy", "[index|name]", commandPermission);
+                string summary=controller.GetDebugSummary();
+                Citrus.SelfParrot(player, summary);
+                Log("[BotInspect] "+summary);
+            }, "FakePlayers", "Inspect one AI dummy", "[index|name]", 0);
 
-            Logger.LogInfo("[FakePlayers] Commands registered: /spawndummy, /spawnaidummy, /aidummy, /spawnai, /removedummy, /dummycount, /inspectbot");
+            Logger.LogInfo("[FakePlayers] Commands registered: /spawndummy, /spawnaidummy, /aidummy, /spawnai, /removedummy, /dummycount, /inspectbot, /bottest");
             if (commandPermission <= 0)
                 Logger.LogWarning("[FakePlayers] CommandPermissionLevel is 0; FakePlayers commands are available to everyone.");
+        }
+
+        private int _pendingTests,_testWave;
+        private void QueueCombatTest(ServerClient server,GameRoom room,TABGPlayerServer player,byte[] ids,float deadline,int wave)
+        {
+            server.WaitThenDoAction(1.5f,()=>
+            {
+                if(server.GameRoomReference!=room || !room.Players.Contains(player) || player.IsDead || Time.unscaledTime>=deadline)
+                {foreach(byte id in ids)PendingTestBots.Remove(id);_pendingTests=Math.Max(0,_pendingTests-1);return;}
+                if(!player.HasDropped || player.IsInsideCar || player.IsDowned || ids.Any(id=>room.FindPlayer(id)?.PlayerObject?.GetComponent<AiDummyController>()==null))
+                {QueueCombatTest(server,room,player,ids,deadline,wave);return;}
+                var selected=new List<byte>();
+                var forward=Quaternion.Euler(0,player.PlayerRotation.y,0)*Vector3.forward;
+                var center=player.PlayerPosition+forward*35+Vector3.Cross(Vector3.up,forward)*(wave%2==0?-1:1)*(28+wave/2*22);
+                foreach(byte id in ids)
+                {
+                    var bot=room.FindPlayer(id);var controller=bot?.PlayerObject?.GetComponent<AiDummyController>();
+                    if(controller==null || bot.IsDead)continue;
+                    bool prepared=false;
+                    for(int attempt=0;attempt<12 && !prepared;attempt++)
+                    {
+                        float angle=selected.Count*120+attempt*37;
+                        var point=center+Quaternion.Euler(0,angle,0)*forward*(4+attempt*2);
+                        prepared=controller.PrepareCombatTest(point);
+                    }
+                    if(prepared)selected.Add(id);
+                }
+                foreach(byte id in ids)PendingTestBots.Remove(id);
+                _pendingTests=Math.Max(0,_pendingTests-1);
+                if(selected.Count==0){Citrus.SelfParrot(player,"Keine sichere Flaeche gefunden; neue Bots bleiben in der Runde. Anderen Standort versuchen.");return;}
+                BotTactics.TestPact(ids);
+                Citrus.SelfParrot(player,$"{selected.Count}/{ids.Length} neue Testbots platziert: "+"suchen selbst Loot"+". Bestehende Teams bleiben erhalten.");
+                Log($"[BotTest] wave={wave}, ids={string.Join(",",ids)}, unarmed=true, position={center}");
+            });
         }
 
         /// <summary>
@@ -273,13 +348,15 @@ namespace TabgInstaller.FakePlayers
             return ServerRef != null && ServerRef.GameRoomReference != null ? ServerRef : null;
         }
 
-        public static int SpawnFakePlayers(ServerClient server, int count, TABGPlayerServer anchorPlayer = null, bool aiControlled = false, int aiLevel = 1)
+        public static int SpawnFakePlayers(ServerClient server, int count, TABGPlayerServer anchorPlayer = null, bool aiControlled = false, int aiLevel = 0)
         {
             var room = server.GameRoomReference;
             if (room == null) return 0;
 
             PruneMissingFakePlayers(room);
 
+            if(aiControlled)count=Math.Min(count,Math.Max(0,24-room.Players.Count(p=>p.Bot && !p.IsDead)));
+            count=Math.Min(count,Math.Max(0,room.CurrentGameSettings.MaxPlayers-room.Players.Count));
             int spawned = 0;
             for (int i = 0; i < count; i++)
             {
@@ -376,9 +453,10 @@ namespace TabgInstaller.FakePlayers
 
         internal static void ResetStaticMatchState()
         {
+            BotTactics.Reset();BotGrenades.Reset();BotLaunchPads.Reset();AiDummyController.ResetDetours();
             FakeIndices.Clear();
             AiIndices.Clear();
-            PendingAiLevels.Clear();
+            PendingAiLevels.Clear();PendingPersonalities.Clear();PendingTestBots.Clear();
             GunshotSounds.Clear();
             TeamMoveOrders.Clear();
             GunshotSoundSequence = 0;
@@ -400,7 +478,7 @@ namespace TabgInstaller.FakePlayers
                 return;
 
             _autoSpawnQueued = true;
-            int level = Mathf.Clamp(AutoSpawnAiLevel?.Value ?? 3, 1, 5);
+            int level = RandomAiSkill.Value?0:Mathf.Clamp(AutoSpawnAiLevel?.Value ?? 3, 1, 5);
             Log($"Auto-spawn AI queued: {count} AI dummy player(s), level {level}.");
             ScheduleAutoSpawnAttempt(server, count, level, 0, AutoSpawnInitialDelaySeconds);
         }
@@ -474,9 +552,10 @@ namespace TabgInstaller.FakePlayers
 
         private static void ForgetFakePlayer(byte playerIndex)
         {
+            BotTactics.Forget(playerIndex);
             FakeIndices.Remove(playerIndex);
             AiIndices.Remove(playerIndex);
-            PendingAiLevels.Remove(playerIndex);
+            PendingAiLevels.Remove(playerIndex);PendingPersonalities.Remove(playerIndex);PendingTestBots.Remove(playerIndex);
         }
 
         private static AiDummyController FindAiController(GameRoom room, string query)
@@ -517,8 +596,11 @@ namespace TabgInstaller.FakePlayers
             byte groupIndex = joinsAnchorTeam
                 ? anchorPlayer.GroupIndex
                 : room.GetNewGroupIndex(loginKey, playerIndex);
-            string name = CreateHumanBotName(room, number);
-            int[] gearData = CreateRandomCosmeticLoadout();
+            string name = CreateBotTag(room, number);
+            int personality=UnityEngine.Random.Range(0,3);
+            if(aiControlled && aiLevel<=0)aiLevel=TabgInstaller.Vehicles.BotSkillRules.Roll(UnityEngine.Random.value);
+            int[] gearData = CreateBotCosmeticLoadout(aiLevel,personality);
+            PendingPersonalities[playerIndex]=personality;
 
             var player = new TABGPlayerServer(
                 name, playerIndex, groupIndex, loginKey,
@@ -571,12 +653,11 @@ namespace TabgInstaller.FakePlayers
                 team.GetNumberOfPlayersInTeam(withBookings: true) < room.CurrentGameSettings.MaxTeamSize;
         }
 
-        private static string CreateHumanBotName(GameRoom room, int fallbackNumber)
+        private static string CreateBotTag(GameRoom room, int fallbackNumber)
         {
             for (int attempt = 0; attempt < 32; attempt++)
             {
-                string candidate = BotFirstNames[UnityEngine.Random.Range(0, BotFirstNames.Length)] + " " +
-                    BotLastNames[UnityEngine.Random.Range(0, BotLastNames.Length)];
+                string candidate = GamerTags[UnityEngine.Random.Range(0,GamerTags.Length)];
                 bool alreadyUsed = false;
                 for (int i = 0; room.Players != null && i < room.Players.Count; i++)
                 {
@@ -592,10 +673,10 @@ namespace TabgInstaller.FakePlayers
                     return candidate;
             }
 
-            return BotFirstNames[fallbackNumber % BotFirstNames.Length] + " " + fallbackNumber;
+            return GamerTags[fallbackNumber % GamerTags.Length] + "_" + fallbackNumber;
         }
 
-        private static int[] CreateRandomCosmeticLoadout()
+        private static int[] CreateBotCosmeticLoadout(int skill,int personality)
         {
             try
             {
@@ -620,10 +701,10 @@ namespace TabgInstaller.FakePlayers
 
                 return new[]
                 {
-                    RandomGearIndex(head), RandomColorIndex(database, Gear.GearType.HEAD, colorCount),
-                    RandomGearIndex(torso), RandomColorIndex(database, Gear.GearType.TORSO, colorCount),
-                    RandomGearIndex(legs), RandomColorIndex(database, Gear.GearType.LEGS, colorCount),
-                    RandomGearIndex(feet), RandomColorIndex(database, Gear.GearType.FEET, colorCount)
+                    StyledGear(head,skill,personality), BotColor(database,Gear.GearType.HEAD,skill,personality),
+                    StyledGear(torso,skill,personality), BotColor(database,Gear.GearType.TORSO,skill,personality),
+                    StyledGear(legs,skill,personality), BotColor(database,Gear.GearType.LEGS,skill,personality),
+                    StyledGear(feet,skill,personality), BotColor(database,Gear.GearType.FEET,skill,personality)
                 };
             }
             catch (Exception ex)
@@ -684,7 +765,7 @@ namespace TabgInstaller.FakePlayers
             QueueDelayedUpdate(server, server.GameRoomReference, player.PlayerIndex, 1.25f);
         }
 
-        internal static void BroadcastPlayerUpdate(ServerClient server, TABGPlayerServer player, Vector3 pos)
+        public static void BroadcastPlayerUpdate(ServerClient server, TABGPlayerServer player, Vector3 pos)
         {
             ServerMessages.SendPlayerUpdate(server, player, pos);
         }
@@ -707,6 +788,7 @@ namespace TabgInstaller.FakePlayers
         internal static void BroadcastFire(ServerClient server, TABGPlayerServer player, Vector3 target)
         {
             ServerMessages.SendFire(server, player, target, FiringMode.Semi);
+            RecordGunshot(player,FiringMode.Semi);
         }
 
         internal static void BroadcastGrenadeThrow(ServerClient server, TABGPlayerServer player, int itemIdentifier, int quantity, Vector3 position, Vector3 direction, bool sync)
@@ -732,6 +814,21 @@ namespace TabgInstaller.FakePlayers
             ServerMessages.SendAirplaneDrop(server, player, position, forward);
         }
 
+        // Custom explosions are broadcast to human clients; synthetic victims have no
+        // owning client. Apply their damage once on the authoritative server instead.
+        public static void ApplyBlastDamage(ServerClient server,TABGPlayerServer attacker,TABGPlayerServer target,float damage,string source)
+        {
+            if(server==null || attacker==null || target==null || !target.Bot || target.IsDead || target.Health<=0 || float.IsNaN(damage) || float.IsInfinity(damage) || damage<=0)return;
+            float before=target.Health,after=Mathf.Max(0,before-damage);
+            if(after<=0)ApplyLethalDamage(server,attacker,target);
+            else
+            {
+                target.UpdateLastAttacker(attacker.PlayerIndex);target.UpdateHealth(after);
+                ServerMessages.SendHealthStateChanged(server,target,after);
+            }
+            Log($"[BotDamage] {source}: {target.PlayerName} #{target.PlayerIndex} HP {before:0.0} -> {target.Health:0.0}, attacker={attacker.PlayerIndex}");
+        }
+
         internal static void ApplyDamage(ServerClient server, TABGPlayerServer attacker, TABGPlayerServer target, float damage)
         {
             if (server == null || !IsCombatTargetAlive(attacker) || !IsCombatTargetAlive(target))
@@ -748,6 +845,7 @@ namespace TabgInstaller.FakePlayers
                 return;
             }
 
+            if(target.Bot){target.UpdateLastAttacker(attacker.PlayerIndex);target.UpdateHealth(newHealth);ServerMessages.SendHealthStateChanged(server,target,newHealth);return;}
             byte[] damageCommand = ServerMessages.MakeDamageCommand(attacker, target, newHealth);
 
             // Server-side fake attackers are not real chunk watchers, so report through the victim path.
@@ -815,7 +913,7 @@ namespace TabgInstaller.FakePlayers
                 target.UpdateHealth(0f);
                 room.CurrentGameMode.KillPlayer(target, attacker);
                 room.CheckGameState();
-                Log($"AI dummy {attacker.PlayerName} killed {target.PlayerName}.");
+                Log($"AI dummy {attacker.PlayerName} hit {target.PlayerName}: down={target.IsDowned}, dead={target.IsDead}.");
             }
             catch (Exception ex)
             {
@@ -861,7 +959,7 @@ namespace TabgInstaller.FakePlayers
         private static int ParseAiLevel(string value)
         {
             if (string.IsNullOrEmpty(value))
-                return 1;
+                return 0;
 
             switch (value.ToLowerInvariant())
             {
@@ -904,6 +1002,7 @@ namespace TabgInstaller.FakePlayers
 
         internal static void Log(string msg)
         {
+            if(VerboseDecisions!=null && !VerboseDecisions.Value && (msg.Contains(" state:") || msg.Contains(" action:") || msg.Contains("found no loot") || msg.Contains("moving to ") || msg.Contains("gave up on blocked loot") || msg.Contains("unstuck target")))return;
             if (Instance != null)
                 Instance.Logger.LogInfo($"[FakePlayers] {msg}");
         }
@@ -924,7 +1023,7 @@ namespace TabgInstaller.FakePlayers
                 return;
 
             GunshotSoundSequence++;
-            GunshotSounds.Add(new GunshotSoundEvent(GunshotSoundSequence, shooter.PlayerIndex, shooter.PlayerPosition, mode, Time.unscaledTime));
+            GunshotSounds.Add(new GunshotSoundEvent(GunshotSoundSequence, shooter.PlayerIndex, shooter.PlayerPosition, Quaternion.Euler(shooter.PlayerRotation.x,shooter.PlayerRotation.y,0)*Vector3.forward, mode, Time.unscaledTime));
 
             float cutoff = Time.unscaledTime - 2.5f;
             while (GunshotSounds.Count > 0 && (GunshotSounds[0].Time < cutoff || GunshotSounds.Count > 96))

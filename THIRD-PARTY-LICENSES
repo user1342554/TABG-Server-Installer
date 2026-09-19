@@ -225,3 +225,31 @@ your work removed or licensed differently, please contact anonymer_hase.
 - TASM by RedBigz (https://github.com/RedBigz/TASM)
 - ComputerysTabgMods by C0mputery (https://github.com/C0mputery/ComputerysTabgMods)
 - TABGCommunityServer by JIBSIL (https://github.com/JIBSIL/TABGCommunityServer)
+
+
+UnityFPVDroneSimulator – flight-control reference
+https://github.com/Venkatesan-M/UnityFPVDroneSimulator
+Reference commit: 422864b19a43d16627abbeb8f1ab6872dd11422c
+Force-based rotor thrust, angle/rate control and input shaping adapted for TABG. No models, maps or Input System package copied.
+
+MIT License
+
+Copyright (c) 2025 Venkatesan M
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
