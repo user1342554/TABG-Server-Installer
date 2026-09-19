@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
+using TabgInstaller.Vehicles;
 
 namespace TabgInstaller.FlyingControls
 {
-    [BepInPlugin("tabginstaller.flyingcontrols", "TABG Flying Vehicle Controls", "1.0.0")]
+    [BepInPlugin("tabginstaller.flyingcontrols", "TABG Flying Vehicle Controls", "1.7.0")]
     public class FlyingControlsPlugin : BaseUnityPlugin
     {
         internal static ConfigEntry<float> ThrustForce;
@@ -16,7 +18,10 @@ namespace TabgInstaller.FlyingControls
         internal static ConfigEntry<float> HoverForce;
         internal static ConfigEntry<float> DescentForce;
         internal static ConfigEntry<float> MaxSpeed;
+        internal static ConfigEntry<float> MaxAltitude;
+        private static bool _syncLimits;
         internal static ConfigEntry<float> Stabilization;
+        internal static ConfigEntry<KeyCode> LandKey;
         internal static ConfigEntry<KeyCode> LiftKey;
         internal static ConfigEntry<KeyCode> DescendKey;
 
@@ -26,40 +31,115 @@ namespace TabgInstaller.FlyingControls
         };
 
         private static readonly Dictionary<int, bool> FlyingCache = new Dictionary<int, bool>();
-        private static readonly HashSet<int> DisabledHoverRaycasters = new HashSet<int>();
         private static float _nextUpdateErrorLogTime;
 
         private void Awake()
         {
+            LandKey = Config.Bind("Keybinds", "AutoLand", KeyCode.L, "Automatically land the helicopter; press again or use a flight key to cancel.");
             LiftKey = Config.Bind("Keybinds", "Ascend", KeyCode.Space, "Key to fly upward");
             DescendKey = Config.Bind("Keybinds", "Descend", KeyCode.LeftControl, "Key to fly downward");
 
             ThrustForce = Config.Bind("Physics", "ThrustForce", 22f, "Forward/backward thrust force");
             TurnForce = Config.Bind("Physics", "TurnForce", 10f, "Turning (yaw) force");
             LiftForce = Config.Bind("Physics", "LiftForce", 22f, "Upward force when pressing ascend key");
-            HoverForce = Config.Bind("Physics", "HoverForce", 11f, "Base hover force (counteracts gravity)");
+            HoverForce = Config.Bind("Physics", "HoverForce", 11f, "Vertical braking strength when neither ascend nor descend is held");
             DescentForce = Config.Bind("Physics", "DescentForce", 8f, "Downward force when pressing descend key");
-            MaxSpeed = Config.Bind("Physics", "MaxSpeed", 45f, "Maximum flight speed");
+            MaxSpeed = Config.Bind("Physics", "MaxSpeed", 30f, "Maximum flight speed in m/s; higher speed lowers the altitude limit (15-45 m/s).");
+            MaxAltitude = Config.Bind("Physics", "MaxAltitude", 87.5f, "Maximum height above ground in metres; higher altitude lowers the speed limit (25-150 m).");
+            MaxSpeed.SettingChanged += (sender, args) => SyncLimits(true);
+            MaxAltitude.SettingChanged += (sender, args) => SyncLimits(false);
+            SyncLimits(true);
             Stabilization = Config.Bind("Physics", "Stabilization", 8f, "Auto-leveling strength");
 
             try
             {
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Auto Land Key", "Helicopter: automatic safe landing", LandKey);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Ascend Key", "Key to fly upward", LiftKey);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Descend Key", "Key to fly downward", DescendKey);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Thrust Force", "Forward/backward power", ThrustForce);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Turn Force", "Turning speed", TurnForce);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Lift Force", "Ascend power", LiftForce);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Hover Force", "Base hover", HoverForce);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Hover Force", "Vertical braking", HoverForce);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Descent Force", "Descend power", DescentForce);
-                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Max Speed", "Speed cap", MaxSpeed);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Max Speed", "15-45 m/s; faster flight lowers allowed altitude", MaxSpeed);
+                TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Max Altitude", "25-150 m above ground; more height lowers max speed", MaxAltitude);
                 TabgInstaller.ModSettings.ModSettingsUI.Register("Flying Controls", "Stabilization", "Auto-leveling", Stabilization);
             }
             catch (Exception ex) { Debug.LogWarning($"[FlyingControls] ModSettings registration failed (non-fatal): {ex.Message}"); }
 
             var harmony = new Harmony("tabginstaller.flyingcontrols");
             harmony.PatchAll(typeof(FlyingPhysicsPatch));
+            harmony.PatchAll(typeof(NativeHoverPatch));
+            harmony.PatchAll(typeof(AircraftClient.SetupPatch));
+            harmony.PatchAll(typeof(AircraftHealthDisplay.InitialMaximum));
+            harmony.PatchAll(typeof(AircraftClient.AircraftDamagePatch));
+            harmony.PatchAll(typeof(AircraftClient.AircraftRamPatch));
+            harmony.PatchAll(typeof(GroundTaxi.MarkerPatch));
+            harmony.PatchAll(typeof(GroundTaxi.RemoveMarkerPatch));
+            harmony.PatchAll(typeof(GroundTaxi.RenderAuthorityPatch));
+            harmony.PatchAll(typeof(GroundTaxi.ReceivedAuthorityPatch));
+            harmony.PatchAll(typeof(GroundTaxi.DriverSenderPatch));
+            harmony.PatchAll(typeof(VehicleSpawnReceiver));
+            gameObject.AddComponent<VehicleSpawnHandshake>();
+            harmony.PatchAll(typeof(HelicopterSight.WeaponPatch));
+            harmony.PatchAll(typeof(HelicopterSight.AimPatch));
+            harmony.PatchAll(typeof(HelicopterSight.BulletPatch));
+            harmony.PatchAll(typeof(HelicopterSight.BulletSweepPatch));
+            gameObject.AddComponent<HelicopterSight>();
+            harmony.PatchAll(typeof(FpvItem.LookupPatch));
+            harmony.PatchAll(typeof(FpvClient.ThrowPatch));
+            harmony.PatchAll(typeof(FpvClient.SingleDroneThrowPatch));
+            harmony.PatchAll(typeof(BlastHitmarker.TagDamage));
+            harmony.PatchAll(typeof(AircraftSafetyClient.NormalExitSeparation));
+            harmony.PatchAll(typeof(FpvClient.InputPatch));
+            harmony.PatchAll(typeof(FpvClient.ActionPatch));
+            gameObject.AddComponent<FpvClient>();
+            gameObject.AddComponent<BlastHitmarker>();
+            gameObject.AddComponent<CombatAudio>();
+            harmony.PatchAll(typeof(HelicopterAudio.LegacyRotor));
+            gameObject.AddComponent<AircraftSafetyClient>();
+            harmony.PatchAll(typeof(HelicopterFlight.AuthorityPatch));
+            harmony.PatchAll(typeof(HelicopterFlight.ReceivedPatch));
 
             Logger.LogInfo("[FlyingControls] Loaded! Ascend=" + LiftKey.Value + ", Descend=" + DescendKey.Value);
+        }
+
+        private static void SyncLimits(bool speedChanged)
+        {
+            if (_syncLimits) return;
+            _syncLimits = true;
+            try
+            {
+                if (speedChanged)
+                {
+                    MaxSpeed.Value = VehicleBalance.Clamp(MaxSpeed.Value, VehicleBalance.MinSpeed, VehicleBalance.MaxSpeed);
+                    MaxAltitude.Value = VehicleBalance.HeightForSpeed(MaxSpeed.Value);
+                }
+                else
+                {
+                    MaxAltitude.Value = VehicleBalance.Clamp(MaxAltitude.Value, VehicleBalance.MinHeight, VehicleBalance.MaxHeight);
+                    MaxSpeed.Value = VehicleBalance.SpeedForHeight(MaxAltitude.Value);
+                }
+            }
+            finally { _syncLimits = false; }
+        }
+
+        // These are independent physics callbacks: skipping Car.FixedUpdate alone does
+        // not stop terrain-based lift. Patch both so callback order and re-enabling
+        // components cannot restore the old hover height after descent.
+        [HarmonyPatch]
+        internal static class NativeHoverPatch
+        {
+            static IEnumerable<MethodBase> TargetMethods()
+            {
+                yield return AccessTools.Method(typeof(HoverRaycaster), "FixedUpdate");
+                yield return AccessTools.Method(typeof(RaycastHover), "FixedUpdate");
+            }
+
+            static bool Prefix(Component __instance)
+            {
+                return !FlyingPhysicsPatch.IsFlyingVehicle(__instance.GetComponentInParent<Car>());
+            }
         }
 
         /// <summary>
@@ -75,6 +155,20 @@ namespace TabgInstaller.FlyingControls
                 try
                 {
                     if (!IsFlyingVehicle(__instance)) return true; // Not flying: run original
+
+                    if (VehicleBalance.IsTaxi(__instance.name))
+                    {
+                        var taxi = __instance.GetComponent<GroundTaxi>() ?? __instance.gameObject.AddComponent<GroundTaxi>();
+                        taxi.Tick();
+                        return false;
+                    }
+
+                    if(MissileRules.IsHeli(__instance.name))
+                    {
+                        HelicopterFlight.Get(__instance).SyncAuthority();
+                        if(__instance.GetComponent<AircraftFallView>())return false;
+                        if(HelicopterLanding.Get(__instance).Tick())return false;
+                    }
 
                     // No driver: kill momentum and let it fall gently
                     if (!__instance.driverSeat || !__instance.driverSeat.occupant)
@@ -99,15 +193,7 @@ namespace TabgInstaller.FlyingControls
                         if (__instance.driverSeat.occupant == Player.localPlayer.transform.root)
                             isOurs = true;
                     }
-                    if (!isOurs) return true; // Someone else driving: run original
-
-                    // Disable HoverRaycasters on this vehicle (they fight our controls)
-                    int id = __instance.GetInstanceID();
-                    if (DisabledHoverRaycasters.Add(id))
-                    {
-                        foreach (var hr in __instance.GetComponentsInChildren<HoverRaycaster>())
-                            hr.enabled = false;
-                    }
+                    if (!isOurs) return false; // Remote flying vehicles must not receive vanilla lift.
 
                     var rig = __instance.mainRig;
                     var input = __instance.input;
@@ -121,24 +207,40 @@ namespace TabgInstaller.FlyingControls
                     bool goUp = Input.GetKey(LiftKey.Value);
                     bool goDown = Input.GetKey(DescendKey.Value);
 
-                    // === GRAVITY CANCEL + HOVER ===
-                    // Exactly cancel gravity (9.81) then add hover
-                    rig.AddForce(Vector3.up * (9.81f + HoverForce.Value), ForceMode.Acceleration);
+                    float heightLeft = float.PositiveInfinity;
+                    foreach (var hit in Physics.RaycastAll(rig.position, Vector3.down, 10000f, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        if (hit.collider.transform.IsChildOf(__instance.transform) || hit.collider.GetComponentInParent<Player>()) continue;
+                        heightLeft = Mathf.Min(heightLeft, hit.distance);
+                    }
+                    heightLeft = float.IsPositiveInfinity(heightLeft) ? 0f : MaxAltitude.Value - heightLeft;
+                    if (heightLeft <= 0f)
+                    {
+                        goUp = false;
+                        var limited = rig.velocity;
+                        limited.y = Mathf.Min(limited.y, -Mathf.Min(6f, -heightLeft * 2f));
+                        rig.velocity = limited;
+                    }
+                    else if (heightLeft < 5f && rig.velocity.y > heightLeft)
+                    {
+                        var limited = rig.velocity; limited.y = heightLeft; rig.velocity = limited;
+                        goUp = false;
+                    }
 
-                    // === ASCEND ===
-                    if (goUp)
-                        rig.AddForce(Vector3.up * LiftForce.Value, ForceMode.Acceleration);
+                    // Neutral flight cancels only actual gravity, never adds constant lift.
+                    if (rig.useGravity) rig.AddForce(-Physics.gravity, ForceMode.Acceleration);
+                    if (goUp != goDown)
+                        rig.AddForce(Vector3.up * (goUp ? LiftForce.Value : -DescentForce.Value), ForceMode.Acceleration);
+                    else
+                    {
+                        var velocity = rig.velocity;
+                        velocity.y = FlightMotion.BrakeVertical(velocity.y, HoverForce.Value, Time.fixedDeltaTime);
+                        rig.velocity = velocity;
+                    }
 
-                    // === DESCEND ===
-                    if (goDown)
-                        rig.AddForce(Vector3.down * DescentForce.Value, ForceMode.Acceleration);
-
-                    // === IDLE: slow descent ===
-                    if (!goUp && !goDown && Mathf.Abs(forward) < 0.1f)
-                        rig.AddForce(Vector3.down * 2f, ForceMode.Acceleration);
-
-                    // === FORWARD/BACK THRUST ===
-                    rig.AddForce(rig.transform.forward * forward * ThrustForce.Value, ForceMode.Acceleration);
+                    // Pitching the model must not make W/S change altitude.
+                    Vector3 horizontalForward = Vector3.ProjectOnPlane(rig.transform.forward, Vector3.up).normalized;
+                    rig.AddForce(horizontalForward * forward * ThrustForce.Value, ForceMode.Acceleration);
 
                     // Slight pitch when thrusting (visual feedback)
                     if (Mathf.Abs(forward) > 0.1f)
@@ -178,7 +280,7 @@ namespace TabgInstaller.FlyingControls
                 }
             }
 
-            static bool IsFlyingVehicle(Car car)
+            internal static bool IsFlyingVehicle(Car car)
             {
                 if (car == null) return false;
                 int id = car.GetInstanceID();

@@ -25,7 +25,7 @@ namespace TabgInstaller.Core
             s_httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("TabgInstaller/1.0");
         }
 
-        private const string BepInExWindowsUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip";
+        private const string BepInExWindowsUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip";
         private const string BepInExUnixUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_unix_5.4.22.0.zip";
         private const string AntiCheatRemoverReleaseUrl = "https://api.github.com/repos/C0mputery/AntiCheatBootErrorRemover/releases/latest";
         private const string SteamAppId = "823130";
@@ -91,7 +91,7 @@ namespace TabgInstaller.Core
                 if (needsBepInEx)
                 {
                     log.Report(isWindowsClient
-                        ? "Downloading BepInEx 5.4.22 for Windows/Proton..."
+                        ? "Downloading BepInEx 5.4.23.3 for Windows/Proton..."
                         : "Downloading BepInEx 5.4.22 for Linux...");
                     string zipPath = Path.Combine(moddedDir, "bepinex_temp.zip");
 
@@ -113,7 +113,17 @@ namespace TabgInstaller.Core
                 var targetAssembly = isWindowsClient
                     ? "BepInEx\\core\\BepInEx.Preloader.dll"
                     : "BepInEx/core/BepInEx.Preloader.dll";
-                File.WriteAllText(doorstopPath,
+                // Doorstop 4 (BepInEx 5.4.23.3) uses a different config schema.
+                // Preserve an existing installation's schema during plugin updates.
+                bool usesDoorstop4 = isWindowsClient && (needsBepInEx ||
+                    (File.Exists(doorstopPath) && File.ReadAllText(doorstopPath)
+                        .Contains("[General]", StringComparison.OrdinalIgnoreCase)));
+                File.WriteAllText(doorstopPath, usesDoorstop4
+                    ? "[General]\r\nenabled=true\r\n" +
+                      $"target_assembly={targetAssembly}\r\n" +
+                      "redirect_output_log=false\r\nignore_disable_switch=false\r\n" +
+                      "[UnityMono]\r\ndll_search_path_override=\r\ndebug_enabled=false\r\n"
+                    :
                     "[UnityDoorstop]\r\n" +
                     "enabled=true\r\n" +
                     $"targetAssembly={targetAssembly}\r\n" +

@@ -246,7 +246,7 @@ namespace TabgInstaller.MatchCore
 
             foreach (var player in players)
             {
-                if (player == null) continue;
+                if (player == null || player.Bot) continue; // Bots acquire their loadout through world loot.
                 var ids = new List<int>();
                 var amounts = new List<byte>();
                 foreach (var item in loadout.Items)
@@ -266,7 +266,7 @@ namespace TabgInstaller.MatchCore
             if (settings == null || victim == null || world == null) return;
 
             var attacker = world.GameRoomReference?.FindPlayer(victim.LastAttacker);
-            if (attacker == null || attacker.GroupIndex == victim.GroupIndex) return;
+            if (attacker == null || attacker.Bot || attacker.GroupIndex == victim.GroupIndex) return;
 
             if (settings.HealOnKill && settings.HealOnKillAmount > 0f)
                 HealPlayer(world, attacker, settings.HealOnKillAmount);

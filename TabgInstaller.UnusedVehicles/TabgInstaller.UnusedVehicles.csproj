@@ -3,6 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
+    <TabgServerManagedDir Condition="'$(TabgServerManagedDir)' == ''">$(MSBuildProjectDirectory)/Libs</TabgServerManagedDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -52,8 +53,19 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="EasyRoads3Dv3"><HintPath>$(TabgServerManagedDir)/EasyRoads3Dv3.dll</HintPath><Private>False</Private></Reference>
+  </ItemGroup>
   <Target Name="CopyUnusedVehiclesToBundledPlugins" AfterTargets="Build">
     <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\plugins" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\plugins" SkipUnchangedFiles="true" />
   </Target>
+  <ItemGroup>
+    <Compile Include="../TabgInstaller.FlyingControls/GrenadeProfiles.cs" Link="GrenadeProfiles.cs" />
+    <Compile Include="../TabgInstaller.FlyingControls/RoadNetwork.cs" Link="RoadNetwork.cs" />
+    <Compile Include="../TabgInstaller.Vehicles.Shared/*.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.FlyingControls/FpvItem.cs" Link="Shared/FpvItem.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.FlyingControls/VehicleGeometry.cs" Link="Shared/VehicleGeometry.cs" /></ItemGroup>
+
 </Project>

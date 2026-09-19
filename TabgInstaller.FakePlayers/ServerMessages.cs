@@ -10,13 +10,11 @@ namespace TabgInstaller.FakePlayers
     internal static class ServerMessages
     {
         // Keep these payloads byte-for-byte aligned with the decompiled server command readers.
-        private static int _nextAiThrownItemIndex = 50000;
-        private static bool _vanillaFireCommandFailed;
+        private static int _nextAiThrownItemIndex = 1300000;
 
         public static void ResetTransientState()
         {
-            _nextAiThrownItemIndex = 50000;
-            _vanillaFireCommandFailed = false;
+            _nextAiThrownItemIndex = 1300000;
         }
 
         public static void SendLogin(ServerClient server, TABGPlayerServer player)
@@ -70,7 +68,7 @@ namespace TabgInstaller.FakePlayers
                 writer.Write((byte)1);
                 writer.Write(player.PlayerIndex);
                 writer.Write((byte)PacketContainerFlags.All);
-                writer.Write((byte)DrivingState.None);
+                writer.Write(player.IsInsideCar?(byte)1:(byte)DrivingState.None);
                 WriteVector3(writer, pos);
                 writer.Write(player.PlayerRotation.x);
                 writer.Write(player.PlayerRotation.y);
@@ -157,30 +155,16 @@ namespace TabgInstaller.FakePlayers
                 writer.Write(rotBytes);
             });
 
-            // Prefer the same command that handles a real player's fire packet. Some
-            // dedicated-server states reject synthetic players inside that command;
-            // if that happens, fall back to relaying the identical vanilla packet.
-            if (!_vanillaFireCommandFailed)
-            {
-                try
-                {
-                    PlayerFireCommand.Run(command, server, player.PlayerIndex);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _vanillaFireCommandFailed = true;
-                    FakePlayersPlugin.Log($"Vanilla fire command unavailable for server AI; using packet relay: {ex.GetType().Name}: {ex.Message}");
-                }
-            }
-
+            // Native PlayerFireCommand can return without sending when a synthetic bot has no
+            // chunk watchers. Relay the exact vanilla event directly; the normal client weapon
+            // handler creates its own sound, muzzle flash and ammunition. No substitute effects.
             SendToRealClients(server, EventCode.PlayerFire, command, reliable: true);
         }
 
-        public static void SendGrenadeThrow(ServerClient server, TABGPlayerServer player, int itemIdentifier, int quantity, Vector3 position, Vector3 direction, bool sync)
+        public static int SendGrenadeThrow(ServerClient server, TABGPlayerServer player, int itemIdentifier, int quantity, Vector3 position, Vector3 direction, bool sync)
         {
             if (server == null || player == null)
-                return;
+                return -1;
 
             int networkIndex = _nextAiThrownItemIndex++;
             SendToRealClients(server, EventCode.ItemThrown, Write(writer =>
@@ -193,6 +177,7 @@ namespace TabgInstaller.FakePlayers
                 WriteVector3(writer, direction);
                 writer.Write(sync);
             }), reliable: true);
+            return networkIndex;
         }
 
         public static void SendHealthStateChanged(ServerClient server, TABGPlayerServer player, float health)
@@ -235,7 +220,7 @@ namespace TabgInstaller.FakePlayers
 
         public static bool TryRunReviveState(ServerClient server, TABGPlayerServer reviver, TABGPlayerServer target, ReviveState state)
         {
-            if (server == null || reviver == null || target == null || reviver.GroupIndex != target.GroupIndex)
+            if (server?.GameRoomReference == null || !TabgInstaller.Vehicles.BotRoundRules.CanRevive(server.GameRoomReference.CurrentGameSettings.MaxTeamSize) || reviver == null || target == null || reviver.GroupIndex==255 || reviver.GroupIndex!=target.GroupIndex)
                 return false;
 
             try
@@ -362,17 +347,9 @@ namespace TabgInstaller.FakePlayers
             byte[] carInput = NetworkOptimizationHelper.OptimizeDirection(car.CarInput);
             SendToRealClients(server, EventCode.PlayerUpdate, Write(writer =>
             {
-                writer.Write(Time.unscaledTime);
-                writer.Write((byte)1);
-                writer.Write(player.PlayerIndex);
-                writer.Write((byte)PacketContainerFlags.All);
-                writer.Write((byte)DrivingState.Driving);
-                WriteVector3(writer, car.CarPosition);
-                writer.Write(carRotation);
-                writer.Write(carInput);
-                writer.Write(player.PlayerRotation.x);
-                writer.Write(player.PlayerRotation.y);
-                writer.Write((byte)car.DrivingState);
+                TabgInstaller.Vehicles.BotMovementPacket.WriteDriving(writer,Time.unscaledTime,player.PlayerIndex,
+                    car.CarPosition.x,car.CarPosition.y,car.CarPosition.z,carRotation,carInput,
+                    player.PlayerRotation.x,player.PlayerRotation.y,(byte)car.DrivingState);
             }), reliable: false, alsoSendToTeamates: true);
         }
 

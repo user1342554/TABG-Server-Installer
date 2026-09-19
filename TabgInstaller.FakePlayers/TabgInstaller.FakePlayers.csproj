@@ -52,4 +52,14 @@
     <MakeDir Directories="$(MSBuildProjectDirectory)\..\bundled\plugins" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\bundled\plugins" SkipUnchangedFiles="true" />
   </Target>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotAllianceRules.cs" Link="BotAllianceRules.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotCombatMind.cs" Link="BotCombatMind.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotSeparation.cs" Link="BotSeparation.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotMovementPacket.cs" Link="BotMovementPacket.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotSkillRules.cs" Link="BotSkillRules.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotShieldRules.cs" Link="BotShieldRules.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotTravelRules.cs" Link="BotTravelRules.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotRoundRules.cs" Link="BotRoundRules.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotGridSearch.cs" Link="BotGridSearch.cs" /></ItemGroup>
+<ItemGroup><Compile Include="../TabgInstaller.Vehicles.Shared/BotRecoveryState.cs" Link="BotRecoveryState.cs" /></ItemGroup>
 </Project>

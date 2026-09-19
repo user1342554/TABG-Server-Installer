@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace TabgInstaller.AdminRadar.Client
 {
-    [BepInPlugin("tabginstaller.adminradar.client", "Dummy Debug Radar Client", "1.0.0")]
+    [BepInPlugin("tabginstaller.adminradar.client", "Dummy Debug Radar Client", "1.6.0")]
     public class AdminRadarClientPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
@@ -100,13 +100,16 @@ namespace TabgInstaller.AdminRadar.Client
             _harmony?.UnpatchSelf();
         }
 
+        private TABGPlayerClient _lastLocal;
+        private float _nextRefresh;
         private void Update()
         {
+            var local=PhotonServerHandler.instance?.LocalPlayer;
+            if(local!=_lastLocal){Players.Clear();_serverPayloadCount=_serverPlayerCount=0;_lastLocal=local;}
             if (Input.GetKeyDown(_toggleKey.Value))
                 _visible.Value = !_visible.Value;
 
-            RefreshClientPlayers();
-            RemoveExpiredPlayers();
+            if(Time.unscaledTime>=_nextRefresh){_nextRefresh=Time.unscaledTime+.1f;RefreshClientPlayers();RemoveExpiredPlayers();}
         }
 
         private void OnGUI()
@@ -138,6 +141,7 @@ namespace TabgInstaller.AdminRadar.Client
             {
                 ParsedPlayerEntry entry = playerEntries[i];
                 ApplyPlayerPosition(entry.Index, entry.Name, entry.Position, entry.Alive);
+                var colored=Players[entry.Index];colored.Team=entry.Team;Players[entry.Index]=colored;
             }
 
             for (int i = 0; i < debugEntries.Count; i++)
@@ -147,7 +151,7 @@ namespace TabgInstaller.AdminRadar.Client
             }
 
             _serverPayloadCount++;
-            _serverPlayerCount = playerEntries.Count;
+            _serverPlayerCount = Players.Count;
             if (_serverPayloadCount == 1 || _serverPayloadCount % 20 == 0)
                 Log?.LogInfo($"[AdminRadar.Client] Received radar payload #{_serverPayloadCount} with {playerEntries.Count} player(s).");
         }
@@ -219,6 +223,16 @@ namespace TabgInstaller.AdminRadar.Client
                     case BotDebugSectionType:
                         if (!TryReadBotDebugSection(sectionReader, true, debugEntries, out error))
                             return false;
+                        break;
+                    case 3:
+                        if(!sectionReader.TryReadByte(out byte count) || sectionReader.Remaining!=count*2){error="invalid team section";return false;}
+                        for(int j=0;j<count;j++)
+                        {
+                            sectionReader.TryReadByte(out byte member);sectionReader.TryReadByte(out byte team);
+                            int found=playerEntries.FindIndex(p=>p.Index==member);
+                            if(found<0){error="team without player entry";return false;}
+                            var entry=playerEntries[found];entry.Team=team;playerEntries[found]=entry;
+                        }
                         break;
                     default:
                         break;
@@ -406,6 +420,7 @@ namespace TabgInstaller.AdminRadar.Client
                 Alive = alive,
                 LastSeen = Time.unscaledTime,
                 LastServerSeen = Time.unscaledTime,
+                PreviousPosition = hadPrevious?VisualPosition(previous):serverPosition,
                 BotState = hadPrevious ? previous.BotState : null,
                 TargetName = hadPrevious ? previous.TargetName : null,
                 WeaponName = hadPrevious ? previous.WeaponName : null,
@@ -510,11 +525,12 @@ namespace TabgInstaller.AdminRadar.Client
                         continue;
 
                     string playerName = string.IsNullOrWhiteSpace(player.PlayerName) ? "Player " + player.PlayerIndex : player.PlayerName;
-                    if (hasExisting && IsDummyName(existing.Name) && HasFreshServerPosition(existing))
+                    if (hasExisting && existing.LastServerSeen>0)
                     {
-                        existing.Name = playerName;
-                        existing.Alive = !player.IsDead;
-                        existing.LastSeen = Time.unscaledTime;
+                        // Keep server bot identity and authoritative positions.
+
+                        // Alive and position both come from the authoritative server snapshot.
+                        // Do not refresh server TTL from stale client objects.
                         Players[player.PlayerIndex] = existing;
                         continue;
                     }
@@ -533,6 +549,7 @@ namespace TabgInstaller.AdminRadar.Client
                         Alive = !player.IsDead,
                         LastSeen = Time.unscaledTime,
                         LastServerSeen = existing.LastServerSeen,
+                        Team = existing.Team,
                         BotState = existing.BotState,
                         TargetName = existing.TargetName,
                         WeaponName = existing.WeaponName,
@@ -690,7 +707,7 @@ namespace TabgInstaller.AdminRadar.Client
                 if (!player.Alive) continue;
                 if (IsLocalPlayer(player)) continue;
 
-                Vector3 offset = player.Position - localPosition;
+                Vector3 offset = VisualPosition(player) - localPosition;
                 float cos = Mathf.Cos(-yaw);
                 float sin = Mathf.Sin(-yaw);
                 float rx = offset.x * cos - offset.z * sin;
@@ -702,13 +719,13 @@ namespace TabgInstaller.AdminRadar.Client
                 float dotX = x + center + px;
                 float dotY = y + center + py;
 
-                GUI.color = new Color(1f, 0.25f, 0.2f, 0.95f);
-                GUI.DrawTexture(new Rect(dotX - 4f, dotY - 4f, 8f, 8f), _playerTexture);
+                GUI.color = TeamColor(player);
+                GUI.DrawTexture(new Rect(dotX - 4f, dotY - 4f, 8f, 8f), _dummyTexture);
 
                 if (_showNames.Value)
                 {
                     GUI.color = Color.white;
-                    GUI.Label(new Rect(dotX + 6f, dotY - 10f, 110f, 20f), player.Name, _smallStyle);
+                    GUI.Label(new Rect(dotX + 6f, dotY - 10f, 110f, 20f), player.Name+(player.Team>0?" [T"+player.Team+"]":""), _smallStyle);
                 }
             }
 
@@ -775,7 +792,7 @@ namespace TabgInstaller.AdminRadar.Client
                 if (IsLocalPlayer(player)) continue;
                 if (_showOnlyDummies.Value && !IsDummyName(player.Name)) continue;
 
-                Vector3 world = player.Position + Vector3.up * 2.2f;
+                Vector3 world = VisualPosition(player) + Vector3.up * 2.2f;
                 float distance = Vector3.Distance(localPosition, player.Position);
                 if (distance > maxDistance) continue;
 
@@ -794,9 +811,7 @@ namespace TabgInstaller.AdminRadar.Client
                 point.x = Mathf.Clamp(point.x, 24f, Screen.width - 24f);
                 point.y = Mathf.Clamp(point.y, 24f, Screen.height - 24f);
 
-                Color markerColor = IsDummyName(player.Name)
-                    ? new Color(1f, 0.88f, 0.05f, 0.96f)
-                    : new Color(1f, 0.25f, 0.2f, 0.92f);
+                Color markerColor = TeamColor(player);
 
                 GUI.color = markerColor;
                 GUI.DrawTexture(new Rect(point.x - 7f, point.y - 7f, 14f, 14f), _dummyTexture);
@@ -805,7 +820,7 @@ namespace TabgInstaller.AdminRadar.Client
                 {
                     string los = player.HasLineOfSight ? "LOS" : "NO LOS";
                     string firing = player.IsFiring ? " firing" : string.Empty;
-                    debugLine = $"\n{player.BotState}  {player.TargetName}  {player.WeaponName}  {los}{firing}";
+                    debugLine = $"\n{player.BotState}  {(player.Team>0?"Team "+player.Team:"Solo")}  {player.TargetName}  {player.WeaponName}  {los}{firing}";
                 }
 
                 GUI.Label(
@@ -822,7 +837,7 @@ namespace TabgInstaller.AdminRadar.Client
             var stale = new List<byte>();
             foreach (var kvp in Players)
             {
-                if (Time.unscaledTime - kvp.Value.LastSeen > 2.5f)
+                if (Time.unscaledTime - kvp.Value.LastSeen > 5f)
                     stale.Add(kvp.Key);
             }
 
@@ -1003,6 +1018,7 @@ namespace TabgInstaller.AdminRadar.Client
         private static bool IsDummyName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return false;
+            if (name.StartsWith("[BOT] ", StringComparison.Ordinal)) return true;
             if (name.StartsWith("AIPlayer", StringComparison.OrdinalIgnoreCase))
                 return true;
 
@@ -1021,6 +1037,18 @@ namespace TabgInstaller.AdminRadar.Client
             return true;
         }
 
+        private static Color TeamColor(RadarPlayer player)
+        {
+            if(!IsDummyName(player.Name))return new Color(1,.25f,.2f);
+            if(player.Team==0)return new Color(.85f,.85f,.85f);
+            return Color.HSVToRGB((player.Team*.61803399f)%1,.7f,1);
+        }
+        private static Vector3 VisualPosition(RadarPlayer player)
+        {
+            if(player.LastServerSeen<=0 || (player.PreviousPosition-player.Position).sqrMagnitude>100*100)return player.Position;
+            return Vector3.Lerp(player.PreviousPosition,player.Position,Mathf.Clamp01((Time.unscaledTime-player.LastServerSeen)/.5f));
+        }
+
         private static bool HasFreshServerPosition(RadarPlayer player)
         {
             return player.LastServerSeen > 0f && Time.unscaledTime - player.LastServerSeen <= 1.5f;
@@ -1032,6 +1060,7 @@ namespace TabgInstaller.AdminRadar.Client
             public string Name;
             public Vector3 Position;
             public bool Alive;
+            public byte Team;
         }
 
         private struct ParsedDebugEntry
@@ -1176,8 +1205,10 @@ namespace TabgInstaller.AdminRadar.Client
             public string Name;
             public Vector3 Position;
             public bool Alive;
+            public byte Team;
             public float LastSeen;
             public float LastServerSeen;
+            public Vector3 PreviousPosition;
             public string BotState;
             public string TargetName;
             public string WeaponName;

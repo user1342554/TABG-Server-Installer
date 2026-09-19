@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TabgInstaller.AdminRadar.Server
 {
-    [BepInPlugin("tabginstaller.adminradar.server", "Dummy Debug Radar Server", "1.0.0")]
+    [BepInPlugin("tabginstaller.adminradar.server", "Dummy Debug Radar Server", "1.6.0")]
     public class AdminRadarServerPlugin : BaseUnityPlugin
     {
         internal const byte RadarEventCode = 241;
@@ -34,6 +34,19 @@ namespace TabgInstaller.AdminRadar.Server
         private static ConfigEntry<bool> _includeBotDebug;
 
         private Harmony _harmony;
+        private static Func<TABGPlayerServer,byte> _teamId;
+        private static float _teamRetry;
+        private static byte Team(TABGPlayerServer player)
+        {
+            if(!player.Bot)return 0;
+            if(_teamId==null && Time.unscaledTime>=_teamRetry)
+            {
+                _teamRetry=Time.unscaledTime+5;
+                var method=AccessTools.Method(AccessTools.TypeByName("TabgInstaller.FakePlayers.BotTactics"),"TeamId");
+                if(method!=null)_teamId=(Func<TABGPlayerServer,byte>)Delegate.CreateDelegate(typeof(Func<TABGPlayerServer,byte>),method);
+            }
+            return _teamId==null?(byte)0:_teamId(player);
+        }
 
         private void Awake()
         {
@@ -118,10 +131,12 @@ namespace TabgInstaller.AdminRadar.Server
                 }
             }
 
+            private static ServerClient _cachedServer;
             private static ServerClient FindServerClient(BattleRoyaleGameMode gameMode)
             {
+                if (_cachedServer) return _cachedServer;
                 var server = UnityEngine.Object.FindObjectOfType<ServerClient>();
-                if (server != null) return server;
+                if (server != null) { _cachedServer=server; return server; }
 
                 var room = gameMode?.GetType().GetProperty("GameRoomReference", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(gameMode, null);
                 return room?.GetType().GetProperty("ServerClient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(room, null) as ServerClient;
@@ -149,8 +164,9 @@ namespace TabgInstaller.AdminRadar.Server
                     entries.Add(new PlayerRadarEntry
                     {
                         Index = index,
-                        Name = GetPlayerName(player, index),
+                        Name = (isDummy ? "[BOT] " : "") + GetPlayerName(player, index),
                         Position = GetPlayerPosition(player),
+                        Team = Team(player),
                         Alive = alive
                     });
                 }
@@ -215,12 +231,13 @@ namespace TabgInstaller.AdminRadar.Server
                 using (var ms = new MemoryStream())
                 using (var bw = new BinaryWriter(ms))
                 {
-                    int sectionCount = (playerCount > 0 ? 1 : 0) + (debugCount > 0 ? 1 : 0);
+                    int sectionCount = (playerCount > 0 ? 2 : 0) + (debugCount > 0 ? 1 : 0);
                     bw.Write(RadarPayloadMagic);
                     bw.Write(RadarPayloadVersion);
                     bw.Write((byte)sectionCount);
                     if (playerCount > 0)
                         WriteSection(bw, PlayerSectionType, sectionWriter => WritePlayerSection(sectionWriter, entries));
+                    if(playerCount>0)WriteSection(bw,3,w=>{w.Write((byte)Math.Min(entries.Count,255));for(int i=0;i<entries.Count && i<255;i++){w.Write(entries[i].Index);w.Write(entries[i].Team);}});
                     if (debugCount > 0)
                         WriteSection(bw, BotDebugSectionType, sectionWriter => WriteBotDebugSection(sectionWriter, debugEntries));
 
@@ -317,7 +334,7 @@ namespace TabgInstaller.AdminRadar.Server
                     entries.Add(new BotDebugEntry
                     {
                         Index = player.PlayerIndex,
-                        State = accessor.ReadString(controller, accessor.DebugState),
+                        State = "HP " + player.Health.ToString("0") + " | " + accessor.ReadString(controller, accessor.DebugState),
                         TargetName = RadarPrivacy.SanitizeBotDebugTargetName(
                             accessor.ReadString(controller, accessor.DebugTargetName),
                             _includeRealPlayers.Value,
@@ -611,6 +628,7 @@ namespace TabgInstaller.AdminRadar.Server
                 public string Name;
                 public Vector3 Position;
                 public bool Alive;
+                public byte Team;
             }
 
             private struct BotDebugEntry
